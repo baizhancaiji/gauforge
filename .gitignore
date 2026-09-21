@@ -22,5 +22,6 @@ g16web/data/
 *.so
 *snap
 
-# ===== 编辑器 / IDE =====
+# ===== 编辑器 / IDE 与本地工具配置 =====
 .idea
+.zcodeignore
