@@ -1,156 +1,66 @@
-<p align="center">
-<img src="docs/imgs/hq.png">
-</p>
+# HQ · G16 计算化学工作台
 
-![Tests](https://github.com/it4innovations/hyperqueue/actions/workflows/test.yml/badge.svg) [![DOI paper](https://img.shields.io/badge/Paper-10.1016/j.softx.2024.101814-blue.svg)](https://www.sciencedirect.com/science/article/pii/S2352711024001857) [![DOI software](https://zenodo.org/badge/349152473.svg)](https://zenodo.org/badge/latestdoi/349152473)
+基于 [HyperQueue](https://github.com/It4innovations/hyperqueue) 队列引擎的 Gaussian 16
+计算化学工作台，为 WSL2 单机工作流打造，覆盖「输入 → 计算 → 分析」闭环。
+工作分支：`g16-webui`。
 
-**HyperQueue** is a tool designed to simplify execution of large workflows (task graphs) on HPC clusters. It allows you
-to execute a large number of tasks in a simple way, without having to manually submit jobs into batch schedulers like
-Slurm or PBS. You specify what you want to compute and HyperQueue automatically asks for computational resources
-and dynamically load-balances tasks across all allocated nodes and resources. HyperQueue can also work without Slurm/PBS
-as a general distributed task execution engine.
-
-[Documentation](https://it4innovations.github.io/hyperqueue/)
-
-- You can check out [examples](docs/examples) to see how to use HyperQueue.
-- If you find a bug or a problem with HyperQueue, please create an [issue](https://github.com/It4innovations/hyperqueue/issues).
-- For more general discussion or feature requests, please use our
-[discussion forum](https://github.com/It4innovations/hyperqueue/discussions).
-- If you want to chat with the HyperQueue developers, you can use our [Zulip](https://hyperqueue.zulipchat.com/) server.
-
-> If you use HyperQueue in your research, please consider [citing it](#publications).
-
-This image shows how HyperQueue can work on a distributed cluster that uses Slurm or PBS:
-
-<img src="docs/imgs/architecture-bg.png" width="500" alt="Architecture of HyperQueue deployed on a Slurm/PBS cluster" />
-
-You can find a talk from the e-INFRA conference that describes the basics of HyperQueue [here](https://youtu.be/wIxgKOAM0NE?list=PLvwguJ6ySH1cANA1cRZzJDSS8UH-ef0Xn&t=9692).
-
-## Demo
-This demo shows simple usage of HyperQueue to execute a few hundred commands (tasks), with dynamic scaling both up and down based on the number of connected workers.
-
-<div>
-  <img src="docs/imgs/hq-terminal.gif">
-</div>
-
-## Features
-
-- **Complex resource management**
-    - Load balancing of tasks across all available (HPC) resources
-    - Automatic submission of Slurm/PBS jobs on behalf of the user
-    - Complex and arbitrary task resource requirements (# of cores, GPUs, memory, FPGAs, ...)
-      - Non-fungible resources (tasks are assigned specific resources, e.g. a GPU with ID `1`)
-      - Fractional resources (tasks can require e.g. `0.5` of a GPU)
-      - Resource variants (tasks can require e.g. `1 GPU and 4 CPU cores` OR `16 CPU cores`)
-      - Related resources (tasks can require e.g. `4 CPU cores in the same NUMA node`)
-
-- **High performance**
-    - Scales to hundreds of nodes/workers and millions of tasks
-    - Overhead per one task is below `0.1ms`
-    - Allows streaming of stdout/stderr from tasks to avoid creating many small files on distributed filesystems
-
-- **Simple user interface**
-    - Task graphs can be defined via a CLI, TOML workflow files or a Python API
-    - Cluster utilization can be monitored with a real-time dashboard
-
-- **Easy deployment**
-    - Provided as a single, statically linked binary without any runtime dependencies (apart from `libc`)
-    - No admin access to a cluster is needed for its usage
-
-## Installation
-
-* Download the latest binary distribution from this [link](https://github.com/It4innovations/hyperqueue/releases/latest).
-* Unpack the downloaded archive:
-
-  ```bash
-  $ tar -xvzf hq-<version>-linux-x64.tar.gz
-  ```
-
-* That's it! Just use the unpacked `hq` binary.
-
-> If you want to try the newest features, you can also download a nightly
-> [build](https://github.com/It4innovations/hyperqueue/releases/nightly).
-
-## Submitting a simple task
-
-* Start a server (e.g. on a login node, a cluster partition, or simply on your PC)
-
-  ```bash
-  $ hq server start &
-  ```
-* Submit a job (command ``echo 'Hello world'`` in this case)
-
-  ```bash
-  $ hq submit echo 'Hello world'
-  ```
-* Ask for computing resources
-
-    * Either start a worker manually
-
-      ```bash
-      $ hq worker start &
-      ```
-
-    * Or configure automatic submission of workers into PBS/SLURM
-
-      - PBS:
-
-        ```bash
-        $ hq alloc add pbs --time-limit 1h -- -q <queue>
-        ```
-      - Slurm:
-
-        ```bash
-        $ hq alloc add slurm --time-limit 1h -- -p <partition>
-        ```
-
-* See the result of the job once it finishes
-
-  ```bash
-  $ hq job wait last
-  $ hq job cat last stdout
-  ```
-
-## What's next?
-
-Check out the [documentation](https://it4innovations.github.io/hyperqueue/).
-
-You can find FAQ (frequently asked questions) [here](https://it4innovations.github.io/hyperqueue/stable/faq).
-
-## HyperQueue team
-
-We are a group of researchers working at [IT4Innovations](https://www.it4i.cz/), the Czech National
-Supercomputing Center. We welcome any outside contributions.
-
-## Publications
-
-- [HyperQueue: Efficient and ergonomic task graphs on HPC clusters](https://www.sciencedirect.com/science/article/pii/S2352711024001857)
-  (paper @ SoftwareX journal)
-- [HyperQueue: Overcoming Limitations of HPC Job Managers](https://sc21.supercomputing.org/proceedings/tech_poster/tech_poster_pages/rpost104.html)
-  (poster @ SuperComputing'21)
-
-If you want to cite HyperQueue, you can use the following BibTex entry:
-
-```bibtex
-@article{hyperqueue,
-  title = {HyperQueue: Efficient and ergonomic task graphs on HPC clusters},
-  journal = {SoftwareX},
-  volume = {27},
-  pages = {101814},
-  year = {2024},
-  issn = {2352-7110},
-  doi = {https://doi.org/10.1016/j.softx.2024.101814},
-  url = {https://www.sciencedirect.com/science/article/pii/S2352711024001857},
-  author = {Jakub Beránek and Ada Böhm and Gianluca Palermo and Jan Martinovič and Branislav Jansík},
-  keywords = {Distributed computing, Task scheduling, High performance computing, Job manager}}
-}
+```
+前端 (Vite + Vue3/React + 3Dmol.js)          ← M0 起
+   │ REST + SSE
+服务层 (FastAPI，契约先行 OpenAPI)
+领域层 (Calculation 状态机 + SQLite 历史)
+   ├── 执行适配器：HyperQueue（hq --output-mode json）
+   ├── 解析层：cclib（结果）+ 自写增量解析（运行中进度）
+   └── 化学层：ASE / OpenBabel（结构互转）、cubegen/fchk（轨道）
 ```
 
-## Acknowledgement
+- **队列核心**：`crates/` 为 HyperQueue（Rust），作为执行引擎按需修改，`cargo build --release` 构建。
+- **Web 子系统**：`g16web/`（Python 3.10+，uv 管理环境）。
+  `g16web/prototype/` 是验证链路的已冻结原型，用法见
+  [g16web/prototype/README.md](g16web/prototype/README.md)。
 
-* This work was supported by the LIGATE project. This project has received funding from the European High-Performance Computing Joint Undertaking (JU) under grant agreement No 956137. The JU receives support from the European Union’s Horizon 2020 research and innovation programme and Italy, Sweden, Austria, the Czech Republic, Switzerland.
+## 快速开始
 
-* This work was supported by the Ministry of Education, Youth and Sports of the Czech Republic through the e-INFRA CZ (ID:90140).
+```bash
+# Python 子系统
+uv venv && uv pip install -r requirements.txt
+uv run pytest                                  # 测试（发现 g16web/tests）
+uv run python scripts/validate_progress.py     # 进度文件校验
 
-## License
-[MIT](LICENSE)
+# 队列核心（如需自行构建 hq）
+cargo build --release
+
+# 归档原型（仅调试参考：提交/监控面板，监听 127.0.0.1:8160）
+python3 g16web/prototype/server.py
+```
+
+依赖：`~/opt/hyperqueue/hq`（HQ 二进制）、`~/g16`（Gaussian 16 安装）、`~/scratch`（任务与上传目录）。路径均可经 `G16WEB_*` 环境变量覆盖，见 `g16web/src/config.py`。
+
+## 里程碑
+
+| 里程碑 | 内容 | 验收 |
+|---|---|---|
+| M0 | 契约与骨架 | 只看 OpenAPI 契约即知全部能力；前端 mock 三界面 |
+| M1 | 队列与监控 | 提交 → 实时看到优化步/SCF → 历史可查 |
+| M2 | 输入工程 | 从 PDB 不手写文本生成合法 opt 输入并提交 |
+| M3 | 结果分析 | freq 输出可见谱图并画出一条轨道 |
+| M4 | 工作流 | 一键「构象搜索 + top N 精修」并汇总能量表 |
+| M5 | DSH 接入 | 自然语言「帮我优化水分子并看结果」走通 |
+
+详见 [docs/plans/roadmap.md](docs/plans/roadmap.md)。
+
+## 文档索引
+
+- [AGENTS.md](AGENTS.md) — 仓库协作与工程约定（AI 与人共用）
+- [docs/plans/roadmap.md](docs/plans/roadmap.md) — 方向规划与里程碑
+- [docs/references/conventional_commits.md](docs/references/conventional_commits.md) — 提交规范
+- [docs/references/changelog-spec.md](docs/references/changelog-spec.md) — 进度管理规范
+- `progress.json` — 当前状态快照（开发前必读）
+
+## 上游 HyperQueue
+
+本仓库 fork 自 [It4innovations/hyperqueue](https://github.com/It4innovations/hyperqueue)。
+HQ 自身的文档见 [上游文档站](https://it4innovations.github.io/hyperqueue/) 与仓库内
+`docs/`（含 [examples](docs/examples)）；上游变更历史见 `CHANGELOG.md`（只读）。
+若你在研究中使用 HyperQueue，请考虑
+[引用其论文](https://github.com/It4innovations/hyperqueue#publications)。

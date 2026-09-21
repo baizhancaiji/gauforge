@@ -1,7 +1,11 @@
-# g16web —— G16 Web 控制台
+# g16web 原型（已归档）
+
+> **归档说明**：本目录是一次性原型，已冻结、仅作设计参考，禁止在其上续写功能。
+> 接口清单与踩坑记录是仅有的沉淀价值；新架构方向见
+> [../../docs/plans/roadmap.md](../../docs/plans/roadmap.md)。
 
 基于 [HyperQueue](https://github.com/It4innovations/hyperqueue) 队列引擎的 Gaussian 16
-Web 提交/监控面板，为 WSL2 单机工作流打造。工作分支：`g16-webui`。
+Web 提交/监控面板，为 WSL2 单机工作流打造。
 
 功能：
 - **任务队列**：实时列表（2s 刷新）、状态徽章、进度条、最新能量、耗时

@@ -1,7 +1,26 @@
+# ===== Rust 构建产物（cargo 可重建） =====
 /target
-.idea
-__pycache__
+
+# ===== Python 字节码缓存（可再生） =====
+__pycache__/
+*.pyc
+pycache
+
+# ===== Python 虚拟环境（平台相关，跨机拷贝必须重建） =====
+.venv/
+/venv
+
+# ===== 前端（g16web/frontend 引入后生效，均可重建） =====
+node_modules/
+g16web/frontend/dist/
+
+# ===== 本地运行时数据（SQLite 库/上传件/日志，可重建） =====
+*.db
+g16web/data/
+
+# ===== 二进制与平台产物 =====
 *.so
 *snap
-/venv
-pycache
+
+# ===== 编辑器 / IDE =====
+.idea

@@ -1,0 +1,16 @@
+{
+  "updated": "2026-09-22T00:36+08:00",
+  "latest_released_version": null,
+  "unreleased": [],
+  "in_progress": null,
+  "next_steps": [
+    "M0：定稿 API 契约，OpenAPI 文档落盘到 docs/api/",
+    "M0：后端骨架按契约生成，前端空壳连 mock 数据",
+    "M1：队列与监控核心闭环（SSE 推送 + SQLite 历史）"
+  ],
+  "known_issues": [
+    "g16web/prototype/ 为冻结原型，仅作设计参考，禁止续写功能",
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
+  ],
+  "context": "2026-09-22 按 project-scaffolding 规范以仓库根为项目根完成初始化：治理文件（AGENTS/进度体系/规范）在根目录，g16web/ 为 Python 子系统（src/ + tests/ + 归档原型）。里程碑与架构见 docs/plans/roadmap.md。"
+}

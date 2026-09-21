@@ -1,0 +1,24 @@
+# 统一 LF，防止跨平台（WSL2/Windows）换行污染；.sh 与服务单元若为 CRLF 将无法执行
+* text=auto eol=lf
+
+*.sh     text eol=lf
+*.service text eol=lf
+*.rs     text eol=lf
+*.py     text eol=lf
+*.md     text eol=lf
+*.json   text eol=lf
+*.jsonl  text eol=lf
+*.toml   text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.html   text eol=lf
+*.js     text eol=lf
+*.css    text eol=lf
+*.lock   text eol=lf
+
+# 二进制资产不做行尾归一化
+*.png  binary
+*.jpg  binary
+*.gif  binary
+*.ico  binary
+*.woff2 binary
