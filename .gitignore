@@ -10,13 +10,13 @@ pycache
 .venv/
 /venv
 
-# ===== 前端（g16web/frontend 引入后生效，均可重建） =====
+# ===== 前端（web/frontend 引入后生效，均可重建） =====
 node_modules/
-g16web/frontend/dist/
+web/frontend/dist/
 
 # ===== 本地运行时数据（SQLite 库/上传件/日志，可重建） =====
 *.db
-g16web/data/
+web/data/
 
 # ===== 二进制与平台产物 =====
 *.so
