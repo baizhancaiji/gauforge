@@ -1,25 +1,28 @@
 # AGENTS.md — 仓库协作与工程约定
 
 > 本仓库是**基于 HyperQueue 的 G16 计算化学工作台**：Rust 核心（`crates/`，上游
-> HyperQueue 队列引擎，按需修改）+ Python 子系统（`g16web/`，Web 工作台）。
-> 项目根 = 仓库根。方向与里程碑见 [docs/plans/roadmap.md](docs/plans/roadmap.md)。
+> HyperQueue 队列引擎，按需修改）+ Python 子系统（`web/`，Web 工作台）。
+> 项目根 = 仓库根。方向与里程碑见 [docs/specs/roadmap.md](docs/specs/roadmap.md)。
 
 ## 一、项目定位
 
-- 面向 WSL2 单机的计算化学工作台，覆盖「输入 → 计算 → 分析」闭环；队列只是执行器。
-- `g16web/prototype/` 是已冻结的一次性原型，仅作设计参考，**禁止在其上续写功能**。
-- 上游 HyperQueue 代码已视为本项目组成部分，可按需修改；吸纳上游更新时 merge/rebase 处理冲突。
+- 面向 WSL2 单机的计算化学工作台，以「输入 → 计算」为完整闭环（M0–M2 即完整产品），
+  分析及以后为功能更新；队列只是执行器。
+- `web/` 为从零实现的 Python 子系统；原 `g16web/` 下的一次性原型（含 `prototype/`）已整体删除，
+  仅其踩坑记录作为设计输入待补。
+- 上游 HyperQueue 代码已视为本项目组成部分，可按需修改（ADR 0001）；吸纳上游更新时 merge/rebase 处理冲突。
 
 ## 二、目录结构
 
 ```text
 crates/               Rust 源码：HyperQueue 队列核心（上游代码为主）
-g16web/               Python 子系统：G16 Web 工作台
+web/                  Python 子系统：G16 Web 工作台
 ├── src/              业务模块（配置集中在 config.py）
-├── tests/            与被测模块同名对应的测试
-└── prototype/        归档原型（冻结，只读参考）
+└── tests/            与被测模块同名对应的测试
 docs/
-├── plans/            专项实施计划（roadmap.md）
+├── specs/            方向与需求文档（roadmap.md）
+├── adr/              架构决策记录
+├── plans/            专项实施计划
 └── references/       规范单一事实来源（提交规范、进度管理规范）
 scripts/              构建、运维、校验脚本（含上游脚本与本项目 validate_progress.py）
 tests/                上游 HQ Python 集成测试（pbs/slurm，需显式运行）
@@ -35,20 +38,19 @@ CHANGELOG.md          上游 HyperQueue 的变更历史（只读，不属于本�
 |---|---|
 | 队列核心 | Rust（`crates/`，cargo 构建，产物 `/target/hq`） |
 | 后端 | Python 3.10+（uv 管理虚拟环境；M0 起引入 FastAPI） |
-| 持久化 | SQLite（任务历史/元数据，路径见 `g16web/src/config.py`） |
-| 执行集成 | `hq --output-mode json` CLI，适配层留缝可换调度器 |
+| 持久化 | SQLite（任务历史/元数据，路径见 `web/src/config.py`） |
+| 执行集成 | `hq --output-mode json` CLI 起步，深度融合、可按需改 `crates/` 源码（ADR 0001） |
 | 解析 | cclib（结果）+ 自写增量解析（仅运行中进度） |
-| 前端 | Vite + Vue3/React + 3Dmol.js（M0 起引入 `g16web/frontend/`） |
+| 前端 | Vite + Vue3 + 3Dmol.js（已定稿；M0 起引入 `web/frontend/`） |
 
 ## 四、命令入口
 
 ```bash
 uv venv && uv pip install -r requirements.txt    # 初始化 Python 环境（仓库根 .venv/）
-uv run pytest                                     # 本项目测试（默认发现 g16web/tests）
+uv run pytest                                     # 本项目测试（默认发现 web/tests）
 uv run python scripts/validate_progress.py        # 进度管理两文件校验（提交前闸门）
 uv run pytest tests/                              # 上游 HQ 集成测试（需 pbs/slurm 环境）
 cargo build --release                             # 构建 hq（Rust 核心）
-python3 g16web/prototype/server.py                # 归档原型（仅调试参考）
 ```
 
 ## 五、仓库纪律
@@ -169,4 +171,4 @@ python3 g16web/prototype/server.py                # 归档原型（仅调试参�
 - 路径统一 `pathlib.Path`，拼接用 `/` 运算符；禁止 `os.path.join`、硬编码绝对路径。
 - 子进程参数一律列表形式，禁止 `shell=True` 与 `os.system()`；调用 Python 用 `sys.executable`。
 - 文本读写显式 `encoding="utf-8"`；`.sh` 与 systemd 单元必须 LF。
-- 可配置路径/端口通过环境变量覆盖，统一前缀 `G16WEB_`（Rust 侧沿用 `HQ_`），默认值集中在 `g16web/src/config.py`。
+- 配置分两级：启动级参数（工作区根、监听地址）通过环境变量覆盖，统一前缀 `G16WEB_`（Rust 侧沿用 `HQ_`）；运行级参数（含监听端口，保存后重启生效）由 WebUI 设置面板管理（SQLite 持久化，生效规则见 [roadmap.md §2.5](docs/specs/roadmap.md)）；默认值集中在 `web/src/config.py`。
