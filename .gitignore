@@ -25,3 +25,4 @@ web/data/
 # ===== 编辑器 / IDE 与本地工具配置 =====
 .idea
 .zcodeignore
+.zcode/
