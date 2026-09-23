@@ -68,9 +68,11 @@ class HqProcessManager:
         online = [w for w in gw.workers() if w["online"]]
         if not online:
             log = open(self.server_dir / "worker.log", "ab")
+            # 不禁资源检测：mem 资源请求（B6 双账第二账）依赖 worker
+            # 上报 mem；--cpus 仍显式约束（cpus 闭区间上报见 cli_gateway）
             cmd = [self.hq_path, "--server-dir", str(self.server_dir),
                    "worker", "start", "--cpus", str(cpus),
-                   "--detect-resources", "none", "--on-server-lost", "stop",
+                   "--on-server-lost", "stop",
                    "--work-dir", str(self.server_dir / "worker")]
             proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
                                     start_new_session=True)

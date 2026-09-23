@@ -37,16 +37,28 @@ class ExecutionsRepo:
     def create(self, *, task_id: int, filename: str, resources: dict,
                queue_id: str | None = None, input_hash: str | None = None,
                hq_job_id: int | None = None,
-               submitted_at: str | None = None) -> int:
-        """创建运行中执行记录（state=running；staged 由席位表达不建行）。"""
+               submitted_at: str | None = None,
+               state: str = "running") -> int:
+        """创建执行记录（默认 state=running；staged 由席位表达不建行）。
+
+        state 直落：B6 失败分流 skipped 终态行即时落库（无运行过程）。"""
         with self._db.tx() as conn:
             cur = conn.execute(
                 "INSERT INTO executions (task_id, queue_id, state, submitted_at,"
                 " input_hash, resources, hq_job_id, filename)"
-                " VALUES (?, ?, 'running', ?, ?, ?, ?, ?)",
-                (task_id, queue_id, submitted_at or now_iso(), input_hash,
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (task_id, queue_id, state, submitted_at or now_iso(), input_hash,
                  json.dumps(resources, ensure_ascii=False), hq_job_id, filename))
             return int(cur.lastrowid)
+
+    def set_started_at(self, execution_id: int, started_at: str) -> None:
+        """running 时补启动时间（roadmap §2.6 字段生命周期）。"""
+        self._db.run("UPDATE executions SET started_at = ? WHERE id = ?",
+                     (started_at, execution_id))
+
+    def delete(self, execution_id: int) -> None:
+        """终态前删除（仅引擎派发失败补偿用：物化失败回收刚建的 running 行）。"""
+        self._db.run("DELETE FROM executions WHERE id = ?", (execution_id,))
 
     def update_hq_job_id(self, execution_id: int, hq_job_id: int | None) -> None:
         self._db.run("UPDATE executions SET hq_job_id = ? WHERE id = ?",

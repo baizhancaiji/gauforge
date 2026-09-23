@@ -9,7 +9,11 @@ class QueuesRepo:
         self._db = db
 
     def get(self, queue_id: str) -> dict | None:
-        return self._db.one("SELECT * FROM queues WHERE id = ?", (queue_id,))
+        row = self._db.one("SELECT * FROM queues WHERE id = ?", (queue_id,))
+        if row is not None and isinstance(row.get("last_failure"), str):
+            import json
+            row["last_failure"] = json.loads(row["last_failure"])
+        return row
 
     def list(self) -> list[dict]:
         """默认 id 倒序（新在前）。"""

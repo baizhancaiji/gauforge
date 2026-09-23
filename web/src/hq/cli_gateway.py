@@ -44,12 +44,21 @@ class CliGateway(Gateway):
 
     # ---------- Gateway ----------
     def submit(self, command: list[str], cwd: str | None = None,
-               name: str | None = None) -> str:
+               name: str | None = None, resources: dict | None = None,
+               time_limit_s: int = 0) -> str:
         args = ["submit"]
         if cwd:
             args += ["--cwd", cwd]
         if name:
             args += ["--name", name]
+        if resources:
+            if resources.get("cpus"):
+                args += ["--resource", f"cpus={resources['cpus']}"]
+            if resources.get("mem_mib"):
+                # HQ mem 资源值以 MiB 计（纯数字，单位语法不被 0.26 接受）
+                args += ["--resource", f"mem={resources['mem_mib']}"]
+        if time_limit_s:
+            args += ["--time-limit", f"{time_limit_s}s"]
         args += ["--"] + list(command)
         out = self._run(*args)
         return str(out["id"])
@@ -77,14 +86,22 @@ class CliGateway(Gateway):
         for w in out:
             resources = (w.get("configuration", {}).get("resources") or {})
             cpus = 0
+            mem_mib = 0
             for res in resources.get("resources", []):
                 if res.get("name") == "cpus":
-                    cpus = max(cpus, int(res.get("end", 0)) - int(res.get("start", 0)))
+                    # HQ range 序列化为闭区间（--cpus 4 → start=0 end=3）
+                    span = (int(res.get("end", 0))
+                            - int(res.get("start", 0)) + 1)
+                    cpus = max(cpus, span)
+                elif res.get("name") == "mem":
+                    # sum 资源：size 即 MiB 数（实测 15.51GiB → 15883）
+                    mem_mib = max(mem_mib, int(res.get("size") or 0))
             workers.append({
                 "id": str(w["id"]),
                 "online": w.get("ended") is None,
                 "hostname": w.get("configuration", {}).get("hostname"),
                 "cpus": cpus,
+                "mem_mib": mem_mib,
             })
         return workers
 

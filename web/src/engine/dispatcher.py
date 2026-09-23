@@ -1,0 +1,403 @@
+"""派发引擎（m1-plan §4.3 B6；roadmap §2.1 派发原则、§2.3 派发引擎与执行流水线）。
+
+核心循环「事件驱动 + 状态推进」（引擎为后台线程，B10 挂启动序列）：
+
+1. 执行序列展开：seats 按 position → 单任务席位取自身、队列席位展开为
+   当前成员序列（tasks.position），单任务与队列成员平权扁平化；
+2. 并行窗口推进：自序列头按序取未终态任务直到窗口满（在跑数 =
+   parallel_window）或序列尽——只有在真正要派发下一任务时才取其信息
+   （输入哈希、Link0 解析均在该时点）；
+   ① 哈希跳过：存在 succeeded 执行且当前输入哈希 == 该次 input_hash
+     → 沿用既有结果不建执行记录（成员状态保持 succeeded）；
+   ② Link0 解析补齐：%NProcShared/%Mem 缺失按设置缺省注入；
+   ③ 声明资源停等：声明 > 空闲（worker 总资源 − 在跑声明值之和）→
+     窗口停在该任务等待释放，不越位取其后小任务（队头阻塞显式接受）；
+   ④⑤ 物化 run/<id>/ → Gateway.submit（资源双账第二账：cpus/mem_mib
+     随任务提交 HQ）→ 回填 hq_job_id → task.status(staged→running)。
+3. 任务结束补位：poll_events 差分发现终态 → 终态映射（finished→succeeded、
+   failed→failed(program_error)、canceled→failed(manually_stopped)）→
+   失败分流（§2.1）→ 席位释放 → 补位（保序）。
+
+失败分流：未勾跳过——出错成员记 failed、未启动成员即时 skipped
+(predecessor_failed)、在跑成员任其跑完、队列即刻回退未提交
+(abort_on_failure)；勾选跳过——继续取未启动成员，全部结束时按
+finished_with_failures 处理；全部成功 → completed(success)。
+
+队列席位待全部成员完成后统一释放；失败回退后队列状态不再变动，
+仅在跑成员收尾结束后释放席位。窗口之外的一切在真正执行前都可能被修改
+（提交时的顺序不构成承诺）。
+"""
+from __future__ import annotations
+
+import threading
+import time
+import traceback
+from pathlib import Path
+
+from .. import config
+from ..hq.gateway import Gateway, GatewayError
+from ..store import executions, queues, seats, settings, tasks
+from ..store.db import now_iso
+from . import workspace
+
+# HQ job 终态 → (TaskState, FailureCause)（§8.7 归因映射：程序报错/手动停止）
+HQ_TERMINAL_MAP = {
+    "finished": ("succeeded", None),
+    "failed": ("failed", "program_error"),
+    "canceled": ("failed", "manually_stopped"),
+}
+
+
+def _mem_mib(gb: float) -> int:
+    return int(round(float(gb) * 1024))
+
+
+def _declared(execution: dict) -> tuple[int, int]:
+    """执行记录 Link0 声明值 → (cpus, mem_mib)，停等记账用。"""
+    res = execution.get("resources") or {}
+    nproc = int((res.get("nproc") or {}).get("value") or 0)
+    mem_gb = (res.get("mem_gb") or {}).get("value") or 0
+    return nproc, _mem_mib(mem_gb)
+
+
+class Dispatcher:
+    def __init__(self, gateway: Gateway, *, emitter=None,
+                 run_root: Path | None = None) -> None:
+        self._gw = gateway
+        self._emit = emitter if emitter is not None else self._mock_emit
+        self._run_root = run_root if run_root is not None \
+            else config.HOME_DIR / "run"
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    # ---------------- 事件发射（B11 真实化前经 mock 记入重放窗口） ----------------
+
+    @staticmethod
+    def _mock_emit(event: str, data: dict) -> None:
+        from ..mock import get_state
+        get_state().emit(event, data)
+
+    # ---------------- 执行序列展开 ----------------
+
+    def expand_sequence(self) -> list[dict]:
+        """seats 按 position 展开为扁平执行序列。
+
+        条目：{"seat_id", "kind", "task_id", "queue_id", "filename"}；
+        队列席位展开为当前成员序列（派发当下最新值，窗口外可随时修改）。
+        """
+        seq: list[dict] = []
+        for s in seats().list_by_position():
+            if s["kind"] == "task":
+                row = tasks().get(s["task_id"])
+                if row is not None:
+                    seq.append({"seat_id": s["seat_id"], "kind": "task",
+                                "task_id": row["id"], "queue_id": None,
+                                "filename": row["filename"]})
+            else:
+                for m in tasks().list_queue_members(s["queue_id"]):
+                    seq.append({"seat_id": s["seat_id"], "kind": "queue",
+                                "task_id": m["id"],
+                                "queue_id": s["queue_id"],
+                                "filename": m["filename"]})
+        return seq
+
+    # ---------------- 窗口推进 ----------------
+
+    def advance(self) -> None:
+        """自序列头按序推进并行窗口（哈希跳过/停等/物化/提交/回填）。"""
+        window = int(settings().get("parallel_window"))
+        running = executions().list_by_state("running")
+        if len(running) >= window:
+            return
+        try:
+            workers = self._gw.workers()
+        except GatewayError:
+            return  # HQ 不可达：全部停等
+        total_cpus = sum(int(w.get("cpus") or 0) for w in workers
+                         if w.get("online"))
+        total_mem = sum(int(w.get("mem_mib") or 0) for w in workers
+                        if w.get("online"))
+        claimed_cpus = sum(_declared(e)[0] for e in running)
+        claimed_mem = sum(_declared(e)[1] for e in running)
+        running_task_ids = {e["task_id"] for e in running}
+
+        for item in self.expand_sequence():
+            if len(running) >= window:
+                break
+            if item["task_id"] in running_task_ids:
+                continue  # 同任务不重复派发（防御）
+            task = tasks().get(item["task_id"])
+            if task is None:
+                continue
+            if item["queue_id"] is not None:
+                q = queues().get(item["queue_id"])
+                # 队列仅 submitted/executing 可派发：回退（unsubmitted）或已完成
+                # （completed）后席位残余成员不再派发（席位待在跑收尾释放）
+                if q is None or q["state"] not in ("submitted", "executing"):
+                    continue
+                # 本周期已有执行记录者不重复派发（failed/succeeded 终态成员）
+                if self._executed_this_cycle(task["id"], q):
+                    continue
+            inputs = self._inputs_path(task["id"])
+            if not inputs.is_file():
+                continue  # 输入副本缺失：不可派发（导入目录异常，防御跳过）
+            text = inputs.read_text(encoding="utf-8", errors="replace")
+            resolved = workspace.resolve_link0(
+                text, int(settings().get("link0_default_nproc")),
+                float(settings().get("link0_default_mem_gb")))
+            input_hash = workspace.content_hash(resolved["completed_text"])
+
+            # ① 哈希跳过：上次成功且输入哈希一致 → 沿用结果，序列越过
+            if self._hash_skip(task["id"], input_hash):
+                if item["kind"] == "task":
+                    self._release_seat_task(task["id"])
+                continue
+
+            # ③ 声明资源停等：窗口停在该任务，不越位（mem 维度仅当 worker 上报）
+            nproc = int(resolved["nproc"]["value"])
+            mem = _mem_mib(resolved["mem_gb"]["value"])
+            if nproc > total_cpus - claimed_cpus:
+                break
+            if total_mem and mem > total_mem - claimed_mem:
+                break
+
+            eid = self._dispatch(item, task, resolved, input_hash)
+            running.append(executions().get(eid))  # type: ignore[arg-type]
+            claimed_cpus += nproc
+            claimed_mem += mem
+
+    def _hash_skip(self, task_id: int, input_hash: str) -> bool:
+        return any(e["state"] == "succeeded" and e["input_hash"] == input_hash
+                   for e in executions().list_by_task(task_id))
+
+    def _executed_this_cycle(self, task_id: int, queue: dict) -> bool:
+        """本 executing 周期内是否已有执行记录（队列二次提交后旧记录不算，
+        以队列进入 executing 的 updated_at 为基准——set_state 即更新）。"""
+        base = queue.get("updated_at") or ""
+        return any((e.get("submitted_at") or "") >= base
+                   for e in executions().list_by_task(task_id))
+
+    def _inputs_path(self, task_id: int) -> Path:
+        from ..services.candidates import default_inputs_dir
+        return default_inputs_dir() / str(task_id)
+
+    # ---------------- 派发 ----------------
+
+    def _dispatch(self, item: dict, task: dict, resolved: dict,
+                  input_hash: str) -> int:
+        """④⑤ 建执行记录 → 物化 → 提交 → 回填 hq_job_id → 事件。"""
+        if item["queue_id"]:
+            self._queue_enter_executing(item["queue_id"])
+        resources = {"nproc": resolved["nproc"], "mem_gb": resolved["mem_gb"]}
+        eid = executions().create(
+            task_id=task["id"], filename=task["filename"],
+            resources=resources, queue_id=item["queue_id"],
+            input_hash=input_hash)
+        g16_root = Path(str(settings().get("g16_root"))).expanduser()
+        try:
+            run_d, env = workspace.materialize(
+                self._run_root, eid, resolved["completed_text"], g16_root)
+        except Exception:
+            executions().delete(eid)  # 补偿：不留僵尸 running 行
+            raise
+        mem = _mem_mib(resolved["mem_gb"]["value"])
+        job_id = self._gw.submit(
+            [str(g16_root / "g16"), "input.gjf"], cwd=str(run_d),
+            name=task["filename"], resources={"cpus": int(resolved["nproc"]["value"]),
+                                              "mem_mib": mem},
+            time_limit_s=int(task.get("time_limit_s") or 0))
+        executions().update_hq_job_id(eid, int(job_id))
+        self._emit("task.status",
+                   {"task_id": task["id"], "execution_id": eid,
+                    **({"queue_id": item["queue_id"]} if item["queue_id"] else {}),
+                    "from": "staged", "to": "running", "ts": now_iso()})
+        return eid
+
+    def _queue_enter_executing(self, queue_id: str) -> None:
+        q = queues().get(queue_id)
+        if q is not None and q["state"] == "submitted":
+            queues().set_state(queue_id, "executing")
+            self._emit("queue.status",
+                       {"queue_id": queue_id, "from": "submitted",
+                        "to": "executing", "ts": now_iso()})
+
+    # ---------------- 终态处理与失败分流 ----------------
+
+    def tick(self) -> None:
+        """一轮状态推进：消费 Gateway 事件（终态）→ 窗口推进补位。"""
+        try:
+            events = self._gw.poll_events()
+        except GatewayError:
+            return  # HQ 不可达：本周期跳过
+        for ev in events:
+            if ev.get("type") != "job_state":
+                continue
+            mapping = HQ_TERMINAL_MAP.get(ev.get("state") or "")
+            if mapping is None:
+                if ev.get("state") == "running":
+                    self._note_running(int(ev["job_id"]))
+                continue
+            row = self._find_running(int(ev["job_id"]))
+            if row is not None:
+                self._on_terminal(row, *mapping)
+        self.advance()
+
+    def _find_running(self, job_id: int) -> dict | None:
+        for e in executions().list_by_state("running"):
+            if e.get("hq_job_id") == job_id:
+                return e
+        return None
+
+    def _note_running(self, job_id: int) -> None:
+        row = self._find_running(job_id)
+        if row is not None and not row.get("started_at"):
+            executions().set_started_at(row["id"], now_iso())
+
+    def _on_terminal(self, execution: dict, state: str, cause: str | None) -> None:
+        eid, tid = execution["id"], execution["task_id"]
+        executions().finalize(execution_id=eid, state=state,
+                              finished_at=now_iso(), cause=cause)
+        extra = ({"queue_id": execution["queue_id"]}
+                 if execution.get("queue_id") else {})
+        self._emit("task.status",
+                   {"task_id": tid, "execution_id": eid, **extra,
+                    "from": "running", "to": state, "cause": cause,
+                    "ts": now_iso()})
+        self._emit("history.appended",
+                   {"execution_id": eid, "task_id": tid,
+                    "state": state, **extra, "cause": cause,
+                    "ts": now_iso()})
+        if state == "failed" and execution.get("queue_id"):
+            self._handle_queue_failure(execution, cause)
+        # 席位释放：单任务终态即离席；队列待全部成员终态后统一释放
+        if execution.get("queue_id"):
+            self._settle_queue_seat(execution["queue_id"])
+        else:
+            self._release_seat_task(tid)
+
+    # ---- 失败分流（§2.1：未勾跳过即时回退；勾选跳过跑完全队再结算） ----
+
+    def _handle_queue_failure(self, execution: dict,
+                              cause: str | None) -> None:
+        qid = execution["queue_id"]
+        q = queues().get(qid)
+        if q is None or q["state"] != "executing":
+            return  # 已回退/已结算：不重复分流
+        members = tasks().list_queue_members(qid)
+        running_ids = {e["task_id"] for e in executions().list_by_state("running")}
+        if not q["skip_failed"]:
+            for m in members:
+                if m["id"] in running_ids \
+                        or self._executed_this_cycle(m["id"], q):
+                    continue  # 在跑任其跑完；本周期已执行者不动
+                self._mark_skipped(m, qid, "predecessor_failed")
+            self._queue_rollback(q, "abort_on_failure",
+                                 [(execution["task_id"], "failed", cause)])
+        # 勾选跳过：继续取未启动成员（advance 补位自然完成）
+
+    def _mark_skipped(self, member: dict, queue_id: str, cause: str) -> None:
+        """未启动成员即时 skipped：终态行直接落库（无执行过程）。"""
+        eid = executions().create(
+            task_id=member["id"], filename=member["filename"],
+            resources={"nproc": {"value": 0, "defaulted": False},
+                       "mem_gb": {"value": 0, "defaulted": False}},
+            queue_id=queue_id, state="skipped")
+        executions().finalize(execution_id=eid, state="skipped",
+                              finished_at=now_iso(), cause=cause)
+        self._emit("task.status",
+                   {"task_id": member["id"], "execution_id": eid,
+                    "queue_id": queue_id, "from": "staged", "to": "skipped",
+                    "cause": cause, "ts": now_iso()})
+        self._emit("history.appended",
+                   {"execution_id": eid, "task_id": member["id"],
+                    "queue_id": queue_id, "state": "skipped",
+                    "cause": cause, "ts": now_iso()})
+
+    def _queue_rollback(self, queue: dict, reason: str,
+                        failures: list[tuple[int, str, str | None]]) -> None:
+        """队列失败回退：记 finish_reason/last_failure/回退标记 → unsubmitted。"""
+        qid = queue["id"]
+        count = int(queue.get("rollback_count") or 0) + 1
+        queues().update(qid, finish_reason=reason, rollback_flag=True,
+                        rollback_count=count,
+                        last_failure={"finish_reason": reason,
+                                      "failure_positions": [f[0] for f in failures],
+                                      "members": [{"task_id": f[0],
+                                                   "state": f[1],
+                                                   "cause": f[2]}
+                                                  for f in failures]})
+        queues().set_state(qid, "unsubmitted")
+        self._emit("queue.status",
+                   {"queue_id": qid, "from": "executing", "to": "unsubmitted",
+                    "finish_reason": reason,
+                    "failure_positions": [f[0] for f in failures],
+                    "rollback_count": count, "ts": now_iso()})
+
+    # ---- 席位释放 ----
+
+    def _release_seat_task(self, task_id: int) -> None:
+        for s in seats().list_by_position():
+            if s["kind"] == "task" and s["task_id"] == task_id:
+                tasks().to_finished(task_id)
+                seats().remove(s["seat_id"])
+                self._emit_pending_snapshot()
+                return
+
+    def _settle_queue_seat(self, queue_id: str) -> None:
+        """队列席位：全部成员终态后释放并结算队列。"""
+        q = queues().get(queue_id)
+        if q is None:
+            return
+        members = tasks().list_queue_members(queue_id)
+        if any(m["id"] in {e["task_id"] for e in executions().list_by_state("running")}
+               for m in members):
+            return  # 仍有在跑成员：席位保留
+        seat = next((s for s in seats().list_by_position()
+                     if s["kind"] == "queue" and s["queue_id"] == queue_id), None)
+        undone = [m for m in members
+                  if not self._executed_this_cycle(m["id"], q)]
+        if undone:
+            return  # 尚有本周期未启动成员：skip_failed 继续派发中
+        states = {m["id"]: executions().list_by_task(m["id"])[-1]["state"]
+                  for m in members}
+        if q["state"] == "executing":
+            if all(v == "succeeded" for v in states.values()):
+                queues().update(queue_id, finish_reason="success",
+                                last_failure=None)
+                queues().set_state(queue_id, "completed")
+                self._emit("queue.status",
+                           {"queue_id": queue_id, "from": "executing",
+                            "to": "completed", "finish_reason": "success",
+                            "ts": now_iso()})
+            else:
+                failures = [(m["id"], states[m["id"]],
+                             executions().list_by_task(m["id"])[-1]["cause"])
+                            for m in members if states[m["id"]] != "succeeded"]
+                self._queue_rollback(q, "finished_with_failures", failures)
+        if seat is not None:
+            seats().remove(seat["seat_id"])
+            self._emit_pending_snapshot()
+
+    def _emit_pending_snapshot(self) -> None:
+        from ..services.pending import snapshot
+        self._emit("pending.snapshot", snapshot())
+
+    # ---------------- 线程循环（B10 挂启动序列） ----------------
+
+    def start(self, interval: float = 2.0) -> None:
+        """启动后台推进线程（周期 tick；阻塞调用不占 async loop）。"""
+        self._interval = interval
+        self._thread = threading.Thread(target=self._loop, name="dispatcher",
+                                        daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def _loop(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.tick()
+            except Exception:  # 引擎线程不因单轮异常死亡
+                traceback.print_exc()
+            self._stop.wait(getattr(self, "_interval", 2.0))

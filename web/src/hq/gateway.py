@@ -31,8 +31,13 @@ class Gateway(ABC):
 
     @abstractmethod
     def submit(self, command: list[str], cwd: str | None = None,
-               name: str | None = None) -> str:
-        """提交作业（command 为参数列表形式），返回 HQ job id。"""
+               name: str | None = None, resources: dict | None = None,
+               time_limit_s: int = 0) -> str:
+        """提交作业（command 为参数列表形式），返回 HQ job id。
+
+        resources（B6 资源双账第二账，roadmap §2.1）：{"cpus": int,
+        "mem_mib": int} → HQ 资源请求（%NProcShared→cpus、%Mem GB→MiB）；
+        time_limit_s≠0 时设 HQ time_limit（0=不设，默认）。"""
 
     @abstractmethod
     def cancel(self, job_id: str) -> None:
