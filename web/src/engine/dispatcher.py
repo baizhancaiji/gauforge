@@ -39,6 +39,7 @@ from ..hq.gateway import Gateway, GatewayError
 from ..store import executions, queues, seats, settings, tasks
 from ..store.db import now_iso
 from . import workspace
+from .monitor import ExecutionMonitor
 
 # HQ job 终态 → (TaskState, FailureCause)（§8.7 归因映射：程序报错/手动停止）
 HQ_TERMINAL_MAP = {
@@ -62,11 +63,14 @@ def _declared(execution: dict) -> tuple[int, int]:
 
 class Dispatcher:
     def __init__(self, gateway: Gateway, *, emitter=None,
-                 run_root: Path | None = None) -> None:
+                 run_root: Path | None = None,
+                 monitor: ExecutionMonitor | None = None) -> None:
         self._gw = gateway
         self._emit = emitter if emitter is not None else self._mock_emit
         self._run_root = run_root if run_root is not None \
             else config.HOME_DIR / "run"
+        self._monitor = monitor if monitor is not None else ExecutionMonitor(
+            float(settings().get("stall_threshold_minutes")))
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -240,6 +244,7 @@ class Dispatcher:
             row = self._find_running(int(ev["job_id"]))
             if row is not None:
                 self._on_terminal(row, *mapping)
+        self._monitor_step()
         self.advance()
 
     def _find_running(self, job_id: int) -> dict | None:
@@ -252,11 +257,16 @@ class Dispatcher:
         row = self._find_running(job_id)
         if row is not None and not row.get("started_at"):
             executions().set_started_at(row["id"], now_iso())
+            self._monitor.note_started(row["id"], now_iso())
 
     def _on_terminal(self, execution: dict, state: str, cause: str | None) -> None:
         eid, tid = execution["id"], execution["task_id"]
+        self._monitor.settle(eid, now_iso())
+        summary = self._monitor.summary(eid) if state == "succeeded" else None
         executions().finalize(execution_id=eid, state=state,
-                              finished_at=now_iso(), cause=cause)
+                              finished_at=now_iso(), cause=cause,
+                              monitor_summary=summary)
+        self._monitor.forget(eid)
         extra = ({"queue_id": execution["queue_id"]}
                  if execution.get("queue_id") else {})
         self._emit("task.status",
@@ -377,6 +387,39 @@ class Dispatcher:
         if seat is not None:
             seats().remove(seat["seat_id"])
             self._emit_pending_snapshot()
+
+    def _monitor_step(self) -> None:
+        """对全部在跑执行采样：execution.monitor（2s 节流）+ 停滞翻转。"""
+        for e in executions().list_by_state("running"):
+            payload, flip = self._monitor.step(
+                e, self._run_root / str(e["id"]), now_iso())
+            if payload is not None:
+                self._emit("execution.monitor", payload)
+            if flip is not None:
+                stall = self._monitor._entry(e["id"])["stall"]
+                self._emit("execution.stalled",
+                           {"execution_id": e["id"], "task_id": e["task_id"],
+                            "stalled": flip, "threshold_minutes":
+                                self._monitor.threshold,
+                            "last_progress_ts": stall.last_progress_ts,
+                            "ts": now_iso()})
+
+    def stop_execution(self, execution_id: int) -> None:
+        """手动停止（§8.7）：Gateway.cancel → HQ Canceled → 差分终态
+        failed(manually_stopped) → 席位释放走既有终态管线。"""
+        row = executions().get(execution_id)
+        if row is None:
+            from ..errors import not_found
+            raise not_found("execution", execution_id)
+        if row["state"] != "running":
+            from ..errors import err
+            raise err("TASK_STATE_CONFLICT", "仅运行中执行可停止",
+                      {"state": row["state"]}, http=409)
+        if not row.get("hq_job_id"):
+            from ..errors import err
+            raise err("TASK_STATE_CONFLICT", "执行尚无 HQ 作业引用",
+                      {"execution_id": execution_id}, http=409)
+        self._gw.cancel(str(row["hq_job_id"]))
 
     def _emit_pending_snapshot(self) -> None:
         from ..services.pending import snapshot
