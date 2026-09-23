@@ -127,15 +127,22 @@
    "summary": "新增待执行席位领域服务（尾部追加/全量原子重排/整席移除退候选与队列回退/成员移除规则/容量满员与上限挤出/窗口锁定语义）",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "api",
+   "summary": "候选/待执行端点真实化（multipart 导入/列表 title 注入/预览/剔除/行内提交/席位重排与移除/上限调小挤出），引入 python-multipart",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
   "task": "M1 B6：派发引擎（engine/dispatcher.py 序列展开/窗口推进/双账/物化 + engine/workspace.py + FakeGateway + fake g16）",
-  "note": "B5 完成：services/pending.py 追加/重排/整席移除/成员移除/容量挤出/窗口锁定全语义；test_pending_logic 18 项，全量 106 passed，双闸门绿"
+  "note": "B3/B5 端点真实化完成（#8）：candidates/pending/settings 路由换 store+services 数据源，multipart 导入与挤出钩子就绪，全量 106 passed 双闸门绿"
  },
  "next_steps": [
   "M1 B6：派发引擎 → 提交 #9",
-  "M1 B3/B5 端点真实化 → 提交 #8",
+  "M1 B7：监控采样与停滞检测 → 提交 #10",
   "M1 后续按 §6 序列推进"
  ],
  "known_issues": [
