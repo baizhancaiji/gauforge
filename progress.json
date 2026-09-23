@@ -148,11 +148,18 @@
    "summary": "新增执行监控（psutil 进程树采样：cwd+启动时间双重校验定位、CPU 差值/RSS 汇总、2s 节流与峰值累计）、停滞状态机（翻转才推/冷启动宽限/时长累计，仅提示不终止）与手动停止真实化（stop→cancel→归因 manually_stopped）",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增运行中增量解析（tail run/<id>/input.log 位点续传、优化步/SCF 迭代窄域识别、1s 合并窗口、execution.progress 事件与停滞基准喂入），fake g16 输出对齐金标准行式",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B8：增量解析（engine/progress.py 文件 tail/位点续传/两类进度行/1s 合并窗口）+ 金标准回归",
-  "note": "B7 监控/停滞/停止完成（#10）：test_monitor_stall 9 用例，executions 路由真实化（stop 经 runtime 单例寻址引擎），全量 134 passed 双闸门绿"
+  "task": "M1 B9：终态处理/历史/formchk/清理（终态管线+formchk+保全快照+清理+requeue/退回候选/归档）",
+  "note": "B8 增量解析完成（#11）：金标准 4 份回归全绿（优化步/SCF 迭代/SCF Done 计数与人工核对一致 1/750/85、1/513/97、1/19/1、1/759/73），位点续传/首读快进/1s 合并窗口/截断重扫/半行缓冲，Dispatcher tick 集成 execution.progress 与停滞同周期解除，全量 147 passed 双闸门绿"
  },
  "next_steps": [
   "M1 B7：监控采样与停滞检测 → 提交 #10",
