@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-23T16:17+0800",
+ "updated": "2026-09-23T20:10+0800",
  "latest_released_version": null,
  "unreleased": [
   {
@@ -92,16 +92,23 @@
    "summary": "区分待执行页容量仪表与席位行的视觉层级（仪表改内嵌读数槽、区间加分隔线）",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增 SQLite 存储层（连接治理/顺序迁移/五域 DAL）与设置持久化，mock 内存设置退役",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 A2：SQLite 持久化 schema 定稿（DDL 草案 + 形态转换走查）",
-  "note": "A1 已完成：payload.rs/streamer.rs 实地核查（22 变体全集、serialized_desc 不透传、断连自动清理）回填 roadmap §8.8 并关闭 §7 开放事项 3，用户评审通过"
+  "task": "M1 B2：输入分块解析器与自然序（web/src/parse/，金标准 ~/g16/tests/，先测试后实现）",
+  "note": "B1 完成：SQLite 存储层（五域 DAL/顺序迁移/形态转换）+ 设置持久化落库，46 测试全绿，端到端冒烟三步通过（PUT→独立进程读库→重启读回一致）"
  },
  "next_steps": [
-  "M1 A2：DDL 草案 + 形态转换规则对照 §2.1 状态机走查 → A3 派发引擎/对账设计定稿",
-  "M1 B1：SQLite 持久化层（先测试后实现）→ 提交 #3",
-  "M1 B2：输入分块解析器与自然序 → 提交 #4"
+  "M1 B2：输入分块解析器与自然序 → 提交 #4",
+  "M1 B4：HQ Gateway（CLI 先行）+ 进程管理 → 提交 #5",
+  "M1 B3：导入与候选管理真实化 → 提交 #6"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
