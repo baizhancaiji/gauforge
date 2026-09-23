@@ -100,3 +100,24 @@ unsubmitted，非单向）：
 ## 7. 走查结论
 
 A1–A5 全部通过，B/C 阶段可启动。
+
+## 8. M0 D1 验收走查（六页 mock 联演，2026-09-23）
+
+对照 [m0-plan.md](../plans/m0-plan.md) §8 验收标准逐条留痕。环境：
+`uv run uvicorn web.src.main:app`（mock 模式，127.0.0.1:8300，构建后前端静态托管），
+浏览器实测 + curl 逐帧核验。
+
+| # | 验收项（m0-plan §8） | 结果 | 留痕 |
+|---|---|---|---|
+| 1 | 契约完备（A5 走查） | 通过 | 本记录 §1–§7（此前已入库） |
+| 2 | 后端契约一致 | 通过 | `uv run pytest` 23 passed（33 端点契约校验 + SSE 帧校验） |
+| 3 | 前端六页可用 | 通过 | 候选页 8 条 job*.gjf（IMPORTED 徽标/预览按钮）、行内只读预览卡（title/route/charge·mult/原子统计分块）、队列卡片（状态徽标 COMPLETED—SUCCESS）、待执行席位 S13/S28 + 容量仪表 OCCUPIED 2/6、历史 12 条（状态筛选 全部/SUCCEEDED/FAILED/SKIPPED + 归因/耗时列）、设置面板两级分组。全程 console 零报错 |
+| 4 | SSE 演示 | 通过 | 通道卡经 task.status 事件实时出现；curl -N 抓流 36s 逐帧核验：system.snapshot → task.status(staged→running) → execution.monitor×5（cpu 52→88 / mem 405→505 递增）→ execution.progress×5（opt_step 1→5）→ stalled(true) → progress(6) → stalled(false) → task.status(→succeeded) → history.appended → pending.snapshot（席位释放）→ system.heartbeat，与剧本时序一致。浏览器侧读数窗口约 4s（0.4s 加速演示），肉眼捕获不完整以 curl 逐帧为准 |
+| 5 | 设置面板读写 | 通过 | 越界值 999 → 422「值越界或非法：out_of_range」+ 字段级错误提示；合法值保存成功「设置已保存」 |
+| 6 | 闸门通过 | 通过 | `uv run python scripts/validate_progress.py` OK；`npm run build` 零错误（此前已验） |
+| 7 | 进度同步 | 通过 | CHANGELOG.jsonl unreleased 与 progress.json 反映 M0 全部交付 |
+
+备注：执行中页左下「HQ 未连接」灯为 M0 mock 预期表现（无真实 HQ 后端，
+hq 连接状态真实化属 M1 B4/B11 范畴），不计为缺陷。
+
+结论：M0 DoD 全部通过，D1 走查完成，满足 M1 开工前置条件。
