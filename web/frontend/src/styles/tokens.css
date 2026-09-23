@@ -60,7 +60,7 @@
   /* 前景 */
   --text-primary: #dde7ef;
   --text-secondary: #8da2b5;
-  --text-faint: #5a6d80;
+  --text-faint: #7b8fa2;
 
   /* 品牌强调（磷光青） */
   --accent: #38d4c2;
@@ -83,11 +83,17 @@
   /* 语义衍生 */
   --chip-bg-alpha: 0.12;
   --row-hover: rgba(56, 212, 194, 0.04);
+  --backdrop-dim: rgba(12, 17, 22, 0.45); /* 抽屉/浮层遮罩（暗色：墨蓝压暗） */
   --glow-running:
     0 0 0 1px rgba(56, 212, 194, 0.35), 0 0 24px rgba(56, 212, 194, 0.12);
   --grid-line: rgba(141, 162, 181, 0.035);
   --grid-dot: rgba(141, 162, 181, 0.05);
   --shadow-pop: 0 8px 28px rgba(4, 8, 12, 0.45);
+  /* 高阶精密化（high-end-visual-design 兼容项）：
+     内描边顶部高光 = Double-Bezel 内芯的 1px 顶光，造"玻璃嵌铝盘"的机加工质感；
+     统一缓动曲线，视图/Toast 过渡共用。 */
+  --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 /* ---- 明亮主题（Light · 记录纸，§2.1）---- */
@@ -120,8 +126,11 @@ html[data-theme="light"] {
   --danger: #c23a31;
 
   --row-hover: rgba(11, 138, 123, 0.05);
+  --backdrop-dim: rgba(28, 42, 53, 0.35); /* 亮色遮罩：石墨压暗纸面 */
   --glow-running: 0 0 0 1px rgba(11, 138, 123, 0.45);
   --grid-line: rgba(28, 42, 53, 0.045);
   --grid-dot: rgba(28, 42, 53, 0.06);
   --shadow-pop: 0 8px 24px rgba(28, 42, 53, 0.16);
+  --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
 }
