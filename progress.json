@@ -134,16 +134,26 @@
    "summary": "候选/待执行端点真实化（multipart 导入/列表 title 注入/预览/剔除/行内提交/席位重排与移除/上限调小挤出），引入 python-multipart",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增派发引擎（执行序列展开/并行窗口推进/哈希跳过/Link0 补齐与 GB→MiB 换算/声明资源停等不越位/run/<id>/ 物化与 g16 环境构建/终态映射与队列失败分流）及 FakeGateway、fake g16 夹具",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B6：派发引擎（engine/dispatcher.py 序列展开/窗口推进/双账/物化 + engine/workspace.py + FakeGateway + fake g16）",
-  "note": "B3/B5 端点真实化完成（#8）：candidates/pending/settings 路由换 store+services 数据源，multipart 导入与挤出钩子就绪，全量 106 passed 双闸门绿"
+  "task": "M1 B7：监控采样与停滞检测（engine/monitor.py psutil 采样/execution.monitor 事件/停滞状态机/stop 真实化）",
+  "note": "B6 派发引擎完成（#9）：FakeGateway 单测 + fake g16 经真 CliGateway 首通链路，实测修正 worker 资源解析（cpus 闭区间/mem MiB 上报），全量 125 passed 双闸门绿"
  },
  "next_steps": [
-  "M1 B6：派发引擎 → 提交 #9",
   "M1 B7：监控采样与停滞检测 → 提交 #10",
-  "M1 后续按 §6 序列推进"
+  "M1 B8：增量解析 → 提交 #11",
+  "M1 B9：终态/历史/formchk/清理 → 提交 #12/#13",
+  "M1 契约回归 → 提交 #14",
+  "M1 H1-H4（Rust 侧改造）→ 提交 #15-18",
+  "M1 B10 重启对账 → 提交 #19；B11 SSE 真实化 → 提交 #20；HttpGateway → 提交 #21；C1-C7 前端真实化 → 提交 #22-28"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
