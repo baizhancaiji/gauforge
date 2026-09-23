@@ -40,3 +40,10 @@ class SeatsRepo:
     def set_locked(self, seat_id: int, locked: bool) -> None:
         self._db.run("UPDATE seats SET locked = ? WHERE seat_id = ?",
                      (int(locked), seat_id))
+
+    def reorder(self, seat_ids: list[int]) -> None:
+        """按给定顺序整体重排 position（0..n-1，单事务原子）。"""
+        with self._db.tx() as conn:
+            for pos, sid in enumerate(seat_ids):
+                conn.execute("UPDATE seats SET position = ? WHERE seat_id = ?",
+                             (pos, sid))

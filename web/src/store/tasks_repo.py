@@ -72,3 +72,13 @@ class TasksRepo:
             "UPDATE tasks SET form = 'candidate', queue_id = NULL, position = NULL,"
             " origin = ?, failure_note = ?, updated_at = ? WHERE id = ?",
             (origin, failure_note, now_iso(), task_id))
+
+    def repack_queue(self, queue_id: str) -> None:
+        """队列成员 position 重排为 0..n-1（成员移除后补位）。"""
+        with self._db.tx() as conn:
+            rows = conn.execute(
+                "SELECT id FROM tasks WHERE queue_id = ? ORDER BY position, id",
+                (queue_id,)).fetchall()
+            for idx, row in enumerate(rows):
+                conn.execute("UPDATE tasks SET position = ? WHERE id = ?",
+                             (idx, row["id"]))
