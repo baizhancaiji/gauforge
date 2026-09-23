@@ -16,11 +16,22 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+import pytest
 import yaml
 from openapi_core import OpenAPI
 from openapi_core.datatypes import RequestParameters
 
 from web.src import config
+
+@pytest.fixture(autouse=True)
+def _isolated_db(tmp_path):
+    """B1 起全局隔离：每个用例注入独立 SQLite（内存级临时文件），不触真实工作区。"""
+    from web.src import store
+    db = store.Database(tmp_path / "isolated.db")
+    store.run_migrations(db)
+    store.set_db(db)
+    yield
+    store.reset_db()
 
 
 def load_spec() -> OpenAPI:

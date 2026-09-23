@@ -102,3 +102,18 @@ def _fallback_info() -> dict:  # pragma: no cover
 
 
 app = build_app()
+
+
+def resolved_listen_port() -> int:
+    """启动端口：SQLite 运行级设置（无记录回落代码默认值）。
+
+    `python -m web.src.main` 启动时生效；listen_port 保存后下次重启生效。
+    """
+    from .store import settings as settings_store
+    return int(settings_store().get("listen_port"))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    import uvicorn
+
+    uvicorn.run(app, host=config.BIND_ADDR, port=resolved_listen_port())

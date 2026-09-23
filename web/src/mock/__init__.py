@@ -1,7 +1,7 @@
 """G16 Web 工作台 · 内存 mock 状态（M0）。
 
 REST 与 SSE 共用同一状态对象（m0-plan §3.7「剧本数据与 REST mock 数据同源」）。
-M0 无 SQLite：运行级设置、候选、队列、席位、执行、历史均驻留此单例。
+B1 起运行级设置退役为 SQLite（store.settings_repo）委托读取；候选、队列、席位、执行、历史仍驻留此单例（随 M1 各域真实化逐个退役）。
 """
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 
 from .. import config
+from .. import store
 
 
 def _now() -> str:
@@ -31,9 +32,6 @@ class MockState:
         # 自增 id：task/candidate/execution 共用全库不可复用一个计数（roadmap §2.1）。
         self._counter = 0
 
-        # 运行级设置（内存版；M1 改 SQLite）。
-        self.runtime = dict(config.RUNTIME_DEFAULTS)
-
         self.candidates: list[dict] = []
         self.queues: list[dict] = []
         self.seats: list[dict] = []
@@ -51,43 +49,13 @@ class MockState:
             self._counter += 1
             return self._counter
 
-    # ------------------------ 设置 ------------------------
+    # ------------------------ 设置（B1 起委托 SQLite） ------------------------
     def get_runtime(self, key: str) -> object:
-        return self.runtime.get(key, config.RUNTIME_DEFAULTS.get(key))
+        return store.settings().get(key)
 
-    def update_runtime(self, values: dict[str, object]) -> list[dict]:
-        """逐项校验并部分应用（测试据此断言 422 逐项 details）。返回失败项列表。"""
-        failures: list[dict] = []
-        with self._lock:
-            for key, value in values.items():
-                meta = config.SETTINGS_CATALOG.get(key)
-                if meta is None:
-                    failures.append({"key": key, "reason": "unknown_setting"})
-                    continue
-                if not meta["editable"]:
-                    failures.append({"key": key, "reason": "readonly"})
-                    continue
-                if not self._valid_value(meta, value):
-                    failures.append({"key": key, "reason": "out_of_range", "value": value})
-                    continue
-                self.runtime[key] = value
-        return failures
-
-    @staticmethod
-    def _valid_value(meta: dict, value: object) -> bool:
-        rng = meta.get("range")
-        if rng is None:
-            return True
-        try:
-            num = float(value)  # type: ignore[arg-type]
-        except (TypeError, ValueError):
-            return False
-        lo, hi = rng["min"], rng["max"]
-        if lo is not None and num < lo:
-            return False
-        if hi is not None and num > hi:
-            return False
-        return True
+    def set_runtime(self, key: str, value: object) -> None:
+        """演示种子写设置（真实动作即写库）。"""
+        store.settings().set(key, value)
 
     # ------------------------ 候选 ------------------------
     def add_candidate(self, filename: str, origin: str = "imported",
@@ -275,8 +243,8 @@ def _seed(state: MockState) -> None:
     for i in range(8):
         state.add_candidate(f"job{i + 1}.gjf")
 
-    state.runtime["parallel_window"] = 4
-    state.runtime["pending_seat_limit"] = 6
+    state.set_runtime("parallel_window", 4)
+    state.set_runtime("pending_seat_limit", 6)
 
     cands = state.candidates
 

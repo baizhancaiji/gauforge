@@ -13,10 +13,9 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def reset_settings():
-    # 测试前复位运行级设置，避免用例间互相污染。
-    from web.src.mock import get_state
-    get_state().runtime = dict(
-        __import__("web.src.config", fromlist=["RUNTIME_DEFAULTS"]).RUNTIME_DEFAULTS)
+    # 测试前清空 SQLite 设置表（回落代码默认值），避免用例间互相污染。
+    from web.src import store
+    store.get_db().run("DELETE FROM settings")
     yield
 
 

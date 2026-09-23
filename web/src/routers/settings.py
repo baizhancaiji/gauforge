@@ -1,23 +1,25 @@
-"""settings 域路由：两级设置读写（§2.2 / roadmap §2.5）。"""
+"""settings 域路由：两级设置读写（§2.2 / roadmap §2.5）。
+
+B1 起运行级参数经 SQLite 持久化（store.settings_repo），mock 设置存储退役。
+"""
 from __future__ import annotations
 
 from fastapi import APIRouter
 
 from .. import config
-from ..errors import VALIDATION_FAILED, err
+from ..errors import VALIDATION_FAILED
 from ..mock import get_state
-from starlette import status
+from ..store import settings as settings_store
 
 router = APIRouter(tags=["settings"])
 
 
 def _item(meta: dict) -> dict:
-    state = get_state()
     key = meta["key"]
     if key in ("workspace_root", "bind_address"):
         value = config.setting_value(key)
     elif key in config.RUNTIME_DEFAULTS:
-        value = state.get_runtime(key)
+        value = settings_store().get(key)
     else:  # pragma: no cover
         value = None
     return {
@@ -47,12 +49,11 @@ def update_settings(payload: dict) -> dict:
         raise VALIDATION_FAILED([{"field": "values", "reason": "must_be_object"}])
 
     # 先整批校验（全有或全无，任一失败整批拒绝），再应用。
-    failures = get_state().update_runtime(values)
+    failures = settings_store().apply_update(values)
     if failures:
         raise VALIDATION_FAILED(failures)
 
-    state = get_state()
-    state.emit("settings.updated", {"keys": sorted(values.keys())})
+    get_state().emit("settings.updated", {"keys": sorted(values.keys())})
     return {
         "startup": [_item(m) for m in config.STARTUP_SETTINGS],
         "runtime": [_item(m) for m in config.RUNTIME_SETTINGS],
