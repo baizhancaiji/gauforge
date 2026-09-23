@@ -66,12 +66,48 @@ class ExecutionsRepo:
 
     def finalize(self, *, execution_id: int, state: str, finished_at: str,
                  cause: str | None = None,
-                 monitor_summary: dict | None = None) -> None:
-        """终态冻结（B9 管线调用；冻结后仅 archived 可变）。"""
+                 monitor_summary: dict | None = None,
+                 chk_snapshot: dict | None = None) -> None:
+        """终态冻结（B9 管线调用；冻结后仅 archived 可变）。
+
+        chk_snapshot：非正常终止保全快照 {protected, location}（仅 failed）。
+        """
         self._db.run(
             "UPDATE executions SET state = ?, finished_at = ?, cause = ?,"
-            " monitor_summary = ? WHERE id = ?",
+            " monitor_summary = ?, chk_snapshot = ? WHERE id = ?",
             (state, finished_at, cause,
              json.dumps(monitor_summary, ensure_ascii=False)
              if monitor_summary is not None else None,
+             json.dumps(chk_snapshot, ensure_ascii=False)
+             if chk_snapshot is not None else None,
              execution_id))
+
+    def set_archived(self, execution_id: int) -> None:
+        """归档（冻结后唯一可变标记，仅历史端点可达的终态行）。"""
+        self._db.run("UPDATE executions SET archived = 1 WHERE id = ?",
+                     (execution_id,))
+
+    def list_terminal(self, *, state: str | None = None,
+                      queue_id: str | None = None, archived: bool | None = None,
+                      page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
+        """终态条目分页（历史列表）：(items, total)，id 倒序。"""
+        conds = ["state IN ('succeeded','failed','skipped')"]
+        params: list[object] = []
+        if state is not None:
+            conds.append("state = ?")
+            params.append(state)
+        if queue_id is not None:
+            conds.append("queue_id = ?")
+            params.append(queue_id)
+        if archived is not None:
+            conds.append("archived = ?")
+            params.append(1 if archived else 0)
+        where = " AND ".join(conds)
+        total_row = self._db.one(
+            f"SELECT COUNT(*) AS n FROM executions WHERE {where}", tuple(params))
+        total = int(total_row["n"]) if total_row else 0
+        rows = self._db.query(
+            f"SELECT * FROM executions WHERE {where} ORDER BY id DESC"
+            " LIMIT ? OFFSET ?",
+            (*params, page_size, (page - 1) * page_size))
+        return [self._deserialize(r) for r in rows], total

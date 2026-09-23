@@ -38,7 +38,7 @@ from .. import config
 from ..hq.gateway import Gateway, GatewayError
 from ..store import executions, queues, seats, settings, tasks
 from ..store.db import now_iso
-from . import workspace
+from . import finalize, workspace
 from .monitor import ExecutionMonitor
 from .progress import ProgressTracker
 
@@ -264,11 +264,20 @@ class Dispatcher:
 
     def _on_terminal(self, execution: dict, state: str, cause: str | None) -> None:
         eid, tid = execution["id"], execution["task_id"]
+        run_d = self._run_root / str(eid)
+        snap = None
+        if state == "succeeded":
+            # ② formchk：失败记日志不阻断（finalize.make_fchk）
+            g16_root = Path(str(settings().get("g16_root"))).expanduser()
+            finalize.make_fchk(run_d, g16_root)
+        elif state == "failed":
+            # ③ 保全快照：非正常终止 chk/rwf 移入 protected/
+            snap = finalize.protect_transient(run_d)
         self._monitor.settle(eid, now_iso())
         summary = self._monitor.summary(eid) if state == "succeeded" else None
         executions().finalize(execution_id=eid, state=state,
                               finished_at=now_iso(), cause=cause,
-                              monitor_summary=summary)
+                              monitor_summary=summary, chk_snapshot=snap)
         self._monitor.forget(eid)
         self._progress.forget(eid)
         extra = ({"queue_id": execution["queue_id"]}
