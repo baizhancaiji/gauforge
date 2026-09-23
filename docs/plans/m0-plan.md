@@ -26,7 +26,7 @@
 | 编号 | 任务 | 产出物 | 验收标准（可验证） | 依赖 | 规模 | 对应 roadmap 工作项 |
 |---|---|---|---|---|---|---|
 | A1 | 契约载体骨架 | `docs/api/openapi.yaml`（info/servers/公共 components 骨架）、`docs/api/sse.md`（骨架） | YAML 可被 openapi-core 加载；两文件入库 | — | S | 1 |
-| A2 | 领域对象 schema 定稿 | openapi.yaml `components/schemas`：7 对象 + 公共约定（id/分页/错误/分块结构） | 每个 schema 有 description 与字段级「赋值时机/可空」标注；字段集对照 roadmap §2.6 走查通过 | A1 | M | 2 |
+| A2 | 领域对象 schema 定稿 | openapi.yaml `components/schemas`：7 对象（6 实体 schema + Result 占位决议，§2.2）+ 公共约定（id/分页/错误/分块结构） | 每个 schema 有 description 与字段级「赋值时机/可空」标注；字段集对照 roadmap §2.6 走查通过（含 Candidate 输入副本引用派生注记） | A1 | M | 2 |
 | A3 | REST 端点清单定稿 | openapi.yaml `paths`（§2.3 全表）+ `docs/api/mapping.md`（界面元素→端点映射） | 全部端点有请求/响应 schema 与错误码；映射表无缺失、无孤儿端点 | A2 | M | 3 |
 | A4 | SSE 事件契约定稿 | `docs/api/sse.md`（本文 §3 规范的正式版：全集枚举、载荷 schema、推送时机表、重连语义） | 每事件有触发条件、载荷字段表、频率/节流约定；Last-Event-ID 语义闭环 | A2 | M | 4 |
 | A5 | 契约走查（留记录） | `docs/api/walkthrough.md` | §6 走查清单逐条通过并留记录 | A3, A4 | M | 5 |
@@ -131,6 +131,9 @@
 
 `GET /candidates` 响应逐项含 `title`（后端现解析）；不设独立 title 字段存储。
 
+输入副本引用（roadmap §2.6 Candidate 属性）：由 id 派生 `inputs/<id>`，契约
+**不单独暴露字段**——需要文件位置处后端由 id 推导即可，入 API 徒增第二事实来源。
+
 #### Task（零自有属性，纯关系；无独立端点，作为嵌套表示）
 
 | 字段 | 类型 | 时机 | 说明 |
@@ -202,6 +205,13 @@ Execution 全部字段的超集，追加：
 
 注：skipped 条目无 `run/` 目录 → `input`/`output` 端点回落任务输入副本 / 返回 404（契约注明）。
 
+#### Result（M3 占位）
+
+M0 不设独立端点、不列字段——占位形态即 `HistoryEntry.result_ref`（恒 null）
+加本节决议：Result 字段全集随 M3 契约 diff 一次性扩展（roadmap §2.6 原则 3）；
+M0 走查仅核对「引用位存在、语义指向结果分析管道」（§2.1：仅正常结束的执行
+进入管道）。
+
 #### 设置项（`GET/PUT /settings`）
 
 响应分组两级（roadmap §2.5），每项含元数据供前端数据驱动渲染：
@@ -255,7 +265,8 @@ Execution 全部字段的超集，追加：
     "route": "# B3LYP/6-31G(d) Opt",
     "title": "water optimization",
     "charge_mult": "0 1",
-    "molecule": {"atom_count": 3, "formula": "H2O1", "variables_present": true, "constants_present": false}
+    "molecule": {"atom_count": 3, "formula": "H2O1", "variables_present": true, "constants_present": false},
+    "additional_sections": []
   }
 }
 ```
@@ -263,6 +274,16 @@ Execution 全部字段的超集，追加：
 - `molecule.formula`：元素统计（Hill 记法：有 C 时 C、H、其余字母序；无 C 时
   全字母序；计数 1 显式，如 `H2O1`、`C6H6O1`），单任务与队列成员的预览/
   成员概览均展示（后端解析分子说明节统计，M0 mock 给演示值）。
+- `additional_sections`：可选附加输入节的有序数组（由 route 关键词触发：Gen、
+  Guess=Alter、SCRF=Read 等，roadmap §2.7），每项
+  `{"lines": [string], "terminator_blank": boolean}`——`terminator_blank` 标注
+  该节是否需要终止空行（以手册 Section Ordering 表逐节为准，Guess=LowSymm 等
+  个别例外为 false）。
+- **重组不变式**（A2 落盘时写入契约 description，预览与 M2 编辑保存共用）：
+  除 Link 0 外每节末尾恰好一个空行（含文件末节与文件末尾）；Link 0 之后不加
+  空行；分子节 `Variables:`/`Constants:` 区之间的空行分隔不得丢失或增删。
+- 可编辑节（M2）：`link0 / route / title / charge_mult / additional_sections[i]`；
+  `molecule`（含原子坐标）不可编辑——结构编辑交由上游 GaussView（roadmap M2）。
 - `link0.missing` 驱动行内提交确认框的黄色警告（缺 `%NProcShared`/`%Mem` 时提示
   按默认值补齐，M1）。
 - 坐标原文不在预览 JSON；完整输入走 `GET /candidates/{id}/input`（`text/plain`）。
@@ -283,35 +304,36 @@ Execution 全部字段的超集，追加：
 | 6 | GET /api/v1/candidates/{id} | 详情 | M0 |
 | 7 | GET /api/v1/candidates/{id}/preview | 分块预览（§2.2 结构） | M0 |
 | 8 | GET /api/v1/candidates/{id}/input | 完整输入纯文本（提交确认框用） | M0 |
-| 9 | DELETE /api/v1/candidates/{id} | 剔除候选（删除任务实体唯一入口） | M0 mock / M1 |
-| 10 | POST /api/v1/candidates/{id}/submit | 行内提交（经待执行队列；满员 409） | M1 |
-| 11 | GET /api/v1/queues | 队列列表 | M0 |
-| 12 | POST /api/v1/queues | 创建（成员 2–10 校验） | M2 |
-| 13 | GET /api/v1/queues/{id} | 详情（含成员概览与失败记录） | M0 |
-| 14 | PATCH /api/v1/queues/{id} | 更新 `{name?/member_ids?/skip_failed?}`（全量有序、原子） | M2 |
-| 15 | DELETE /api/v1/queues/{id} | 删除队列（二次确认在前端） | M2 |
-| 16 | POST /api/v1/queues/{id}/submit | 直接提交（保存并进入执行） | M2 |
-| 17 | GET /api/v1/pending | 待执行席位 + 容量 + 窗口信息 | M0 |
-| 18 | PUT /api/v1/pending/order | 整席重排 `{seat_order:[seat_id,...]}`（全量、原子） | M1 |
-| 19 | DELETE /api/v1/pending/seats/{seat_id} | 整席移除（单任务退候选 / 队列回退未提交） | M1 |
-| 20 | DELETE /api/v1/pending/seats/{seat_id}/members/{task_id} | 席位内移除未执行成员 | M1 |
-| 21 | GET /api/v1/executions?state=running | 在跑列表（并行同屏、按 id 键控，含 monitor/progress） | M0 |
-| 22 | GET /api/v1/executions/{id} | 执行详情 | M0 |
-| 23 | POST /api/v1/executions/{id}/stop | 手动停止（二次确认在前端；归因 manually_stopped） | M1 |
-| 24 | GET /api/v1/history | 分页列表（`?state=&queue_id=&archived=false&page=&page_size=`） | M0 |
-| 25 | GET /api/v1/history/{id} | 详情（终态冻结字段全量） | M0 |
-| 26 | GET /api/v1/history/{id}/input | 输入原文（`run/<id>/` 内实际执行副本；skipped 回落任务副本） | M0 |
-| 27 | GET /api/v1/history/{id}/output | 输出纯文本预览（`?download=true` 触发导出；截断容错 `errors="replace"`） | M0 |
-| 28 | POST /api/v1/history/{id}/archive | 归档（唯一冻结后可变操作） | M0 mock / M1 |
-| 29 | POST /api/v1/history/{id}/requeue | 重新排队（原样重跑；满员 409） | M1 |
-| 30 | POST /api/v1/history/{id}/return-candidate | 退回候选（新 id、带来源标记） | M1 |
-| 31 | POST /api/v1/history/cleanup | 手动触发过期 chk/rwf 清理（返回清理统计） | M1 |
-| 32 | GET /api/v1/events | SSE 事件流（`text/event-stream`，契约见 sse.md） | M0 |
+| 9 | PUT /api/v1/candidates/{id}/blocks/{section} | 分块编辑保存（单节原子保存、CRLF→LF 自动转换；候选形态与回退队列成员共用此端点——id 跨形态延续；section ∈ `link0/route/title/charge_mult/additional-<n>`，`molecule` 不可编辑；校验分级见 §9 决策点 11） | M2 |
+| 10 | DELETE /api/v1/candidates/{id} | 剔除候选（删除任务实体唯一入口） | M0 mock / M1 |
+| 11 | POST /api/v1/candidates/{id}/submit | 行内提交（经待执行队列；满员 409） | M1 |
+| 12 | GET /api/v1/queues | 队列列表 | M0 |
+| 13 | POST /api/v1/queues | 创建（成员 2–10 校验） | M2 |
+| 14 | GET /api/v1/queues/{id} | 详情（含成员概览与失败记录） | M0 |
+| 15 | PATCH /api/v1/queues/{id} | 更新 `{name?/member_ids?/skip_failed?}`（全量有序、原子） | M2 |
+| 16 | DELETE /api/v1/queues/{id} | 删除队列（二次确认在前端） | M2 |
+| 17 | POST /api/v1/queues/{id}/submit | 直接提交（保存并进入执行） | M2 |
+| 18 | GET /api/v1/pending | 待执行席位 + 容量 + 窗口信息 | M0 |
+| 19 | PUT /api/v1/pending/order | 整席重排 `{seat_order:[seat_id,...]}`（全量、原子） | M1 |
+| 20 | DELETE /api/v1/pending/seats/{seat_id} | 整席移除（单任务退候选 / 队列回退未提交） | M1 |
+| 21 | DELETE /api/v1/pending/seats/{seat_id}/members/{task_id} | 席位内移除未执行成员 | M1 |
+| 22 | GET /api/v1/executions?state=running | 在跑列表（并行同屏、按 id 键控，含 monitor/progress） | M0 |
+| 23 | GET /api/v1/executions/{id} | 执行详情 | M0 |
+| 24 | POST /api/v1/executions/{id}/stop | 手动停止（二次确认在前端；归因 manually_stopped） | M1 |
+| 25 | GET /api/v1/history | 分页列表（`?state=&queue_id=&archived=false&page=&page_size=`） | M0 |
+| 26 | GET /api/v1/history/{id} | 详情（终态冻结字段全量） | M0 |
+| 27 | GET /api/v1/history/{id}/input | 输入原文（`run/<id>/` 内实际执行副本；skipped 回落任务副本） | M0 |
+| 28 | GET /api/v1/history/{id}/output | 输出纯文本预览（`?download=true` 触发导出；截断容错 `errors="replace"`） | M0 |
+| 29 | POST /api/v1/history/{id}/archive | 归档（唯一冻结后可变操作） | M0 mock / M1 |
+| 30 | POST /api/v1/history/{id}/requeue | 重新排队（原样重跑；满员 409） | M1 |
+| 31 | POST /api/v1/history/{id}/return-candidate | 退回候选（新 id、带来源标记） | M1 |
+| 32 | POST /api/v1/history/cleanup | 手动触发过期 chk/rwf 清理（返回清理统计） | M1 |
+| 33 | GET /api/v1/events | SSE 事件流（`text/event-stream`，契约见 sse.md） | M0 |
 
 ### 2.4 代表性端点详细定义
 
-全部 32 个端点的逐一定义在 A3 落盘 openapi.yaml 时按本节模板完成；此处给出
-三类代表样例（列表分页 / 动作 / 详情），作为格式基线。
+全部 33 个端点的逐一定义在 A3 落盘 openapi.yaml 时按本节模板完成；此处给出
+四类代表样例（列表分页 / 动作 / 详情 / 分块编辑保存），作为格式基线。
 
 **GET /api/v1/candidates**（列表）
 
@@ -357,6 +379,17 @@ Execution 全部字段的超集，追加：
 
 - 错误：404 `NOT_FOUND`。
 
+**PUT /api/v1/candidates/12/blocks/route**（分块编辑保存，M2 实施）
+
+- 请求体：`{"lines": ["# B3LYP/6-31G(d) Opit"]}`（该节原文行数组；后端自动
+  CRLF→LF，按 §2.2 重组不变式写回 `inputs/12`）。
+- 200 响应：更新后的完整预览结构（§2.2 blocks）+ `warnings:
+  [{"line": 1, "keyword": "Opit", "kind": "keyword_spell", "suggestion": "Opt"}]`
+  ——关键词拼写检查为非阻断警告（§9 决策点 11）。
+- 错误：404 `NOT_FOUND`；400 `INVALID_REQUEST`（section=`molecule` 或未知节）；
+  409 `QUEUE_MEMBER_LOCKED`（已提交/执行中队列成员不可编辑内容）；422
+  `VALIDATION_FAILED`（必要格式校验失败，details 逐行给原因）。
+
 ### 2.5 界面元素 → 端点映射表（落盘 `docs/api/mapping.md`）
 
 六页逐页建表（A3 产出正式版），格式：`页面 → 界面元素 → 端点（+事件）`。
@@ -369,6 +402,7 @@ Execution 全部字段的超集，追加：
 | 行内「提交」确认框完整输入 | GET /candidates/{id}/input | — |
 | 确认框 Link0 黄色警告 | preview 响应 `blocks.link0.missing` | — |
 | 行内「提交」动作 | POST /candidates/{id}/submit | `pending.snapshot` |
+| 「编辑」分块保存（M2） | PUT /candidates/{id}/blocks/{section} | —（保存响应即新态） |
 | 「-」剔除 | DELETE /candidates/{id} | `candidates.changed` |
 
 走查判据：每个界面元素至少一行；每个端点至少被一个元素引用（无孤儿）。
@@ -396,7 +430,7 @@ data: {"execution_id":42,"task_id":12,"opt_step":5,"scf_cycle":3,"ts":"2026-09-2
 - 事件命名规范：`<域>.<对象>.<动作|性质>`，小写点分，域 ∈
   {system, candidates, queues, queue, pending, task, execution, history, settings}。
 
-### 3.2 事件全集枚举（11 类）
+### 3.2 事件全集枚举（12 类）
 
 分三类语义：**数据事件**（载荷即最新状态，可直接渲染）、**通知事件**（触发
 客户端重拉 REST）、**保活/恢复事件**。
@@ -405,8 +439,8 @@ data: {"execution_id":42,"task_id":12,"opt_step":5,"scf_cycle":3,"ts":"2026-09-2
 |---|---|---|---|---|
 | `system.heartbeat` | 保活 | 定时 | `ts` | 每 `sse_heartbeat_seconds`（默认 15s，设置项即时生效） |
 | `system.snapshot` | 恢复 | 重连且 Last-Event-ID 超出重放窗口 / 首次连接（可选主动）/ 序号无法识别 | `pending`（席位全量，同 GET /pending）、`executions_running[]`（精简执行对象）、`queues_summary[]`（id/state/rollback_flag/rollback_count）、`server_restarted: boolean` | 仅按需 |
-| `candidates.changed` | 通知 | 候选增（导入/退回/移除退回）、删（剔除）、转化（入队/提交移出） | `action: created/deleted/moved_out`、`candidate_id?` | 变更即推 |
-| `queues.changed` | 通知 | 队列创建/删除/成员构成变更 | `action`、`queue_id?` | 变更即推 |
+| `candidates.changed` | 通知 | 候选增（导入/历史退回候选，新 id）、删（剔除）、转化（入队/提交移出）、退回（席位移除/挤出/成员移除退回候选形态，id 延续） | `action: created/deleted/moved_out/moved_in`、`candidate_id?` | 变更即推 |
+| `queues.changed` | 通知 | 队列创建/删除/成员构成或名称变更 | `action: created/updated/deleted`、`queue_id?` | 变更即推 |
 | `queue.status` | 数据 | 队列状态流转（含失败回退、成功终结） | `queue_id`、`from`、`to`、`finish_reason?`、`failure_positions?: [task_id]`、`rollback_count?`、`ts` | 变更即推 |
 | `pending.snapshot` | 数据 | 席位任何变化（追加/整席移除/重排/成员移除/挤出/锁定变化） | 同 GET /pending 响应体 | 变更即推；全量快照式（席位≤10，快照防止漏中间态） |
 | `task.status` | 数据 | 任务状态转换：staged→running（派发，此时执行记录已建）、running→succeeded/failed、→skipped（失败中止即时/手动停止） | `task_id`、`execution_id?`（staged 无）、`queue_id?`、`from`、`to`、`cause?: FailureCause`（终态时）、`ts` | 变更即推 |
@@ -422,16 +456,23 @@ data: {"execution_id":42,"task_id":12,"opt_step":5,"scf_cycle":3,"ts":"2026-09-2
 |---|---|
 | 导入文件 | `candidates.changed(created)` |
 | 行内提交成功 | `candidates.changed(moved_out)` → `pending.snapshot` |
+| 队列保存（创建） | `candidates.changed(moved_out)` ×N（成员转任务）→ `queues.changed(created)` |
+| 队列直接提交 | `queue.status(unsubmitted→submitted)` → `pending.snapshot` |
+| 队列编辑（PATCH） | `queues.changed(updated)`（+退回成员 `candidates.changed(moved_in)`） |
+| 队列删除 | `queues.changed(deleted)` → `candidates.changed(moved_in)` ×N（未执行成员；在待执行则 `pending.snapshot`） |
 | 提交被拒（满员） | 无事件（HTTP 409 直接返回） |
-| 派发启动任务 | `task.status(staged→running, execution_id)` → `pending.snapshot`（席位成员态变化） |
+| 派发启动任务 | （队列席位首成员派发）`queue.status(submitted→executing)` → `task.status(staged→running, execution_id)` → `pending.snapshot`（席位成员态变化） |
 | 任务正常结束 | `task.status(→succeeded)` → `history.appended(succeeded)` → 若队列席位清空 `pending.snapshot` |
 | 任务失败（未勾跳过） | `task.status(→failed, cause)` → 同队列未启动成员逐个 `task.status(→skipped, predecessor_failed)` → `queue.status(executing→unsubmitted, finish_reason=abort_on_failure)` + `queues.changed` → `pending.snapshot`（在跑成员收尾结束后席位释放） |
 | 任务失败（勾选跳过） | `task.status(→failed)` → `queue.status`（队列结束时分流）→ `history.appended` ×N |
 | 手动停止队列 | 在跑成员逐个 `task.status(→failed, manually_stopped)` → 未执行成员 `task.status(→skipped, queue_manually_stopped)` → `queue.status(→unsubmitted, manually_stopped)` → `pending.snapshot` |
-| 席位重排/移除 | `pending.snapshot`（+被移除者的 `candidates.changed`/`queues.changed`） |
-| 席位上限调小挤出 | `pending.snapshot` + 尾部席位逐个退回事件（`candidates.changed(moved_out 反向)`/`queue.status(→unsubmitted)`） |
+| 席位重排/移除 | `pending.snapshot`（+被移除者：单任务 `candidates.changed(moved_in)`、队列 `queue.status(→unsubmitted)`） |
+| 席位上限调小挤出 | `pending.snapshot` + 尾部席位逐个退回事件（`candidates.changed(moved_in)`/`queue.status(→unsubmitted)`） |
 | 运行中 | 持续 `execution.monitor`（2s）、`execution.progress`（≤1s/条）、停滞时 `execution.stalled` |
-| 归档历史条目 | `history.appended` 不重发；归档变更经 `queues.changed` 类通知或重拉（归档列表属拉取型页面） |
+| 归档历史条目 | 无专门事件（归档为冻结后唯一可变标记，归档列表属拉取型页面，按需重拉）；`history.appended` 不重发 |
+| 历史重新排队 | `pending.snapshot`（追加席位；历史条目本身不变） |
+| 历史退回候选 | `candidates.changed(created)`（新 id、带来源标记） |
+| chk/rwf 清理 | 无事件（响应携带清理统计，拉取型） |
 
 ### 3.4 连接管理
 
@@ -563,9 +604,9 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
 ## 6. 契约走查方案（A5，留记录 `docs/api/walkthrough.md`）
 
 1. **状态机走查**：roadmap §2.1 全部转换与整队语义逐条列行——每条注明承载
-   端点/事件，打勾；重点核对：队列失败两分支、手动停止、席位挤出、哈希跳过
-   （跳过属 M1 派发行为，契约体现在历史 input_hash 字段与重提交语义描述）、
-   退回候选五条路径、删除边界。
+   端点/事件，打勾；重点核对：队列失败两分支、手动停止、席位挤出、哈希跳过（跳过属 M1 派发行为，契约体现在历史 input_hash 字段与重提交语义描述）、
+   退回候选五条路径、删除边界、分块编辑边界（两入口共用端点、`molecule`
+   不可编辑、拼写检查非阻断、重组空行不变式）。
 2. **六页映射检查**：mapping.md 无缺失元素、无孤儿端点（判据见 §2.5）。
 3. **M1 验收路径纸面走通**：批量导入→列表→预览→行内提交→进度→强制停止→
    历史→重启恢复，每步列出所用端点与事件，标注 M1 实施项。
@@ -606,7 +647,7 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
 1. **契约完备**：只看 `docs/api/`（openapi.yaml + sse.md + mapping.md +
    walkthrough.md），能完整说出系统全部能力（六页全部操作、状态机全部流转、
    SSE 全部事件与恢复语义）——由走查记录佐证。
-2. **后端契约一致**：`uv run pytest`（web/tests 全绿，含 32 端点契约校验与
+2. **后端契约一致**：`uv run pytest`（web/tests 全绿，含 33 端点契约校验与
    SSE 帧校验）。
 3. **前端六页可用**：`uv run uvicorn web.src.main:app` 启动后，浏览器访问六页
    均渲染 mock 数据（候选/队列/待执行/执行中/历史/设置），视觉与
@@ -632,7 +673,8 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
 | 7 | pydantic 模型生成 | datamodel-code-generator | 事实标准；对 OpenAPI 3.1 支持需实测，异常则降 3.0.3 |
 | 8 | §2.6 之外补充字段 | Candidate/Queue 加 created_at(+updated_at) | 列表排序与展示需要；走查逐条确认后定稿 |
 | 9 | monitor 采样周期 | 2s 固定（不做设置项） | §2.5 未列该参数，不过度设计；M1 实测校准 |
-| 10 | 归档列表页面归属 | history?archived=true 复用列表端点 | 归档是历史的筛选视图，不设独立资源 |
+| 10 | 归档列表页面归属 | history?archived=true 复用列表端点 | 归档是历史的筛选视图，不设独立资源（前端归档页为独立展示页，M1 路由增设，不改契约） |
+| 11 | 编辑保存校验分级与拼写检查字典 | 必要格式校验阻断（422）；关键词拼写检查非阻断警告（200 + warnings）。字典为后端本地文件（离线知识库程序化抽取，路径属部署级配置），M2 实施细节，M0 契约不列为设置面板项 | roadmap M2 未定义阻断语义；警告级允许用户知情保存（如字典未收录的新关键词）；不扩 §2.5 运行级参数全集 |
 
 ## 10. 风险与对策
 
@@ -643,4 +685,4 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
 | mock 状态与事件剧本不一致（前后端展示漂移） | REST 与 SSE 同一内存状态对象（§3.7），ssot 测试锁定 |
 | WSL2 下 npm 依赖安装慢/失败 | 锁版本 lockfile；必要时换镜像源，文档记录 |
 | 契约评审发现字段遗漏导致返工 | A5 走查在 B/C 动手**之前**作为闸门（依赖序强制） |
-| 32 端点全 mock 工作量超预期 | B3 按 router 分组提交（§7 #9 可再拆），逐组过契约测试 |
+| 33 端点全 mock 工作量超预期 | B3 按 router 分组提交（§7 #9 可再拆），逐组过契约测试 |
