@@ -1,10 +1,10 @@
 {
- "updated": "2026-09-23T08:58+0800",
+ "updated": "2026-09-23T10:53+0800",
  "latest_released_version": null,
  "unreleased": [],
  "in_progress": {"task": "M0 阶段 A：API 契约定稿（docs/api/openapi.yaml + sse.md）", "note": "按 docs/plans/m0-plan.md §2/§3 设计规范执行；前端视觉基调已定稿（docs/plans/m0-frontend-design.md，实验台仪器面板方向），随 A5 走查一并确认；§9 开放决策点随 A5 定稿"},
  "next_steps": [
-  "M0-A：定稿 API 契约（openapi.yaml 七对象 schema + 32 端点 + mapping.md）与 SSE 事件契约（sse.md，11 类事件）",
+  "M0-A：定稿 API 契约（openapi.yaml 七对象 schema + 33 端点 + mapping.md）与 SSE 事件契约（sse.md，12 类事件）",
   "M0-B：后端骨架（契约生成链 + REST/SSE mock + 契约一致性测试）",
   "M0-C：前端空壳（Vite+Vue3 六页 + 契约生成 TS 类型 + SSE 消费骨架）",
   "M1：候选任务入口 + 队列与执行核心闭环（SSE 推送 + SQLite 历史；HQ 侧 HTTP/JSON 层与事件桥接）",
