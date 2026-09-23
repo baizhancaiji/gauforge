@@ -514,10 +514,10 @@ failed/外部中断历史条目的「从断点续跑」动作复用同一物化�
    提交或保持并行数为 1）。
 2. **金标准样本扩充**：补充失败、中断、不同方法/任务类型的输出样例，覆盖
    目标随里程碑明确。
-3. **M1 HQ 侧改造的验收标准与双层分工**：HTTP/JSON + SSE 桥接（§8.8）尚无
-   验收判据，须在 M1 动手前补齐（§1 原则 5）；FastAPI 服务层与 HQ server 内
-   HTTP/SSE 层的职责边界（谁面向浏览器、事件如何桥接流转、HQ 层自身的端口
-   与开关配置）待设计定稿。
+3. **M1 HQ 侧改造的验收标准与双层分工**（已定稿 2026-09-23，见 §8.8
+   「设计定稿与验收判据」与 [m1-plan.md](../plans/m1-plan.md) §2.1）：职责
+   边界、HTTP 端点集、事件桥接映射、`--http-port` 端口开关与五条验收判据
+   均已定稿，H/B 阶段直接照做。
 4. **设置面板逐参数清单与生效边界**：逐个列出全部参数并逐项决策生效语义
    （在途席位上限与并行执行数已定稿，见 §2.5；其余含端口、chk/rwf 保留期、停滞告警
    阈值、分页、SSE 心跳、Link0 补齐默认值、g16 执行环境等）。
@@ -651,6 +651,35 @@ failed/外部中断历史条目的「从断点续跑」动作复用同一物化�
 - **统一本地 HTTP/JSON API 与 SSE 桥接**：axum 绑 `127.0.0.1`，REST + SSE
   （桥接 EventStreamer）；M0 完成契约覆盖，M1 在 server 侧实施 HTTP 层与事件
   桥接；TCP/bincode/orion/auth/`~/.hq-server` 发现在单机回环下可整体退场。
+
+**设计定稿与验收判据**（2026-09-23 A1 定稿，全文见
+[m1-plan.md](../plans/m1-plan.md) §2.1，此处为摘要）：
+
+- **职责边界**：g16web FastAPI 层面向浏览器（M0 契约 33 端点 + 12 类事件，
+  领域语义）；HQ server 内 HTTP/SSE 层唯一预期消费者是 g16web 后端（执行
+  事实：job 状态/资源分配/worker 存活）。两层均无认证（回环即边界），HQ 层
+  一律绑 `127.0.0.1`、端口由 g16web 经 `--http-port` 传入，**默认不开**
+  （不传参数 HQ 行为零变化）。
+- **HTTP 端点集**（7 个）：`GET /info`、`POST /jobs`（program/cwd/env/
+  stdout/stderr/resources{cpus,mem_mib,time_limit_s}）、`GET /jobs/{id}`、
+  `GET /jobs?ids=…`（批量状态）、`POST /jobs/{id}/cancel`、`GET /workers`、
+  `GET /events`（SSE）。复用 CLI 内部命令实现保证双路一致。
+- **事件桥接**（2026-09-23 实地核查 `server/event/payload.rs` 定稿）：
+  EventStreamer `register_listener(EventFilter::all_events())` 进程内订阅，
+  listener 断连自动清理（发送失败即移除）；axum SSE 帧格式
+  `event: <变体名 snake_case>` + `data: 单行 JSON`（`{time, 字段…}`）。
+  事件全集 22 变体：M1 订阅 job/task/worker/server 四域（Submit、JobOpen/
+  Close/Completed/Idle/Cancel、TaskStarted/Finished/Failed、TasksCanceled/
+  Aborted 批量、TaskNotify、WorkerConnected/Lost、ServerStart/Stop）；
+  `Submit.serialized_desc` 为 bincode 字节不透传（g16web 自持提交内容，帧
+  仅含 job_id/closed_job）；WorkerOverviewReceived 默认关闭不订阅；
+  Allocation* 五变体单机本地模式不产生。薄桥接不缓存不重放，断线缺口由
+  g16web REST 对账补齐（§8.6）。
+- **验收判据**（五条，H4 逐条验证、D1 复核）：① `--http-port` 启动后 curl
+  完成「提交→查询→取消」，JSON 与 CLI `--output-mode json` 等价；②
+  `GET /events` 收到单 job 全生命周期事件，帧为合法 SSE 单行 JSON；③
+  g16web 经 HttpGateway 完成「提交→事件接收→终态落历史」集成闭环；④
+  不传开关时 HQ 现有行为与测试零变化；⑤ `cargo test` 全绿。
 
 **远期方向**（需求落地时按 §2.3 取舍表重新评估）：
 
