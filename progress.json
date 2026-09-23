@@ -95,13 +95,13 @@
   }
  ],
  "in_progress": {
-  "task": "M1 A1：HQ 桥接层设计与验收判据定稿（实地核查 payload.rs/streamer.rs → roadmap §8.8 增补）",
-  "note": "M0 已收尾：D1 六页 mock 联演验收走查留痕入库（walkthrough.md §8，DoD 七条全过）、工作区改动按类提交、双闸门通过；按 m1-plan 提交序列进入 M1"
+  "task": "M1 A2：SQLite 持久化 schema 定稿（DDL 草案 + 形态转换走查）",
+  "note": "A1 已完成：payload.rs/streamer.rs 实地核查（22 变体全集、serialized_desc 不透传、断连自动清理）回填 roadmap §8.8 并关闭 §7 开放事项 3，用户评审通过"
  },
  "next_steps": [
-  "M1 提交 #1：docs(plans) M1 执行计划定稿（m1-plan.md）",
-  "M1 A1：payload.rs/streamer.rs 事件全集核查 → roadmap §8.8 增补 + §7 开放事项 3 关闭 → 评审 → 提交 #2",
-  "M1 A2/A3：SQLite schema 与派发引擎/对账设计定稿，随后 B 阶段按提交序列推进"
+  "M1 A2：DDL 草案 + 形态转换规则对照 §2.1 状态机走查 → A3 派发引擎/对账设计定稿",
+  "M1 B1：SQLite 持久化层（先测试后实现）→ 提交 #3",
+  "M1 B2：输入分块解析器与自然序 → 提交 #4"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
