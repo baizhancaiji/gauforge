@@ -522,9 +522,13 @@ components:
         key:
           type: string
         value:
-          type: object
           nullable: true
-          description: 实际值（scalar；由 value_type 决定）
+          anyOf:
+            - type: string
+            - type: integer
+            - type: number
+            - type: boolean
+          description: 实际值（scalar；类型由 value_type 决定）
         value_type:
           type: string
           enum: [string, integer, number, boolean]
