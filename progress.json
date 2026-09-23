@@ -155,11 +155,18 @@
    "summary": "新增运行中增量解析（tail run/<id>/input.log 位点续传、优化步/SCF 迭代窄域识别、1s 合并窗口、execution.progress 事件与停滞基准喂入），fake g16 输出对齐金标准行式",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增终态文件管线与历史端点真实化（formchk 转 fchk 失败不阻断、failed 保全快照入 protected/ 落库 chk_snapshot、手动清理仅删 succeeded 超期顶层 chk/rwf、历史列表/详情/输入输出/归档/重新排队/退回候选/清理统计）",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B9：终态处理/历史/formchk/清理（终态管线+formchk+保全快照+清理+requeue/退回候选/归档）",
-  "note": "B8 增量解析完成（#11）：金标准 4 份回归全绿（优化步/SCF 迭代/SCF Done 计数与人工核对一致 1/750/85、1/513/97、1/19/1、1/759/73），位点续传/首读快进/1s 合并窗口/截断重扫/半行缓冲，Dispatcher tick 集成 execution.progress 与停滞同周期解除，全量 147 passed 双闸门绿"
+  "task": "M1 B10：HQ 启动序列与重启对账（挂载派发引擎后台线程、job 状态对账重扫、终态行幂等冻结）",
+  "note": "B9 终态管线与历史端点完成：formchk/保全快照/清理/requeue/退回候选/归档全落地，契约 #29-32 测试 35 用例，全量 182 passed 双闸门绿"
  },
  "next_steps": [
   "M1 B7：监控采样与停滞检测 → 提交 #10",
