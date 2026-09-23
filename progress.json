@@ -1,18 +1,17 @@
 {
- "updated": "2026-09-23T10:53+0800",
+ "updated": "2026-09-23T11:35+08:00",
  "latest_released_version": null,
  "unreleased": [],
- "in_progress": {"task": "M0 阶段 A：API 契约定稿（docs/api/openapi.yaml + sse.md）", "note": "按 docs/plans/m0-plan.md §2/§3 设计规范执行；前端视觉基调已定稿（docs/plans/m0-frontend-design.md，实验台仪器面板方向），随 A5 走查一并确认；§9 开放决策点随 A5 定稿"},
+ "in_progress": {"task": "M0 阶段 B：后端骨架（契约生成链 + REST/SSE mock + 契约一致性测试）", "note": "契约 SSOT 已落盘 docs/api/（openapi.yaml 27 路径/33 操作、OpenAPI 3.0.3；sse.md 12 类事件；mapping.md；walkthrough.md 含决策点 1–11 决议），A5 走查已通过；按 docs/plans/m0-plan.md §4 实施 B1–B5，随后 C 阶段前端"},
  "next_steps": [
-  "M0-A：定稿 API 契约（openapi.yaml 七对象 schema + 33 端点 + mapping.md）与 SSE 事件契约（sse.md，12 类事件）",
-  "M0-B：后端骨架（契约生成链 + REST/SSE mock + 契约一致性测试）",
-  "M0-C：前端空壳（Vite+Vue3 六页 + 契约生成 TS 类型 + SSE 消费骨架）",
-  "M1：候选任务入口 + 队列与执行核心闭环（SSE 推送 + SQLite 历史；HQ 侧 HTTP/JSON 层与事件桥接）",
-  "M2：输入工程（分块编辑 + 队列组建 + 队列管理）"
+  "M0-B：后端骨架（config.py + main.py + routers + gen_models.py 契约生成链 + REST/SSE mock + 四项契约测试）",
+  "M0-C：前端空壳（Vite+Vue3 六页 + 契约生成 TS 类型 + SSE 消费骨架 + 设置面板）",
+  "M0-D：D1 验收走查 + D2 进度同步与提交整理",
+  "M1：候选任务入口 + 队列与执行核心闭环（SSE 推送 + SQLite 历史；HQ 侧 HTTP/JSON 层与事件桥接）"
  ],
  "known_issues": [
-  "Python 子系统（web/）当前为空，待从零实现；web/tests 就绪前 uv run pytest 回落收集上游 tests/ 并因缺 psutil 退出码 4（上游测试本需显式运行），M0 建立测试后自消",
+  "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "2026-09-23 制定 M0 详细执行计划（docs/plans/m0-plan.md）：任务分解 A1-A5/B1-B5/C1-C4/D1-D2，API 与 SSE 两份契约设计规范为阶段 A 直接输入；C 阶段视觉/UX 设计已定稿（docs/plans/m0-frontend-design.md + assets/m0-ui-preview.html 样板，实验台仪器面板方向）。当前处于 M0 阶段 A（契约设计），走查闸门（A5）通过前不启动 B/C 编码。"
+ "context": "2026-09-23 完成 M0 阶段 A：契约文档 docs/api/（openapi.yaml 33 操作经 openapi-core 校验通过、sse.md、mapping.md、walkthrough.md）已按 m0-plan §7 分 3 个 docs 提交落库，决策点 1–11 全部定稿（含 OpenAPI 选 3.0.3）。进入阶段 B 后端骨架实现。requirements.txt 已追加运行时依赖（fastapi/uvicorn/sse-starlette/openapi-core/pyyaml/httpx）待随 build 提交。"
 }
