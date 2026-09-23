@@ -35,7 +35,7 @@
 | B3 | REST mock 端点 | `web/src/routers/`（system/settings/candidates/queues/pending/executions/history） | §2.3 全表端点返回契约一致 mock；契约测试全绿 | B2 | L | 6 |
 | B4 | SSE broker 与 mock 推流 | `web/src/sse.py` + mock 事件剧本 | mock 流按 §3.7 剧本推流；SSE 契约测试全绿 | B2 | M | 6 |
 | B5 | 静态挂载与冒烟 | main.py 挂载 `web/frontend/dist` | 构建产物经后端可直接访问六页 | B3, B4 | S | 6 |
-| C1 | 前端工程初始化 | `web/frontend/`（Vite+Vue3+TS+router+pinia）+ `tokens.css`/`base.css` | `npm run build` 通过；设计令牌按 [m0-frontend-design.md](m0-frontend-design.md) §2 全量落地，对比度实测记录 | A5 | M | 7 |
+| C1 | 前端工程初始化 | `web/frontend/`（Vite+Vue3+TS+router+pinia）+ `tokens.css`/`base.css` | `npm run build` 通过；设计令牌按 [m0-frontend-design.md](m0-frontend-design.md) §2 全量落地（含明暗双主题变量组与切换），对比度实测记录 | A5 | M | 7 |
 | C2 | 契约生成 TS 类型与 client | `openapi-typescript` + `openapi-fetch` 接入构建 | 类型由 `docs/api/openapi.yaml` 生成并入库 | C1 | S | 7 |
 | C3 | 六页空壳组件 | 候选/队列/待执行/执行中/历史/设置 页面组件 | 六页按设计规范 §5 布局渲染后端 mock 数据（字段全展示）；组件只引用 tokens、无硬编码色值字号 | C2 | L | 7 |
 | C4 | SSE 消费骨架 + 设置面板读写 | EventSource 封装（自动重连+Last-Event-ID）+ 设置页读写 + 状态灯排/通道卡读数接线 | mock 事件流驱动执行中页读数跳变与状态灯排；设置面板可改值并回显 | C2, B4 | M | 7 |
@@ -255,11 +255,14 @@ Execution 全部字段的超集，追加：
     "route": "# B3LYP/6-31G(d) Opt",
     "title": "water optimization",
     "charge_mult": "0 1",
-    "molecule": {"atom_count": 3, "variables_present": true, "constants_present": false}
+    "molecule": {"atom_count": 3, "formula": "H2O1", "variables_present": true, "constants_present": false}
   }
 }
 ```
 
+- `molecule.formula`：元素统计（Hill 记法：有 C 时 C、H、其余字母序；无 C 时
+  全字母序；计数 1 显式，如 `H2O1`、`C6H6O1`），单任务与队列成员的预览/
+  成员概览均展示（后端解析分子说明节统计，M0 mock 给演示值）。
 - `link0.missing` 驱动行内提交确认框的黄色警告（缺 `%NProcShared`/`%Mem` 时提示
   按默认值补齐，M1）。
 - 坐标原文不在预览 JSON；完整输入走 `GET /candidates/{id}/input`（`text/plain`）。

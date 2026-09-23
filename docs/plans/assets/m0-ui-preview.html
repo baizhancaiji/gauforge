@@ -18,9 +18,27 @@
   --state-failed:#e5534b; --state-skipped:#d9a03f; --state-archived:#55677a;
   --warn:#d9a03f; --danger:#e5534b;
   --glow-running:0 0 0 1px rgba(56,212,194,.35),0 0 24px rgba(56,212,194,.12);
+  --grid-line:rgba(141,162,181,.035); --grid-dot:rgba(141,162,181,.05);
+  --bg-side:#0c1116;
+  --shadow-pop:0 8px 28px rgba(4,8,12,.45);
   --font-ui:"IBM Plex Mono","Noto Sans SC",ui-monospace,monospace;
   --font-body:"IBM Plex Sans","Noto Sans SC",system-ui,sans-serif;
   --r-sm:3px; --r-md:6px; --r-lg:10px;
+}
+/* 明亮模式（记录纸）：冷白纸底 + 同 hue 加深的强调与状态色，发光收敛为描边 */
+html[data-theme="light"]{
+  --bg-base:#f2f5f7; --bg-raised:#ffffff; --bg-overlay:#ffffff; --bg-inset:#eaeef2;
+  --bg-side:#ffffff;
+  --border-hair:#dbe2e8; --border-strong:#aebcc8;
+  --text-primary:#1c2a35; --text-secondary:#4d6072; --text-faint:#80909e;
+  --accent:#0b8a7b; --accent-dim:#0a7266; --accent-ink:#ffffff;
+  --state-staged:#5b7186; --state-running:#0b8a7b; --state-succeeded:#1a7c4c;
+  --state-failed:#c23a31; --state-skipped:#8f6a1f; --state-archived:#8795a3;
+  --warn:#8f6a1f; --danger:#c23a31;
+  --glow-running:0 0 0 1px rgba(11,138,123,.45);
+  --row-hover:rgba(11,138,123,.05);
+  --grid-line:rgba(28,42,53,.045); --grid-dot:rgba(28,42,53,.06);
+  --shadow-pop:0 8px 24px rgba(28,42,53,.16);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:dark}
@@ -32,9 +50,9 @@ body{
 body::before{
   content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   background:
-    radial-gradient(circle, rgba(141,162,181,.05) 1px, transparent 1.5px) 0 0/96px 96px,
-    linear-gradient(rgba(141,162,181,.035) 1px, transparent 1px) 0 0/100% 24px,
-    linear-gradient(90deg, rgba(141,162,181,.035) 1px, transparent 1px) 0 0/24px 100%;
+    radial-gradient(circle, var(--grid-dot) 1px, transparent 1.5px) 0 0/96px 96px,
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/100% 24px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/24px 100%;
 }
 ::selection{background:rgba(56,212,194,.25)}
 ::-webkit-scrollbar{width:10px;height:10px}
@@ -44,7 +62,7 @@ body::before{
 /* ===== 全局框架 ===== */
 .app{display:grid;grid-template-columns:216px 1fr;min-height:100vh;position:relative;z-index:1}
 .sidebar{
-  background:var(--bg-base);border-right:1px solid var(--border-hair);
+  background:var(--bg-side);border-right:1px solid var(--border-hair);
   display:flex;flex-direction:column;padding:20px 0 16px;position:sticky;top:0;height:100vh;
 }
 .brand{display:flex;align-items:center;gap:10px;padding:0 20px 20px}
@@ -192,8 +210,9 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
 .seat .winmark{font-family:var(--font-ui);font-size:10px;letter-spacing:.12em;color:var(--accent);display:flex;align-items:center;gap:6px}
 .seat .winmark::before{content:"";width:8px;height:8px;border-left:2px solid var(--accent);border-top:2px solid var(--accent)}
 .members{margin-top:10px;border-top:1px solid var(--border-hair);padding-top:8px;display:flex;flex-direction:column;gap:6px}
-.members .m{display:grid;grid-template-columns:44px 1fr auto;gap:12px;font-size:12px;color:var(--text-secondary);align-items:center}
+.members .m{display:grid;grid-template-columns:44px 1fr auto auto;gap:12px;font-size:12px;color:var(--text-secondary);align-items:center}
 .members .m .mid{font-family:var(--font-ui);font-size:11px;color:var(--text-faint)}
+.members .m .fml{font-family:var(--font-ui);font-size:11px;color:var(--text-faint);font-variant-numeric:tabular-nums}
 .divider-note{margin:14px 0;font-family:var(--font-ui);font-size:10px;letter-spacing:.18em;color:var(--text-faint);display:flex;align-items:center;gap:12px}
 .divider-note::before,.divider-note::after{content:"";flex:1;height:1px;background:var(--border-hair)}
 
@@ -215,6 +234,26 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
 .chfoot .stall{font-size:11px;color:var(--warn);display:flex;gap:6px;align-items:center}
 .chfoot .stall .d{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:breathe 1.6s ease-in-out infinite}
 .chfoot .quiet{font-family:var(--font-ui);font-size:10px;color:var(--text-faint);letter-spacing:.1em}
+
+/* ===== 任务结束 Toast（右上角滑入） ===== */
+.toasts{position:fixed;top:68px;right:16px;z-index:400;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{
+  pointer-events:auto;display:flex;align-items:stretch;gap:10px;min-width:240px;max-width:340px;
+  background:var(--bg-overlay);border:1px solid var(--border-hair);border-radius:var(--r-md);
+  padding:10px 10px 10px 12px;box-shadow:var(--shadow-pop);
+  animation:toastin 240ms cubic-bezier(.16,.84,.3,1) both;
+}
+.toast.out{animation:toastout 200ms ease-in both}
+@keyframes toastin{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes toastout{to{opacity:0;transform:translateX(28px)}}
+.toast .bar{width:3px;border-radius:2px;background:var(--state-succeeded);flex:none}
+.toast.failed .bar{background:var(--state-failed)}
+.toast .msg{flex:1;font-size:12.5px;line-height:1.5;padding:1px 0}
+.toast .msg .name{font-family:var(--font-ui);color:var(--text-primary)}
+.toast .msg .st{font-family:var(--font-ui);color:var(--state-succeeded)}
+.toast.failed .msg .st{color:var(--state-failed)}
+.toast .x{background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:14px;line-height:1;padding:2px 6px;align-self:center;border-radius:var(--r-sm)}
+.toast .x:hover{color:var(--text-primary)}
 
 /* ===== 历史页筛选条 / 设置页 ===== */
 .filterbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
@@ -251,9 +290,6 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
 .empty .glyph::before{content:"";position:absolute;left:8px;right:8px;top:50%;height:1px;background:var(--border-strong)}
 .empty .glyph::after{content:"";position:absolute;top:8px;bottom:8px;left:50%;width:1px;background:var(--border-strong)}
 .empty p{font-family:var(--font-ui);font-size:11px;color:var(--text-faint)}
-.toastdemo{background:var(--bg-overlay);border:1px solid var(--border-hair);border-left:3px solid var(--state-succeeded);border-radius:var(--r-md);padding:10px 16px;font-size:12.5px;width:320px}
-.toastdemo.err{border-left-color:var(--danger)}
-.toastdemo .tt{font-family:var(--font-ui);font-size:11px;color:var(--text-faint);margin-bottom:2px}
 .field{display:flex;flex-direction:column;gap:6px;width:280px}
 .field label{font-size:12.5px;color:var(--text-primary)}
 .field .hint{font-size:11px;color:var(--text-faint)}
@@ -285,10 +321,13 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
   <main class="main">
     <header class="topbar">
       <div class="page-title"><h1 id="pt-zh">候选任务</h1><span class="code" id="pt-code">01 / CANDIDATES</span></div>
-      <div class="lamps">
-        <span class="lamp run"><span class="d"></span>在跑 <b id="lamp-run">2</b></span>
-        <span class="lamp queue"><span class="d"></span>排队 <b id="lamp-q">3</b></span>
-        <span class="lamp warn" id="lamp-warn"><span class="d"></span>告警 <b id="lamp-warn-n">1</b></span>
+      <div style="display:flex;align-items:center;gap:18px">
+        <div class="lamps">
+          <span class="lamp run"><span class="d"></span>在跑 <b id="lamp-run">2</b></span>
+          <span class="lamp queue"><span class="d"></span>排队 <b id="lamp-q">3</b></span>
+          <span class="lamp warn" id="lamp-warn"><span class="d"></span>告警 <b id="lamp-warn-n">1</b></span>
+        </div>
+        <button class="btn secondary" id="themeBtn" style="height:28px;padding:0 12px" title="切换明暗主题">◐ 亮色</button>
       </div>
     </header>
 
@@ -345,6 +384,7 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
               <div class="lab">Molecule</div>
               <div class="readout">
                 <div class="r"><div class="n">3</div><div class="l">ATOMS</div></div>
+                <div class="r"><div class="n">H2O1</div><div class="l">FORMULA</div></div>
                 <div class="r"><div class="n">2</div><div class="l">VARS</div></div>
                 <div class="r"><div class="n">—</div><div class="l">CONSTS</div></div>
               </div>
@@ -365,8 +405,8 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
             <div class="body">
               <div class="t1"><span class="chip plain">QUEUE</span> queue AB2CDE · 苯酚系列 <span class="chip running"><span class="d"></span>执行中</span></div>
               <div class="members">
-                <div class="m"><span class="mid">T-44</span><span>phenol-opt.gjf</span><span class="chip running"><span class="d"></span>running</span></div>
-                <div class="m"><span class="mid">T-45</span><span>phenol-freq.gjf</span><span class="chip staged"><span class="d"></span>等待</span></div>
+                <div class="m"><span class="mid">T-44</span><span>phenol-opt.gjf</span><span class="fml">C6H6O1</span><span class="chip running"><span class="d"></span>running</span></div>
+                <div class="m"><span class="mid">T-45</span><span>phenol-freq.gjf</span><span class="fml">C6H6O1</span><span class="chip staged"><span class="d"></span>等待</span></div>
               </div>
             </div>
             <span class="winmark">WINDOW</span>
@@ -451,33 +491,62 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
                 <td class="mono">AB2CDE</td><td class="strong">苯酚系列</td><td class="mono">2</td>
                 <td><span class="chip running"><span class="d"></span>执行中</span></td>
                 <td class="mono">关</td><td>—</td><td class="mono">08:10</td>
-                <td class="acts"><button class="btn ghost">展开</button></td>
+                <td class="acts"><button class="btn ghost" data-exp="exp-ab2cde">展开</button></td>
+              </tr>
+              <tr class="expansion stag" id="exp-ab2cde" style="display:none">
+                <td colspan="8">
+                  <div class="members" style="margin-top:0;border-top:none;padding-top:0">
+                    <div class="m"><span class="mid">T-44</span><span>phenol-opt.gjf</span><span class="fml">C6H6O1</span><span class="chip running"><span class="d"></span>running</span></div>
+                    <div class="m"><span class="mid">T-45</span><span>phenol-freq.gjf</span><span class="fml">C6H6O1</span><span class="chip staged"><span class="d"></span>等待</span></div>
+                  </div>
+                </td>
               </tr>
               <tr class="stag">
                 <td class="mono">F0A312</td><td class="strong">精修批次</td><td class="mono">4</td>
                 <td><span class="chip staged"><span class="d"></span>已提交</span></td>
                 <td class="mono">开</td><td>—</td><td class="mono">08:12</td>
-                <td class="acts"><button class="btn ghost">展开</button></td>
+                <td class="acts"><button class="btn ghost" data-exp="exp-f0a312">展开</button></td>
+              </tr>
+              <tr class="expansion stag" id="exp-f0a312" style="display:none">
+                <td colspan="8">
+                  <div class="members" style="margin-top:0;border-top:none;padding-top:0">
+                    <div class="m"><span class="mid">T-40</span><span>neopentane-conf1.gjf</span><span class="fml">C5H12</span><span class="chip staged"><span class="d"></span>等待</span></div>
+                    <div class="m"><span class="mid">T-41</span><span>neopentane-conf2.gjf</span><span class="fml">C5H12</span><span class="chip staged"><span class="d"></span>等待</span></div>
+                    <div class="m"><span class="mid">T-42</span><span>neopentane-conf3.gjf</span><span class="fml">C5H12</span><span class="chip staged"><span class="d"></span>等待</span></div>
+                    <div class="m"><span class="mid">T-43</span><span>neopentane-sp.gjf</span><span class="fml">C5H12</span><span class="chip staged"><span class="d"></span>等待</span></div>
+                  </div>
+                </td>
               </tr>
               <tr class="stag">
                 <td class="mono">9C2E01</td><td class="strong">构象筛选</td><td class="mono">5</td>
                 <td><span class="chip succeeded"><span class="d"></span>已完成</span></td>
                 <td class="mono">开</td><td>—</td><td class="mono">09-22 19:40</td>
-                <td class="acts"><button class="btn ghost">展开</button></td>
+                <td class="acts"><button class="btn ghost" data-exp="exp-9c2e01">展开</button></td>
+              </tr>
+              <tr class="expansion stag" id="exp-9c2e01" style="display:none">
+                <td colspan="8">
+                  <div class="members" style="margin-top:0;border-top:none;padding-top:0">
+                    <div class="m"><span class="mid">T-25</span><span>toluene-sp.gjf</span><span class="fml">C7H8</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                    <div class="m"><span class="mid">T-26</span><span>anisole-sp.gjf</span><span class="fml">C7H8O1</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                    <div class="m"><span class="mid">T-27</span><span>xylene-sp.gjf</span><span class="fml">C8H10</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                    <div class="m"><span class="mid">T-28</span><span>phenol-sp.gjf</span><span class="fml">C6H6O1</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                    <div class="m"><span class="mid">T-29</span><span>benzene-sp.gjf</span><span class="fml">C6H6</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                  </div>
+                </td>
               </tr>
               <tr class="stag">
                 <td class="mono">4D7B92</td><td class="strong">过渡态搜索</td><td class="mono">3</td>
                 <td><span class="chip staged"><span class="d"></span>未提交</span></td>
                 <td class="mono">关</td>
                 <td><span class="chip warnchip"><span class="d"></span>已回退 ×2</span></td><td class="mono">07:35</td>
-                <td class="acts"><button class="btn ghost">收起</button><button class="btn ghost">删除</button></td>
+                <td class="acts"><button class="btn ghost" data-exp="exp-4d7b92">收起</button><button class="btn ghost">删除</button></td>
               </tr>
-              <tr class="expansion stag">
+              <tr class="expansion stag" id="exp-4d7b92">
                 <td colspan="8">
                   <div class="members" style="margin-top:0;border-top:none;padding-top:0">
-                    <div class="m"><span class="mid">T-35</span><span>ethyl-ts.gjf</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
-                    <div class="m"><span class="mid">T-33</span><span>benzene-opt.gjf</span><span class="chip failed"><span class="d"></span>failed · 程序报错</span></div>
-                    <div class="m"><span class="mid">T-34</span><span>phenol-freq.gjf</span><span class="chip skipped"><span class="d"></span>skipped · 前序任务失败</span></div>
+                    <div class="m"><span class="mid">T-35</span><span>ethyl-ts.gjf</span><span class="fml">C8H10</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                    <div class="m"><span class="mid">T-33</span><span>benzene-opt.gjf</span><span class="fml">C6H6</span><span class="chip failed"><span class="d"></span>failed · 程序报错</span></div>
+                    <div class="m"><span class="mid">T-34</span><span>phenol-freq.gjf</span><span class="fml">C6H6O1</span><span class="chip skipped"><span class="d"></span>skipped · 前序任务失败</span></div>
                   </div>
                   <div class="qnote">最近失败：失败中止 · 失败位置 T-33（benzene-opt.gjf）· 移除全部 failed/skipped 成员后自动标记成功</div>
                 </td>
@@ -692,11 +761,25 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
             </div>
           </div>
           <div class="sect stag">
-            <h3>Toast · 通知</h3>
+            <h3>Toast · 任务结束通知（右上角滑入，5s 自消）</h3>
             <div class="rowdemo">
-              <div class="toastdemo"><div class="tt">08:12:04</div>任务已提交 · 席位 S-08</div>
-              <div class="toastdemo err"><div class="tt">08:12:31</div>在途席位已满（3/3）· 提交被拒绝</div>
+              <div class="toast" style="animation:none;position:static">
+                <span class="bar"></span>
+                <div class="msg"><span class="name">water opt</span>: <span class="st">succeeded</span></div>
+                <button class="x">×</button>
+              </div>
+              <div class="toast failed" style="animation:none;position:static">
+                <span class="bar"></span>
+                <div class="msg"><span class="name">过渡态搜索</span>: <span class="st">failed</span></div>
+                <button class="x">×</button>
+              </div>
+              <div class="toast failed" style="animation:none;position:static">
+                <span class="bar"></span>
+                <div class="msg"><span class="name">anisole opt b3…</span>: <span class="st">failed</span></div>
+                <button class="x">×</button>
+              </div>
             </div>
+            <p class="foot-note">触发规则：任务到达终态（succeeded / failed）即通知，skipped 不通知；名称 = 直接提交任务的 title 或队列成员所属队列名，超 15 字符截断；颜色随结束状态。</p>
           </div>
           <div class="sect stag">
             <h3>Empty · 空态</h3>
@@ -711,7 +794,21 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
   </main>
 </div>
 
+<div class="toasts" id="toasts"></div>
+
 <script>
+// ===== 主题切换（默认暗色，localStorage 记忆） =====
+const themeBtn = document.getElementById("themeBtn");
+function applyTheme(t){
+  document.documentElement.dataset.theme = t;
+  themeBtn.textContent = t === "light" ? "◑ 暗色" : "◐ 亮色";
+  try{ localStorage.setItem("g16web-theme", t); }catch(e){}
+}
+applyTheme((()=>{ try{ return localStorage.getItem("g16web-theme") || "dark"; }catch(e){ return "dark"; } })());
+themeBtn.addEventListener("click", () => {
+  applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
+});
+
 // 视图切换（demo tabs 与侧栏联动）
 const titles = {
   "v-cand": ["候选任务", "01 / CANDIDATES"],
@@ -734,6 +831,39 @@ function show(v){
 document.querySelectorAll(".demo-tabs button, .nav a").forEach(b=>{
   b.addEventListener("click", e=>{ e.preventDefault(); show(b.dataset.v); });
 });
+
+// ===== 队列页展开 / 收起 =====
+document.querySelectorAll("[data-exp]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const row = document.getElementById(btn.dataset.exp);
+    const open = row.style.display !== "none";
+    row.style.display = open ? "none" : "";
+    btn.textContent = open ? "展开" : "收起";
+  });
+});
+
+// ===== 任务结束 Toast（模拟 history.appended 事件驱动；skipped 不通知） =====
+function taskToast(name, state){
+  const box = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = "toast" + (state === "failed" ? " failed" : "");
+  const shown = name.length > 15 ? name.slice(0, 15) + "…" : name;
+  el.innerHTML = `<span class="bar"></span><div class="msg"><span class="name">${shown}</span>: <span class="st">${state}</span></div><button class="x" aria-label="关闭">×</button>`;
+  const kill = () => { el.classList.add("out"); setTimeout(() => el.remove(), 200); };
+  el.querySelector(".x").addEventListener("click", kill);
+  box.appendChild(el);
+  setTimeout(kill, 5000);
+}
+// 演示序列：单任务用 title，队列成员用队列名，含一条超 15 字符的截断示例
+const notices = [
+  ["water opt", "succeeded"],                    // 直接提交 · title
+  ["过渡态搜索", "failed"],                       // 队列 4D7B92 成员失败 · 队列名
+  ["anisole opt b3lyp/6-31g(d)", "failed"],      // 直接提交 · title 超 15 字符截断
+  ["苯酚系列", "succeeded"],                      // 队列 AB2CDE 成员成功 · 队列名
+];
+let ni = 0;
+setTimeout(() => { taskToast(...notices[0]); ni = 1; }, 2500);
+setInterval(() => { taskToast(...notices[ni % notices.length]); ni++; }, 8000);
 
 // 模拟 execution.monitor / execution.progress 事件驱动的读数跳变（仪器语义：直接跳变）
 let secs = 0;
