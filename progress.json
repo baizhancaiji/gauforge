@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-23T20:10+0800",
+ "updated": "2026-09-23T20:35+0800",
  "latest_released_version": null,
  "unreleased": [
   {
@@ -99,16 +99,23 @@
    "summary": "新增 SQLite 存储层（连接治理/顺序迁移/五域 DAL）与设置持久化，mock 内存设置退役",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增输入分块解析器（§2.7 五段切块/Hill 记法/多步与坏文件容错）与文件名自然序（字母先于数字）",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B2：输入分块解析器与自然序（web/src/parse/，金标准 ~/g16/tests/，先测试后实现）",
-  "note": "B1 完成：SQLite 存储层（五域 DAL/顺序迁移/形态转换）+ 设置持久化落库，46 测试全绿，端到端冒烟三步通过（PUT→独立进程读库→重启读回一致）"
+  "task": "M1 B4：HQ Gateway 抽象 + CliGateway + 进程管理（先测试后实现）",
+  "note": "B2 完成：parse/blocks.py + naturalsort.py，19 新测试全绿（含 ~/g16/tests/com 1152 份金标准全量不崩扫描与 test0000/test0001 精核），全量 65 passed"
  },
  "next_steps": [
-  "M1 B2：输入分块解析器与自然序 → 提交 #4",
   "M1 B4：HQ Gateway（CLI 先行）+ 进程管理 → 提交 #5",
-  "M1 B3：导入与候选管理真实化 → 提交 #6"
+  "M1 B3：导入与候选管理真实化 → 提交 #6",
+  "M1 B5：待执行席位逻辑 → 提交 #7"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
