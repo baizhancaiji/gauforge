@@ -75,8 +75,15 @@ def test_error_structure_member_range():
     assert r.json()["error"]["code"] == "QUEUE_MEMBER_RANGE"
 
 
-def test_candidate_detail_against_schema():
-    cid = client.get("/api/v1/candidates").json()["items"][0]["id"]
+def test_candidate_detail_against_schema(tmp_path):
+    # M1 起候选走 store 数据源：用例内播种（契约校验不变，#14 全量切换）
+    from web.src.services.candidates import import_files
+    sample = (b"%mem=1GB\nnprocplaceholder\n\n#p hf/sto-3g\n\nt\n\n0 1\n"
+              b"O\nH 1 0.96\nH 1 0.96 2 1.0\n").replace(b"nprocplaceholder",
+                                                          b"%nprocshared=4")
+    out = import_files([("h2o.gjf", sample)],
+                       inputs_dir=tmp_path / "inputs")
+    cid = out[0]["id"]
     r = client.get(f"/api/v1/candidates/{cid}")
     assert r.status_code == 200
     assert_contract_schema(spec, "GET", f"/candidates/{cid}",

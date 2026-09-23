@@ -9,6 +9,7 @@ from fastapi import APIRouter
 from .. import config
 from ..errors import VALIDATION_FAILED
 from ..mock import get_state
+from ..services import pending as pending_svc
 from ..store import settings as settings_store
 
 router = APIRouter(tags=["settings"])
@@ -54,6 +55,22 @@ def update_settings(payload: dict) -> dict:
         raise VALIDATION_FAILED(failures)
 
     get_state().emit("settings.updated", {"keys": sorted(values.keys())})
+
+    # 席位上限调小 → 挤出（自队尾、只挤窗口未触及席位、在跑不追溯）
+    if "pending_seat_limit" in values:
+        out = pending_svc.apply_capacity_limit(int(values["pending_seat_limit"]))
+        for action in out["removed"]:
+            for tid in action["moved_in"]:
+                get_state().emit("candidates.changed",
+                                 {"action": "moved_in", "candidate_id": tid})
+            qid = action["queue_unsubmitted"]
+            if qid is not None:
+                get_state().emit("queue.status",
+                                 {"queue_id": qid, "from": "submitted",
+                                  "to": "unsubmitted"})
+        if out["removed"]:
+            get_state().emit("pending.snapshot", pending_svc.snapshot())
+
     return {
         "startup": [_item(m) for m in config.STARTUP_SETTINGS],
         "runtime": [_item(m) for m in config.RUNTIME_SETTINGS],

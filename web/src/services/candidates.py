@@ -27,7 +27,7 @@ SUPPORTED_EXTS = (".gjf", ".com")
 _File = tuple[str, bytes]  # (filename, 原始字节)
 
 
-def _inputs_default() -> Path:
+def default_inputs_dir() -> Path:
     return config.HOME_DIR / "inputs"
 
 
@@ -91,7 +91,7 @@ def import_files(files: list[_File], *, mode: str = "files",
                                   "reason": "must_be_files_or_folder"}])
     if not files:
         raise validation_failed([{"field": "files", "reason": "empty"}])
-    ind = inputs_dir if inputs_dir is not None else _inputs_default()
+    ind = inputs_dir if inputs_dir is not None else default_inputs_dir()
 
     errors = [e for e in (_validate_one(fn, data) for fn, data in files) if e]
     if errors:
@@ -123,7 +123,7 @@ def delete_candidate(task_id: int, inputs_dir: Path | None = None) -> None:
 
     仅 candidate 形态可删（roadmap §2.4）；其余形态按不存在处理。
     """
-    ind = inputs_dir if inputs_dir is not None else _inputs_default()
+    ind = inputs_dir if inputs_dir is not None else default_inputs_dir()
     row = tasks().get(task_id)
     if row is None or row["form"] != "candidate":
         raise not_found("candidate", task_id)
@@ -133,7 +133,7 @@ def delete_candidate(task_id: int, inputs_dir: Path | None = None) -> None:
 
 def resolve_title(task_id: int, inputs_dir: Path | None = None) -> str | None:
     """实时解析 title（不落库）：文件缺失/解码失败/缺节 → None。"""
-    ind = inputs_dir if inputs_dir is not None else _inputs_default()
+    ind = inputs_dir if inputs_dir is not None else default_inputs_dir()
     try:
         text = (ind / str(task_id)).read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
