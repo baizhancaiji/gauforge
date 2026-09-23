@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-23T20:55+0800",
+ "updated": "2026-09-24T01:54+08:00",
  "latest_released_version": null,
  "unreleased": [
   {
@@ -162,19 +162,32 @@
    "summary": "新增终态文件管线与历史端点真实化（formchk 转 fchk 失败不阻断、failed 保全快照入 protected/ 落库 chk_snapshot、手动清理仅删 succeeded 超期顶层 chk/rwf、历史列表/详情/输入输出/归档/重新排队/退回候选/清理统计）",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增重启对账与引擎启动序列（§2.4 五场景：S1 接管与 started_at 回填、S2 终态幂等冻结、S3 重跑特征探测与 chk 保全重定向、S4 server 丢失外部中断、S5 重试不中途落历史；对账后发 system.snapshot；lifespan 挂载 HQ 进程管理与引擎线程，新增 G16WEB_ENGINE/G16WEB_HQ_BIN 启动级参数）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "web",
+   "summary": "修正演示种子污染真实设置库（get_state 不再自动写入 demo 参数，种子仅进引擎关闭的演示模式分支）",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B10：HQ 启动序列与重启对账（挂载派发引擎后台线程、job 状态对账重扫、终态行幂等冻结）",
-  "note": "B9 终态管线与历史端点完成：formchk/保全快照/清理/requeue/退回候选/归档全落地，契约 #29-32 测试 35 用例，全量 182 passed 双闸门绿"
+  "task": "M1 B11：SSE broker 真实化（事件源从 mock 剧本切换领域事件总线、sse_seq 持久化、契约回归收口）",
+  "note": "B10 重启对账与启动序列完成：reconcile 五场景（S1-S5）+ S3 chk 保全重定向 + 终态幂等冻结 + 对账后 system.snapshot；lifespan 经 G16WEB_ENGINE 挂载引擎线程与 HQ 进程管理，真 hq S1 联测与引擎开启态真实启动冒烟通过；顺带修复演示种子污染真实设置库。全量 201 passed；S3 重跑特征默认实现待 H4 journal 实测回填。"
  },
  "next_steps": [
-  "M1 B7：监控采样与停滞检测 → 提交 #10",
-  "M1 B8：增量解析 → 提交 #11",
-  "M1 B9：终态/历史/formchk/清理 → 提交 #12/#13",
-  "M1 契约回归 → 提交 #14",
-  "M1 H1-H4（Rust 侧改造）→ 提交 #15-18",
-  "M1 B10 重启对账 → 提交 #19；B11 SSE 真实化 → 提交 #20；HttpGateway → 提交 #21；C1-C7 前端真实化 → 提交 #22-28"
+  "M1 H1-H4（Rust 侧 axum/REST/SSE/journal 实测）→ 提交 #15-18；H4 结论回填 m1-plan §2.4 S3 特征并补真机 S3 联测",
+  "M1 B11 SSE 真实化 → 提交 #20",
+  "M1 HttpGateway 切换 → 提交 #21",
+  "M1 C1-C7 前端真实化 → 提交 #22-28",
+  "M1 D1 端到端走查 / D2 演练 / D3 进度同步收尾"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
