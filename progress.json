@@ -141,11 +141,18 @@
    "summary": "新增派发引擎（执行序列展开/并行窗口推进/哈希跳过/Link0 补齐与 GB→MiB 换算/声明资源停等不越位/run/<id>/ 物化与 g16 环境构建/终态映射与队列失败分流）及 FakeGateway、fake g16 夹具",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "新增执行监控（psutil 进程树采样：cwd+启动时间双重校验定位、CPU 差值/RSS 汇总、2s 节流与峰值累计）、停滞状态机（翻转才推/冷启动宽限/时长累计，仅提示不终止）与手动停止真实化（stop→cancel→归因 manually_stopped）",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B7：监控采样与停滞检测（engine/monitor.py psutil 采样/execution.monitor 事件/停滞状态机/stop 真实化）",
-  "note": "B6 派发引擎完成（#9）：FakeGateway 单测 + fake g16 经真 CliGateway 首通链路，实测修正 worker 资源解析（cpus 闭区间/mem MiB 上报），全量 125 passed 双闸门绿"
+  "task": "M1 B8：增量解析（engine/progress.py 文件 tail/位点续传/两类进度行/1s 合并窗口）+ 金标准回归",
+  "note": "B7 监控/停滞/停止完成（#10）：test_monitor_stall 9 用例，executions 路由真实化（stop 经 runtime 单例寻址引擎），全量 134 passed 双闸门绿"
  },
  "next_steps": [
   "M1 B7：监控采样与停滞检测 → 提交 #10",
