@@ -1,12 +1,16 @@
 {
- "updated": "2026-09-23T11:35+08:00",
+ "updated": "2026-09-23T12:08+08:00",
  "latest_released_version": null,
- "unreleased": [],
- "in_progress": {"task": "M0 阶段 B：后端骨架（契约生成链 + REST/SSE mock + 契约一致性测试）", "note": "契约 SSOT 已落盘 docs/api/（openapi.yaml 27 路径/33 操作、OpenAPI 3.0.3；sse.md 12 类事件；mapping.md；walkthrough.md 含决策点 1–11 决议），A5 走查已通过；按 docs/plans/m0-plan.md §4 实施 B1–B5，随后 C 阶段前端"},
+ "unreleased": [
+  {"type": "added", "scope": "web", "summary": "新增 G16 Web 后端骨架（config 两级参数/应用工厂/统一错误结构），可启动服务", "breaking": false, "migration": null},
+  {"type": "added", "scope": "web", "summary": "按 REST 契约补齐 mock 端点全表（system/settings/candidates/queues/pending/executions/history）", "breaking": false, "migration": null},
+  {"type": "added", "scope": "web", "summary": "新增 SSE broker 与 mock 推流（快照恢复/Last-Event-ID 重放/心跳）", "breaking": false, "migration": null}
+ ],
+ "in_progress": {"task": "M0 阶段 C：前端空壳（Vite+Vue3 六页 + 契约生成 TS 类型 + SSE 消费骨架 + 设置面板）", "note": "阶段 B 已完成：config.py + main.py 应用工厂 + routers 8 域 + gen_models.py 契约生成链 + mock 内存状态 + sse.py broker/推流 + 四项契约测试 23 条全绿；准备按 m0-plan §7 提交序列整理阶段 B 提交"},
  "next_steps": [
-  "M0-B：后端骨架（config.py + main.py + routers + gen_models.py 契约生成链 + REST/SSE mock + 四项契约测试）",
-  "M0-C：前端空壳（Vite+Vue3 六页 + 契约生成 TS 类型 + SSE 消费骨架 + 设置面板）",
-  "M0-D：D1 验收走查 + D2 进度同步与提交整理",
+  "M0-C1-C2：前端工程初始化（Vite+Vue3+TS+router+pinia+tokens.css/base.css）+ 契约生成 TS 类型",
+  "M0-C3-C4：六页空壳组件 + SSE 消费骨架 + 设置面板读写",
+  "M0-D1-D2：验收走查 + 进度同步与提交整理",
   "M1：候选任务入口 + 队列与执行核心闭环（SSE 推送 + SQLite 历史；HQ 侧 HTTP/JSON 层与事件桥接）"
  ],
  "known_issues": [

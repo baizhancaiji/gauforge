@@ -1,1 +1,1 @@
-{"version":null,"status":"unreleased","changes":[]}
+{"version":null,"status":"unreleased","changes":[{"type":"added","scope":"web","summary":"新增 G16 Web 后端骨架（config 两级参数/应用工厂/统一错误结构），可启动服务","breaking":false,"migration":null},{"type":"added","scope":"web","summary":"按 REST 契约补齐 mock 端点全表（system/settings/candidates/queues/pending/executions/history）","breaking":false,"migration":null},{"type":"added","scope":"web","summary":"新增 SSE broker 与 mock 推流（快照恢复/Last-Event-ID 重放/心跳）","breaking":false,"migration":null}]}
