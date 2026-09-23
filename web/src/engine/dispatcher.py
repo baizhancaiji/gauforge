@@ -40,6 +40,7 @@ from ..store import executions, queues, seats, settings, tasks
 from ..store.db import now_iso
 from . import workspace
 from .monitor import ExecutionMonitor
+from .progress import ProgressTracker
 
 # HQ job 终态 → (TaskState, FailureCause)（§8.7 归因映射：程序报错/手动停止）
 HQ_TERMINAL_MAP = {
@@ -71,6 +72,7 @@ class Dispatcher:
             else config.HOME_DIR / "run"
         self._monitor = monitor if monitor is not None else ExecutionMonitor(
             float(settings().get("stall_threshold_minutes")))
+        self._progress = ProgressTracker()
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -244,6 +246,7 @@ class Dispatcher:
             row = self._find_running(int(ev["job_id"]))
             if row is not None:
                 self._on_terminal(row, *mapping)
+        self._progress_step()
         self._monitor_step()
         self.advance()
 
@@ -267,6 +270,7 @@ class Dispatcher:
                               finished_at=now_iso(), cause=cause,
                               monitor_summary=summary)
         self._monitor.forget(eid)
+        self._progress.forget(eid)
         extra = ({"queue_id": execution["queue_id"]}
                  if execution.get("queue_id") else {})
         self._emit("task.status",
@@ -387,6 +391,21 @@ class Dispatcher:
         if seat is not None:
             seats().remove(seat["seat_id"])
             self._emit_pending_snapshot()
+
+    def _progress_step(self) -> None:
+        """增量解析一轮（B8）：tail run/<id>/input.log → execution.progress。
+
+        新进度同时喂入 monitor.note_progress（停滞基准推进；置于
+        _monitor_step 之前，同周期即可解除停滞）。"""
+        for e in executions().list_by_state("running"):
+            facts = self._progress.step(
+                e["id"], self._run_root / str(e["id"]) / "input.log")
+            if facts is None:
+                continue
+            self._monitor.note_progress(e["id"], now_iso())
+            self._emit("execution.progress",
+                       {"execution_id": e["id"], "task_id": e["task_id"],
+                        **facts, "ts": now_iso()})
 
     def _monitor_step(self) -> None:
         """对全部在跑执行采样：execution.monitor（2s 节流）+ 停滞翻转。"""

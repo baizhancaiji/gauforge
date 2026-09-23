@@ -2,7 +2,8 @@
 """fake g16（m1-plan §8 决策点 8）：g16 替身，独立脚本不依赖真环境。
 
 行为配置（G16_FAKE="exit=0;sleep=0.1;steps=3" 环境变量，缺省 exit=0）：
-- steps：写入进度行轮数（Step number / SCF Iteration，B8 金标准同行式）；
+- steps：写入进度行轮数（每轮 = 优化步一行 + SCF Cycle 一行 + SCF Done
+  一行，与 4 份金标准 .out 的实测行式一致，B8 窄域匹配可识别）；
 - exit：进程退出码（非零 → HQ Failed → 程序报错链路）；
 - 输入内嵌 `! FAKE: exit=1` 注释行可覆盖全局配置（per-job 行为差异，
   HQ worker 环境固定的场景经输入内容传递）。
@@ -44,8 +45,11 @@ def main() -> int:
     steps = int(conf.get("steps", "1"))
     for i in range(1, steps + 1):
         with out.open("a", encoding="utf-8") as fh:
-            fh.write(f" Step number {i} out of {steps}\n")
-            fh.write(" Iteration  1 RMSDP=1.00D-06\n")
+            fh.write(f" Step number {i} out of a maximum of {steps}\n")
+            fh.write(" Cycle   1  Pass 1  IDiag  1:\n")
+            fh.write(" RMSDP=1.00D-06 MaxDP=1.00D-06\n")
+            fh.write(" SCF Done:  E(RB-HF-LYP) =  -1.000000000"
+                     "     A.U. after    1 cycles\n")
         time.sleep(float(conf.get("sleep", "0")))
     if conf.get("note"):
         with out.open("a", encoding="utf-8") as fh:
