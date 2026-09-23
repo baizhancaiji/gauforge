@@ -217,9 +217,12 @@ components:
                   cause:
                     $ref: '#/components/schemas/FailureCause'
         finish_reason:
-          $ref: '#/components/schemas/QueueFinishReason'
+          # OpenAPI 3.0 兄弟键忽略原则：$ref 与 nullable 不能同级（allOf 包裹
+          # openapi-core 亦不合并）；故内联枚举并显式含 null 表达可空。
+          type: string
+          enum: [success, abort_on_failure, finished_with_failures, manually_stopped, null]
           nullable: true
-          description: "T；最近一次执行结束时写入"
+          description: "T；最近一次执行结束时写入；取值同 QueueFinishReason"
         created_at:
           type: string
           format: date-time
@@ -393,9 +396,11 @@ components:
               format: date-time
               description: "F"
             cause:
-              $ref: '#/components/schemas/FailureCause'
+              # 同 Queue.finish_reason：$ref 与 nullable 不能同级，内联枚举显式含 null。
+              type: string
+              enum: [manually_stopped, program_error, external_interrupt, predecessor_failed, queue_manually_stopped, null]
               nullable: true
-              description: "F；succeeded 为 null"
+              description: "F；终态归因（同 FailureCause）；succeeded 为 null"
             wall_time_s:
               type: number
               description: "F；started_at→finished_at 派生"
