@@ -264,13 +264,6 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
 }
 .fchip:hover{color:var(--text-primary);border-color:var(--border-strong)}
 .fchip.on{color:var(--accent);border-color:var(--accent);background:rgba(56,212,194,.08)}
-.toggle2{display:flex;border:1px solid var(--border-hair);border-radius:var(--r-sm);overflow:hidden}
-.toggle2 button{
-  font-family:var(--font-ui);font-size:11px;letter-spacing:.06em;padding:5px 14px;cursor:pointer;
-  background:var(--bg-raised);color:var(--text-secondary);border:none;transition:all 120ms;
-}
-.toggle2 button+button{border-left:1px solid var(--border-hair)}
-.toggle2 button.on{background:rgba(56,212,194,.1);color:var(--accent)}
 .acts{display:flex;gap:2px;justify-content:flex-end}
 .expansion td{background:var(--bg-inset);padding:12px 16px 14px 44px}
 .qnote{font-size:11px;color:var(--warn);margin-top:8px;font-family:var(--font-ui)}
@@ -388,6 +381,10 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
                 <div class="r"><div class="n">2</div><div class="l">VARS</div></div>
                 <div class="r"><div class="n">—</div><div class="l">CONSTS</div></div>
               </div>
+            </div>
+            <div class="block">
+              <div class="lab">Additional · 0</div>
+              <div class="val dim">无附加输入节</div>
             </div>
           </aside>
         </div>
@@ -565,7 +562,7 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
             <button class="fchip">failed</button>
             <button class="fchip">skipped</button>
           </div>
-          <div class="toggle2"><button class="on">历史</button><button>归档</button></div>
+          <span class="quiet">归档条目不列于此 · 归档页为 M1 独立路由</span>
         </div>
         <div class="table-wrap stag">
           <table>
@@ -598,13 +595,6 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
                 <td>—</td><td class="mono">09-22 18:02:11 → 18:09:30</td><td class="mono">7m 19s</td>
                 <td class="mono">8C · 16GB</td><td class="mono">9C2E01</td>
                 <td class="acts"><button class="btn ghost">归档</button></td>
-              </tr>
-              <tr class="stag" style="opacity:.6">
-                <td class="mono">37</td><td class="strong">anisole-sp.gjf</td>
-                <td><span class="chip archived"><span class="d"></span>succeeded</span></td>
-                <td>—</td><td class="mono">09-22 17:40:02 → 17:47:55</td><td class="mono">7m 53s</td>
-                <td class="mono">8C · 16GB</td><td class="mono">9C2E01</td>
-                <td class="acts"><span class="chip archived"><span class="d"></span>已归档</span></td>
               </tr>
             </tbody>
           </table>
