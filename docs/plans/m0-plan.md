@@ -547,8 +547,8 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
   契约，杜绝手写类型漂移）；生成脚本入 `package.json scripts`，产物入库。
 - 路由与页面：`/candidates` `/queues` `/pending` `/executions` `/history`
   `/settings` 六页空壳，按设计规范 §5 的逐页布局渲染后端 mock 全字段
-  （验证契约完整可消费）。三种页面原型（表格型/席位型/通道卡型）在样板中
-  已有视觉基准，实现时对照。
+  （验证契约完整可消费）。样板已覆盖六页全部视图与组件墙，实现时逐页对照；
+  四种页面原型（表格/席位/通道卡/表单）共享布局骨架。
 - SSE 消费骨架（C4）：pinia store 内管理 EventSource；自动重连退避（§3.5）；
   `Last-Event-ID` 透传；`system.snapshot` 全量重建；按 event 分发到各 store；
   顶栏状态灯排与执行中通道卡读数由事件流驱动。

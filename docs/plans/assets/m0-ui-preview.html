@@ -216,6 +216,31 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
 .chfoot .stall .d{width:6px;height:6px;border-radius:50%;background:var(--warn);animation:breathe 1.6s ease-in-out infinite}
 .chfoot .quiet{font-family:var(--font-ui);font-size:10px;color:var(--text-faint);letter-spacing:.1em}
 
+/* ===== 历史页筛选条 / 设置页 ===== */
+.filterbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.filterchips{display:flex;gap:8px;flex-wrap:wrap}
+.fchip{
+  font-family:var(--font-ui);font-size:11px;letter-spacing:.06em;padding:5px 12px;cursor:pointer;
+  background:var(--bg-raised);color:var(--text-secondary);border:1px solid var(--border-hair);border-radius:var(--r-sm);transition:all 120ms;
+}
+.fchip:hover{color:var(--text-primary);border-color:var(--border-strong)}
+.fchip.on{color:var(--accent);border-color:var(--accent);background:rgba(56,212,194,.08)}
+.toggle2{display:flex;border:1px solid var(--border-hair);border-radius:var(--r-sm);overflow:hidden}
+.toggle2 button{
+  font-family:var(--font-ui);font-size:11px;letter-spacing:.06em;padding:5px 14px;cursor:pointer;
+  background:var(--bg-raised);color:var(--text-secondary);border:none;transition:all 120ms;
+}
+.toggle2 button+button{border-left:1px solid var(--border-hair)}
+.toggle2 button.on{background:rgba(56,212,194,.1);color:var(--accent)}
+.acts{display:flex;gap:2px;justify-content:flex-end}
+.expansion td{background:var(--bg-inset);padding:12px 16px 14px 44px}
+.qnote{font-size:11px;color:var(--warn);margin-top:8px;font-family:var(--font-ui)}
+.settings-col{max-width:880px;display:flex;flex-direction:column;gap:16px}
+.setgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.setgrid .wide{grid-column:1/-1}
+.savebar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.restart-hint{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--warn)}
+
 /* ===== 组件墙 ===== */
 .wall{display:flex;flex-direction:column;gap:24px}
 .sect{background:var(--bg-raised);border:1px solid var(--border-hair);border-radius:var(--r-md);padding:18px 20px}
@@ -251,8 +276,8 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
       <a href="#" data-v="v-queue"><span class="no">02</span><span class="zh">队列</span><span class="en">Queues</span></a>
       <a href="#" data-v="v-pend"><span class="no">03</span><span class="zh">待执行</span><span class="en">Pending</span></a>
       <a href="#" data-v="v-exec"><span class="no">04</span><span class="zh">执行中</span><span class="en">Running</span></a>
-      <a href="#" data-v="v-cand"><span class="no">05</span><span class="zh">历史</span><span class="en">History</span></a>
-      <a href="#" data-v="v-wall"><span class="no">06</span><span class="zh">设置</span><span class="en">Settings</span></a>
+      <a href="#" data-v="v-hist"><span class="no">05</span><span class="zh">历史</span><span class="en">History</span></a>
+      <a href="#" data-v="v-set"><span class="no">06</span><span class="zh">设置</span><span class="en">Settings</span></a>
     </nav>
     <div class="hq-status"><span class="dot"></span>HQ 已连接 · 127.0.0.1</div>
   </aside>
@@ -271,9 +296,12 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
 
       <!-- 预览模式说明 -->
       <div class="demo-tabs">
-        <button data-v="v-cand" class="on">视图 · 候选任务</button>
-        <button data-v="v-pend">视图 · 待执行</button>
-        <button data-v="v-exec">视图 · 执行中</button>
+        <button data-v="v-cand" class="on">候选任务</button>
+        <button data-v="v-queue">队列</button>
+        <button data-v="v-pend">待执行</button>
+        <button data-v="v-exec">执行中</button>
+        <button data-v="v-hist">历史</button>
+        <button data-v="v-set">设置</button>
         <button data-v="v-wall">组件墙</button>
       </div>
 
@@ -413,6 +441,201 @@ tbody tr.sel{background:rgba(56,212,194,.07);box-shadow:inset 2px 0 0 var(--acce
         </div>
       </section>
 
+      <!-- ===== 队列（表格型·可展开） ===== -->
+      <section class="view" id="v-queue">
+        <div class="table-wrap stag">
+          <table>
+            <thead><tr><th>Id</th><th>名称</th><th>成员</th><th>状态</th><th>跳过失败</th><th>回退</th><th>更新时间</th><th></th></tr></thead>
+            <tbody>
+              <tr class="stag">
+                <td class="mono">AB2CDE</td><td class="strong">苯酚系列</td><td class="mono">2</td>
+                <td><span class="chip running"><span class="d"></span>执行中</span></td>
+                <td class="mono">关</td><td>—</td><td class="mono">08:10</td>
+                <td class="acts"><button class="btn ghost">展开</button></td>
+              </tr>
+              <tr class="stag">
+                <td class="mono">F0A312</td><td class="strong">精修批次</td><td class="mono">4</td>
+                <td><span class="chip staged"><span class="d"></span>已提交</span></td>
+                <td class="mono">开</td><td>—</td><td class="mono">08:12</td>
+                <td class="acts"><button class="btn ghost">展开</button></td>
+              </tr>
+              <tr class="stag">
+                <td class="mono">9C2E01</td><td class="strong">构象筛选</td><td class="mono">5</td>
+                <td><span class="chip succeeded"><span class="d"></span>已完成</span></td>
+                <td class="mono">开</td><td>—</td><td class="mono">09-22 19:40</td>
+                <td class="acts"><button class="btn ghost">展开</button></td>
+              </tr>
+              <tr class="stag">
+                <td class="mono">4D7B92</td><td class="strong">过渡态搜索</td><td class="mono">3</td>
+                <td><span class="chip staged"><span class="d"></span>未提交</span></td>
+                <td class="mono">关</td>
+                <td><span class="chip warnchip"><span class="d"></span>已回退 ×2</span></td><td class="mono">07:35</td>
+                <td class="acts"><button class="btn ghost">收起</button><button class="btn ghost">删除</button></td>
+              </tr>
+              <tr class="expansion stag">
+                <td colspan="8">
+                  <div class="members" style="margin-top:0;border-top:none;padding-top:0">
+                    <div class="m"><span class="mid">T-35</span><span>ethyl-ts.gjf</span><span class="chip succeeded"><span class="d"></span>succeeded</span></div>
+                    <div class="m"><span class="mid">T-33</span><span>benzene-opt.gjf</span><span class="chip failed"><span class="d"></span>failed · 程序报错</span></div>
+                    <div class="m"><span class="mid">T-34</span><span>phenol-freq.gjf</span><span class="chip skipped"><span class="d"></span>skipped · 前序任务失败</span></div>
+                  </div>
+                  <div class="qnote">最近失败：失败中止 · 失败位置 T-33（benzene-opt.gjf）· 移除全部 failed/skipped 成员后自动标记成功</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== 历史（表格型·筛选） ===== -->
+      <section class="view" id="v-hist">
+        <div class="filterbar stag">
+          <div class="filterchips">
+            <button class="fchip on">全部</button>
+            <button class="fchip">succeeded</button>
+            <button class="fchip">failed</button>
+            <button class="fchip">skipped</button>
+          </div>
+          <div class="toggle2"><button class="on">历史</button><button>归档</button></div>
+        </div>
+        <div class="table-wrap stag">
+          <table>
+            <thead><tr><th>Id</th><th>任务</th><th>状态</th><th>归因</th><th>提交 → 结束</th><th>耗时</th><th>资源</th><th>归属</th><th></th></tr></thead>
+            <tbody>
+              <tr class="stag">
+                <td class="mono">41</td><td class="strong">water.gjf</td>
+                <td><span class="chip succeeded"><span class="d"></span>succeeded</span></td>
+                <td>—</td><td class="mono">07:58:01 → 08:06:47</td><td class="mono">8m 46s</td>
+                <td class="mono">4C · 8GB</td><td>—</td>
+                <td class="acts"><button class="btn ghost">归档</button></td>
+              </tr>
+              <tr class="stag">
+                <td class="mono">40</td><td class="strong">benzene-opt.gjf</td>
+                <td><span class="chip failed"><span class="d"></span>failed</span></td>
+                <td>程序报错</td><td class="mono">07:31:20 → 07:34:58</td><td class="mono">3m 38s</td>
+                <td class="mono">4C · 8GB</td><td class="mono">4D7B92</td>
+                <td class="acts"><button class="btn ghost">重新排队</button><button class="btn ghost">退回候选</button></td>
+              </tr>
+              <tr class="stag">
+                <td class="mono">39</td><td class="strong">phenol-freq.gjf</td>
+                <td><span class="chip skipped"><span class="d"></span>skipped</span></td>
+                <td>前序任务失败</td><td class="mono">07:31:20 → —</td><td class="mono">—</td>
+                <td class="mono">—</td><td class="mono">4D7B92</td>
+                <td class="acts"><button class="btn ghost">重新排队</button><button class="btn ghost">退回候选</button></td>
+              </tr>
+              <tr class="stag">
+                <td class="mono">38</td><td class="strong">toluene-sp.gjf</td>
+                <td><span class="chip succeeded"><span class="d"></span>succeeded</span></td>
+                <td>—</td><td class="mono">09-22 18:02:11 → 18:09:30</td><td class="mono">7m 19s</td>
+                <td class="mono">8C · 16GB</td><td class="mono">9C2E01</td>
+                <td class="acts"><button class="btn ghost">归档</button></td>
+              </tr>
+              <tr class="stag" style="opacity:.6">
+                <td class="mono">37</td><td class="strong">anisole-sp.gjf</td>
+                <td><span class="chip archived"><span class="d"></span>succeeded</span></td>
+                <td>—</td><td class="mono">09-22 17:40:02 → 17:47:55</td><td class="mono">7m 53s</td>
+                <td class="mono">8C · 16GB</td><td class="mono">9C2E01</td>
+                <td class="acts"><span class="chip archived"><span class="d"></span>已归档</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ===== 设置（表单型） ===== -->
+      <section class="view" id="v-set">
+        <div class="settings-col">
+          <div class="sect stag">
+            <h3>启动级 · 只读（由环境变量指定）</h3>
+            <div class="setgrid">
+              <div class="field wide">
+                <label>工作区根目录</label>
+                <input value="~/g16web" disabled style="opacity:.6">
+                <div class="hint">环境变量 G16WEB_HOME · 重启进程时生效</div>
+              </div>
+              <div class="field">
+                <label>监听地址</label>
+                <input value="127.0.0.1" disabled style="opacity:.6">
+                <div class="hint">环境变量 G16WEB_BIND_ADDR</div>
+              </div>
+              <div class="field">
+                <label>g16 发行目录</label>
+                <input value="~/g16" disabled style="opacity:.6">
+                <div class="hint">只读展示 · 实测环境见 roadmap §2.5</div>
+              </div>
+            </div>
+          </div>
+          <div class="sect stag">
+            <h3>执行</h3>
+            <div class="setgrid">
+              <div class="field">
+                <label>在途席位上限</label>
+                <input value="3">
+                <div class="hint">单任务与整条队列各计 1 席 · 1–10</div>
+                <div class="eff"><span class="chip warnchip">即时生效 · 调小自队尾挤出</span></div>
+              </div>
+              <div class="field">
+                <label>并行执行数</label>
+                <input value="2">
+                <div class="hint">执行序列并行窗口大小 · 1–6</div>
+                <div class="eff"><span class="chip plain">其后新提交生效</span></div>
+              </div>
+              <div class="field">
+                <label>Link0 默认 %NProcShared</label>
+                <input value="4">
+                <div class="eff"><span class="chip plain">其后新提交生效</span></div>
+              </div>
+              <div class="field">
+                <label>Link0 默认 %Mem（GB）</label>
+                <input value="8">
+                <div class="eff"><span class="chip plain">其后新提交生效</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sect stag">
+            <h3>维护与监控</h3>
+            <div class="setgrid">
+              <div class="field">
+                <label>chk/rwf 保留期（天）</label>
+                <input value="7">
+                <div class="hint">仅正常结束的执行 · 非正常终止不自动清理</div>
+                <div class="eff"><span class="chip plain">其后新提交生效</span></div>
+              </div>
+              <div class="field">
+                <label>停滞告警阈值（分钟）</label>
+                <input value="10">
+                <div class="hint">无新优化步 / SCF 迭代即告警 · 只提示不终止</div>
+                <div class="eff"><span class="chip plain">其后新提交生效</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="sect stag">
+            <h3>界面与推送</h3>
+            <div class="setgrid">
+              <div class="field">
+                <label>分页大小</label>
+                <input value="50">
+                <div class="eff"><span class="chip succeeded">即时生效</span></div>
+              </div>
+              <div class="field">
+                <label>SSE 心跳间隔（秒）</label>
+                <input value="15">
+                <div class="eff"><span class="chip succeeded">即时生效</span></div>
+              </div>
+              <div class="field wide">
+                <label>监听端口</label>
+                <input value="8300">
+                <div class="eff"><span class="chip warnchip">保存后下次重启生效</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="savebar stag">
+            <div class="restart-hint">⚠ 端口修改需重启 g16web 后生效，其余运行级参数按各项标注即时或对新先生效</div>
+            <button class="btn primary">保存设置</button>
+          </div>
+        </div>
+      </section>
+
       <!-- ===== 组件墙 ===== -->
       <section class="view" id="v-wall">
         <div class="wall">
@@ -495,6 +718,8 @@ const titles = {
   "v-queue": ["队列", "02 / QUEUES"],
   "v-pend": ["待执行", "03 / PENDING"],
   "v-exec": ["执行中", "04 / RUNNING"],
+  "v-hist": ["历史", "05 / HISTORY"],
+  "v-set": ["设置", "06 / SETTINGS"],
   "v-wall": ["组件总览", "— / SPECIMEN"]
 };
 function show(v){
