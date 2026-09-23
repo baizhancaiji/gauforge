@@ -1,8 +1,8 @@
 {
- "updated": "2026-09-23T08:28+0800",
+ "updated": "2026-09-23T08:58+0800",
  "latest_released_version": null,
  "unreleased": [],
- "in_progress": {"task": "M0 阶段 A：API 契约定稿（docs/api/openapi.yaml + sse.md）", "note": "按 docs/plans/m0-plan.md §2/§3 设计规范执行；先落 A1 载体骨架与 A2 领域对象 schema，§9 开放决策点随 A5 走查定稿"},
+ "in_progress": {"task": "M0 阶段 A：API 契约定稿（docs/api/openapi.yaml + sse.md）", "note": "按 docs/plans/m0-plan.md §2/§3 设计规范执行；前端视觉基调已定稿（docs/plans/m0-frontend-design.md，实验台仪器面板方向），随 A5 走查一并确认；§9 开放决策点随 A5 定稿"},
  "next_steps": [
   "M0-A：定稿 API 契约（openapi.yaml 七对象 schema + 32 端点 + mapping.md）与 SSE 事件契约（sse.md，11 类事件）",
   "M0-B：后端骨架（契约生成链 + REST/SSE mock + 契约一致性测试）",
@@ -14,5 +14,5 @@
   "Python 子系统（web/）当前为空，待从零实现；web/tests 就绪前 uv run pytest 回落收集上游 tests/ 并因缺 psutil 退出码 4（上游测试本需显式运行），M0 建立测试后自消",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "2026-09-23 制定 M0 详细执行计划（docs/plans/m0-plan.md）：任务分解 A1-A5/B1-B5/C1-C4/D1-D2，API 与 SSE 两份契约设计规范为阶段 A 直接输入。当前进入 M0 阶段 A（契约设计），走查闸门（A5）通过前不启动 B/C 编码。"
+ "context": "2026-09-23 制定 M0 详细执行计划（docs/plans/m0-plan.md）：任务分解 A1-A5/B1-B5/C1-C4/D1-D2，API 与 SSE 两份契约设计规范为阶段 A 直接输入；C 阶段视觉/UX 设计已定稿（docs/plans/m0-frontend-design.md + assets/m0-ui-preview.html 样板，实验台仪器面板方向）。当前处于 M0 阶段 A（契约设计），走查闸门（A5）通过前不启动 B/C 编码。"
 }

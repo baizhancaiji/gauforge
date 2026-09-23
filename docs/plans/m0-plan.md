@@ -35,10 +35,10 @@
 | B3 | REST mock 端点 | `web/src/routers/`（system/settings/candidates/queues/pending/executions/history） | §2.3 全表端点返回契约一致 mock；契约测试全绿 | B2 | L | 6 |
 | B4 | SSE broker 与 mock 推流 | `web/src/sse.py` + mock 事件剧本 | mock 流按 §3.7 剧本推流；SSE 契约测试全绿 | B2 | M | 6 |
 | B5 | 静态挂载与冒烟 | main.py 挂载 `web/frontend/dist` | 构建产物经后端可直接访问六页 | B3, B4 | S | 6 |
-| C1 | 前端工程初始化 | `web/frontend/`（Vite+Vue3+TS+router+pinia，简约基调） | `npm run build` 通过 | A5 | M | 7 |
+| C1 | 前端工程初始化 | `web/frontend/`（Vite+Vue3+TS+router+pinia）+ `tokens.css`/`base.css` | `npm run build` 通过；设计令牌按 [m0-frontend-design.md](m0-frontend-design.md) §2 全量落地，对比度实测记录 | A5 | M | 7 |
 | C2 | 契约生成 TS 类型与 client | `openapi-typescript` + `openapi-fetch` 接入构建 | 类型由 `docs/api/openapi.yaml` 生成并入库 | C1 | S | 7 |
-| C3 | 六页空壳组件 | 候选/队列/待执行/执行中/历史/设置 页面组件 | 六页渲染后端 mock 数据（字段全展示） | C2 | L | 7 |
-| C4 | SSE 消费骨架 + 设置面板读写 | EventSource 封装（自动重连+Last-Event-ID）+ 设置页读写 | mock 事件流驱动执行中页进度实时变化；设置面板可改值并回显 | C2, B4 | M | 7 |
+| C3 | 六页空壳组件 | 候选/队列/待执行/执行中/历史/设置 页面组件 | 六页按设计规范 §5 布局渲染后端 mock 数据（字段全展示）；组件只引用 tokens、无硬编码色值字号 | C2 | L | 7 |
+| C4 | SSE 消费骨架 + 设置面板读写 | EventSource 封装（自动重连+Last-Event-ID）+ 设置页读写 + 状态灯排/通道卡读数接线 | mock 事件流驱动执行中页读数跳变与状态灯排；设置面板可改值并回显 | C2, B4 | M | 7 |
 | D1 | 验收走查 | 走查记录（对照 §8 验收标准逐条执行留痕） | §8 全部条目通过 | B5, C4 | S | 8 |
 | D2 | 进度同步与提交整理 | `CHANGELOG.jsonl`/`progress.json` 更新 | `validate_progress.py` 通过；提交序列符合 §7 | 全部 | S | 8 |
 
@@ -534,18 +534,28 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
 
 ## 5. 前端空壳实施方案（C1–C4）
 
-- 工程：`web/frontend/`，Vite + Vue3 + TS + vue-router + pinia；简约基调
-  （信息密度优先，无装饰性元素）；3Dmol.js 仅入依赖清单（M3 使用）。
+**视觉与 UX 设计的单一来源**：[m0-frontend-design.md](m0-frontend-design.md)
+（「实验台仪器面板」方向：深色墨蓝底、磷光青唯一强调、等宽读数、状态徽标信号
+系统、通道卡/席位行/状态灯排三个记忆点），可视化样板
+[assets/m0-ui-preview.html](assets/m0-ui-preview.html) 供并排走查比对。该规范
+即 roadmap §1 原则 7「视觉基调 M0 定稿」的定稿载体，随 A5 走查一并确认。
+
+- 工程：`web/frontend/`，Vite + Vue3 + TS + vue-router + pinia；
+  `src/styles/tokens.css`（设计令牌单一来源）+ `base.css`（框架/背景纹理）
+  随 C1 建立；3Dmol.js 仅入依赖清单（M3 使用）。
 - 契约生成：`openapi-typescript` 生成类型 + `openapi-fetch` 薄 client（同源
   契约，杜绝手写类型漂移）；生成脚本入 `package.json scripts`，产物入库。
 - 路由与页面：`/candidates` `/queues` `/pending` `/executions` `/history`
-  `/settings` 六页空壳，渲染后端 mock 全字段（表格化，验证契约完整可消费）。
+  `/settings` 六页空壳，按设计规范 §5 的逐页布局渲染后端 mock 全字段
+  （验证契约完整可消费）。三种页面原型（表格型/席位型/通道卡型）在样板中
+  已有视觉基准，实现时对照。
 - SSE 消费骨架（C4）：pinia store 内管理 EventSource；自动重连退避（§3.5）；
   `Last-Event-ID` 透传；`system.snapshot` 全量重建；按 event 分发到各 store；
-  执行中页演示 mock 事件驱动的进度/监控实时变化。
+  顶栏状态灯排与执行中通道卡读数由事件流驱动。
 - 设置面板：数据驱动渲染（读 GET /settings 元数据），运行级可编辑、启动级只读
   展示；保存调 PUT 并提示各项生效语义（on_restart 提示需重启）。
-- 验证：`npm run build` 与 typecheck 零错误；dev 冒烟六页 + SSE 演示。
+- 验证：`npm run build` 与 typecheck 零错误；dev 冒烟六页 + SSE 演示；
+  与样板并排走查视觉一致（tokens 同源）。
 
 ## 6. 契约走查方案（A5，留记录 `docs/api/walkthrough.md`）
 
@@ -596,9 +606,10 @@ SSE 测试的时序断言一律用轮询等待（超时阈值放宽），不用 
 2. **后端契约一致**：`uv run pytest`（web/tests 全绿，含 32 端点契约校验与
    SSE 帧校验）。
 3. **前端六页可用**：`uv run uvicorn web.src.main:app` 启动后，浏览器访问六页
-   均渲染 mock 数据（候选/队列/待执行/执行中/历史/设置）。
-4. **SSE 演示**：执行中页在 mock 事件流驱动下实时变化（进度步进、监控刷新）；
-   断开网络后重连，状态自愈（重放或快照）。
+   均渲染 mock 数据（候选/队列/待执行/执行中/历史/设置），视觉与
+   [m0-frontend-design.md](m0-frontend-design.md) 及样板一致（并排走查）。
+4. **SSE 演示**：执行中页在 mock 事件流驱动下实时变化（进度步进、监控刷新、
+   通道卡读数跳变）；断开网络后重连，状态自愈（重放或快照）。
 5. **设置面板读写**：展示全部设置项（两级分组、生效语义标注），运行级可修改、
    mock 值回显；越界值报 422。
 6. **闸门通过**：`uv run python scripts/validate_progress.py` OK；前端
