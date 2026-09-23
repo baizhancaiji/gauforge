@@ -1,0 +1,1366 @@
+# G16 Web 工作台 · REST API 契约（M0）
+#
+# 本文件是项目 API 的唯一事实来源（SSOT）。变更一律走文档 diff（roadmap §4）。
+# 设计依据：docs/plans/m0-plan.md §2；领域对象字段集对照 roadmap §2.1/§2.6。
+# 版本：OpenAPI 3.0.3（决策点 7：为保全 datamodel-code-generator / openapi-core
+#       兼容性选用；契约语义不受版本影响）。
+#
+# 公共约定（m0-plan §2.1）：
+#   - 路径前缀 /api/v1；资源名复数 kebab-case（pending 固定单数）。
+#   - 时间 ISO 8601 带时区偏移、秒级；耗时带 `_s` 后缀。
+#   - task/candidate id 自增正整数；queue id 随机 6 位 base32；execution id 自增正整数。
+#   - 空值显式 null（timestamp 类可选字段按 schema 标注）。
+#   - 分页信封 {"items":[],"page":1,"page_size":50,"total":123}，offset 式。
+#   - 错误结构统一 {"error":{"code","message","details"}}，code 为 SCREAMING_SNAKE_CASE 枚举。
+#
+# 字段时机标注（roadmap §2.6）：C=创建必填、T=状态流转更新、F=终态补齐后冻结、
+# O=可空。写入各 schema 的 description。
+
+openapi: 3.0.3
+info:
+  title: G16 Web 工作台 API
+  version: 0.1.0
+  description: |
+    面向 WSL2 单机的 Gaussian 计算化学工作台 REST API。
+    覆盖六类页面：候选任务 / 队列 / 待执行 / 执行中 / 历史 / 设置。
+    SSE 事件契约见同目录 sse.md；界面元素→端点映射见 mapping.md。
+
+servers:
+  - url: /api/v1
+    description: 工作台后端（G16WEB_BIND_ADDR，默认 127.0.0.1）
+
+# ============================= 安全（M0 无认证，绑回环即为安全边界）====
+
+tags:
+  - name: system
+  - name: settings
+  - name: candidates
+  - name: queues
+  - name: pending
+  - name: executions
+  - name: history
+
+components:
+  securitySchemes: {}
+
+  schemas:
+    # ---------------- 枚举全集 ----------------
+    TaskState:
+      type: string
+      enum: [staged, running, succeeded, failed, skipped]
+      description: 任务粒度状态机（roadmap §2.1）；acrchived 是历史条目标记非任务态
+    QueueState:
+      type: string
+      enum: [unsubmitted, submitted, executing, completed]
+      description: 队列四态；completed 为唯一稳定终态，失败自动回退为 unsubmitted
+    QueueFinishReason:
+      type: string
+      enum: [success, abort_on_failure, finished_with_failures, manually_stopped]
+      description: 队列最近一次执行结束原因
+    CandidateOrigin:
+      type: string
+      enum: [imported, returned_unrun, returned_failed, returned_succeeded]
+      description: 候选来源标记（roadmap §2.1 退回路径穷举）
+    FailureCause:
+      type: string
+      enum: [manually_stopped, program_error, external_interrupt, predecessor_failed, queue_manually_stopped]
+      description: 执行终态归因；succeeded 为 null
+    SeatKind:
+      type: string
+      enum: [task, queue]
+      description: 待执行席位类型
+    EffectKind:
+      type: string
+      enum: [immediate, immediate_retroactive, new_submissions, on_restart]
+      description: 设置项生效语义（m0-plan §2.2）；immediate_retroactive 仅席位上限
+
+    # ---------------- 统一错误 ----------------
+    ErrorBody:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: SCREAMING_SNAKE_CASE 错误码全集枚举（见文件头/m0-plan §2.1.1）
+            message:
+              type: string
+            details:
+              type: object
+              nullable: true
+              description: 错误附加信息（如越界值、逐字段错误数组）
+
+    # ---------------- 分页信封 ----------------
+    PageEnvelope:
+      type: object
+      required: [items, page, page_size, total]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+          description: 当前页数据（具体 schema 由各端点 response 覆盖）
+        page:
+          type: integer
+          minimum: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 200
+        total:
+          type: integer
+          minimum: 0
+
+    # ---------------- 领域对象 ----------------
+    Candidate:
+      type: object
+      description: 候选任务（创建即完整，此后不变；title 不落库，展示时实时解析）
+      required: [id, filename, origin, failure_note, created_at]
+      properties:
+        id:
+          type: integer
+          description: "C；与后续 Task 同 id（跨形态延续，roadmap §2.6 ③）"
+        filename:
+          type: string
+          description: "C；导入文件名（退回候选沿用任务文件名）"
+        origin:
+          $ref: '#/components/schemas/CandidateOrigin'
+        failure_note:
+          type: string
+          nullable: true
+          description: "C；仅 returned_failed：归因附注；其余 null"
+        created_at:
+          type: string
+          format: date-time
+          description: "C；补充字段提案"
+        title:
+          type: string
+          nullable: true
+          description: "—；响应中实时解析注入（解析失败为 null），不落库（roadmap §2.6 ①）"
+
+    Task:
+      type: object
+      description: 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）
+      required: [id, position, time_limit_s, state]
+      properties:
+        id:
+          type: integer
+          description: "C；同候选 id"
+        queue_id:
+          type: string
+          nullable: true
+          description: "C/T；归属队列，直接提交者为 null"
+        position:
+          type: integer
+          minimum: 0
+          description: "T；队列内顺序（0 起）"
+        time_limit_s:
+          type: integer
+          default: 0
+          description: "C/T；墙钟上限，0=不限制；M0/M1 契约占位"
+        state:
+          $ref: '#/components/schemas/TaskState'
+          description: "T；派生展示字段"
+
+    Queue:
+      type: object
+      description: 队列（生命周期见 roadmap §2.1）
+      required: [id, name, member_ids, skip_failed, state, rollback_flag, rollback_count, last_failure, finish_reason, created_at]
+      properties:
+        id:
+          type: string
+          description: "C；随机 6 位 base32（生成时对照全库查重）"
+        name:
+          type: string
+          description: "C/T；默认 yyyymmddhhmmss 时间戳"
+        member_ids:
+          type: array
+          items:
+            type: integer
+          description: "C/T；有序成员（创建校验 2–10；此后只减不增、≥1)"
+        skip_failed:
+          type: boolean
+          description: "C/T；跳过失败任务开关"
+        state:
+          $ref: '#/components/schemas/QueueState'
+        rollback_flag:
+          type: boolean
+          description: "T；失败回退标记"
+        rollback_count:
+          type: integer
+          minimum: 0
+          description: "T；回退次数，0 起"
+        last_failure:
+          type: object
+          nullable: true
+          description: "T；队列成功终态时清 null"
+          properties:
+            finish_reason:
+              $ref: '#/components/schemas/QueueFinishReason'
+            failure_positions:
+              type: array
+              items:
+                type: integer
+              description: 失败位置（任务 id）
+            members:
+              type: array
+              items:
+                type: object
+                properties:
+                  task_id:
+                    type: integer
+                  state:
+                    $ref: '#/components/schemas/TaskState'
+                  cause:
+                    $ref: '#/components/schemas/FailureCause'
+        finish_reason:
+          $ref: '#/components/schemas/QueueFinishReason'
+          nullable: true
+          description: "T；最近一次执行结束时写入"
+        created_at:
+          type: string
+          format: date-time
+          description: "C；补充字段提案"
+        updated_at:
+          type: string
+          format: date-time
+          description: "T；补充字段提案"
+
+    PendingSeat:
+      type: object
+      description: 待执行席位（get /pending 响应项）
+      required: [seat_id, kind, position, members, locked]
+      properties:
+        seat_id:
+          type: integer
+          description: "C；席位标识（追加自增）"
+        kind:
+          $ref: '#/components/schemas/SeatKind'
+        task_id:
+          type: integer
+          nullable: true
+          description: "C；kind=task 时"
+        queue_id:
+          type: string
+          nullable: true
+          description: "C；kind=queue 时"
+        position:
+          type: integer
+          minimum: 0
+          description: "T；席位顺序（0 起）"
+        members:
+          type: array
+          items:
+            type: object
+            required: [task_id, filename, state]
+            properties:
+              task_id:
+                type: integer
+              filename:
+                type: string
+              state:
+                $ref: '#/components/schemas/TaskState'
+          description: "T；队列席位成员概览（kind=task 为单元素）"
+        locked:
+          type: boolean
+          description: "T；并行窗口已触及 → 不可整席重排/移除"
+
+    PendingResponse:
+      type: object
+      description: GET /pending 响应（席位 + 全局容量/窗口）
+      required: [seats, capacity, window_size]
+      properties:
+        seats:
+          type: array
+          items:
+            $ref: '#/components/schemas/PendingSeat'
+        capacity:
+          type: object
+          required: [limit, occupied, available]
+          properties:
+            limit:
+              type: integer
+              description: 在途席位上限（运行级设置，默认 3）
+            occupied:
+              type: integer
+            available:
+              type: integer
+        window_size:
+          type: integer
+          description: 当前并行执行数
+
+    Execution:
+      type: object
+      description: 运行/已完成执行（运行视图；终态见 HistoryEntry）
+      required: [id, task_id, queue_id, state, filename, submitted_at, input_hash, resources]
+      properties:
+        id:
+          type: integer
+          description: "C；派发时创建；run/<id>/ 派生"
+        task_id:
+          type: integer
+          description: "C"
+        queue_id:
+          type: string
+          nullable: true
+          description: "C"
+        state:
+          $ref: '#/components/schemas/TaskState'
+          description: 运行视图只出现 running（staged 由 /pending 表达）
+        filename:
+          type: string
+          description: "C；冗余自任务，列表展示用"
+        submitted_at:
+          type: string
+          format: date-time
+          description: "C"
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: "T；running 时补"
+        input_hash:
+          type: string
+          nullable: true
+          description: "C；sha256:<hex>，skipped 无（null）"
+        resources:
+          type: object
+          description: "C；Link0 声明与补齐标记（roadmap §2.6）"
+          required: [nproc, mem_gb]
+          properties:
+            nproc:
+              type: object
+              required: [value, defaulted]
+              properties:
+                value:
+                  type: integer
+                defaulted:
+                  type: boolean
+            mem_gb:
+              type: object
+              required: [value, defaulted]
+              properties:
+                value:
+                  type: number
+                defaulted:
+                  type: boolean
+        hq_job_id:
+          type: integer
+          nullable: true
+          description: "T；提交 HQ 后回填（M0 mock 给演示值）"
+        monitor:
+          type: object
+          nullable: true
+          description: "T；运行中实时（psutil）"
+          properties:
+            cpu_percent:
+              type: number
+            mem_rss_mb:
+              type: number
+            elapsed_s:
+              type: number
+        progress:
+          type: object
+          nullable: true
+          description: "T；增量解析注入"
+          properties:
+            opt_step:
+              type: integer
+              nullable: true
+            scf_cycle:
+              type: integer
+              nullable: true
+            converged:
+              type: boolean
+              nullable: true
+            last_line:
+              type: string
+              nullable: true
+
+    HistoryEntry:
+      type: object
+      description: 历史条目（终态冻结；Execution 超集 + 终态字段）
+      allOf:
+        - $ref: '#/components/schemas/Execution'
+        - type: object
+          required: [finished_at, cause, wall_time_s, chk_snapshot, archived, result_ref]
+          properties:
+            finished_at:
+              type: string
+              format: date-time
+              description: "F"
+            cause:
+              $ref: '#/components/schemas/FailureCause'
+              nullable: true
+              description: "F；succeeded 为 null"
+            wall_time_s:
+              type: number
+              description: "F；started_at→finished_at 派生"
+            monitor_summary:
+              type: object
+              nullable: true
+              description: "F；仅 succeeded"
+              properties:
+                cpu_peak_percent:
+                  type: number
+                mem_peak_mb:
+                  type: number
+                stall_alerts:
+                  type: integer
+                stall_total_minutes:
+                  type: number
+            chk_snapshot:
+              type: object
+              description: "F；非正常终止保全快照标记与位置"
+              required: [protected, location]
+              properties:
+                protected:
+                  type: boolean
+                location:
+                  type: string
+                  nullable: true
+                  description: 保护子目录位置；正常结束时 null
+            archived:
+              type: boolean
+              description: "F→；冻结后唯一可变字段"
+            result_ref:
+              type: string
+              nullable: true
+              description: "M3 占位，恒 null（Result 字段全集随 M3 契约 diff 一次性扩展）"
+
+    # ---------------- 输入分块结构 ----------------
+    MoleculeSummary:
+      type: object
+      description: 分子说明节统计（Hill 记法元素统计）
+      required: [atom_count, formula, variables_present, constants_present]
+      properties:
+        atom_count:
+          type: integer
+        formula:
+          type: string
+          description: Hill 记法，如 H2O1、C6H6O1（计数 1 显式）
+        variables_present:
+          type: boolean
+        constants_present:
+          type: boolean
+
+    InputBlock:
+      type: object
+      description: 附加输入节（由 route 关键词触发）
+      required: [lines, terminator_blank]
+      properties:
+        lines:
+          type: array
+          items:
+            type: string
+        terminator_blank:
+          type: boolean
+          description: 该节是否需要终止空行（以手册 Section Ordering 表逐节为准）
+
+    InputPreview:
+      type: object
+      description: 分块预览（M0 预览与 M2 编辑共用；重组空行不变式见 m0-plan §2.2）
+      required: [candidate_id, filename, blocks]
+      properties:
+        candidate_id:
+          type: integer
+        filename:
+          type: string
+        blocks:
+          type: object
+          required: [link0, route, title, charge_mult, molecule, additional_sections]
+          properties:
+            link0:
+              type: object
+              required: [lines, missing]
+              properties:
+                lines:
+                  type: array
+                  items:
+                    type: string
+                missing:
+                  type: array
+                  items:
+                    type: string
+                  description: 缺失 %NProcShared/%Mem 等（驱动提交确认框琥珀警告）
+            route:
+              type: string
+            title:
+              type: string
+              nullable: true
+            charge_mult:
+              type: string
+            molecule:
+              $ref: '#/components/schemas/MoleculeSummary'
+            additional_sections:
+              type: array
+              items:
+                $ref: '#/components/schemas/InputBlock'
+        parse_errors:
+          type: array
+          items:
+            type: object
+            required: [section, line, message]
+            properties:
+              section:
+                type: string
+              line:
+                type: integer
+              message:
+                type: string
+          description: 解析失败节信息（预览尽力而为；导入端点才严格校验）
+
+    # ---------------- 设置 ----------------
+    SettingItem:
+      type: object
+      description: 设置项（元数据供前端数据驱动渲染）
+      required: [key, value, editable, effect]
+      properties:
+        key:
+          type: string
+        value:
+          type: object
+          nullable: true
+          description: 实际值（scalar；由 value_type 决定）
+        value_type:
+          type: string
+          enum: [string, integer, number, boolean]
+        range:
+          type: object
+          nullable: true
+          properties:
+            min:
+              type: number
+              nullable: true
+            max:
+              type: number
+              nullable: true
+        editable:
+          type: boolean
+          description: false=启动级只读
+        effect:
+          $ref: '#/components/schemas/EffectKind'
+        env_var:
+          type: string
+          nullable: true
+          description: 启动级参数的环境变量名（G16WEB_ 前缀）
+        description:
+          type: string
+
+    SettingsResponse:
+      type: object
+      description: GET/PUT /settings 响应（两级分组）
+      required: [startup, runtime]
+      properties:
+        startup:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingItem'
+        runtime:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingItem'
+
+    SettingsUpdate:
+      type: object
+      description: PUT /settings 请求体（全有或全无；任一项校验失败整批拒绝）
+      required: [values]
+      properties:
+        values:
+          type: object
+          additionalProperties: true
+
+    CandidateCreate:
+      type: object
+      description: POST /candidates 响应（导入，M1 实施；M0 mock）
+      required: [files]
+      properties:
+        files:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              filename:
+                type: string
+
+    SubmitResponse:
+      type: object
+      required: [seat_id, task_id]
+      properties:
+        seat_id:
+          type: integer
+        task_id:
+          type: integer
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+    PageSizeParam:
+      name: page_size
+      in: query
+      required: false
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 200
+    CandidateId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    QueueId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+    ExecutionId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    Error:
+      description: 统一错误结构
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorBody'
+
+# ============================= 端点 =============================
+
+paths:
+  /system/health:
+    get:
+      tags: [system]
+      operationId: getSystemHealth
+      summary: 健康检查
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, version, uptime_s]
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                  version:
+                    type: string
+                  uptime_s:
+                    type: number
+        default:
+          $ref: '#/components/responses/Error'
+
+  /settings:
+    get:
+      tags: [settings]
+      operationId: getSettings
+      summary: 读全部设置（两级分组）
+      responses:
+        '200':
+          description: 设置全集
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+    put:
+      tags: [settings]
+      operationId: updateSettings
+      summary: 批量写运行级设置（全有或全无）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettingsUpdate'
+      responses:
+        '200':
+          description: 更新后全集
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /candidates:
+    get:
+      tags: [candidates]
+      operationId: listCandidates
+      summary: 分页列表（含实时 title）
+      parameters:
+        - name: origin
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CandidateOrigin'
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 分页候选列表
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageEnvelope'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Candidate'
+        '400':
+          $ref: '#/components/responses/Error'
+    post:
+      tags: [candidates]
+      operationId: importCandidates
+      summary: 导入（multipart，M1 实施；M0 mock）
+      description: 支持 files[]（批量）/ 文件夹导入 mode=files|folder
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                mode:
+                  type: string
+                  enum: [files, folder]
+                  default: files
+      responses:
+        '201':
+          description: 导入结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CandidateCreate'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /candidates/{id}:
+    get:
+      tags: [candidates]
+      operationId: getCandidate
+      summary: 候选详情
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+      responses:
+        '200':
+          description: 候选详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+        '404':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [candidates]
+      operationId: deleteCandidate
+      summary: 剔除候选（删除任务实体唯一入口）
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+      responses:
+        '204':
+          description: 已剔除
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /candidates/{id}/preview:
+    get:
+      tags: [candidates]
+      operationId: previewCandidate
+      summary: 分块预览
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+      responses:
+        '200':
+          description: 分块结构
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InputPreview'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /candidates/{id}/input:
+    get:
+      tags: [candidates]
+      operationId: getCandidateInput
+      summary: 完整输入纯文本（提交确认框用）
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+      responses:
+        '200':
+          description: 输入原文
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /candidates/{id}/blocks/{section}:
+    put:
+      tags: [candidates]
+      operationId: saveBlock
+      summary: 分块编辑保存（M2 实施；id 跨形态延续）
+      description: section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+        - name: section
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lines]
+              properties:
+                lines:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: 更新后的完整预览结构 + 非阻断警告
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/InputPreview'
+                  - type: object
+                    properties:
+                      warnings:
+                        type: array
+                        items:
+                          type: object
+                          required: [line, keyword, kind, suggestion]
+                          properties:
+                            line:
+                              type: integer
+                            keyword:
+                              type: string
+                            kind:
+                              type: string
+                              description: 如 keyword_spell
+                            suggestion:
+                              type: string
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /candidates/{id}/submit:
+    post:
+      tags: [candidates]
+      operationId: submitCandidate
+      summary: 行内提交（经待执行队列；满员 409）
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                time_limit_s:
+                  type: integer
+                  default: 0
+      parameters:
+        - $ref: '#/components/parameters/CandidateId'
+      responses:
+        '200':
+          description: 已入待执行队列
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /queues:
+    get:
+      tags: [queues]
+      operationId: listQueues
+      summary: 队列列表
+      responses:
+        '200':
+          description: 队列列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Queue'
+    post:
+      tags: [queues]
+      operationId: createQueue
+      summary: 创建队列（成员 2–10 校验，M2 实施；M0 mock）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, member_ids, skip_failed]
+              properties:
+                name:
+                  type: string
+                member_ids:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 2
+                  maxItems: 10
+                skip_failed:
+                  type: boolean
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /queues/{id}:
+    get:
+      tags: [queues]
+      operationId: getQueue
+      summary: 队列详情（含成员概览与失败记录）
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: 队列详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '404':
+          $ref: '#/components/responses/Error'
+    patch:
+      tags: [queues]
+      operationId: updateQueue
+      summary: 更新 {name?/member_ids?/skip_failed?}（全量有序、原子，M2 实施）
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                member_ids:
+                  type: array
+                  items:
+                    type: integer
+                skip_failed:
+                  type: boolean
+      responses:
+        '200':
+          description: 更新后队列
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Queue'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+    delete:
+      tags: [queues]
+      operationId: deleteQueue
+      summary: 删除队列（二次确认在前端）
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '204':
+          description: 已删除
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /queues/{id}/submit:
+    post:
+      tags: [queues]
+      operationId: submitQueue
+      summary: 直接提交（保存并进入执行，M2 实施）
+      parameters:
+        - $ref: '#/components/parameters/QueueId'
+      responses:
+        '200':
+          description: 已提交
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /pending:
+    get:
+      tags: [pending]
+      operationId: getPending
+      summary: 待执行席位 + 容量 + 窗口信息
+      responses:
+        '200':
+          description: 待执行队列全量
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingResponse'
+
+  /pending/order:
+    put:
+      tags: [pending]
+      operationId: reorderPending
+      summary: 整席重排 {seat_order:[]}（全量、原子，M1 实施）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [seat_order]
+              properties:
+                seat_order:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        '200':
+          description: 重排后全量
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingResponse'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /pending/seats/{seat_id}:
+    delete:
+      tags: [pending]
+      operationId: removeSeat
+      summary: 整席移除（单任务退候选/队列回退未提交，M1 实施）
+      parameters:
+        - name: seat_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: 已移除
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /pending/seats/{seat_id}/members/{task_id}:
+    delete:
+      tags: [pending]
+      operationId: removeSeatMember
+      summary: 席位内移除未执行成员（M1 实施）
+      parameters:
+        - name: seat_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 移除后全量
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /executions:
+    get:
+      tags: [executions]
+      operationId: listExecutions
+      summary: 在跑列表（并行同屏，按 id 键控）
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskState'
+      responses:
+        '200':
+          description: 在跑执行列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Execution'
+
+  /executions/{id}:
+    get:
+      tags: [executions]
+      operationId: getExecution
+      summary: 执行详情
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 执行详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Execution'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /executions/{id}/stop:
+    post:
+      tags: [executions]
+      operationId: stopExecution
+      summary: 手动停止（二次确认在前端；归因 manually_stopped，M1 实施）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '204':
+          description: 已停止
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /history:
+    get:
+      tags: [history]
+      operationId: listHistory
+      summary: 分页列表
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/TaskState'
+        - name: queue_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PageSizeParam'
+      responses:
+        '200':
+          description: 分页历史列表（默认 archived=false）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PageEnvelope'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/HistoryEntry'
+
+  /history/{id}:
+    get:
+      tags: [history]
+      operationId: getHistoryEntry
+      summary: 历史详情（终态冻结字段全量）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 历史条目
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryEntry'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/input:
+    get:
+      tags: [history]
+      operationId: getHistoryInput
+      summary: 输入原文（run/<id>/ 实际执行副本；skipped 回落任务副本）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 输入原文
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/output:
+    get:
+      tags: [history]
+      operationId: getHistoryOutput
+      summary: 输出纯文本预览（?download 触发导出；截断容错）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+        - name: download
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 输出文本
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/archive:
+    post:
+      tags: [history]
+      operationId: archiveHistoryEntry
+      summary: 归档（唯一冻结后可变操作）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '204':
+          description: 已归档
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/requeue:
+    post:
+      tags: [history]
+      operationId: requeueHistoryEntry
+      summary: 重新排队（原样重跑；满员 409，M1 实施）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 已入待执行队列
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmitResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/return-candidate:
+    post:
+      tags: [history]
+      operationId: returnCandidate
+      summary: 退回候选（新 id、带来源标记，M1 实施）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '201':
+          description: 新候选
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Candidate'
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /history/cleanup:
+    post:
+      tags: [history]
+      operationId: cleanupTransients
+      summary: 手动触发过期 chk/rwf 清理（返回清理统计，M1 实施）
+      responses:
+        '200':
+          description: 清理统计
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checked, removed_chk, removed_rwf]
+                properties:
+                  checked:
+                    type: integer
+                  removed_chk:
+                    type: integer
+                  removed_rwf:
+                    type: integer
+
+  /events:
+    get:
+      tags: [system]
+      operationId: sseEvents
+      summary: SSE 事件流（契约见 sse.md）
+      responses:
+        '200':
+          description: SSE 流
+          headers:
+            Content-Type:
+              schema:
+                type: string
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            text/event-stream:
+              schema:
+                type: string
