@@ -95,13 +95,13 @@
   }
  ],
  "in_progress": {
-  "task": "M0 D1-D2：验收走查 + 按类别整理提交（契约/后端/前端/文档分开）",
-  "note": "阶段 C（C1-C4 前端六页 + SSE 消费 + 设置面板）与审查修复 P1-P10 已完成：pytest 23 全绿、npm build 零错误、validate_progress 通过；mock 剧本六页联演（队列流转/席位/停滞告警）已冒烟验证"
+  "task": "M1 A1：HQ 桥接层设计与验收判据定稿（实地核查 payload.rs/streamer.rs → roadmap §8.8 增补）",
+  "note": "M0 已收尾：D1 六页 mock 联演验收走查留痕入库（walkthrough.md §8，DoD 七条全过）、工作区改动按类提交、双闸门通过；按 m1-plan 提交序列进入 M1"
  },
  "next_steps": [
-  "按 AGENTS §5.1 将工作区改动分 4 类提交：契约修正（openapi.yaml/sse.md/models）、后端修复（config/routers/mock/sse）、前端修复（stores/tokens/views/App）、文档对齐（m0-frontend-design）",
-  "M0-D1：六页 mock 联演验收走查（对照 m0-frontend-design 与样板）",
-  "M1：候选任务入口 + 队列与执行核心闭环（SSE 推送 + SQLite 历史；HQ 侧 HTTP/JSON 层与事件桥接）"
+  "M1 提交 #1：docs(plans) M1 执行计划定稿（m1-plan.md）",
+  "M1 A1：payload.rs/streamer.rs 事件全集核查 → roadmap §8.8 增补 + §7 开放事项 3 关闭 → 评审 → 提交 #2",
+  "M1 A2/A3：SQLite schema 与派发引擎/对账设计定稿，随后 B 阶段按提交序列推进"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
