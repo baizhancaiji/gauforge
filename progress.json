@@ -1,21 +1,111 @@
 {
- "updated": "2026-09-23T12:08+08:00",
+ "updated": "2026-09-23T16:17+0800",
  "latest_released_version": null,
  "unreleased": [
-  {"type": "added", "scope": "web", "summary": "新增 G16 Web 后端骨架（config 两级参数/应用工厂/统一错误结构），可启动服务", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "按 REST 契约补齐 mock 端点全表（system/settings/candidates/queues/pending/executions/history）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "新增 SSE broker 与 mock 推流（快照恢复/Last-Event-ID 重放/心跳）", "breaking": false, "migration": null}
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "新增 G16 Web 后端骨架（config 两级参数/应用工厂/统一错误结构），可启动服务",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "按 REST 契约补齐 mock 端点全表（system/settings/candidates/queues/pending/executions/history）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "新增 SSE broker 与 mock 推流（快照恢复/Last-Event-ID 重放/心跳）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "新增前端空壳工程（Vite+Vue3+TS、明暗双主题 tokens、六页视图与组件）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "新增 SSE 消费骨架与设置面板（流式解析/退避重连/Last-Event-ID/快照重建/设置读写）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "api",
+   "summary": "修正契约可空字段写法使 null 响应合法（finish_reason/cause 由 $ref+nullable 同级改为内联枚举含 null）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "web",
+   "summary": "对齐设置项契约命名与生效语义（10 项运行级 key/effect/range 修正并补 g16_root）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "web",
+   "summary": "修复 SSE 重放窗口下界与投递队满处理（超窗走快照重建、队满断连走恢复语义）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "web",
+   "summary": "补齐 mock 六页联演剧本（队列状态全流转、席位增减、派发、停滞告警置位/解除）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "web",
+   "summary": "修复前端快照重建残留与 Toast 命名规则（重建先清空旧态、队列成员取所属队列名并 15 字截断、消费 queue.status）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "web",
+   "summary": "移除历史抽屉遮罩硬编码色值（新增 --backdrop-dim 令牌并引用）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "docs",
+   "summary": "对齐设计文档与实现（--text-faint 实际色值、待执行页「在途」标记、SSE 剧本组织说明）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "changed",
+   "scope": "web",
+   "summary": "区分待执行页容量仪表与席位行的视觉层级（仪表改内嵌读数槽、区间加分隔线）",
+   "breaking": false,
+   "migration": null
+  }
  ],
- "in_progress": {"task": "M0 阶段 C：前端空壳（Vite+Vue3 六页 + 契约生成 TS 类型 + SSE 消费骨架 + 设置面板）", "note": "阶段 B 已完成：config.py + main.py 应用工厂 + routers 8 域 + gen_models.py 契约生成链 + mock 内存状态 + sse.py broker/推流 + 四项契约测试 23 条全绿；准备按 m0-plan §7 提交序列整理阶段 B 提交"},
+ "in_progress": {
+  "task": "M0 D1-D2：验收走查 + 按类别整理提交（契约/后端/前端/文档分开）",
+  "note": "阶段 C（C1-C4 前端六页 + SSE 消费 + 设置面板）与审查修复 P1-P10 已完成：pytest 23 全绿、npm build 零错误、validate_progress 通过；mock 剧本六页联演（队列流转/席位/停滞告警）已冒烟验证"
+ },
  "next_steps": [
-  "M0-C1-C2：前端工程初始化（Vite+Vue3+TS+router+pinia+tokens.css/base.css）+ 契约生成 TS 类型",
-  "M0-C3-C4：六页空壳组件 + SSE 消费骨架 + 设置面板读写",
-  "M0-D1-D2：验收走查 + 进度同步与提交整理",
+  "按 AGENTS §5.1 将工作区改动分 4 类提交：契约修正（openapi.yaml/sse.md/models）、后端修复（config/routers/mock/sse）、前端修复（stores/tokens/views/App）、文档对齐（m0-frontend-design）",
+  "M0-D1：六页 mock 联演验收走查（对照 m0-frontend-design 与样板）",
   "M1：候选任务入口 + 队列与执行核心闭环（SSE 推送 + SQLite 历史；HQ 侧 HTTP/JSON 层与事件桥接）"
  ],
  "known_issues": [
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "2026-09-23 完成 M0 阶段 A：契约文档 docs/api/（openapi.yaml 33 操作经 openapi-core 校验通过、sse.md、mapping.md、walkthrough.md）已按 m0-plan §7 分 3 个 docs 提交落库，决策点 1–11 全部定稿（含 OpenAPI 选 3.0.3）。进入阶段 B 后端骨架实现。requirements.txt 已追加运行时依赖（fastapi/uvicorn/sse-starlette/openapi-core/pyyaml/httpx）待随 build 提交。"
+ "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。"
 }
