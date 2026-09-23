@@ -1,0 +1,10 @@
+# 前端构建产物
+dist/
+node_modules/
+
+# 本地开发
+*.local
+.DS_Store
+
+# TS 增量构建缓存
+*.tsbuildinfo

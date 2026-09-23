@@ -1,0 +1,127 @@
+/**
+ * g16web · 设计令牌（design tokens）— 唯一事实来源（m0-frontend-design.md §2）
+ *
+ * 纪律：任何组件只引用这些 CSS 变量，禁止硬编码色值/字号/间距。
+ * 明暗双主题以 `html[data-theme=...]` 切换，组件不写主题分支。
+ */
+:root {
+  /* ---- 字体栈（§2.2）---- */
+  --font-mono:
+    "IBM Plex Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Menlo,
+    Consolas, monospace;
+  --font-sans: "IBM Plex Sans", "Noto Sans SC", system-ui, "PingFang SC",
+    "Microsoft YaHei", sans-serif;
+
+  /* ---- 字号阶梯（§2.2）---- */
+  --text-xs: 11px;
+  --text-sm: 12.5px;
+  --text-md: 13.5px;
+  --text-lg: 16px;
+  --text-xl: 20px;
+  --text-readout: 28px;
+
+  /* ---- 间距（4 的倍数，§2.3）---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- 圆角（§2.3）---- */
+  --r-sm: 3px;
+  --r-md: 6px;
+  --r-lg: 10px;
+
+  /* ---- 层级（§2.3）---- */
+  --z-nav: 100;
+  --z-dropdown: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+
+  /* ---- 布局常量（§3）---- */
+  --side-width: 216px;
+  --topbar-height: 56px;
+  --channel-card-width: 340px;
+
+  /* ---- 暗色主题（默认，长时间监控主场景） ---- */
+  /* 基底 */
+  --bg-base: #0c1116;
+  --bg-raised: #111820;
+  --bg-overlay: #17212b;
+  --bg-inset: #0a0e12;
+  --bg-side: #0c1116;
+  --border-hair: #1e2a36;
+  --border-strong: #2e3f4e;
+
+  /* 前景 */
+  --text-primary: #dde7ef;
+  --text-secondary: #8da2b5;
+  --text-faint: #5a6d80;
+
+  /* 品牌强调（磷光青） */
+  --accent: #38d4c2;
+  --accent-dim: #2a9c8f;
+  --accent-ink: #062019;
+
+  /* 状态语义色 */
+  --state-staged: #7f96ab;
+  --state-running: #38d4c2;
+  --state-succeeded: #4cc38a;
+  --state-failed: #e5534b;
+  --state-skipped: #d9a03f;
+  --state-archived: #55677a;
+  --state-idle: #55677a;
+
+  /* 功能色 */
+  --warn: #d9a03f;
+  --danger: #e5534b;
+
+  /* 语义衍生 */
+  --chip-bg-alpha: 0.12;
+  --row-hover: rgba(56, 212, 194, 0.04);
+  --glow-running:
+    0 0 0 1px rgba(56, 212, 194, 0.35), 0 0 24px rgba(56, 212, 194, 0.12);
+  --grid-line: rgba(141, 162, 181, 0.035);
+  --grid-dot: rgba(141, 162, 181, 0.05);
+  --shadow-pop: 0 8px 28px rgba(4, 8, 12, 0.45);
+}
+
+/* ---- 明亮主题（Light · 记录纸，§2.1）---- */
+html[data-theme="light"] {
+  --bg-base: #f2f5f7;
+  --bg-raised: #ffffff;
+  --bg-overlay: #ffffff;
+  --bg-inset: #eaeef2;
+  --bg-side: #ffffff;
+  --border-hair: #dbe2e8;
+  --border-strong: #aebcc8;
+
+  --text-primary: #1c2a35;
+  --text-secondary: #4d6072;
+  --text-faint: #80909e;
+
+  --accent: #0b8a7b;
+  --accent-dim: #0a7266;
+  --accent-ink: #ffffff;
+
+  --state-staged: #5b7186;
+  --state-running: #0b8a7b;
+  --state-succeeded: #1a7c4c;
+  --state-failed: #c23a31;
+  --state-skipped: #8f6a1f;
+  --state-archived: #8795a3;
+  --state-idle: #8795a3;
+
+  --warn: #8f6a1f;
+  --danger: #c23a31;
+
+  --row-hover: rgba(11, 138, 123, 0.05);
+  --glow-running: 0 0 0 1px rgba(11, 138, 123, 0.45);
+  --grid-line: rgba(28, 42, 53, 0.045);
+  --grid-dot: rgba(28, 42, 53, 0.06);
+  --shadow-pop: 0 8px 24px rgba(28, 42, 53, 0.16);
+}
