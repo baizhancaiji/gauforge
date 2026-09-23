@@ -24,12 +24,15 @@ from openapi_core.datatypes import RequestParameters
 from web.src import config
 
 @pytest.fixture(autouse=True)
-def _isolated_db(tmp_path):
+def _isolated_db(tmp_path, monkeypatch):
     """B1 起全局隔离：每个用例注入独立 SQLite（内存级临时文件），不触真实工作区。"""
     from web.src import store
     db = store.Database(tmp_path / "isolated.db")
     store.run_migrations(db)
     store.set_db(db)
+    # 引擎默认关闭（B10）：不 spawn 真 HQ、lifespan 走 M0 演示模式；
+    # 引擎用例自行置 True 并注入 FakeGateway/FakePM。
+    monkeypatch.setattr(config, "ENGINE_ENABLED", False)
     yield
     store.reset_db()
 

@@ -225,12 +225,20 @@ _STATE: MockState | None = None
 
 
 def get_state() -> MockState:
-    """应用级单例（lazy）；测试可替换为独立实例。"""
+    """应用级单例（lazy）；测试可替换为独立实例。
+
+    B10 起不再自动播种演示数据（真实部署的设置库不得被 demo 值污染）；
+    演示模式由应用工厂 lifespan 显式调 seed_demo()。
+    """
     global _STATE
     if _STATE is None:
         _STATE = MockState()
-        _seed(_STATE)
     return _STATE
+
+
+def seed_demo(state: MockState | None = None) -> None:
+    """演示模式入口：写入 demo 候选/席位与演示设置（仅引擎关闭时调用）。"""
+    _seed(state if state is not None else get_state())
 
 
 def _seed(state: MockState) -> None:

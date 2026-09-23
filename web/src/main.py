@@ -70,17 +70,24 @@ def build_app() -> FastAPI:
         app.mount("/", StaticFiles(directory=str(dist), html=True),
                   name="frontend")
 
-    # ---------- 生命周期：mock 剧本 + SSTO fanout ----------
+    # ---------- 生命周期：引擎（B10）/ mock 剧本 + SSOT fanout ----------
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
+        from .engine import startup
+
         state = get_state()
-        tasks = [
-            asyncio.create_task(fanout_task(state)),
-            asyncio.create_task(mock_script_runner(state)),
-        ]
+        tasks = [asyncio.create_task(fanout_task(state))]
+        engine = None
+        if config.ENGINE_ENABLED:  # 启动序列放线程池，不阻塞事件循环
+            engine = await asyncio.to_thread(startup.start_engine)
+        else:  # 引擎关闭：M0 mock 剧本演示模式（契约测试场景）
+            from .mock import seed_demo
+            seed_demo(state)  # 演示种子只进演示模式，不污染真实设置库
+            tasks.append(asyncio.create_task(mock_script_runner(state)))
         yield
         for t in tasks:
             t.cancel()
+        startup.shutdown_engine(engine)  # 摘运行时单例；不杀 HQ 进程
 
     app.router.lifespan_context = lifespan  # type: ignore[method-assign]
 

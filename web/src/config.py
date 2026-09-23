@@ -7,11 +7,14 @@
 from __future__ import annotations
 
 import os
+import shutil
 from pathlib import Path
 
 # ---------- 启动级（环境变量覆盖；WebUI 只读） ----------
 HOME_DIR = Path(os.environ.get("G16WEB_HOME", "~/g16web")).expanduser()
 BIND_ADDR = os.environ.get("G16WEB_BIND_ADDR", "127.0.0.1")
+# 派发引擎开关（启动级）：G16WEB_ENGINE=0 关闭（契约测试与 M0 演示模式）
+ENGINE_ENABLED = os.environ.get("G16WEB_ENGINE", "1") != "0"
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 CONTRACT_PATH = Path(__file__).resolve().parent.parent.parent / "docs" / "api" / "openapi.yaml"
 
@@ -94,3 +97,14 @@ def setting_value(key: str) -> object:
     """启动级参数当前值（环境变量已解析）。"""
     return {"workspace_root": str(HOME_DIR),
             "bind_address": BIND_ADDR}.get(key)
+
+
+def hq_bin() -> str:
+    """HQ 可执行定位（启动序列用）：环境变量 > PATH > 仓库构建产物。"""
+    env = os.environ.get("G16WEB_HQ_BIN")
+    if env:
+        return env
+    found = shutil.which("hq")
+    if found:
+        return found
+    return str(PROJECT_ROOT / "target" / "release" / "hq")

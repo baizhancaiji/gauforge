@@ -49,6 +49,8 @@ HQ_TERMINAL_MAP = {
     "canceled": ("failed", "manually_stopped"),
 }
 
+_SUMMARY_AUTO = object()  # monitor_summary/chk_snapshot 缺省：按既有管线取值
+
 
 def _mem_mib(gb: float) -> int:
     return int(round(float(gb) * 1024))
@@ -65,7 +67,8 @@ def _declared(execution: dict) -> tuple[int, int]:
 class Dispatcher:
     def __init__(self, gateway: Gateway, *, emitter=None,
                  run_root: Path | None = None,
-                 monitor: ExecutionMonitor | None = None) -> None:
+                 monitor: ExecutionMonitor | None = None,
+                 rerun_probe=None) -> None:
         self._gw = gateway
         self._emit = emitter if emitter is not None else self._mock_emit
         self._run_root = run_root if run_root is not None \
@@ -73,6 +76,12 @@ class Dispatcher:
         self._monitor = monitor if monitor is not None else ExecutionMonitor(
             float(settings().get("stall_threshold_minutes")))
         self._progress = ProgressTracker()
+        if rerun_probe is not None:
+            self._rerun_probe = rerun_probe
+        else:  # 延迟导入：reconcile 反向复用本模块（避免模块级环）
+            from .reconcile import detect_rerun
+            self._rerun_probe = detect_rerun
+        self._reconciled = False  # 启动对账闩：成功一次后不再重复（B10）
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -262,22 +271,35 @@ class Dispatcher:
             executions().set_started_at(row["id"], now_iso())
             self._monitor.note_started(row["id"], now_iso())
 
-    def _on_terminal(self, execution: dict, state: str, cause: str | None) -> None:
+    def _on_terminal(self, execution: dict, state: str, cause: str | None, *,
+                     monitor_summary=_SUMMARY_AUTO,
+                     chk_snapshot=_SUMMARY_AUTO,
+                     release: bool = True) -> None:
+        """终态冻结管线。
+
+        - monitor_summary/chk_snapshot 显式传参时覆盖既有取值（B10 对账：
+          S2 监视器态丢失 → 置空；S3 已先行保全 → 直接落库）；
+        - release=False 跳过席位释放与队列分流（S3 重定向：席位由新执行延续）。
+        """
         eid, tid = execution["id"], execution["task_id"]
         run_d = self._run_root / str(eid)
-        snap = None
+        snap = chk_snapshot
         if state == "succeeded":
             # ② formchk：失败记日志不阻断（finalize.make_fchk）
             g16_root = Path(str(settings().get("g16_root"))).expanduser()
             finalize.make_fchk(run_d, g16_root)
-        elif state == "failed":
+        elif state == "failed" and snap is _SUMMARY_AUTO:
             # ③ 保全快照：非正常终止 chk/rwf 移入 protected/
             snap = finalize.protect_transient(run_d)
+        if monitor_summary is _SUMMARY_AUTO:
+            monitor_summary = self._monitor.summary(eid) \
+                if state == "succeeded" else None
         self._monitor.settle(eid, now_iso())
-        summary = self._monitor.summary(eid) if state == "succeeded" else None
         executions().finalize(execution_id=eid, state=state,
                               finished_at=now_iso(), cause=cause,
-                              monitor_summary=summary, chk_snapshot=snap)
+                              monitor_summary=monitor_summary,
+                              chk_snapshot=None if snap is _SUMMARY_AUTO
+                              else snap)
         self._monitor.forget(eid)
         self._progress.forget(eid)
         extra = ({"queue_id": execution["queue_id"]}
@@ -290,6 +312,8 @@ class Dispatcher:
                    {"execution_id": eid, "task_id": tid,
                     "state": state, **extra, "cause": cause,
                     "ts": now_iso()})
+        if not release:
+            return  # S3 重定向：席位/队列不动，由新执行延续
         if state == "failed" and execution.get("queue_id"):
             self._handle_queue_failure(execution, cause)
         # 席位释放：单任务终态即离席；队列待全部成员终态后统一释放
@@ -453,6 +477,21 @@ class Dispatcher:
         from ..services.pending import snapshot
         self._emit("pending.snapshot", snapshot())
 
+    # ---------------- 重启对账（B10，编排见 reconcile.Reconciler） ----------------
+
+    def reconcile(self) -> dict:
+        """启动对账（§2.4 五场景）：HQ job 实态 ↔ 本地 running 执行对照。
+
+        幂等闩：成功一次后跳过（重复调用返回 {}）；HQ 不可达时
+        GatewayError 上抛（启动序列与引擎线程均会重试至成功）。
+        """
+        if self._reconciled:
+            return {}
+        from .reconcile import Reconciler  # 延迟导入（避免模块级环）
+        summary = Reconciler(self).run()
+        self._reconciled = True
+        return summary
+
     # ---------------- 线程循环（B10 挂启动序列） ----------------
 
     def start(self, interval: float = 2.0) -> None:
@@ -468,6 +507,11 @@ class Dispatcher:
     def _loop(self) -> None:
         while not self._stop.is_set():
             try:
+                if not self._reconciled:
+                    try:
+                        self.reconcile()
+                    except GatewayError:
+                        pass  # HQ 未就绪：下周期重试对账
                 self.tick()
             except Exception:  # 引擎线程不因单轮异常死亡
                 traceback.print_exc()

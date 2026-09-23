@@ -1,7 +1,7 @@
-"""引擎运行时单例（B7）：stop 端点经此寻址 Dispatcher。
+"""引擎运行时单例（B7/B10）：stop 端点经此寻址 Dispatcher。
 
-B10 将在应用工厂 lifespan 内创建并注入（HQ 进程管理 + 引擎线程启动）；
-测试经 set_dispatcher 注入。"""
+应用工厂 lifespan 经 engine/startup.start_engine 创建并注入；
+测试经 set_dispatcher 注入（或直接持有实例）。"""
 from __future__ import annotations
 
 from .dispatcher import Dispatcher
