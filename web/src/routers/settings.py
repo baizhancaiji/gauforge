@@ -14,7 +14,7 @@ router = APIRouter(tags=["settings"])
 def _item(meta: dict) -> dict:
     state = get_state()
     key = meta["key"]
-    if key in ("home_dir", "bind_addr"):
+    if key in ("workspace_root", "bind_address"):
         value = config.setting_value(key)
     elif key in config.RUNTIME_DEFAULTS:
         value = state.get_runtime(key)

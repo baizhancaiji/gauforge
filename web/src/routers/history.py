@@ -81,7 +81,7 @@ def requeue_history_entry(id: int) -> dict:
     h = next((e for e in state.history if e["id"] == id), None)
     if h is None:
         raise NOT_FOUND("history", id)
-    limit = int(state.get_runtime("seat_limit"))
+    limit = int(state.get_runtime("pending_seat_limit"))
     if len(state.seats) >= limit:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)

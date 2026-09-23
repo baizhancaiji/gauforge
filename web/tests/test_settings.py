@@ -42,7 +42,7 @@ def test_put_out_of_range_422_with_details():
 
 
 def test_put_startup_readonly_409():
-    r = client.put("/api/v1/settings", json={"values": {"bind_addr": "0.0.0.0"}})
+    r = client.put("/api/v1/settings", json={"values": {"bind_address": "0.0.0.0"}})
     assert r.status_code == 422  # readonly 项按未知/只读拒
     code = r.json()["error"]["code"]
     assert code in ("VALIDATION_FAILED", "SETTING_READONLY")

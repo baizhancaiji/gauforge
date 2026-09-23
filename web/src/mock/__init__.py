@@ -153,7 +153,7 @@ class MockState:
     # ------------------------ 待执行席位 ------------------------
     def pending(self) -> dict:
         """GET /pending 响应体：席位 + 容量 + 窗口。"""
-        limit = int(self.get_runtime("seat_limit"))
+        limit = int(self.get_runtime("pending_seat_limit"))
         occupied = len(self.seats)
         return {
             "seats": copy.deepcopy(self.seats),
@@ -162,7 +162,7 @@ class MockState:
                 "occupied": occupied,
                 "available": max(0, limit - occupied),
             },
-            "window_size": int(self.get_runtime("window_size")),
+            "window_size": int(self.get_runtime("parallel_window")),
         }
 
     # ------------------------ 执行与历史 ------------------------
@@ -180,9 +180,9 @@ class MockState:
             "started_at": _now(),
             "input_hash": f"sha256:{eid:x}",
             "resources": {
-                "nproc": {"value": int(self.get_runtime("link0_nproc")),
+                "nproc": {"value": int(self.get_runtime("link0_default_nproc")),
                           "defaulted": nproc_defaulted},
-                "mem_gb": {"value": float(self.get_runtime("link0_mem_gb")),
+                "mem_gb": {"value": float(self.get_runtime("link0_default_mem_gb")),
                            "defaulted": True},
             },
             "hq_job_id": 1000 + eid,
@@ -266,9 +266,58 @@ def get_state() -> MockState:
 
 
 def _seed(state: MockState) -> None:
-    """演示种子：若干候选 + 一条队列 + 一条运行中执行 + 一条历史。"""
+    """演示种子：候选 + 一条队列 + 在途席位堆 + 多个并行运行执行 + 一条历史。
+
+    目视口径：并行窗口 parallel_window=4 → 执行中页 4 槽位全满；
+    在途席位上限 pending_seat_limit=6 → 待执行页 6/6 满，前 4 席在途（locked）、
+    后 2 席等待区；队列席位提供成员概览多样性。
+    """
     for i in range(8):
         state.add_candidate(f"job{i + 1}.gjf")
-    # 一条运行中的执行，便于执行中页与 SSE 剧本联演。
-    cand = state.candidates[0]
-    state.add_execution(cand["id"], cand["filename"], None, 0)
+
+    state.runtime["parallel_window"] = 4
+    state.runtime["pending_seat_limit"] = 6
+
+    cands = state.candidates
+
+    # 队列入一席位（成员=前两个候选），增添席位类型多样性。
+    queue_id = state.create_queue("rho-scan", [cands[0]["id"], cands[1]["id"]],
+                                  False)["id"]
+
+    # 6 个席位：前 4 个已被并行窗口触及（在途）→ locked，后 2 个在等待区。
+    seat_spec: list[tuple[str, str | None, list[int], bool]] = [
+        ("task", None, [0], True),
+        ("task", None, [1], True),
+        ("task", None, [2], True),
+        ("task", None, [3], True),
+        ("task", None, [4], False),
+        ("queue", queue_id, [5, 6], False),
+    ]
+    for pos, (kind, qid, member_cids, locked) in enumerate(seat_spec):
+        sid = state.next_id()
+        members = [{"task_id": cands[c]["id"], "filename": cands[c]["filename"],
+                    "state": "staged"} for c in member_cids]
+        state.seats.append({
+            "seat_id": sid, "kind": kind,
+            "task_id": None if kind == "queue" else members[0]["task_id"],
+            "queue_id": qid, "position": pos, "members": members,
+            "locked": locked,
+        })
+
+    # 并行槽位填满：4 条运行中执行，各带独立监控/进度读数，执行页一开即现形。
+    for i in range(4):
+        cand = cands[i]
+        exc = state.add_execution(cand["id"], cand["filename"], None, 0)
+        exc["monitor"] = {
+            "cpu_percent": 40 + i * 15, "mem_rss_mb": 480 + i * 120,
+            "elapsed_s": 25 + i * 60,
+        }
+        exc["progress"] = {
+            "opt_step": i + 1, "scf_cycle": 5 + i, "converged": False,
+            "last_line": f" Step number {i + 1}",
+        }
+
+    # 一条已完结历史（HistoryView 落地页目视演示）。
+    done = cands[7]
+    dex = state.add_execution(done["id"], done["filename"], None, 0)
+    state.finish_execution(dex["id"], "succeeded", None)

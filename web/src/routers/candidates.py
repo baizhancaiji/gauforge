@@ -33,7 +33,7 @@ def _preview(cid: int) -> dict:
         "candidate_id": cid,
         "filename": cand["filename"],
         "blocks": {
-            "link0": {"lines": [f"%mem={int(state.get_runtime('link0_mem_gb'))}GB"],
+            "link0": {"lines": [f"%mem={int(state.get_runtime('link0_default_mem_gb'))}GB"],
                       "missing": link0_missing},
             "route": route,
             "title": cand["title"],
@@ -129,7 +129,7 @@ def submit_candidate(id: int, payload: dict | None = None) -> dict:
     cand = state.get_candidate(id)
     if cand is None:
         raise NOT_FOUND("candidate", id)
-    limit = int(state.get_runtime("seat_limit"))
+    limit = int(state.get_runtime("pending_seat_limit"))
     if len(state.seats) >= limit:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)

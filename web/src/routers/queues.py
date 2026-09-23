@@ -84,7 +84,7 @@ def submit_queue(id: str) -> dict:
         raise NOT_FOUND("queue", id)
     if q["state"] != "unsubmitted":
         raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可提交", http=409)
-    limit = int(state.get_runtime("seat_limit"))
+    limit = int(state.get_runtime("pending_seat_limit"))
     if len(state.seats) >= limit:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)
