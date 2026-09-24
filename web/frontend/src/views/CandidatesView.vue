@@ -114,6 +114,73 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
   load();
 }
 
+// ---------- 行内提交（M1.3：确认框完整输入限高滚动 / Link0 黄警 / 满员 409） ----------
+const submitting = ref<Candidate | null>(null);
+const submitInput = ref("");
+const submitMissing = ref<string[]>([]);
+const submitDefaults = ref<{ nproc: number | null; mem: number | null }>({
+  nproc: null,
+  mem: null,
+});
+const submitFetching = ref(false);
+const submitBusy = ref(false);
+const submitError = ref<string | null>(null);
+const submitActive = computed(() => submitting.value != null);
+
+async function openSubmit(c: Candidate) {
+  submitting.value = c;
+  submitInput.value = "";
+  submitMissing.value = [];
+  submitError.value = null;
+  submitFetching.value = true;
+  const [inp, prev, set] = await Promise.all([
+    client.GET("/candidates/{id}/input", { params: { path: { id: c.id } } }),
+    client.GET("/candidates/{id}/preview", { params: { path: { id: c.id } } }),
+    client.GET("/settings"),
+  ]);
+  submitFetching.value = false;
+  submitInput.value = inp.data ?? "";
+  submitMissing.value = prev.data?.blocks.link0.missing ?? [];
+  const runtime = set.data?.runtime ?? [];
+  const num = (k: string) => runtime.find((s) => s.key === k)?.value;
+  submitDefaults.value = {
+    nproc: (num("link0_default_nproc") as number | undefined) ?? null,
+    mem: (num("link0_default_mem_gb") as number | undefined) ?? null,
+  };
+}
+
+/** 黄警文案：缺失项 + 设置面板缺省值（验收路径第 3 步）。 */
+const submitWarnText = computed(() => {
+  const parts: string[] = [];
+  if (submitMissing.value.includes("%NProcShared") && submitDefaults.value.nproc != null)
+    parts.push(`%NProcShared=${submitDefaults.value.nproc}`);
+  if (submitMissing.value.includes("%Mem") && submitDefaults.value.mem != null)
+    parts.push(`%Mem=${submitDefaults.value.mem} GB`);
+  const head = submitMissing.value.join("、");
+  return parts.length ? `${head} 未声明 · 提交时将按默认值补齐（${parts.join("、")}）` : `${head} 未声明 · 提交时将按默认值补齐`;
+});
+
+async function confirmSubmit() {
+  const c = submitting.value;
+  if (!c) return;
+  submitBusy.value = true;
+  submitError.value = null;
+  const { error } = await client.POST("/candidates/{id}/submit", {
+    params: { path: { id: c.id } },
+  });
+  submitBusy.value = false;
+  if (error) {
+    const body = error as unknown as { error?: { code?: string; message?: string } };
+    submitError.value =
+      body.error?.code === "PENDING_CAPACITY_FULL"
+        ? "在途席位满员 — 请在待执行页移除席位或调高上限后重试"
+        : (body.error?.message ?? "提交失败");
+    return;
+  }
+  submitting.value = null;
+  load();
+}
+
 // ---------- 剔除（删除任务实体唯一入口，二次确认） ----------
 const removing = ref<Candidate | null>(null);
 const removeLoading = ref(false);
@@ -237,6 +304,9 @@ const causeLabel: Record<string, string> = {
                 </td>
                 <td class="mono dim">{{ fmtDateTime(c.created_at) }}</td>
                 <td class="right">
+                  <button class="btn btn--ghost" type="button" @click.stop="openSubmit(c)">
+                    提交
+                  </button>
                   <button class="btn btn--ghost" type="button" @click.stop="loadPreview(c)">
                     预览
                   </button>
@@ -350,6 +420,30 @@ const causeLabel: Record<string, string> = {
       </section>
     </div>
 
+    <!-- 行内提交确认框（§4.6 模态；完整输入限高滚动 + Link0 黄警 + 满员 409） -->
+    <ConfirmModal
+      :open="submitting != null"
+      title="提交执行"
+      confirm-text="提交"
+      :loading="submitBusy"
+      :disabled="submitFetching"
+      @confirm="confirmSubmit"
+      @close="submitting = null"
+    >
+      <div class="submit-body">
+        <!-- Link0 缺失黄色警告（琥珀纪律：需要行动的警告；M1.3 验收路径第 3 步） -->
+        <p v-if="submitMissing.length" class="submit-warn mono">
+          ⚠ {{ submitWarnText }}
+        </p>
+        <p v-else class="submit-ok mono">Link0 声明齐全</p>
+
+        <p v-if="submitError" class="submit-error mono" role="alert">{{ submitError }}</p>
+
+        <div class="input-cap mono">完整输入（纯文本 · 含坐标）</div>
+        <pre class="input-text mono">{{ submitFetching ? "读取中 …" : submitInput }}</pre>
+      </div>
+    </ConfirmModal>
+
     <!-- 剔除二次确认（§4.6 危险确认模态） -->
     <ConfirmModal
       :open="removing != null"
@@ -417,6 +511,44 @@ const causeLabel: Record<string, string> = {
 }
 .confirm-line .strong {
   color: var(--text-primary);
+}
+/* 行内提交确认框内容 */
+.submit-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.submit-warn {
+  font-size: var(--text-xs);
+  color: var(--warn);
+}
+.submit-ok {
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+.submit-error {
+  font-size: var(--text-xs);
+  color: var(--danger);
+}
+.input-cap {
+  font-size: 10px;
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+/* 完整输入限高滚动（M1.3：纯文本完整预览，含坐标） */
+.input-text {
+  margin: 0;
+  max-height: 300px;
+  overflow: auto;
+  background: var(--bg-inset);
+  border: 1px solid var(--border-hair);
+  border-radius: var(--r-md);
+  padding: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .duo {
   display: grid;

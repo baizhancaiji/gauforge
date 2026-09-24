@@ -14,6 +14,8 @@ const props = defineProps<{
   confirmText?: string;
   cancelText?: string;
   loading?: boolean;
+  /** 内容未就绪时禁用确认（如输入原文读取中） */
+  disabled?: boolean;
 }>();
 
 const emit = defineEmits<{ confirm: []; close: [] }>();
@@ -71,7 +73,7 @@ function trapFocus(e: KeyboardEvent) {
           :class="danger ? 'btn--danger' : 'btn--primary'"
           type="button"
           :data-loading="loading || undefined"
-          :disabled="loading"
+          :disabled="loading || disabled"
           @click="emit('confirm')"
         >
           {{ loading ? `${confirmText ?? "确认"}中 …` : confirmText ?? "确认" }}
