@@ -8,6 +8,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+# tako amount.rs：ResourceAmount 内部整数 = units×FRACTIONS_PER_UNIT + fractions
+# （mem 的 units 为 MiB）。JSON sum size 即该内部整数。
+FRACTIONS_PER_UNIT = 10_000
+
 
 class GatewayError(RuntimeError):
     """HQ 调用失败（非零退出码/连接不可用/解析失败）。"""
@@ -30,8 +34,11 @@ def worker_resources(configuration: dict) -> tuple[int, int]:
     """HQ worker configuration.resources → (cpus, mem_mib)（停等记账用）。
 
     HQ JSON 形状（crates client/output/json.rs format_resource_descriptor）：
-    cpus 为 range 序列化闭区间（--cpus 4 → start=0 end=3），mem 为 sum
-    资源（size 即 MiB 数）。CLI 与 HTTP 两实现共用本解析（领域规则集中）。
+    cpus 为 range 序列化闭区间（--cpus 4 → start=0 end=3）；mem 为 sum
+    资源，size 为 ResourceAmount 内部整数 = MiB×10000 + 万分位小数
+    （tako amount.rs：FRACTIONS_PER_UNIT=10_000，"memory sizes are
+    always in mibibytes"），故须除以 10000 还原 MiB。CLI 与 HTTP 两实现
+    共用本解析（领域规则集中）。
     """
     cpus = 0
     mem_mib = 0
@@ -40,7 +47,8 @@ def worker_resources(configuration: dict) -> tuple[int, int]:
             span = int(res.get("end", 0)) - int(res.get("start", 0)) + 1
             cpus = max(cpus, span)
         elif res.get("name") == "mem":
-            mem_mib = max(mem_mib, int(res.get("size") or 0))
+            raw = int(res.get("size") or 0)
+            mem_mib = max(mem_mib, raw // FRACTIONS_PER_UNIT)
     return cpus, mem_mib
 
 

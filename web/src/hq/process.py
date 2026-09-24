@@ -77,17 +77,23 @@ class HqProcessManager:
         self._ensure_watchdog()
         return True
 
-    def ensure_worker(self, cpus: int = 1, wait_timeout: float = 10.0) -> int:
-        """保证至少一个在线 worker，返回其 id。"""
+    def ensure_worker(self, cpus: int | None = None,
+                      wait_timeout: float = 10.0) -> int:
+        """保证至少一个在线 worker，返回其 id。
+
+        默认不传 --cpus：worker 资源取启动探测（roadmap §8.6「worker
+        资源 = 启动探测 + --resource 声明」），mem 由 HQ 自动上报——
+        停等记账的「worker 总资源」依赖真实探测值；cpus 参数仅供测试
+        显式约束。
+        """
         gw = CliGateway(self.hq_path, str(self.server_dir))
         online = [w for w in gw.workers() if w["online"]]
         if not online:
-            # 不禁资源检测：mem 资源请求（B6 双账第二账）依赖 worker
-            # 上报 mem；--cpus 仍显式约束（cpus 闭区间上报见 gateway）
-            self._worker_procs.append(self._spawn("worker", [
-                "worker", "start", "--cpus", str(cpus),
-                "--on-server-lost", "stop",
-                "--work-dir", str(self.server_dir / "worker")]))
+            args = ["worker", "start", "--on-server-lost", "stop",
+                    "--work-dir", str(self.server_dir / "worker")]
+            if cpus is not None:
+                args += ["--cpus", str(cpus)]
+            self._worker_procs.append(self._spawn("worker", args))
             self._wait_alive(
                 lambda: any(w["online"] for w in gw.workers()),
                 wait_timeout, "worker")

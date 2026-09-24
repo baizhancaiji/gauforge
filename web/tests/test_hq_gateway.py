@@ -15,7 +15,7 @@ import httpx
 import pytest
 
 from web.src.hq.cli_gateway import CliGateway
-from web.src.hq.gateway import GatewayError, derive_job_state
+from web.src.hq.gateway import GatewayError, derive_job_state, worker_resources
 from web.src.hq.http_gateway import HttpGateway
 from web.src.hq.process import HqProcessManager
 
@@ -92,6 +92,16 @@ def test_cancel_unknown_job_raises(hq_env):
         gw.cancel(999999)
 
 
+def test_worker_resources_mem_fractions_units():
+    # 回归（GUI 走查发现）：sum size 是 ResourceAmount 内部整数
+    # （MiB×10000 + 万分位，tako amount.rs FRACTIONS_PER_UNIT=10_000），
+    # 非 MiB 原值。158830898 → 15883 MiB（本机 worker 实测线缆值）。
+    cfg = {"resources": {"resources": [
+        {"name": "cpus", "start": 0, "end": 11},
+        {"name": "mem", "size": 158830898}]}}
+    assert worker_resources(cfg) == (12, 15883)
+
+
 def test_derive_job_state_pure():
     # 纯函数：task_stats → 单一状态（canceled > failed > finished > running > waiting）
     assert derive_job_state({"canceled": 0, "failed": 0, "finished": 0,
@@ -139,7 +149,7 @@ def fake_hq_handler(request: httpx.Request) -> httpx.Response:
             "configuration": {"hostname": "wsl",
                               "resources": {"resources": [
                                   {"name": "cpus", "start": 0, "end": 3},
-                                  {"name": "mem", "size": 15883}]}},
+                                  {"name": "mem", "size": 158830000}]}},
             "ended": None,
         }])
     return httpx.Response(500, json={"error": "unmocked"})
