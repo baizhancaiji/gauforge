@@ -166,9 +166,14 @@ def test_domain_events_from_real_actions(gw):
                 seats().append(kind="queue", queue_id=qid)
                 disp.advance()
                 assert history("queue.status")
-                # ⑨ 队列创建端点（M2 前为 mock 数据源，事件管道为真实通路）
+                # ⑨ 队列创建端点（真实 queues/tasks 存储：成员须为真实候选）
+                qc = client.post("/api/v1/candidates", files=[
+                    ("files", ("qm1.gjf", SIMPLE.encode(), "text/plain")),
+                    ("files", ("qm2.gjf", SIMPLE.encode(), "text/plain"))])
+                assert qc.status_code == 201
+                qm = [f["id"] for f in qc.json()["files"]]
                 assert client.post("/api/v1/queues", json={
-                    "name": "q", "member_ids": [1, 2]}).status_code == 201
+                    "name": "q", "member_ids": qm}).status_code == 201
                 # ⑩ 设置保存 → settings.updated
                 assert client.put("/api/v1/settings", json={
                     "values": {"listen_port": 8301}}).status_code == 200
