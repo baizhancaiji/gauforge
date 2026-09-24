@@ -604,8 +604,9 @@ manually_stopped（§8.7 映射）。质量标准：fake g16 父子进程树 CPU
 交付物：progress 解析器 + 金标准测试。
 
 **B9 终态/历史/formchk/清理**：① 终态管线：HQ 终态事件 → 归因映射 →
-executions 冻结（finished_at/cause/wall_time_s/monitor_summary 仅
-succeeded）→ `history.appended`；② formchk：succeeded 后以 `g16_root/
+executions 冻结（finished_at/cause/monitor_summary；wall_time_s 不设
+独立列，由 finished_at−started_at 在历史 API 派生，§2.2）→
+`history.appended`；② formchk：succeeded 后以 `g16_root/
 formchk` 转 `.fchk` 留在 run/<id>/（chk 路径取 Link0 %Chk，无声明回落
 默认名——B6 实施核实），失败记日志不阻断；③ 保全快照：failed/外部中断
 时 chk/rwf 改名移入 run/<id>/protected/ + chk_snapshot 落库；④ 清理：
