@@ -426,11 +426,10 @@ tbody tr.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shad
       <section class="view" id="v-pend">
         <div class="gaugerow stag">
           <div class="gauge"><div class="lab">OCCUPIED 在途席位</div><div class="segbar"><span class="seg f"></span><span class="seg f"></span><span class="seg"></span></div><div class="val">2 / 3</div></div>
-          <div class="gauge"><div class="lab">WINDOW 并行执行</div><div class="segbar"><span class="seg f"></span><span class="seg f"></span><span class="seg"></span><span class="seg"></span></div><div class="val">2 / 2</div></div>
         </div>
         <div class="seats">
           <div class="seat locked stag">
-            <span class="sid">S-05</span>
+            <span class="sid">S05</span>
             <div class="body">
               <div class="t1"><span class="chip plain">QUEUE</span> queue AB2CDE · 苯酚系列 <span class="chip running"><span class="d"></span>执行中</span></div>
               <div class="members">
@@ -438,19 +437,19 @@ tbody tr.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shad
                 <div class="m"><span class="mid">T-45</span><span>phenol-freq.gjf</span><span class="fml">C6H6O1</span><span class="chip staged"><span class="d"></span>等待</span></div>
               </div>
             </div>
-            <span class="winmark">WINDOW</span>
+            <span class="winmark">在途</span>
           </div>
           <div class="seat locked stag">
-            <span class="sid">S-06</span>
+            <span class="sid">S06</span>
             <div class="body">
               <div class="t1"><span class="chip plain">TASK</span> anisole-opt.com <span class="chip running"><span class="d"></span>执行中</span></div>
               <div class="t2">直接提交 · 未入队列</div>
             </div>
-            <span class="winmark">WINDOW</span>
+            <span class="winmark">在途</span>
           </div>
           <div class="divider-note stag">▼ 等待区 · 窗口未触及，可重排 / 移除</div>
           <div class="seat stag">
-            <span class="sid">S-07</span>
+            <span class="sid">S07</span>
             <div class="body">
               <div class="t1"><span class="chip plain">QUEUE</span> queue F0A312 · 精修批次 <span class="chip staged"><span class="d"></span>已提交</span></div>
               <div class="t2">成员 4 · 跳过失败任务 已启用</div>
@@ -458,7 +457,7 @@ tbody tr.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shad
             <button class="btn ghost">移除席位</button>
           </div>
           <div class="seat stag">
-            <span class="sid">S-08</span>
+            <span class="sid">S08</span>
             <div class="body">
               <div class="t1"><span class="chip plain">TASK</span> methanol-opt.gjf <span class="chip staged"><span class="d"></span>等待</span></div>
               <div class="t2">行内提交 · 09-23 08:12</div>
@@ -494,18 +493,6 @@ tbody tr.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shad
               <div class="ro sub"><div class="n" data-ro="scf">Cycle 1</div><div class="l">SCF 迭代</div></div>
             </div>
             <div class="chfoot"><span class="stall"><span class="d"></span>停滞告警 12 m · 超过阈值无新优化步</span><button class="btn danger" style="height:26px">停止</button></div>
-          </div>
-          <div class="chcard stag" style="opacity:.55">
-            <div class="chhead"><span class="ch">CH 041</span><span class="chip succeeded"><span class="d"></span>SUCCEEDED</span></div>
-            <div class="chfile">water.gjf</div>
-            <div class="chmeta">T-12 · 直接提交 · 07:58:01 → 08:06:47 · 耗时 8m 46s</div>
-            <div class="readouts">
-              <div class="ro"><div class="n">398<small>%</small></div><div class="l">CPU 峰值</div></div>
-              <div class="ro"><div class="n">596<small>MB</small></div><div class="l">内存峰值</div></div>
-              <div class="ro sub"><div class="n">9 步收敛</div><div class="l">优化结果</div></div>
-              <div class="ro sub"><div class="n">— </div><div class="l">停滞 0 次</div></div>
-            </div>
-            <div class="chfoot"><span class="quiet">已转入历史 · fchk 已生成</span><span></span></div>
           </div>
         </div>
       </section>
