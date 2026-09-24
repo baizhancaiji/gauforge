@@ -21,7 +21,9 @@
 失败分流：未勾跳过——出错成员记 failed、未启动成员即时 skipped
 (predecessor_failed)、在跑成员任其跑完、队列即刻回退未提交
 (abort_on_failure)；勾选跳过——继续取未启动成员，全部结束时按
-finished_with_failures 处理；全部成功 → completed(success)。
+finished_with_failures 处理；手动停止——在跑成员全部被 stop，
+未执行成员 skipped(queue_manually_stopped) + 整队回退
+(manually_stopped)；全部成功 → completed(success)。
 
 队列席位待全部成员完成后统一释放；失败回退后队列状态不再变动，
 仅在跑成员收尾结束后释放席位。窗口之外的一切在真正执行前都可能被修改
@@ -332,6 +334,18 @@ class Dispatcher:
             return  # 已回退/已结算：不重复分流
         members = tasks().list_queue_members(qid)
         running_ids = {e["task_id"] for e in executions().list_by_state("running")}
+        if cause == "manually_stopped":
+            # 手动停止（§2.3）：未执行成员即时 skipped(queue_manually_stopped)
+            # + 整队回退；在跑成员已被一并 stop，其终态事件到达时队列已
+            # unsubmitted，本分支天然幂等不再分流
+            for m in members:
+                if m["id"] in running_ids \
+                        or self._executed_this_cycle(m["id"], q):
+                    continue
+                self._mark_skipped(m, qid, "queue_manually_stopped")
+            self._queue_rollback(q, "manually_stopped",
+                                 [(execution["task_id"], "failed", cause)])
+            return
         if not q["skip_failed"]:
             for m in members:
                 if m["id"] in running_ids \

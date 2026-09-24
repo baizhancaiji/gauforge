@@ -397,6 +397,41 @@ def test_queue_success_completes(disp, rec):
     assert seats().count() == 0
 
 
+def test_queue_manual_stop(disp, rec):
+    """手动停止（§2.3）：在跑成员 failed(manually_stopped) + 未执行成员
+    skipped(queue_manually_stopped) + 整队回退（finish_reason=manually_stopped）。"""
+    m1, m2, m3 = (add_input(SIMPLE, f"m{i}.gjf") for i in (1, 2, 3))
+    qid = make_queue([m1, m2, m3], skip_failed=False)
+    disp.advance()  # 派 m1
+    eid = running_rows()[0]["id"]
+    disp.stop_execution(eid)  # stop 端点同路径：Gateway.cancel → Canceled
+    disp.tick()
+    e1 = executions().get(eid)
+    assert e1["state"] == "failed" and e1["cause"] == "manually_stopped"
+    # 未执行成员即时 skipped(queue_manually_stopped)
+    for t in (m2, m3):
+        rows = executions().list_by_task(t)
+        assert rows[-1]["state"] == "skipped"
+        assert rows[-1]["cause"] == "queue_manually_stopped"
+    # 整队回退
+    q = queues().get(qid)
+    assert q["state"] == "unsubmitted"
+    assert q["finish_reason"] == "manually_stopped"
+    assert q["rollback_flag"] == 1 and q["rollback_count"] == 1
+    # 事件序（sse.md §3 手动停止队列）：failed → skipped×2 → 回退 → 快照
+    # （取末段：advance 期的 queue.status(executing) 不在断言范围）
+    order = [(e, d.get("to")) for e, d in rec
+             if e in ("task.status", "queue.status", "pending.snapshot")][-5:]
+    assert order == [("task.status", "failed"),
+                     ("task.status", "skipped"),
+                     ("task.status", "skipped"),
+                     ("queue.status", "unsubmitted"),
+                     ("pending.snapshot", None)]
+    assert last(rec, "queue.status")["finish_reason"] == "manually_stopped"
+    # 无在跑成员：席位即刻释放
+    assert seats().count() == 0
+
+
 # ---------------- fake g16 经真 CliGateway 首条链路（hq 不在 PATH 跳过） ----------------
 
 @pytest.mark.skipif(HQ is None, reason="hq 不在 PATH")
