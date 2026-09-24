@@ -11,6 +11,7 @@ rust-version.workspace = true
 [dependencies]
 log = { workspace = true }
 env_logger = { workspace = true }
+axum = { workspace = true }
 futures = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
 clap = { workspace = true, features = ["derive", "env"] }

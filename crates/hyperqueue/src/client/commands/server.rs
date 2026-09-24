@@ -99,6 +99,12 @@ pub struct ServerStartOpts {
     #[arg(long)]
     worker_port: Option<u16>,
 
+    /// The port for the embedded HTTP API, bound to 127.0.0.1
+    ///
+    /// If not set, the HTTP API is disabled.
+    #[arg(long)]
+    http_port: Option<u16>,
+
     /// The path to a journal file
     ///
     /// If the file already exists, the file is first used to restore the server state.
@@ -231,6 +237,7 @@ async fn start_server(gsettings: &GlobalSettings, opts: ServerStartOpts) -> anyh
             }),
         server_uid: access_file.as_ref().map(|a| a.server_uid().to_string()),
         scheduler_mip_time_limit: opts.scheduler_time_limit,
+        http_port: opts.http_port,
     };
 
     init_hq_server(gsettings, server_cfg).await

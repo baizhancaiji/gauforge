@@ -50,6 +50,8 @@ pub struct ServerConfig {
     pub server_uid: Option<String>,
     /// See `tako::server::SchedulerConfig::mip_time_limit`.
     pub scheduler_mip_time_limit: Duration,
+    /// Port of the embedded HTTP API (m1-plan §2.1); `None` disables it (default).
+    pub http_port: Option<u16>,
 }
 
 /// This function initializes the HQ server.
@@ -268,11 +270,39 @@ pub async fn initialize_server(
     )));
 
     let senders2 = senders.clone();
+    let http_listener = match server_cfg.http_port {
+        Some(port) => {
+            let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, port))
+                .await
+                .with_context(|| format!("Cannot bind HTTP API on 127.0.0.1:{port}"))?;
+            log::info!(
+                "HTTP API listening on 127.0.0.1:{}",
+                listener.local_addr()?.port()
+            );
+            Some(listener)
+        }
+        None => None,
+    };
     let fut = async move {
         tokio::pin! {
             let autoalloc_process = autoalloc_process;
         };
         let events = senders.events.clone();
+
+        // HTTP 桥接任务依赖 LocalSet 上下文，须在本 future 内启动（§4.2 H1）。
+        let mut http_server: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
+        if let Some(listener) = http_listener {
+            let query_tx =
+                crate::server::http::spawn_bridge(state_ref.clone(), senders.clone());
+            let app = crate::server::http::router(
+                crate::server::http::HttpState::new(query_tx),
+            );
+            http_server = Some(Box::pin(async move {
+                if let Err(error) = axum::serve(listener, app).await {
+                    log::error!("HTTP server terminated: {error}");
+                }
+            }));
+        }
 
         let result = tokio::select! {
             _ = stop_check => {
@@ -287,6 +317,14 @@ pub async fn initialize_server(
                 key
             ) => { Ok(()) }
             _ = &mut autoalloc_process => { Ok(()) }
+            _ = async {
+                // 未启用 HTTP 时须永久挂起，否则该分支立即完成会使 server 退出
+                if let Some(http) = http_server.as_mut() {
+                    http.await;
+                } else {
+                    std::future::pending::<()>().await;
+                }
+            } => { Ok(()) }
             r = comm_fut => { r.map_err(|e| e.into()) }
         };
 
