@@ -326,6 +326,13 @@
       "summary": "修正 formchk 前置 chk 路径解析（对齐 g16 无扩展名 %Chk 自动追加 .chk 语义，此前 succeeded 任务 .fchk 一律缺失）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "修正执行监控双重校验基准（改取派发时刻，此前按轮询 started_at 过滤误杀真实 g16 进程树致监控读数与峰值恒零）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
