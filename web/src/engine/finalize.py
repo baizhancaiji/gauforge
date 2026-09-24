@@ -32,8 +32,10 @@ def _iso(ts: str) -> datetime:
 def resolve_chk(run_dir: Path) -> Path:
     """实际执行副本 input.gjf 的 Link0 %Chk → chk 路径。
 
-    相对值相对 run/<id>/ 解析；无声明回落 input.chk（此时 g16 不产 chk，
-    formchk 将因文件缺失失败并按「记日志不阻断」处理）。
+    相对值相对 run/<id>/ 解析；无扩展名时 g16 自动追加 .chk
+    （g16 手册规则，实测 run/<id>/ 产物旁证），此处对齐；
+    无声明回落 input.chk（此时 g16 不产 chk，formchk 将因文件
+    缺失失败并按「记日志不阻断」处理）。
     """
     try:
         text = (run_dir / "input.gjf").read_text(encoding="utf-8",
@@ -45,7 +47,9 @@ def resolve_chk(run_dir: Path) -> Path:
         if m:
             raw = m.group(1).strip().strip('"').strip("'")
             p = Path(raw)
-            return p if p.is_absolute() else run_dir / p
+            if not p.is_absolute():
+                p = run_dir / p
+            return p if p.suffix else p.with_name(p.name + ".chk")
     return run_dir / "input.chk"
 
 

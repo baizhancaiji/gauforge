@@ -76,6 +76,17 @@ def test_resolve_chk_fallback(home):
     assert finalize.resolve_chk(missing) == missing / "input.chk"
 
 
+def test_resolve_chk_appends_ext_when_missing(home):
+    # 回归（GUI 走查发现）：g16 对无扩展名 %Chk 自动追加 .chk
+    # （实测 run/<id>/ 产物 h2o_opt.chk 旁证），解析须对齐，否则
+    # formchk 因「chk 不存在」被跳过，succeeded 任务无 .fchk 产物。
+    rd = home / "run" / "1"
+    write_input(rd, "%Chk=h2o_opt\n\n#p\n\nt\n\n0 1\nO\n")
+    assert finalize.resolve_chk(rd) == rd / "h2o_opt.chk"
+    write_input(rd, "%Chk=/tmp/water.v1\n\n#p\n\nt\n\n0 1\nO\n")
+    assert finalize.resolve_chk(rd) == Path("/tmp/water.v1")  # 有扩展名按原样
+
+
 # ---------------- make_fchk ----------------
 
 def test_make_fchk_converts(home):
