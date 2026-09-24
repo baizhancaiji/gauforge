@@ -34,7 +34,12 @@ class ProcessSampler:
         self._prev_cpu: dict[int, float] = {}   # pid → 上次累计 cpu_time
 
     def locate(self, run_dir: Path, since: float | None) -> list:
-        """定位根进程列表：cwd 匹配且 create_time ≥ since（宿主时钟秒）。"""
+        """定位根进程列表：cwd 匹配且 create_time ≥ since（宿主时钟秒）。
+
+        容差 30s：run/<id>/ 目录按执行 id 唯一（AUTOINCREMENT 永不复用），
+        不存在真实复用场景，宽窗口仅用于吸收「轮询观察 started_at 晚于
+        进程 spawn」的时序偏差（S1 接管路径，GUI 走查实测）。
+        """
         if psutil is None:
             return []
         roots = []
@@ -43,8 +48,8 @@ class ProcessSampler:
                 info = proc.info
                 if info["cwd"] != str(run_dir):
                     continue
-                if since is not None and (info["create_time"] or 0) < since - 1:
-                    continue  # 双重校验：早于任务启动的进程不属本次执行
+                if since is not None and (info["create_time"] or 0) < since - 30:
+                    continue  # 双重校验：显著早于任务启动的进程不属本次执行
                 roots.append(proc)
             except (psutil.NoSuchProcess, psutil.AccessDenied,
                     psutil.ZombieProcess):

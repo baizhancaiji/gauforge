@@ -127,12 +127,18 @@ class Reconciler:
     # ---------------- 各场景处置 ----------------
 
     def _takeover(self, row: dict, job: dict) -> None:
-        """S1/S5：接管在跑执行；started_at 缺失且 job 已在跑时回填。"""
+        """S1/S5：接管在跑执行；started_at 缺失且 job 已在跑时回填。
+
+        监视器锚定取 submitted_at（提交必先于 HQ spawn，故 create_time
+        过滤必通过）；若取轮询观察的 started_at（晚于 spawn 1~2s），
+        进程树会被整体排除、接管后读数全哑（GUI 走查实测）。
+        """
         started = row.get("started_at")
         if not started and job["state"] == "running":
             started = now_iso()
             executions().set_started_at(row["id"], started)
-        self._d._monitor.note_started(row["id"], started or now_iso())
+        anchor = row.get("submitted_at") or started or now_iso()
+        self._d._monitor.note_started(row["id"], anchor)
 
     def _s2_settle(self, row: dict, hq_state: str) -> None:
         """S2：按终态映射补齐历史（monitor_summary 置空）。"""
