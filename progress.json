@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T21:24+08:00",
+  "updated": "2026-09-25T10:40+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -232,11 +232,18 @@
       "summary": "补齐队列手动停止失败分流：未执行成员 skipped(queue_manually_stopped) 并整队回退",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "候选页真实化（文件/文件夹 multipart 导入与逐文件失败清单、自然序展示、来源徽标与归因注记、剔除二次确认；新增共享确认模态与前端自然序工具）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M1 审查修复批次完成（S3 判据/手动停止分流/HttpGateway #21）；下一任务 C1–C7 前端真实化",
-    "note": "对照 m1-plan 两轴审查（Standards+Spec）逐项修复：fix×2（S3 waiting 判据、队列手动停止分流）、feat×1（HttpGateway REST+SSE 消费与工厂切换）、test×1（e2e fake g16 全链路）、refactor×2（process.py 消重修 fd 泄漏、http.rs 消重移除清单外事件帧）、docs×1（wall_time_s 对齐）；构建环境经 .envrc 注入（venv 内 cmake/libclang）。双闸门：pytest 214 通过（含真机联测）、cargo test --workspace --release 全绿（440）、validate_progress OK。"
+    "task": "M1 C1–C7 前端真实化（当前：C1 候选页，先行对齐设计令牌至 v2 规范）",
+    "note": "依据 m1-plan §4.4 逐页真实化（提交 #22–28）；前端以 m0-frontend-design.md（v2）为权威，现存代码漂移项（令牌值/缓动/字距/响度档位）随各页任务按文档修正。"
   },
   "next_steps": [
     "M1 C1–C7 前端真实化 → 提交 #22–28",
