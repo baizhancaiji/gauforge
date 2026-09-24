@@ -190,11 +190,18 @@
       "summary": "新增 HQ server 内嵌 axum HTTP 骨架（--http-port 默认关、GET /info，桥接任务复用 server 处理逻辑）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "rust",
+      "summary": "新增 HQ REST 端点集（jobs 提交/详情/批量/取消与 workers，复用 CLI 内部实现保证双路一致）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M1 H2：HQ REST 端点集（§2.1 端点表：提交/详情/批量状态/取消/workers，复用内部命令处理）",
-    "note": "H1 完成并提交：axum 0.8 引入（经 context7 核对）、server/http.rs 骨架 + GET /info 打通（127.0.0.1 绑定、端口冲突明确报错）；StateRef/Senders 为 Rc 不可跨线程，采用本地桥接任务（HttpQuery 通道）架构；默认关零行为变化冒烟实测（含修复 select 分支 None 时立即完成导致 server 启动即退出的真 bug）；cargo test 206 通过、release 构建零警告。"
+    "task": "M1 H3：SSE 事件桥接（EventStreamer 全类 listener → GET /events 单行 JSON 帧 + 15s 心跳，薄桥接不重放）",
+    "note": "H2 完成并提交：五 REST 端点全部打通，复用 server 侧处理函数保证双路一致（format_job_detail 抽取复用，详情深度相等实测）；新增 scripts/smoke_hq_http.sh 冒烟脚本；cargo test 206 通过。"
   },
   "next_steps": [
     "M1 H1-H4（Rust 侧 axum/REST/SSE/journal 实测）→ 提交 #15-18；H4 结论回填 m1-plan §2.4 S3 特征并补真机 S3 联测",
