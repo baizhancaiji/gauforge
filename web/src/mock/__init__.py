@@ -192,12 +192,17 @@ class MockState:
             return entry
     # ------------------------ SSE ------------------------
     def emit(self, event: str, data: dict) -> None:
-        """记录事件到重放窗口（3.5：最近 1024 条或 5 分钟。M0 按条数）。"""
+        """记录事件到重放窗口（3.5：最近 1024 条或 5 分钟）。
+
+        B11 起 id 取自 sse_seq 持久计数（每事件短事务自增，服务重启后
+        序号延续不归零，sse.md §5.1/§6）。
+        """
         from json import dumps
+        from ..store import sse_seq
         payload = {"event": event, "data": dumps(data, ensure_ascii=False),
                    "ts": _now()}
         with self._lock:
-            self.event_seq += 1
+            self.event_seq = sse_seq().next()
             payload["id"] = self.event_seq
             self.event_history.append(payload)
             if len(self.event_history) > 1024:
@@ -227,73 +232,9 @@ _STATE: MockState | None = None
 def get_state() -> MockState:
     """应用级单例（lazy）；测试可替换为独立实例。
 
-    B10 起不再自动播种演示数据（真实部署的设置库不得被 demo 值污染）；
-    演示模式由应用工厂 lifespan 显式调 seed_demo()。
-    """
+    B11 起仅承担事件总线职责（emit/重放窗口/序号镜像）；演示种子与
+    mock 剧本已随 B11 退役。"""
     global _STATE
     if _STATE is None:
         _STATE = MockState()
     return _STATE
-
-
-def seed_demo(state: MockState | None = None) -> None:
-    """演示模式入口：写入 demo 候选/席位与演示设置（仅引擎关闭时调用）。"""
-    _seed(state if state is not None else get_state())
-
-
-def _seed(state: MockState) -> None:
-    """演示种子：候选 + 一条队列 + 在途席位堆 + 多个并行运行执行 + 一条历史。
-
-    目视口径：并行窗口 parallel_window=4 → 执行中页 4 槽位全满；
-    在途席位上限 pending_seat_limit=6 → 待执行页 6/6 满，前 4 席在途（locked）、
-    后 2 席等待区；队列席位提供成员概览多样性。
-    """
-    for i in range(8):
-        state.add_candidate(f"job{i + 1}.gjf")
-
-    state.set_runtime("parallel_window", 4)
-    state.set_runtime("pending_seat_limit", 6)
-
-    cands = state.candidates
-
-    # 队列入一席位（成员=前两个候选），增添席位类型多样性。
-    queue_id = state.create_queue("rho-scan", [cands[0]["id"], cands[1]["id"]],
-                                  False)["id"]
-
-    # 6 个席位：前 4 个已被并行窗口触及（在途）→ locked，后 2 个在等待区。
-    seat_spec: list[tuple[str, str | None, list[int], bool]] = [
-        ("task", None, [0], True),
-        ("task", None, [1], True),
-        ("task", None, [2], True),
-        ("task", None, [3], True),
-        ("task", None, [4], False),
-        ("queue", queue_id, [5, 6], False),
-    ]
-    for pos, (kind, qid, member_cids, locked) in enumerate(seat_spec):
-        sid = state.next_id()
-        members = [{"task_id": cands[c]["id"], "filename": cands[c]["filename"],
-                    "state": "staged"} for c in member_cids]
-        state.seats.append({
-            "seat_id": sid, "kind": kind,
-            "task_id": None if kind == "queue" else members[0]["task_id"],
-            "queue_id": qid, "position": pos, "members": members,
-            "locked": locked,
-        })
-
-    # 并行槽位填满：4 条运行中执行，各带独立监控/进度读数，执行页一开即现形。
-    for i in range(4):
-        cand = cands[i]
-        exc = state.add_execution(cand["id"], cand["filename"], None, 0)
-        exc["monitor"] = {
-            "cpu_percent": 40 + i * 15, "mem_rss_mb": 480 + i * 120,
-            "elapsed_s": 25 + i * 60,
-        }
-        exc["progress"] = {
-            "opt_step": i + 1, "scf_cycle": 5 + i, "converged": False,
-            "last_line": f" Step number {i + 1}",
-        }
-
-    # 一条已完结历史（HistoryView 落地页目视演示）。
-    done = cands[7]
-    dex = state.add_execution(done["id"], done["filename"], None, 0)
-    state.finish_execution(dex["id"], "succeeded", None)

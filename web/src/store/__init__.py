@@ -14,11 +14,12 @@ from .migrations import run_migrations
 from .queues_repo import QueuesRepo
 from .seats_repo import SeatsRepo
 from .settings_repo import SettingsRepo
+from .sse_repo import SseSeqRepo
 from .tasks_repo import TasksRepo
 
 __all__ = ["Database", "run_migrations", "get_db", "set_db", "reset_db",
            "SettingsRepo", "TasksRepo", "QueuesRepo", "SeatsRepo",
-           "ExecutionsRepo"]
+           "ExecutionsRepo", "SseSeqRepo"]
 
 _db: Database | None = None
 _lock = threading.Lock()
@@ -69,3 +70,7 @@ def seats() -> SeatsRepo:
 
 def executions() -> ExecutionsRepo:
     return ExecutionsRepo(get_db())
+
+
+def sse_seq() -> SseSeqRepo:
+    return SseSeqRepo(get_db())

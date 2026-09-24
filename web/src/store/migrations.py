@@ -85,7 +85,9 @@ CREATE TABLE IF NOT EXISTS settings (
 CREATE TABLE IF NOT EXISTS sse_seq (
   counter INTEGER NOT NULL
 );
-INSERT OR IGNORE INTO sse_seq (counter) VALUES (0);
+-- 真幂等种子（无唯一约束，OR IGNORE 挡不住脚本重跑重复插入）
+INSERT INTO sse_seq (counter) SELECT 0 WHERE NOT EXISTS
+  (SELECT 1 FROM sse_seq);
 """
 
 MIGRATIONS: dict[int, str] = {1: SCHEMA_V1}

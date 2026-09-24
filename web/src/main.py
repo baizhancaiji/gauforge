@@ -3,7 +3,7 @@
 - 挂载各域路由（system/settings/candidates/queues/pending/executions/history/events）。
 - 静态挂载 web/frontend/dist（B5）。
 - /openapi.json 直接回读落盘 yaml（SSOT，B2 契约生成链要求，见 m0-plan §4.2）。
-- lifespan 启动 mock 剧本后台任务与 SSE fanout。
+- lifespan 启动 SSE fanout（B11 领域事件总线）；引擎开启时执行启动序列（B10）。
 """
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from . import config
 from .errors import ApiError
 from .mock import get_state
-from .sse import fanout_task, mock_script_runner  # type: ignore[attr-defined]
+from .sse import fanout_task  # type: ignore[attr-defined]
 from .routers import (
     candidates,
     events,
@@ -70,7 +70,7 @@ def build_app() -> FastAPI:
         app.mount("/", StaticFiles(directory=str(dist), html=True),
                   name="frontend")
 
-    # ---------- 生命周期：引擎（B10）/ mock 剧本 + SSOT fanout ----------
+    # ---------- 生命周期：事件 fanout（B11 领域事件总线）+ 引擎（B10） ----------
     @contextlib.asynccontextmanager
     async def lifespan(_app: FastAPI):
         from .engine import startup
@@ -80,10 +80,6 @@ def build_app() -> FastAPI:
         engine = None
         if config.ENGINE_ENABLED:  # 启动序列放线程池，不阻塞事件循环
             engine = await asyncio.to_thread(startup.start_engine)
-        else:  # 引擎关闭：M0 mock 剧本演示模式（契约测试场景）
-            from .mock import seed_demo
-            seed_demo(state)  # 演示种子只进演示模式，不污染真实设置库
-            tasks.append(asyncio.create_task(mock_script_runner(state)))
         yield
         for t in tasks:
             t.cancel()

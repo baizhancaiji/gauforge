@@ -198,13 +198,5 @@ class Reconciler:
 
     def _emit_snapshot(self) -> None:
         """对账完成：system.snapshot(server_restarted=true) 全量重建基线。"""
-        from ..services.pending import snapshot as pending_snapshot
-        self._d._emit("system.snapshot", {
-            "pending": pending_snapshot(),
-            "executions_running": executions().list_by_state("running"),
-            "queues_summary": [{"id": q["id"], "state": q["state"],
-                                "rollback_flag": q["rollback_flag"],
-                                "rollback_count": q["rollback_count"]}
-                               for q in queues().list()],
-            "server_restarted": True,
-        })
+        from ..services.snapshot import system_snapshot
+        self._d._emit("system.snapshot", system_snapshot(server_restarted=True))
