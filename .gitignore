@@ -27,3 +27,6 @@ web/data/
 .zcodeignore
 .zcode/
 .codebuddy/
+
+# ===== 本地走查工具产物（Playwright MCP 会话输出，可重建） =====
+.playwright-mcp/
