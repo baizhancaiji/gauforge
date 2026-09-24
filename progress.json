@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:10+08:00",
+  "updated": "2026-09-25T12:45+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -284,12 +284,12 @@
     }
   ],
   "in_progress": {
-    "task": "M1 C1–C7 前端真实化（当前：C1 候选页，先行对齐设计令牌至 v2 规范）",
-    "note": "依据 m1-plan §4.4 逐页真实化（提交 #22–28）；前端以 m0-frontend-design.md（v2）为权威，现存代码漂移项（令牌值/缓动/字距/响度档位）随各页任务按文档修正。"
+    "task": "M1 C1–C7 前端真实化完成（提交 #22–28 已落库）；下一任务 D1–D3 集成验收",
+    "note": "C 阶段按 m1-plan §4.4 逐页真实化，并以 m0-frontend-design.md v2 为权威先行对齐令牌（前置 fix(frontend)：tokens 值/页面度量/缓动字距令牌/基础接管清单/StateChip 两档响度/中文字体自托管）。各页切换真实 API/SSE 驱动。质量闸：npm run build（vue-tsc）零错误；HTTP 层冒烟覆盖导入 422 整批原子/duplicate/提交/重排/挤出/满员 409/SSE 事件序/预览缺失项，据此修复 Link0 missing 无 % 前缀匹配缺陷。双闸门：pytest 214 通过、validate_progress OK。GUI 走查因本环境无浏览器后端未执行，建议桌面浏览器复查六页。"
   },
   "next_steps": [
-    "M1 C1–C7 前端真实化 → 提交 #22–28",
-    "M1 D1 端到端走查 / D2 演练 / D3 进度同步收尾"
+    "M1 D1 端到端走查（真 g16，§7.1 十条留痕）",
+    "M1 D2 重启/中断/并行演练 → D3 进度同步与提交整理收尾"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
