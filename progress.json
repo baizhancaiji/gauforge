@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:10+08:00",
+  "updated": "2026-09-25T11:25+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -251,6 +251,13 @@
       "type": "added",
       "scope": "web",
       "summary": "行内提交流真实化（确认框完整输入限高滚动、Link0 缺失黄警含设置缺省值、满员 409 提示）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "待执行页真实化（拖拽重排/整席与成员移除二次确认/容量仪表超限示警/窗口边界与在途锁定态，pending.snapshot 驱动）",
       "breaking": false,
       "migration": null
     }
