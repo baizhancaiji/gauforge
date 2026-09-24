@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T08:54+08:00",
+  "updated": "2026-09-24T19:10+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -204,16 +204,22 @@
       "summary": "新增 GET /events SSE 事件桥接（四域事件单行 JSON 帧+15s 心跳，薄桥接不重放）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "rust",
+      "summary": "修复 HTTP 桥提交/取消后未 flush journal 致 kill -9 恢复丢任务（对齐 RPC 提交路径，消除 journal_flush_period 窗口丢失）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M1 H4②：journal 恢复实测矩阵（P1 带journal重启×Running / P2 ×Waiting / P3 crash_limit 可观测性 / P4 无journal）——已暂停，待复跑",
-    "note": "用户指示暂停。已完成并提交：H1 骨架(2ca00be69)、H2 REST(051ef28b8)、H3 SSE(31a6c6f4b 回填+a03eb1e5f)、H4① crates 单测(f12325615，cargo test 212 通过，含取消应答 already_finished 下溢修复)；H3 事件名清单已回填 §2.1。H4② 进行到：scripts/probe_hq_journal.sh 已编写（未入库），首跑 P1 在「kill -9 server → 带 journal 重启 → wait_state 轮询」处中断。初步发现（待复跑验证）：① server 日志显示 State restoration completed 但 GET /jobs 为空——疑因 journal_flush_period 默认 30s，且 HTTP POST /jobs 提交路径未像 RPC 路径（client_rpc_loop）那样在提交后 flush_journal，kill -9 落在 flush 周期内导致 Submit 事件未落盘；若证实，需给 HTTP 桥补提交后 flush（CLI 等价性）并回填 §2.4「journal 恢复语义受 flush 周期影响」结论；② probe 脚本护栏不足：wait_state/start_worker 中 curl -sf 管道 + set -euo pipefail 在 server 未就绪或 404 时整脚本静默退出，需去 -f/加重试掩码后复跑。后续步骤：修脚本护栏 → 复跑 P1-P4 → 结论回填 §2.4（S3 特征、S1 区分、flush 周期约束）→ 补真机 S3 联测 → docs 提交。环境备注：构建需 PATH 含 .cargo/bin 与项目 .venv/bin（cmake），LIBCLANG_PATH 指向 .venv 内 libclang；AGENTS.md 有用户本人未提交改动，保持不动。"
+    "task": "M1 H 阶段（H1–H4）全部完成；下一任务 HttpGateway 切换（提交 #21，B4 续）待开工",
+    "note": "H4② 复办完成（2026-09-24）：① 修复 HTTP 桥 Submit/Cancel 后未 flush journal（770c86912，RPC 对齐）；② 探针脚本护栏改造（10672ba24）；③ P1–P4 矩阵全部产出结论：P1 带 journal 重启同 id 回退 waiting 从头重跑（start 标记 1→2，修复前列表为空证实 flush 缺口）、P2 Waiting 恰好执行一次、P3 crash_limit 重试=同 job 多轮 task_started+超出 MaxCrashes(5) 后单个 task_failed 且每次重试真执行（start 6 次）、P4 无 journal 任务全丢 id 归零；④ 结论回填 plan §2.4（7f34dbf28）；⑤ 真机 S3 联测补齐（7e0892580，S1/S3 双过）。双闸门：pytest 207 通过（含真机联测）、cargo test --workspace 全绿（212+228）、validate_progress OK。环境备注：构建需 PATH 含 .cargo/bin 与项目 .venv/bin（cmake），LIBCLANG_PATH=.venv/lib/python3.10/site-packages/clang/native，真机联测需 PATH 含 target/release；AGENTS.md 有用户本人未提交改动，保持不动。"
   },
   "next_steps": [
-    "M1 H1-H4（Rust 侧 axum/REST/SSE/journal 实测）→ 提交 #15-18；H4 结论回填 m1-plan §2.4 S3 特征并补真机 S3 联测",
-    "M1 HttpGateway 切换 → 提交 #21",
-    "M1 C1-C7 前端真实化 → 提交 #22-28",
+    "M1 HttpGateway 切换（提交 #21，B4 续）→ 桥接验收判据 §2.1 第 3 条闭环",
+    "M1 C1–C7 前端真实化 → 提交 #22–28",
     "M1 D1 端到端走查 / D2 演练 / D3 进度同步收尾"
   ],
   "known_issues": [
