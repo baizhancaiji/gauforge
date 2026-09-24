@@ -15,6 +15,9 @@ HOME_DIR = Path(os.environ.get("G16WEB_HOME", "~/g16web")).expanduser()
 BIND_ADDR = os.environ.get("G16WEB_BIND_ADDR", "127.0.0.1")
 # 派发引擎开关（启动级）：G16WEB_ENGINE=0 关闭（契约测试与 M0 演示模式）
 ENGINE_ENABLED = os.environ.get("G16WEB_ENGINE", "1") != "0"
+# HQ HTTP 桥端口（启动级，G16WEB_HQ_HTTP_PORT）：0 = 关闭（默认，HQ 行为零变化）；
+# >0 时 server 侧追加 --http-port 并由 Gateway 工厂优先选择 HttpGateway
+HQ_HTTP_PORT = int(os.environ.get("G16WEB_HQ_HTTP_PORT", "0") or 0)
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 CONTRACT_PATH = Path(__file__).resolve().parent.parent.parent / "docs" / "api" / "openapi.yaml"
 

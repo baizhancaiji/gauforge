@@ -26,6 +26,24 @@ def derive_job_state(stats: dict, cancel_reason: str | None) -> str:
     return "waiting"
 
 
+def worker_resources(configuration: dict) -> tuple[int, int]:
+    """HQ worker configuration.resources → (cpus, mem_mib)（停等记账用）。
+
+    HQ JSON 形状（crates client/output/json.rs format_resource_descriptor）：
+    cpus 为 range 序列化闭区间（--cpus 4 → start=0 end=3），mem 为 sum
+    资源（size 即 MiB 数）。CLI 与 HTTP 两实现共用本解析（领域规则集中）。
+    """
+    cpus = 0
+    mem_mib = 0
+    for res in (configuration.get("resources") or {}).get("resources", []):
+        if res.get("name") == "cpus":
+            span = int(res.get("end", 0)) - int(res.get("start", 0)) + 1
+            cpus = max(cpus, span)
+        elif res.get("name") == "mem":
+            mem_mib = max(mem_mib, int(res.get("size") or 0))
+    return cpus, mem_mib
+
+
 class Gateway(ABC):
     """HQ 作业网关抽象。job_id 以字符串承载（HTTP 侧同为不透明 id）。"""
 

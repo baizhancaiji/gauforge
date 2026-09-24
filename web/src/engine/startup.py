@@ -18,6 +18,26 @@ from ..hq.gateway import Gateway, GatewayError
 from ..hq.process import HqProcessManager
 
 
+def select_gateway(pm: HqProcessManager) -> Gateway:
+    """Gateway 工厂（m1-plan 提交 #21）：配置 HQ_HTTP_PORT 时优先
+    HttpGateway（GET /info 可达性探测），失败回落 CliGateway——CLI 实现
+    保留作调试路径（§2.1 过渡策略），默认（端口关）行为零变化。"""
+    from .. import config
+
+    if config.HQ_HTTP_PORT:
+        from .http_gateway import HttpGateway
+        gw = HttpGateway(f"http://127.0.0.1:{config.HQ_HTTP_PORT}")
+        try:
+            gw.info()
+            return gw
+        except GatewayError:
+            gw.close()
+            print("[startup] HttpGateway 不可达，回落 CliGateway",
+                  file=sys.stderr)
+    from .cli_gateway import CliGateway
+    return CliGateway(pm.hq_path, str(pm.server_dir))
+
+
 def start_engine(*, gateway: Gateway | None = None,
                  process_manager: HqProcessManager | None = None
                  ) -> Dispatcher:
@@ -26,10 +46,10 @@ def start_engine(*, gateway: Gateway | None = None,
 
     pm = process_manager
     if pm is None:
-        pm = HqProcessManager(config.hq_bin(), config.HOME_DIR)
+        pm = HqProcessManager(config.hq_bin(), config.HOME_DIR,
+                              http_port=config.HQ_HTTP_PORT or None)
     if gateway is None:
-        from ..hq.cli_gateway import CliGateway
-        gateway = CliGateway(pm.hq_path, str(pm.server_dir))
+        gateway = select_gateway(pm)
     try:
         pm.start()
         pm.ensure_worker()

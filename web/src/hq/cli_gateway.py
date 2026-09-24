@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import subprocess
 
-from .gateway import Gateway, GatewayError, derive_job_state
+from .gateway import Gateway, GatewayError, derive_job_state, worker_resources
 
 
 class CliGateway(Gateway):
@@ -84,18 +84,7 @@ class CliGateway(Gateway):
         out = self._run("worker", "list", "--all") or []
         workers = []
         for w in out:
-            resources = (w.get("configuration", {}).get("resources") or {})
-            cpus = 0
-            mem_mib = 0
-            for res in resources.get("resources", []):
-                if res.get("name") == "cpus":
-                    # HQ range 序列化为闭区间（--cpus 4 → start=0 end=3）
-                    span = (int(res.get("end", 0))
-                            - int(res.get("start", 0)) + 1)
-                    cpus = max(cpus, span)
-                elif res.get("name") == "mem":
-                    # sum 资源：size 即 MiB 数（实测 15.51GiB → 15883）
-                    mem_mib = max(mem_mib, int(res.get("size") or 0))
+            cpus, mem_mib = worker_resources(w.get("configuration") or {})
             workers.append({
                 "id": str(w["id"]),
                 "online": w.get("ended") is None,
