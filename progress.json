@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T10:40+08:00",
+  "updated": "2026-09-25T10:55+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -237,6 +237,13 @@
       "type": "added",
       "scope": "web",
       "summary": "候选页真实化（文件/文件夹 multipart 导入与逐文件失败清单、自然序展示、来源徽标与归因注记、剔除二次确认；新增共享确认模态与前端自然序工具）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "只读预览真实化（分块卡按样板重排、Link0 缺失琥珀注记、parse_errors 逐条容错条、分子四格读数）",
       "breaking": false,
       "migration": null
     }
