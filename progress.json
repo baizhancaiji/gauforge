@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-24T19:10+08:00",
+  "updated": "2026-09-24T21:24+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -211,14 +211,34 @@
       "summary": "修复 HTTP 桥提交/取消后未 flush journal 致 kill -9 恢复丢任务（对齐 RPC 提交路径，消除 journal_flush_period 窗口丢失）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "新增 HttpGateway（HQ HTTP/SSE 桥接消费、断线重连）与 Gateway 工厂按可用性切换（G16WEB_HQ_HTTP_PORT，默认关）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "修复重启对账 S3 判据：journal 恢复后 job 回退 waiting 即判重跑，不再误按 S1 接管",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "补齐队列手动停止失败分流：未执行成员 skipped(queue_manually_stopped) 并整队回退",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M1 H 阶段（H1–H4）全部完成；下一任务 HttpGateway 切换（提交 #21，B4 续）待开工",
-    "note": "H4② 复办完成（2026-09-24）：① 修复 HTTP 桥 Submit/Cancel 后未 flush journal（770c86912，RPC 对齐）；② 探针脚本护栏改造（10672ba24）；③ P1–P4 矩阵全部产出结论：P1 带 journal 重启同 id 回退 waiting 从头重跑（start 标记 1→2，修复前列表为空证实 flush 缺口）、P2 Waiting 恰好执行一次、P3 crash_limit 重试=同 job 多轮 task_started+超出 MaxCrashes(5) 后单个 task_failed 且每次重试真执行（start 6 次）、P4 无 journal 任务全丢 id 归零；④ 结论回填 plan §2.4（7f34dbf28）；⑤ 真机 S3 联测补齐（7e0892580，S1/S3 双过）。双闸门：pytest 207 通过（含真机联测）、cargo test --workspace 全绿（212+228）、validate_progress OK。环境备注：构建需 PATH 含 .cargo/bin 与项目 .venv/bin（cmake），LIBCLANG_PATH=.venv/lib/python3.10/site-packages/clang/native，真机联测需 PATH 含 target/release；AGENTS.md 有用户本人未提交改动，保持不动。"
+    "task": "M1 审查修复批次完成（S3 判据/手动停止分流/HttpGateway #21）；下一任务 C1–C7 前端真实化",
+    "note": "对照 m1-plan 两轴审查（Standards+Spec）逐项修复：fix×2（S3 waiting 判据、队列手动停止分流）、feat×1（HttpGateway REST+SSE 消费与工厂切换）、test×1（e2e fake g16 全链路）、refactor×2（process.py 消重修 fd 泄漏、http.rs 消重移除清单外事件帧）、docs×1（wall_time_s 对齐）；构建环境经 .envrc 注入（venv 内 cmake/libclang）。双闸门：pytest 214 通过（含真机联测）、cargo test --workspace --release 全绿（440）、validate_progress OK。"
   },
   "next_steps": [
-    "M1 HttpGateway 切换（提交 #21，B4 续）→ 桥接验收判据 §2.1 第 3 条闭环",
     "M1 C1–C7 前端真实化 → 提交 #22–28",
     "M1 D1 端到端走查 / D2 演练 / D3 进度同步收尾"
   ],
