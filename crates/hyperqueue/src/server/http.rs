@@ -74,6 +74,22 @@ impl Reply {
     }
 }
 
+/// 提交/取消成功后立即 flush journal（对齐 RPC 路径，消除
+/// journal_flush_period 窗口内的恢复缺口——H4 实测结论，m1-plan §2.4）。
+async fn flush_if_ok(response: &Reply, senders: &Senders) {
+    if response.0.is_ok() {
+        senders.events.flush_journal().await;
+    }
+}
+
+/// 非预期 ToClientMessage 变体 → 500（桥接侧防御分支统一形态）。
+fn unexpected_reply(other: ToClientMessage) -> Reply {
+    Reply::err(
+        StatusCode::INTERNAL_SERVER_ERROR,
+        format!("unexpected reply: {other:?}"),
+    )
+}
+
 /// axum 共享状态：仅持请求通道（满足 Router 的 `Send + Sync` 约束）。
 #[derive(Clone)]
 pub(crate) struct HttpState {
@@ -129,12 +145,7 @@ async fn bridge_task(
             }
             HttpQuery::Submit { request, reply } => {
                 let response = handle_submit_reply(&state_ref, &senders, request);
-                // 与 RPC 路径对齐（server/client/mod.rs submit 分支）：成功后立即
-                // flush journal，消除 journal_flush_period（默认 30s）窗口内
-                // kill -9 丢失 Submit 事件的恢复缺口（H4 实测结论，§2.4）
-                if response.0.is_ok() {
-                    senders.events.flush_journal().await;
-                }
+                flush_if_ok(&response, &senders).await;
                 let _ = reply.send(response);
             }
             HttpQuery::JobsInfo { selector, reply } => {
@@ -145,10 +156,7 @@ async fn bridge_task(
             }
             HttpQuery::Cancel { job_id, reply } => {
                 let response = handle_cancel_reply(&state_ref, &senders, job_id).await;
-                // 与 RPC 路径对齐（server/client/mod.rs cancel 分支），理由同 Submit
-                if response.0.is_ok() {
-                    senders.events.flush_journal().await;
-                }
+                flush_if_ok(&response, &senders).await;
                 let _ = reply.send(response);
             }
             HttpQuery::Workers { reply } => {
@@ -207,7 +215,7 @@ fn handle_submit_reply(
             Reply::err(StatusCode::UNPROCESSABLE_ENTITY, format!("{other:?}"))
         }
         ToClientMessage::Error(message) => Reply::err(StatusCode::BAD_REQUEST, message),
-        other => Reply::err(StatusCode::INTERNAL_SERVER_ERROR, format!("unexpected reply: {other:?}")),
+        other => unexpected_reply(other),
     }
 }
 
@@ -217,7 +225,7 @@ fn handle_jobs_info_reply(state_ref: &StateRef, selector: &IdSelector) -> Reply 
             let jobs: Vec<Value> = response.jobs.iter().map(format_job_info).collect();
             Reply::ok(json!(jobs))
         }
-        other => Reply::err(StatusCode::INTERNAL_SERVER_ERROR, format!("unexpected reply: {other:?}")),
+        other => unexpected_reply(other),
     }
 }
 
@@ -241,7 +249,7 @@ fn handle_job_info_reply(state_ref: &StateRef, job_id: u32) -> Reply {
                 None => Reply::err(StatusCode::NOT_FOUND, format!("job {job_id} not found")),
             }
         }
-        other => Reply::err(StatusCode::INTERNAL_SERVER_ERROR, format!("unexpected reply: {other:?}")),
+        other => unexpected_reply(other),
     }
 }
 
@@ -266,7 +274,7 @@ async fn handle_cancel_reply(state_ref: &StateRef, senders: &Senders, job_id: u3
             }
         }
         ToClientMessage::Error(message) => Reply::err(StatusCode::BAD_REQUEST, message),
-        other => Reply::err(StatusCode::INTERNAL_SERVER_ERROR, format!("unexpected reply: {other:?}")),
+        other => unexpected_reply(other),
     }
 }
 
@@ -276,7 +284,7 @@ fn handle_workers_reply(state_ref: &StateRef) -> Reply {
             let workers: Vec<Value> = response.workers.into_iter().map(format_worker_info).collect();
             Reply::ok(json!(workers))
         }
-        other => Reply::err(StatusCode::INTERNAL_SERVER_ERROR, format!("unexpected reply: {other:?}")),
+        other => unexpected_reply(other),
     }
 }
 
@@ -491,10 +499,6 @@ fn event_to_frame(event: &Event) -> (&'static str, serde_json::Value) {
             "worker_lost",
             json!({ "worker_id": worker_id, "reason": reason }),
         ),
-        EventPayload::WorkerOverviewReceived(overview) => (
-            "worker_overview_received",
-            json!({ "overview": overview }),
-        ),
         EventPayload::Submit { job_id, closed_job, .. } => (
             "submit",
             json!({ "job_id": job_id, "closed_job": closed_job }),
@@ -539,26 +543,6 @@ fn event_to_frame(event: &Event) -> (&'static str, serde_json::Value) {
             "tasks_aborted",
             json!({ "task_ids": task_ids }),
         ),
-        EventPayload::AllocationQueueCreated(queue_id, parameters) => (
-            "allocation_queue_created",
-            json!({ "queue_id": queue_id, "parameters": parameters }),
-        ),
-        EventPayload::AllocationQueueRemoved(queue_id) => (
-            "allocation_queue_removed",
-            json!({ "queue_id": queue_id }),
-        ),
-        EventPayload::AllocationQueued { queue_id, allocation_id, worker_count } => (
-            "allocation_queued",
-            json!({ "queue_id": queue_id, "allocation_id": allocation_id, "worker_count": worker_count }),
-        ),
-        EventPayload::AllocationStarted(queue_id, allocation_id) => (
-            "allocation_started",
-            json!({ "queue_id": queue_id, "allocation_id": allocation_id }),
-        ),
-        EventPayload::AllocationFinished(queue_id, allocation_id) => (
-            "allocation_finished",
-            json!({ "queue_id": queue_id, "allocation_id": allocation_id }),
-        ),
         EventPayload::ServerStart { server_uid } => (
             "server_start",
             json!({ "server_uid": server_uid }),
@@ -571,6 +555,10 @@ fn event_to_frame(event: &Event) -> (&'static str, serde_json::Value) {
             "task_notify",
             json!({ "task_id": notify.task_id, "worker_id": notify.worker_id, "message": hex::encode(&notify.message) }),
         ),
+        // 其余变体（Allocation* 五类、WorkerOverviewReceived）不在 §2.1 事件
+        // 清单内：Allocation* 未被订阅过滤器放行，overview 默认单机模式不
+        // 产生；防御性兜底帧便于意外到达时立即暴露
+        _ => ("unhandled", json!({})),
     }
 }
 
