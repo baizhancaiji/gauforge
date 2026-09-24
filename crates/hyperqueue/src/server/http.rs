@@ -10,8 +10,10 @@
 use axum::Router;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::response::sse::{Event as SseFrame, KeepAlive, Sse};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
+use futures::stream::Stream;
 use bstr::BString;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -26,6 +28,9 @@ use tokio::sync::oneshot;
 use crate::client::commands::submit::command::{DEFAULT_STDERR_PATH, DEFAULT_STDOUT_PATH};
 use crate::client::output::json::{format_job_detail, format_job_info, format_worker_info};
 use crate::common::arraydef::IntArray;
+use crate::server::event::Event;
+use crate::server::event::payload::EventPayload;
+use crate::server::event::streamer::{EventFilter, EventFilterFlags};
 use crate::server::Senders;
 use crate::server::client::{
     compute_job_detail, compute_job_info, handle_get_list, handle_job_cancel, handle_submit,
@@ -47,6 +52,8 @@ pub(crate) enum HttpQuery {
     JobInfo { job_id: u32, reply: oneshot::Sender<Reply> },
     Cancel { job_id: u32, reply: oneshot::Sender<Reply> },
     Workers { reply: oneshot::Sender<Reply> },
+    /// 订阅全类事件流（薄桥接：不缓存不重放，断线由 REST 对账补齐）
+    Subscribe { reply: oneshot::Sender<UnboundedReceiver<Event>> },
 }
 
 impl HttpQuery {
@@ -98,6 +105,7 @@ pub(crate) fn router(state: HttpState) -> Router {
         .route("/jobs/{id}", get(get_job))
         .route("/jobs/{id}/cancel", post(post_job_cancel))
         .route("/workers", get(get_workers))
+        .route("/events", get(get_events))
         .with_state(state)
 }
 
@@ -133,6 +141,11 @@ async fn bridge_task(
             }
             HttpQuery::Workers { reply } => {
                 let _ = reply.send(handle_workers_reply(&state_ref));
+            }
+            HttpQuery::Subscribe { reply } => {
+                let (tx, rx) = unbounded_channel();
+                senders.events.register_listener(http_event_filter(), tx);
+                let _ = reply.send(rx);
             }
         }
     }
@@ -440,6 +453,141 @@ async fn post_job_cancel(State(state): State<HttpState>, Path(id): Path<u32>) ->
 
 async fn get_workers(State(state): State<HttpState>) -> Response {
     state.ask(|reply| HttpQuery::Workers { reply }).await
+}
+
+/// M1 订阅 job/task/worker/server 四域；Allocation\* 与 WorkerOverview 不在内
+/// （单机本地模式不产生，§8.8 事件桥接定稿）。
+fn http_event_filter() -> EventFilter {
+    let mut flags = EventFilterFlags::empty();
+    flags.insert(EventFilterFlags::JOB_EVENTS);
+    flags.insert(EventFilterFlags::TASK_EVENTS);
+    flags.insert(EventFilterFlags::WORKER_EVENTS);
+    flags.insert(EventFilterFlags::NOTIFY_EVENTS);
+    EventFilter::new(None, flags)
+}
+
+/// HQ 事件 →（变体名 snake_case，单行 JSON 载荷 `{time, 字段…}`）。
+/// `Submit.serialized_desc` 为 bincode 字节，不透传（g16web 自持提交内容）。
+fn event_to_frame(event: &Event) -> (&'static str, serde_json::Value) {
+    let payload = &event.payload;
+    match payload {
+        EventPayload::WorkerConnected(worker_id, configuration) => (
+            "worker_connected",
+            json!({ "worker_id": worker_id, "configuration": configuration }),
+        ),
+        EventPayload::WorkerLost(worker_id, reason) => (
+            "worker_lost",
+            json!({ "worker_id": worker_id, "reason": reason }),
+        ),
+        EventPayload::WorkerOverviewReceived(overview) => (
+            "worker_overview_received",
+            json!({ "overview": overview }),
+        ),
+        EventPayload::Submit { job_id, closed_job, .. } => (
+            "submit",
+            json!({ "job_id": job_id, "closed_job": closed_job }),
+        ),
+        EventPayload::JobCompleted(job_id) => (
+            "job_completed",
+            json!({ "job_id": job_id }),
+        ),
+        EventPayload::JobOpen(job_id, desc) => (
+            "job_open",
+            json!({ "job_id": job_id, "name": desc.name, "max_fails": desc.max_fails }),
+        ),
+        EventPayload::JobClose(job_id) => (
+            "job_close",
+            json!({ "job_id": job_id }),
+        ),
+        EventPayload::JobIdle(job_id) => (
+            "job_idle",
+            json!({ "job_id": job_id }),
+        ),
+        EventPayload::JobCancel { job_id, cancel_reason } => (
+            "job_cancel",
+            json!({ "job_id": job_id, "cancel_reason": cancel_reason }),
+        ),
+        EventPayload::TaskStarted { task_id, instance_id, worker_ids, rv_id } => (
+            "task_started",
+            json!({ "task_id": task_id, "instance_id": instance_id, "worker_ids": worker_ids, "rv_id": rv_id }),
+        ),
+        EventPayload::TaskFinished { task_id } => (
+            "task_finished",
+            json!({ "task_id": task_id }),
+        ),
+        EventPayload::TaskFailed { task_id, error } => (
+            "task_failed",
+            json!({ "task_id": task_id, "error": error }),
+        ),
+        EventPayload::TasksCanceled { task_ids } => (
+            "tasks_canceled",
+            json!({ "task_ids": task_ids }),
+        ),
+        EventPayload::TasksAborted { task_ids } => (
+            "tasks_aborted",
+            json!({ "task_ids": task_ids }),
+        ),
+        EventPayload::AllocationQueueCreated(queue_id, parameters) => (
+            "allocation_queue_created",
+            json!({ "queue_id": queue_id, "parameters": parameters }),
+        ),
+        EventPayload::AllocationQueueRemoved(queue_id) => (
+            "allocation_queue_removed",
+            json!({ "queue_id": queue_id }),
+        ),
+        EventPayload::AllocationQueued { queue_id, allocation_id, worker_count } => (
+            "allocation_queued",
+            json!({ "queue_id": queue_id, "allocation_id": allocation_id, "worker_count": worker_count }),
+        ),
+        EventPayload::AllocationStarted(queue_id, allocation_id) => (
+            "allocation_started",
+            json!({ "queue_id": queue_id, "allocation_id": allocation_id }),
+        ),
+        EventPayload::AllocationFinished(queue_id, allocation_id) => (
+            "allocation_finished",
+            json!({ "queue_id": queue_id, "allocation_id": allocation_id }),
+        ),
+        EventPayload::ServerStart { server_uid } => (
+            "server_start",
+            json!({ "server_uid": server_uid }),
+        ),
+        EventPayload::ServerStop => (
+            "server_stop",
+            json!({}),
+        ),
+        EventPayload::TaskNotify(notify) => (
+            "task_notify",
+            json!({ "task_id": notify.task_id, "worker_id": notify.worker_id, "message": hex::encode(&notify.message) }),
+        ),
+    }
+}
+
+/// `GET /events`：SSE 事件流（§2.1）。空闲 15s 注释帧心跳（KeepAlive 默认）；
+/// 连接断开时接收端 drop，发送失败即被 EventStreamer 清理（listener 生命周期
+/// 绑定连接）。
+async fn get_events(State(state): State<HttpState>) -> Result<Sse<impl Stream<Item = Result<SseFrame, std::convert::Infallible>>>, Response> {
+    let (reply, rx) = oneshot::channel();
+    if state.query_tx.send(HttpQuery::Subscribe { reply }).is_err() {
+        return Err(service_unavailable());
+    }
+    let Ok(event_rx) = rx.await else {
+        return Err(service_unavailable());
+    };
+    let stream = futures::stream::unfold(event_rx, |mut event_rx| async move {
+        event_rx.recv().await.map(|event| {
+            let (name, data) = event_to_frame(&event);
+            let mut fields = match data {
+                serde_json::Value::Object(fields) => fields,
+                _ => unreachable!("event payload is always an object"),
+            };
+            fields.insert("time".into(), json!(event.time));
+            let frame = SseFrame::default()
+                .event(name)
+                .data(serde_json::to_string(&serde_json::Value::Object(fields)).expect("event json"));
+            (Ok(frame), event_rx)
+        })
+    });
+    Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
 }
 
 fn service_unavailable() -> Response {

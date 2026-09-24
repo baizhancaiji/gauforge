@@ -78,4 +78,38 @@ code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE/jobs" -H 'content-t
 [ "$code" = "422" ] || { echo "  ✗ 期望 422 实际 $code"; exit 1; }
 echo "  ✓ 422"
 
+echo "== GET /events：生命周期帧（提交→started→finished）=="
+EVENTS="$SD/events.txt"
+curl -sN --max-time 25 "$BASE/events" > "$EVENTS" &
+CURL_PID=$!
+sleep 1
+curl -sf -X POST "$BASE/jobs" -H 'content-type: application/json' -d '{"args":["/bin/sleep","1"]}' >/dev/null
+for _ in $(seq 1 50); do
+    grep -q '^event: task_finished$' "$EVENTS" && break
+    sleep 0.2
+done
+# 普通关闭式提交的生命周期：submit→task_started→task_finished→job_completed（JobOpen/Close 仅 open job 有）
+for name in submit task_started task_finished job_completed; do
+    grep -q "^event: $name\$" "$EVENTS" || { echo "  ✗ 缺少事件帧 $name"; cat "$EVENTS"; exit 1; }
+done
+echo "  ✓ submit/task_started/task_finished/job_completed 逐帧可收（单行 JSON）"
+grep -q "^event: task_started\$" "$EVENTS" && grep "^data:" "$EVENTS" | grep -q '"time":' && echo "  ✓ data 为含 time 的单行 JSON"
+
+echo "== 断开重连后新事件恢复推送 =="
+kill "$CURL_PID" 2>/dev/null || true; wait "$CURL_PID" 2>/dev/null || true
+sleep 0.5
+EVENTS2="$SD/events2.txt"
+curl -sN --max-time 20 "$BASE/events" > "$EVENTS2" &
+CURL2_PID=$!
+sleep 1
+curl -sf -X POST "$BASE/jobs" -H 'content-type: application/json' -d '{"args":["/bin/sleep","1"]}' >/dev/null
+for _ in $(seq 1 50); do
+    grep -q '^event: task_finished$' "$EVENTS2" && break
+    sleep 0.2
+done
+grep -q '^event: submit$' "$EVENTS2" || { echo "  ✗ 重连后无新事件"; cat "$EVENTS2"; exit 1; }
+grep -q '^event: task_finished$' "$EVENTS2" || { echo "  ✗ 重连后未收到完成事件"; exit 1; }
+kill "$CURL2_PID" 2>/dev/null || true; wait "$CURL2_PID" 2>/dev/null || true
+echo "  ✓ 重连后新 job 的 submit→task_finished 恢复推送（薄桥接不重放历史）"
+
 echo "全部冒烟通过 ✓"
