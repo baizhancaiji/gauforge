@@ -12,10 +12,10 @@
 | S4 HQ server 丢失 / journal 缺失 | 本地 running 无对应 job（含无 hq_job_id 的僵尸行） | 归因 external_interrupt 落历史（chk 若在则保全），终态管线照常（席位释放/队列分流） |
 | S5 worker 失联自动重试 | job 中途失联又 Running | 不中途落历史（与 S1 同为接管），仅最终终态入历史 |
 
-S3 重跑特征（默认探测）：cwd=run/<id>/ 的进程 create_time 显著晚于本地
-started_at（> RERUN_TOLERANCE_S）——journal 恢复重跑的进程必然晚于本地
-记录的首次启动。该特征以 H4 journal 实测结论为准回填修正（plan §2.4）；
-测试可经 Dispatcher(rerun_probe=…) 注入替换。
+S3 重跑特征（§2.4 ③，H4 实测结论）：① job 状态回退 waiting 且本地已有
+started_at（journal 恢复后任务回退 waiting、worker 重连后从头重跑）——
+对账时点即可判定；② 进程 create_time 显著晚于本地 started_at
+（> RERUN_TOLERANCE_S）——回 running 后的佐证。任一成立即 S3。
 
 对账完成发 system.snapshot(server_restarted=true) 供前端全量重建。
 """
@@ -37,11 +37,12 @@ RERUN_TOLERANCE_S = 120.0  # 进程 create_time 晚于本地 started_at 的判�
 
 def detect_rerun(execution: dict, run_dir: Path, *,
                  tolerance_s: float = RERUN_TOLERANCE_S) -> bool:
-    """S3 重跑特征默认探测（H4 journal 实测后回填修正）。
+    """S3 重跑特征默认探测（create_time 佐证，§2.4 ③特征②）。
 
     定位 cwd=run_dir 的进程，取最早 create_time；显著晚于本地
     started_at → 重跑。定位不到进程（尚未被 worker 重启）或无
-    started_at 记录 → 不判定（保守按 S1 接管处理）。
+    started_at 记录 → 不判定——waiting 回退特征（§2.4 ③特征①）
+    由 Reconciler 在对账时点先行判定，不走本探测。
     """
     if psutil is None:
         return False
@@ -97,7 +98,12 @@ class Reconciler:
                 self._s2_settle(row, job["state"])
             else:  # running / waiting：在跑或待启动
                 run_d = self._d._run_root / str(row["id"])
-                if self._d._rerun_probe(row, run_d):
+                # S3 判据（§2.4 ③）：job 状态回退 waiting 且本地曾 running
+                # → journal 恢复重跑；create_time 佐证仅覆盖已回 running 者
+                rerun = (job["state"] == "waiting"
+                         and bool(row.get("started_at"))) \
+                    or self._d._rerun_probe(row, run_d)
+                if rerun:
                     if has_chk(run_d) and self._seat_holds(row):
                         summary["redirect"].append(row["id"])
                         self._s3_redirect(row)

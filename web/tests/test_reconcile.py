@@ -208,6 +208,27 @@ def test_s3_rerun_with_chk_redirects(gw, rec):
     assert events(rec2, "history.appended")[0]["execution_id"] == row["id"]
 
 
+def test_s3_waiting_state_signature_redirects(gw, rec):
+    """§2.4 ③ 特征①：journal 恢复后 job 回退 waiting（worker 未重连）——
+    仅凭状态回退即判 S3 重跑，不误按 S1 接管（create_time 探针缺席）。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    run_d = config.HOME_DIR / "run" / str(row["id"])
+    (run_d / "w.chk").write_bytes(b"checkpoint")
+    gw.set_state(str(row["hq_job_id"]), "waiting")  # H4 P1 特征：回退 waiting
+
+    rec2: list[tuple[str, dict]] = []
+    probe = lambda r, p: False  # noqa: E731 - 进程探测不可用（worker 未重连）
+    restarted(gw, rec2, probe).reconcile()
+
+    old = executions().get(row["id"])
+    assert old["state"] == "failed"
+    assert old["cause"] == "external_interrupt"  # S3 重跑成立：原执行落历史
+    assert (run_d / "protected" / "w.chk").is_file()  # chk 保全
+    assert len(executions().list_by_state("running")) == 1  # 新执行重提交
+    assert gw.submitted[-1]["cwd"].startswith(str(config.HOME_DIR / "run"))
+
+
 def test_s3_rerun_without_chk_adopts(gw, rec):
     d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
     row = seed_running(gw, d1)
