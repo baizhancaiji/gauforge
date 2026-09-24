@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T10:55+08:00",
+  "updated": "2026-09-25T11:10+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -244,6 +244,13 @@
       "type": "added",
       "scope": "web",
       "summary": "只读预览真实化（分块卡按样板重排、Link0 缺失琥珀注记、parse_errors 逐条容错条、分子四格读数）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "行内提交流真实化（确认框完整输入限高滚动、Link0 缺失黄警含设置缺省值、满员 409 提示）",
       "breaking": false,
       "migration": null
     }
