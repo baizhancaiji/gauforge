@@ -45,7 +45,8 @@ class CliGateway(Gateway):
     # ---------- Gateway ----------
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
-               time_limit_s: int = 0) -> str:
+               time_limit_s: int = 0,
+               env: dict[str, str] | None = None) -> str:
         args = ["submit"]
         if cwd:
             args += ["--cwd", cwd]
@@ -59,6 +60,8 @@ class CliGateway(Gateway):
                 args += ["--resource", f"mem={resources['mem_mib']}"]
         if time_limit_s:
             args += ["--time-limit", f"{time_limit_s}s"]
+        for k, v in (env or {}).items():
+            args += ["--env", f"{k}={v}"]
         args += ["--"] + list(command)
         out = self._run(*args)
         return str(out["id"])

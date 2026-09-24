@@ -171,11 +171,11 @@ class Reconciler:
             resources=resources, queue_id=row.get("queue_id"),
             input_hash=row.get("input_hash"), state="running")
         try:
-            run_d2, _ = materialize(d._run_root, eid2, text, g16_root)
+            run_d2, env = materialize(d._run_root, eid2, text, g16_root)
             nproc = int((resources.get("nproc") or {}).get("value") or 0)
             job_id = d._gw.submit(
                 [str(g16_root / "g16"), "input.gjf"], cwd=str(run_d2),
-                name=row["filename"],
+                name=row["filename"], env=env,
                 resources={"cpus": nproc,
                            "mem_mib": _mem_mib((resources.get("mem_gb")
                                                 or {}).get("value") or 0)},

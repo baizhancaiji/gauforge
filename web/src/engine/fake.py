@@ -44,7 +44,8 @@ class FakeGateway(Gateway):
     # ---- Gateway ----
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
-               time_limit_s: int = 0) -> str:
+               time_limit_s: int = 0,
+               env: dict[str, str] | None = None) -> str:
         self._check()
         jid = str(self._next_id)
         self._next_id += 1
@@ -52,7 +53,7 @@ class FakeGateway(Gateway):
                            "task_stats": {}, "name": name}
         self.submitted.append({"command": list(command), "cwd": cwd,
                                "name": name, "resources": resources,
-                               "time_limit_s": time_limit_s})
+                               "time_limit_s": time_limit_s, "env": env})
         return jid
 
     def cancel(self, job_id: str) -> None:

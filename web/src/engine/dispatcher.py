@@ -228,8 +228,9 @@ class Dispatcher:
         self._monitor.note_started(eid, now_iso())
         job_id = self._gw.submit(
             [str(g16_root / "g16"), "input.gjf"], cwd=str(run_d),
-            name=task["filename"], resources={"cpus": int(resolved["nproc"]["value"]),
-                                              "mem_mib": mem},
+            name=task["filename"], env=env,
+            resources={"cpus": int(resolved["nproc"]["value"]),
+                       "mem_mib": mem},
             time_limit_s=int(task.get("time_limit_s") or 0))
         executions().update_hq_job_id(eid, int(job_id))
         self._emit("task.status",

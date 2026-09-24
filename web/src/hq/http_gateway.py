@@ -68,12 +68,15 @@ class HttpGateway(Gateway):
 
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
-               time_limit_s: int = 0) -> str:
+               time_limit_s: int = 0,
+               env: dict[str, str] | None = None) -> str:
         body: dict = {"args": list(command), "time_limit_s": int(time_limit_s or 0)}
         if cwd:
             body["cwd"] = cwd
         if name:
             body["name"] = name
+        if env:
+            body["env"] = {k: str(v) for k, v in env.items()}
         if resources:
             rq: dict = {}
             if resources.get("cpus"):

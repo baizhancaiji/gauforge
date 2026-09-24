@@ -61,8 +61,12 @@ class Gateway(ABC):
     @abstractmethod
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
-               time_limit_s: int = 0) -> str:
+               time_limit_s: int = 0,
+               env: dict[str, str] | None = None) -> str:
         """提交作业（command 为参数列表形式），返回 HQ job id。
+
+        env：g16 子进程自洽环境（GAUSS_* 全集 + 强制 GAUSS_SCRDIR），
+        经 HQ 下发（§2.3 ④：等价 g16.profile，不依赖 worker 侧全局态）。
 
         resources（B6 资源双账第二账，roadmap §2.1）：{"cpus": int,
         "mem_mib": int} → HQ 资源请求（%NProcShared→cpus、%Mem GB→MiB）；

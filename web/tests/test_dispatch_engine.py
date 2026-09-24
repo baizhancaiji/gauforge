@@ -148,6 +148,11 @@ def test_serial_dispatch_materialize_and_backfill(home, gw, disp, rec):
     assert sub["command"] == [str(home / "g16" / "g16"), "input.gjf"]
     assert Path(sub["cwd"]) == rd
     assert sub["resources"] == {"cpus": 4, "mem_mib": 8192}
+    # g16 子进程环境自洽构建随提交下发（§2.3 ④）：GAUSS_SCRDIR 强制 run/<id>/
+    env = sub["env"]
+    assert env["GAUSS_SCRDIR"] == str(rd)
+    assert env["GAUSS_EXEDIR"].startswith(str(home / "g16"))
+    assert env["GAUSS_BSDDIR"] == str(home / "g16" / "bsd")
     # 事件：task.status(staged→running)
     ev = last(rec, "task.status")
     assert ev == {"task_id": tid, "execution_id": e["id"], "from": "staged",
