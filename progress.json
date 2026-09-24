@@ -392,12 +392,13 @@
     }
   ],
   "in_progress": {
-    "task": "M1 C 阶段收尾（GUI 走查）接近完成；随后 D1–D3 集成验收",
-    "note": "C1–C7 已落库（提交 #22–28）。GUI 走查累计发现并修复八笔缺陷：Gateway 工厂相对导入、text/plain 误按 JSON 解析、worker 资源单位与 cpus list 形状、formchk chk 路径缺 .chk 追加、监控双重校验基准时序、S3 判据竞态加固（server 重 spawn 证据③）、SSE 解析器 CRLF（前端自 M0 起从未处理过任何 SSE 事件）、REST 轮询覆盖实时读数。执行中页读数/进度/Toast/SSE 终态链路已实测恢复。"
+    "task": "M1 D 阶段集成验收完成（C 收尾走查 + D1/D2/DoD）；待发布流程（changelog-spec §1.6）与用户补验",
+    "note": "C 阶段收尾 GUI 走查（playwright+chromium 黑盒，真引擎+真 g16）六页 26 项全部通过，累计发现并修复 12 笔缺陷（含 SSE 解析器 CRLF、worker 资源单位、GAUSS_SCRDIR 下发、S3 判据竞态、queues 端点 mock 残留等，详见 docs/plans/m1-acceptance.md §1.2）。D1 §7.1 十条逐条留痕通过；D2 三演练通过（S1 接管、S3 以已登记的 SIGKILL 替代方案执行：external_interrupt 归因+chk 保全+重定向重提交，并行 2 双账核对）；DoD 系统级判据全过（pytest 224、npm build 零错误、cargo test 212/227/1 全绿、桥接五判据含新增判据③集成测试、validate_progress 逐次通过）。不偏离核对 M1.1–M1.11 逐项完成，S3 替代方案已在 m1-plan §4.5 登记并在验收记录声明。"
   },
   "next_steps": [
-    "M1 D1 端到端走查（真 g16，§7.1 十条留痕）",
-    "M1 D2 重启/中断/并行演练 → D3 进度同步与提交整理收尾"
+    "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
+    "用户方便时补验：真·WSL2 整机重启的 S3 演练（替代方案已登记，不阻塞）",
+    "M2 输入工程：候选分块编辑与队列组建管理 UI（含 HQ 连接状态行真实化、favicon 等走查遗留小项）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
