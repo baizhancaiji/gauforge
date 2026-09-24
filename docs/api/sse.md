@@ -103,27 +103,14 @@
 | 单事件序列化失败 | 跳过该条、记录日志，不影响连接与其他事件 |
 | 事件生产者抛异常 | broker 捕获隔离，订阅者不受影响 |
 | 客户端半开连接 | 心跳写失败检测，清理订阅 |
-| 服务端重启 | 序号归零 → 客户端重连收到 `system.snapshot(server_restarted=true)` 全量重建 |
+| 服务端重启 | 序号延续（`sse_seq` 持久化，M1 起）；重连 `Last-Event-ID` 超窗 / 无法识别 → `system.snapshot(server_restarted=true)` 全量重建 |
 | 增量解析/psutil 采样瞬时失败 | 该周期 progress/monitor 事件缺席，下一周期恢复；连续失败转 `execution.stalled` 判定输入（M1） |
 | 客户端事件处理 JS 异常 | 前端骨架全局捕获，断开重连一次自愈（不影响服务端） |
 
-## 7. M0 mock 推流剧本
+## 7. 事件源（M1 起：领域事件总线）
 
-启动后循环演示（周期 30s，可在 `web/tests` 中加速驱动）。实现按旅程组织：
-首轮走「队列旅程」（队列席位 提交→执行→成员依次派发/读数/收尾→完成→
-席位释放，即步骤 8 的全流转 + 成员级步骤 2–7），后续轮走「单任务滚动
-旅程」（步骤 1–7：收尾最旧执行腾席 → 新候选入席 → 派发 → 读数 → 停滞 →
-成功 → 席位释放），席位容量守恒：
-
-1. `pending.snapshot`（新增队列席位）
-2. `task.status` staged→running（含 execution_id）
-3. `execution.monitor` 每 2s × 5
-4. `execution.progress` 每 1s × 5（opt_step 递增）
-5. `execution.stalled` 置位 → 解除（演示一次）
-6. `task.status` →succeeded
-7. `history.appended`
-8. `queue.status` executing→completed（finish_reason=success）
-9. 空闲段由 `system.heartbeat` 填充
-
-要求：剧本数据与 REST mock 数据同源（同一内存状态对象），前端六页与事件流
-展示一致。
+M1 B11 起事件唯一来源为**领域事件总线**：引擎与路由在真实业务动作点调用
+统一 emit（记入重放窗口，序号写 `sse_seq` 持久化），经全局 fanout 广播。
+M0 的 mock 推流剧本（六页联演）已随 B11 退役，不再作为事件源；各事件的
+真实触发时机以 §3 推送时机表为准（`test_sse_events.py` 为端到端断言清单：
+12 类事件全部由真实动作触发过至少一次）。
