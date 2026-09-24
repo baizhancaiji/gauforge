@@ -25,7 +25,7 @@ def select_gateway(pm: HqProcessManager) -> Gateway:
     from .. import config
 
     if config.HQ_HTTP_PORT:
-        from .http_gateway import HttpGateway
+        from ..hq.http_gateway import HttpGateway
         gw = HttpGateway(f"http://127.0.0.1:{config.HQ_HTTP_PORT}")
         try:
             gw.info()
@@ -34,7 +34,7 @@ def select_gateway(pm: HqProcessManager) -> Gateway:
             gw.close()
             print("[startup] HttpGateway 不可达，回落 CliGateway",
                   file=sys.stderr)
-    from .cli_gateway import CliGateway
+    from ..hq.cli_gateway import CliGateway
     return CliGateway(pm.hq_path, str(pm.server_dir))
 
 
