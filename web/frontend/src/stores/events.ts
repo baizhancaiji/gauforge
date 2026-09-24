@@ -59,7 +59,7 @@ export const useEventsStore = defineStore("events", () => {
   const toasts = ref<Toast[]>([]);
 
   // 通知类事件的脏计数——列表页 watch 后重拉 REST 当前页（契约 §3.5⑥）。
-  const dirty = reactive({ candidates: 0, queues: 0 });
+  const dirty = reactive({ candidates: 0, queues: 0, history: 0 });
 
   /** 停滞告警集合（execution_id），点亮告警灯。 */
   const stalled = reactive(new Set<number>());
@@ -189,6 +189,7 @@ export const useEventsStore = defineStore("events", () => {
         executions.delete(eid);
         stalled.delete(eid);
         stalledInfo.delete(eid);
+        dirty.history++; // 历史页按需重拉当前页
         if (st === "succeeded" || st === "failed") {
           // 名称规则（设计 §4.6）：单任务取任务名（M0 mock 的 title 与文件名
           // 同源，knownNames 即其载体）、队列成员取所属队列名；超 15 字符截断。

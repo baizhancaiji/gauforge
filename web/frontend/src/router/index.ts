@@ -33,7 +33,14 @@ const router = createRouter({
       path: "/history",
       name: "history",
       component: () => import("@/views/HistoryView.vue"),
-      meta: { page: "05", title: "历史", en: "HISTORY" },
+      meta: { page: "05", title: "历史", en: "HISTORY", archived: false },
+    },
+    {
+      // 独立归档页（m0-plan 决策点 10：归档为独立页面，不入历史列表）
+      path: "/archive",
+      name: "archive",
+      component: () => import("@/views/HistoryView.vue"),
+      meta: { page: "05", title: "归档", en: "ARCHIVE", archived: true },
     },
     {
       path: "/settings",
