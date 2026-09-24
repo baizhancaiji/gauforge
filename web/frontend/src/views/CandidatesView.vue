@@ -1,15 +1,20 @@
 <script setup lang="ts">
 /**
- * 01 候选任务（m0-frontend-design §5 · 表格型双栏）
- * 左 55% 列表（id/文件名/title/来源徽标/失败附注） + 右侧粘性分块预览卡。
+ * 01 候选任务（m0-frontend-design §5 · 表格型双栏；m1-plan C1 真实化）
+ * 左列列表（id/文件名/title/来源徽标——失败退回附琥珀归因注记）+ 导入交互
+ * （文件多选/文件夹 webkitdirectory、422 逐文件失败清单、重复导入提示）
+ * + 剔除（二次确认）。列表按自然序展示（与后端 naturalsort 同规则）。
  */
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
+import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime } from "@/utils/format";
+import { naturalCompare } from "@/utils/naturalsort";
 
 type Candidate = components["schemas"]["Candidate"];
 type InputPreview = components["schemas"]["InputPreview"];
@@ -19,14 +24,22 @@ const events = useEventsStore();
 const list = ref<Candidate[]>([]);
 const total = ref(0);
 const loading = ref(false);
+/** 首载骨架行（§4.3 加载两态）：首帧渲染骨架，此后刷新仅底部扫描线。 */
+const everLoaded = ref(false);
 const selected = ref<Candidate | null>(null);
 const preview = ref<InputPreview | null>(null);
 const previewLoading = ref(false);
+
+/** 自然序展示（M1.1：不区分大小写、字母先于数字；并列保持 id 序）。 */
+const sorted = computed(() =>
+  [...list.value].sort((a, b) => naturalCompare(a.filename, b.filename)),
+);
 
 async function load() {
   loading.value = true;
   const { data } = await client.GET("/candidates", { params: { query: {} } });
   loading.value = false;
+  everLoaded.value = true;
   if (data) {
     list.value = (data.items as Candidate[]) ?? [];
     total.value = data.total ?? 0;
@@ -47,150 +60,349 @@ async function loadPreview(c: Candidate) {
 watch(() => events.dirty.candidates, load);
 load();
 
-const originLabel: Record<string, string> = {
-  imported: "IMPORTED",
-  returned_unrun: "RETURN UNRUN",
-  returned_failed: "RETURN FAILED",
-  returned_succeeded: "RETURN OK",
+// ---------- 导入（M1.1） ----------
+const importing = ref(false);
+const fileInput = ref<HTMLInputElement | null>(null);
+const dirInput = ref<HTMLInputElement | null>(null);
+const importNote = ref<string | null>(null);
+const importErrors = ref<{ filename: string; message: string }[]>([]);
+
+function pickFiles() {
+  importNote.value = null;
+  importErrors.value = [];
+  fileInput.value?.click();
+}
+function pickFolder() {
+  importNote.value = null;
+  importErrors.value = [];
+  dirInput.value?.click();
+}
+
+async function onImportChange(e: Event, mode: "files" | "folder") {
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = ""; // 允许再次选择同一批文件
+  if (!files.length) return;
+  importing.value = true;
+  importNote.value = null;
+  importErrors.value = [];
+  const fd = new FormData();
+  fd.append("mode", mode);
+  for (const f of files) fd.append("files", f, f.name);
+  const { data, error } = await client.POST("/candidates", {
+    body: fd as never,
+  });
+  importing.value = false;
+  if (error) {
+    // 整批原子（m1-plan §8 决策点 2）：任一失败 422 + details 逐文件。
+    const detail = (
+      error as unknown as {
+        error?: { details?: { errors?: { filename: string; message: string }[] } };
+      }
+    ).error?.details;
+    importErrors.value = detail?.errors ?? [];
+    return;
+  }
+  if (data) {
+    const dups = data.files
+      .filter((f) => (f as { duplicate?: boolean }).duplicate)
+      .map((f) => f.filename ?? "");
+    importNote.value = dups.length
+      ? `已导入 ${data.files.length} 份（${dups.length} 份与既有候选同名同内容，已另行建目）`
+      : `已导入 ${data.files.length} 份`;
+  }
+  load();
+}
+
+// ---------- 剔除（删除任务实体唯一入口，二次确认） ----------
+const removing = ref<Candidate | null>(null);
+const removeLoading = ref(false);
+
+async function confirmRemove() {
+  const c = removing.value;
+  if (!c) return;
+  removeLoading.value = true;
+  await client.DELETE("/candidates/{id}", { params: { path: { id: c.id } } });
+  removeLoading.value = false;
+  removing.value = null;
+  if (selected.value?.id === c.id) {
+    selected.value = null;
+    preview.value = null;
+  }
+  load();
+}
+
+// 来源徽标（样本语义：安静档状态色 + 中文措辞）；失败退回附琥珀归因注记。
+const originView: Record<string, { color: string; label: string }> = {
+  imported: { color: "staged", label: "导入" },
+  returned_unrun: { color: "skipped", label: "未运行退回" },
+  returned_failed: { color: "failed", label: "失败退回" },
+  returned_succeeded: { color: "succeeded", label: "成功退回" },
+};
+const causeLabel: Record<string, string> = {
+  manually_stopped: "手动停止",
+  program_error: "程序错误",
+  external_interrupt: "外部中断",
+  predecessor_failed: "前驱失败",
+  queue_manually_stopped: "队列停止",
 };
 </script>
 
 <template>
   <div class="candidates">
-    <section class="list" :class="{ 'is-loading': loading }">
-      <div v-if="!list.length && !loading" class="empty-wrap">
-        <EmptyState glyph="▯" text="暂无候选任务 — 导入 .gjf 文件后显示于此" />
+    <!-- 导入工具条：primary 每视图至多一个（§4.2） -->
+    <div class="toolbar">
+      <button
+        class="btn btn--primary"
+        type="button"
+        :data-loading="importing || undefined"
+        :disabled="importing"
+        @click="pickFiles"
+      >
+        {{ importing ? "导入中 …" : "导入文件" }}
+      </button>
+      <button class="btn btn--secondary" type="button" :disabled="importing" @click="pickFolder">
+        导入文件夹
+      </button>
+      <input
+        ref="fileInput"
+        type="file"
+        multiple
+        accept=".gjf,.com"
+        class="hidden-input"
+        @change="onImportChange($event, 'files')"
+      />
+      <input
+        ref="dirInput"
+        type="file"
+        multiple
+        webkitdirectory
+        class="hidden-input"
+        @change="onImportChange($event, 'folder')"
+      />
+
+      <span v-if="importNote" class="note-ok mono">{{ importNote }}</span>
+    </div>
+
+    <!-- 导入失败清单（422 details 逐文件） -->
+    <div v-if="importErrors.length" class="import-errors" role="alert">
+      <p class="ie-head mono">导入失败 {{ importErrors.length }} 份 — 未产生任何候选（整批原子）</p>
+      <div v-for="e in importErrors" :key="e.filename" class="ie-row mono">
+        <span class="ie-file">{{ e.filename }}</span>
+        <span class="ie-msg">{{ e.message }}</span>
       </div>
-      <table v-else class="table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>文件名</th>
-            <th>标题</th>
-            <th>来源</th>
-            <th>创建</th>
-            <th class="right">动作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="c in list"
-            :key="c.id"
-            :class="{ 'row--active': selected?.id === c.id }"
-            @click="loadPreview(c)"
-          >
-            <td class="mono">{{ String(c.id).padStart(3, "0") }}</td>
-            <td class="mono filename">{{ c.filename }}</td>
-            <td class="title">{{ c.title ?? "—" }}</td>
-            <td>
-              <span
-                class="origin mono"
-                :class="`origin--${c.origin}`"
-              >{{ originLabel[c.origin] ?? c.origin }}</span>
-              <span
-                v-if="c.failure_note"
-                class="failure mono"
-                title="c.failure_note"
-              >因 {{ c.failure_note }}</span>
-            </td>
-            <td class="mono dim">{{ fmtDateTime(c.created_at) }}</td>
-            <td class="right">
-              <button class="ghost mono" type="button" @click.stop="loadPreview(c)">
-                预览
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div class="scanline" aria-hidden="true" v-if="loading"></div>
-      <div class="foot mono" v-if="list.length">
-        {{ list.length }} 项 — 共 {{ total }}
-      </div>
-    </section>
+    </div>
 
-    <section class="preview">
-      <template v-if="previewLoading">
-        <div class="preview-blank mono">读取预览 …</div>
-      </template>
-      <template v-else-if="preview">
-        <header class="p-head">
-          <span class="p-name mono">{{ preview.filename }}</span>
-          <span v-if="preview.parse_errors?.length" class="p-err mono">
-            {{ preview.parse_errors.length }} 处解析失败
-          </span>
-        </header>
-
-        <dl class="block">
-          <dt class="mono">TITLE</dt>
-          <dd class="mono">{{ preview.blocks.title ?? "—" }}</dd>
-        </dl>
-
-        <div class="block">
-          <p class="mono label">LINK0</p>
-          <pre class="mono code">{{ preview.blocks.link0.lines.join("\n") || "（无声明）" }}</pre>
-          <p v-if="preview.blocks.link0.missing.length" class="missing mono">
-            缺 {{ preview.blocks.link0.missing.join("、") }}（提交将按默认补齐）
-          </p>
+    <div class="duo">
+      <section class="list">
+        <!-- 首载骨架（§4.3：--bg-inset 骨架行 3–5 行，一次性入场） -->
+        <div v-if="!everLoaded" class="skel" aria-hidden="true">
+          <div v-for="i in 4" :key="i" class="sk-row"></div>
         </div>
 
-        <dl class="block">
-          <dt class="mono label">ROUTE</dt>
-          <dd class="mono route">{{ preview.blocks.route || "—" }}</dd>
-        </dl>
+        <div v-else-if="!list.length" class="empty-wrap">
+          <EmptyState glyph="▯" text="暂无候选任务 — 导入 .gjf 文件后显示于此" />
+        </div>
 
-        <dl class="block">
-          <dt class="mono label">CHARGE / MULT</dt>
-          <dd class="mono">{{ preview.blocks.charge_mult || "—" }}</dd>
-        </dl>
+        <template v-else>
+          <table class="table">
+            <thead>
+              <tr>
+                <th class="mono">ID</th>
+                <th class="mono">文件名</th>
+                <th class="mono">标题</th>
+                <th class="mono">来源</th>
+                <th class="mono">创建</th>
+                <th class="right mono">动作</th>
+              </tr>
+            </thead>
+            <tbody class="stagger">
+              <tr
+                v-for="c in sorted"
+                :key="c.id"
+                :class="{ 'row--active': selected?.id === c.id }"
+                @click="loadPreview(c)"
+              >
+                <td class="mono">{{ String(c.id).padStart(3, "0") }}</td>
+                <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
+                <td class="title" :title="c.title ?? ''">{{ c.title ?? "—" }}</td>
+                <td>
+                  <StateChip
+                    :state="originView[c.origin]?.color ?? 'staged'"
+                    :label="originView[c.origin]?.label ?? c.origin"
+                  />
+                  <span v-if="c.failure_note" class="failure mono">
+                    {{ causeLabel[c.failure_note] ?? c.failure_note }}
+                  </span>
+                </td>
+                <td class="mono dim">{{ fmtDateTime(c.created_at) }}</td>
+                <td class="right">
+                  <button class="btn btn--ghost" type="button" @click.stop="loadPreview(c)">
+                    预览
+                  </button>
+                  <button class="btn btn--ghost remove" type="button" @click.stop="removing = c">
+                    移除
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="scanline" aria-hidden="true" v-if="loading"></div>
+        </template>
+        <div class="foot mono" v-if="list.length">
+          {{ list.length }} 项 — 共 {{ total }}
+        </div>
+      </section>
 
-        <div class="block">
-          <p class="mono label">MOLECULE</p>
-          <div class="mol mono">
-            <span>{{ preview.blocks.molecule.atom_count }} 原子</span>
-            <span class="formula">{{ preview.blocks.molecule.formula }}</span>
+      <section class="preview">
+        <template v-if="previewLoading">
+          <div class="preview-blank mono">读取预览 …</div>
+        </template>
+        <template v-else-if="preview">
+          <header class="p-head">
+            <span class="p-name mono">{{ preview.filename }}</span>
+            <span v-if="preview.parse_errors?.length" class="p-err mono">
+              {{ preview.parse_errors.length }} 处解析失败
+            </span>
+          </header>
+
+          <dl class="block">
+            <dt class="mono">TITLE</dt>
+            <dd class="mono">{{ preview.blocks.title ?? "—" }}</dd>
+          </dl>
+
+          <div class="block">
+            <p class="mono label">LINK0</p>
+            <pre class="mono code">{{ preview.blocks.link0.lines.join("\n") || "（无声明）" }}</pre>
+            <p v-if="preview.blocks.link0.missing.length" class="missing mono">
+              缺 {{ preview.blocks.link0.missing.join("、") }}（提交将按默认补齐）
+            </p>
           </div>
-          <p
-            v-if="preview.blocks.molecule.variables_present || preview.blocks.molecule.constants_present"
-            class="dim mono"
-          >
-            含变量/常数区
-          </p>
-        </div>
 
-        <div class="block">
-          <p class="mono label">ADDITIONAL SECTIONS</p>
-          <p v-if="!preview.blocks.additional_sections.length" class="dim mono">
-            无附加输入节
-          </p>
-          <ol v-else class="addi mono">
-            <li v-for="(sec, i) in preview.blocks.additional_sections" :key="i">
-              <span class="sec-idx">{{ i + 1 }}</span>
-              <pre class="code">{{ sec.lines.join("\n") }}</pre>
-            </li>
-          </ol>
-        </div>
-      </template>
-      <template v-else>
-        <div class="p-empty">
-          <span class="pe-glyph mono" aria-hidden="true">◱</span>
-          <p class="pe-text mono">选择左侧任务查看分块预览</p>
-        </div>
-      </template>
-    </section>
+          <dl class="block">
+            <dt class="mono label">ROUTE</dt>
+            <dd class="mono route">{{ preview.blocks.route || "—" }}</dd>
+          </dl>
+
+          <dl class="block">
+            <dt class="mono label">CHARGE / MULT</dt>
+            <dd class="mono">{{ preview.blocks.charge_mult || "—" }}</dd>
+          </dl>
+
+          <div class="block">
+            <p class="mono label">MOLECULE</p>
+            <div class="mol mono">
+              <span>{{ preview.blocks.molecule.atom_count }} 原子</span>
+              <span class="formula">{{ preview.blocks.molecule.formula }}</span>
+            </div>
+            <p
+              v-if="preview.blocks.molecule.variables_present || preview.blocks.molecule.constants_present"
+              class="dim mono"
+            >
+              含变量/常数区
+            </p>
+          </div>
+
+          <div class="block">
+            <p class="mono label">ADDITIONAL SECTIONS</p>
+            <p v-if="!preview.blocks.additional_sections.length" class="dim mono">
+              无附加输入节
+            </p>
+            <ol v-else class="addi mono">
+              <li v-for="(sec, i) in preview.blocks.additional_sections" :key="i">
+                <span class="sec-idx">{{ i + 1 }}</span>
+                <pre class="code">{{ sec.lines.join("\n") }}</pre>
+              </li>
+            </ol>
+          </div>
+        </template>
+        <template v-else>
+          <div class="p-empty">
+            <span class="pe-glyph mono" aria-hidden="true">◱</span>
+            <p class="pe-text mono">选择左侧任务查看分块预览</p>
+          </div>
+        </template>
+      </section>
+    </div>
+
+    <!-- 剔除二次确认（§4.6 危险确认模态） -->
+    <ConfirmModal
+      :open="removing != null"
+      title="剔除候选"
+      danger
+      confirm-text="移除"
+      :loading="removeLoading"
+      @confirm="confirmRemove"
+      @close="removing = null"
+    >
+      <p class="confirm-line">
+        将删除任务
+        <span class="mono strong">#{{ removing?.id }} {{ removing?.filename }}</span>
+        的输入副本与记录，不可恢复
+      </p>
+    </ConfirmModal>
   </div>
 </template>
 
 <style scoped>
 .candidates {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-card);
+}
+.hidden-input {
+  display: none;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.note-ok {
+  font-size: var(--text-xs);
+  color: var(--state-succeeded);
+}
+.import-errors {
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  padding: var(--space-3) var(--space-4);
   display: grid;
-  grid-template-columns: 1fr 1.05fr;
-  gap: var(--space-5);
+  gap: var(--space-1);
+}
+.ie-head {
+  font-size: var(--text-xs);
+  color: var(--danger);
+}
+.ie-row {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+}
+.ie-file {
+  color: var(--text-primary);
+  min-width: 160px;
+}
+.ie-msg {
+  color: var(--text-secondary);
+}
+.confirm-line {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.confirm-line .strong {
+  color: var(--text-primary);
+}
+.duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: var(--gap-card);
   align-items: start;
 }
 .list {
   position: relative;
   border: 1px solid var(--border-hair);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   overflow: hidden;
   background: var(--bg-raised);
 }
@@ -221,15 +433,24 @@ td {
 tbody tr:last-child td {
   border-bottom: none;
 }
+tbody tr {
+  transition: background-color 120ms var(--ease-std);
+}
 tbody tr:hover {
   background: var(--row-hover);
 }
+/* 选中行：inset 2px accent 条（§4.3 样板） */
 .row--active {
-  background: var(--row-hover);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
 }
 .filename {
   color: var(--text-primary);
   font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .title {
   color: var(--text-secondary);
@@ -243,63 +464,45 @@ tbody tr:hover {
 }
 .right {
   text-align: right;
-}
-.origin {
-  font-size: 10px;
-  letter-spacing: var(--ls-micro);
-  padding: 1px 6px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--border-strong);
-  color: var(--text-secondary);
-}
-.origin--returned_failed {
-  color: var(--warn);
-  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
-}
-.origin--returned_succeeded {
-  color: var(--state-succeeded);
-  border-color: color-mix(in srgb, var(--state-succeeded) 40%, transparent);
-}
-.origin--returned_unrun {
-  color: var(--state-staged);
-  border-color: color-mix(in srgb, var(--state-staged) 40%, transparent);
+  white-space: nowrap;
 }
 .failure {
   display: block;
   margin-top: 2px;
-  font-size: 10px;
+  font-size: var(--text-xs);
   color: var(--warn);
 }
-.ghost {
-  font-size: var(--text-xs);
-  color: var(--text-secondary);
-  padding: 4px 8px;
-  border-radius: var(--r-md);
-  transition: background-color 120ms ease, color 120ms ease;
+.btn.remove {
+  color: var(--danger);
 }
-.ghost:hover {
-  background: var(--row-hover);
-  color: var(--text-primary);
+.btn.remove:hover {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
-.is-loading {
-  opacity: 0.4;
-}
+/* 刷新两态：底部 1px 磷光扫描线（§4.3） */
 .scanline {
   height: 1px;
   background: var(--accent);
-  animation: scan 1.2s ease-in-out infinite;
+  animation: scanline 1.2s var(--ease-std) infinite;
   margin-top: -1px;
 }
-@keyframes scan {
-  0% {
-    opacity: 0.5;
-    transform: translateX(-100%);
-  }
-  50%,
-  100% {
-    opacity: 0.5;
-    transform: translateX(100%);
-  }
+.skel {
+  display: grid;
+}
+.sk-row {
+  height: 40px;
+  border-bottom: 1px solid var(--border-hair);
+  background: var(--bg-inset);
+  animation: row-in 220ms var(--ease-std) both;
+}
+.skel .sk-row:nth-child(2) {
+  animation-delay: 18ms;
+}
+.skel .sk-row:nth-child(3) {
+  animation-delay: 36ms;
+}
+.skel .sk-row:nth-child(4) {
+  animation-delay: 54ms;
 }
 .foot {
   padding: var(--space-2) var(--space-3);
@@ -310,10 +513,10 @@ tbody tr:hover {
 .empty-wrap {
   padding: var(--space-4);
 }
-/* ---------- 预览卡 ---------- */
+/* ---------- 预览卡（C2 真实化的载体；右侧 380px 粘性） ---------- */
 .preview {
   border: 1px solid var(--border-hair);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: var(--bg-raised);
   padding: var(--space-5);
   position: sticky;
@@ -346,7 +549,7 @@ tbody tr:hover {
 .label {
   font-size: var(--text-xs);
   color: var(--text-faint);
-  letter-spacing: var(--ls-micro);
+  letter-spacing: var(--ls-wide);
   margin-bottom: var(--space-1);
 }
 .code {
@@ -400,7 +603,7 @@ tbody tr:hover {
   color: var(--text-faint);
   font-size: var(--text-sm);
 }
-/* §4.6 空态：居中发丝虚线框 + 刻度符号 + mono 短句（不占满、不插画） */
+/* §4.6 空态：居中发丝虚线框 + 刻度符号 + mono 短句 */
 .p-empty {
   min-height: 280px;
   display: flex;
@@ -409,7 +612,7 @@ tbody tr:hover {
   justify-content: center;
   gap: var(--space-3);
   border: 1px dashed var(--border-strong);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
 }
 .pe-glyph {
   font-size: 24px;
@@ -420,15 +623,5 @@ tbody tr:hover {
 .pe-text {
   font-size: var(--text-sm);
   color: var(--text-faint);
-}
-/* < 1024px：双栏收为纵向栈（§4.7 移动端显式塌缩） */
-@media (max-width: 1023px) {
-  .candidates {
-    grid-template-columns: 1fr;
-  }
-  .preview {
-    position: static;
-    max-height: none;
-  }
 }
 </style>
