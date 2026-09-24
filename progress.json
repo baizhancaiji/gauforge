@@ -1,5 +1,5 @@
 {
- "updated": "2026-09-24T01:54+08:00",
+ "updated": "2026-09-24T08:54+08:00",
  "latest_released_version": null,
  "unreleased": [
   {
@@ -176,15 +176,21 @@
    "summary": "修正演示种子污染真实设置库（get_state 不再自动写入 demo 参数，种子仅进引擎关闭的演示模式分支）",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "core",
+   "summary": "SSE 事件总线真实化（事件唯一来源切领域事件总线、mock 推流剧本退役、序号 sse_seq 每事件短事务落库重启延续、fanout 按广播条数差量、system.snapshot 统一真实 store 载荷）",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "M1 B11：SSE broker 真实化（事件源从 mock 剧本切换领域事件总线、sse_seq 持久化、契约回归收口）",
-  "note": "B10 重启对账与启动序列完成：reconcile 五场景（S1-S5）+ S3 chk 保全重定向 + 终态幂等冻结 + 对账后 system.snapshot；lifespan 经 G16WEB_ENGINE 挂载引擎线程与 HQ 进程管理，真 hq S1 联测与引擎开启态真实启动冒烟通过；顺带修复演示种子污染真实设置库。全量 201 passed；S3 重跑特征默认实现待 H4 journal 实测回填。"
+  "task": "M1 H1：axum HTTP 骨架（server 内嵌 axum listener，--http-port 开关默认关，GET /info 打通）",
+  "note": "B11 SSE 真实化完成：事件唯一来源为领域总线（mock 剧本退役）、sse_seq 每事件落库且重启延续（冒烟实测 3/4 延续不归零）、system.snapshot 真实 store 载荷、fanout 索引差量修复；test_sse_events 5 用例（12 类事件真实触发端到端/重放/心跳），全量 206 passed，双闸门绿。B 后端核心（B1-B11）全部完成。"
  },
  "next_steps": [
   "M1 H1-H4（Rust 侧 axum/REST/SSE/journal 实测）→ 提交 #15-18；H4 结论回填 m1-plan §2.4 S3 特征并补真机 S3 联测",
-  "M1 B11 SSE 真实化 → 提交 #20",
   "M1 HttpGateway 切换 → 提交 #21",
   "M1 C1-C7 前端真实化 → 提交 #22-28",
   "M1 D1 端到端走查 / D2 演练 / D3 进度同步收尾"
