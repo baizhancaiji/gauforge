@@ -312,6 +312,13 @@
       "summary": "提交确认框按文本读取 text/plain 完整输入（openapi-fetch 默认 JSON 解析抛错致确认框卡读取中、Link0 黄警不出现）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "兼容 worker cpus 自动探测的 list 序列化形状（原 range 闭区间解析误算 1 核，自动探测 worker 仍永久停等）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
