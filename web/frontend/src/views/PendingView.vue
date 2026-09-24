@@ -168,7 +168,7 @@ function toggle(seatId: number) {
 }
 .kind {
   font-size: 10px;
-  letter-spacing: 0.05em;
+  letter-spacing: var(--ls-micro);
   text-align: center;
   padding: 2px 0;
   border-radius: var(--r-sm);
@@ -196,7 +196,7 @@ function toggle(seatId: number) {
 .win-tag {
   font-size: 10px;
   color: var(--accent);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-micro);
 }
 .standby {
   font-size: var(--text-xs);

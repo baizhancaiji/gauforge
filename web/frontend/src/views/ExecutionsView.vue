@@ -132,7 +132,6 @@ const available = computed(() => Math.max(0, windowSize.value - cards.value.leng
   border: 1px solid var(--border-hair);
   border-radius: var(--r-lg);
   background: var(--bg-raised);
-  box-shadow: var(--inset-highlight);
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
@@ -141,7 +140,7 @@ const available = computed(() => Math.max(0, windowSize.value - cards.value.leng
 }
 /* running 态卡描边磷光呼吸（§4.4；reduced-motion 全局关闭） */
 .card--running {
-  box-shadow: var(--inset-highlight), var(--glow-running);
+  box-shadow: var(--glow-running);
   animation: breathe 2.4s ease-in-out infinite;
 }
 @keyframes breathe {
@@ -205,7 +204,7 @@ const available = computed(() => Math.max(0, windowSize.value - cards.value.leng
 }
 .rg-label {
   font-size: 10px;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-micro);
   color: var(--text-faint);
 }
 .rg-val {

@@ -193,7 +193,6 @@ const originLabel: Record<string, string> = {
   border-radius: var(--r-lg);
   overflow: hidden;
   background: var(--bg-raised);
-  box-shadow: var(--inset-highlight);
 }
 .table {
   width: 100%;
@@ -204,7 +203,7 @@ th {
   text-align: left;
   font-size: var(--text-xs);
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ls-micro);
   text-transform: uppercase;
   color: var(--text-faint);
   padding: var(--space-2) var(--space-3);
@@ -247,7 +246,7 @@ tbody tr:hover {
 }
 .origin {
   font-size: 10px;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ls-micro);
   padding: 1px 6px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border-strong);
@@ -316,7 +315,6 @@ tbody tr:hover {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-lg);
   background: var(--bg-raised);
-  box-shadow: var(--inset-highlight);
   padding: var(--space-5);
   position: sticky;
   top: var(--space-2);
@@ -348,7 +346,7 @@ tbody tr:hover {
 .label {
   font-size: var(--text-xs);
   color: var(--text-faint);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-micro);
   margin-bottom: var(--space-1);
 }
 .code {

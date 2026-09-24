@@ -119,17 +119,21 @@ onMounted(() => events.start());
   gap: var(--space-2);
   padding: var(--space-2) var(--space-2) var(--space-6);
 }
+/* 磷光青 8px 方块电源灯（§3）：服务在线常亮、断线 danger 闪烁（接 SSE 连接态） */
 .brand-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
   background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 80%, transparent);
 }
 .brand-dot[data-conn="reconnecting"] {
   background: var(--warn);
+  box-shadow: none;
 }
 .brand-dot[data-conn="closed"] {
   background: var(--danger);
+  box-shadow: none;
   animation: pulse 1.2s ease-in-out infinite;
 }
 @keyframes pulse {
@@ -143,7 +147,6 @@ onMounted(() => events.start());
 }
 .brand-name {
   font-weight: 600;
-  letter-spacing: 0.02em;
   color: var(--text-primary);
 }
 
@@ -161,13 +164,18 @@ onMounted(() => events.start());
   border-radius: var(--r-md);
   color: var(--text-secondary);
   position: relative;
-  transition: background-color 120ms ease, color 120ms ease;
+  transition:
+    background-color 120ms var(--ease-std),
+    color 120ms var(--ease-std);
 }
 .nav-item:hover {
   background: var(--row-hover);
 }
 .nav-item--active {
   color: var(--text-primary);
+}
+.nav-item--active .nav-label {
+  font-weight: 500;
 }
 .nav-item--active::before {
   content: "";
@@ -189,6 +197,7 @@ onMounted(() => events.start());
 .nav-en {
   font-size: 10px;
   color: var(--text-faint);
+  letter-spacing: var(--ls-wide);
 }
 
 .hq-status {
@@ -200,8 +209,8 @@ onMounted(() => events.start());
   color: var(--text-faint);
 }
 .hq-led {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--state-idle);
 }
@@ -215,13 +224,14 @@ onMounted(() => events.start());
   gap: var(--space-3);
 }
 .page-title {
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1.5;
 }
 .page-no {
   font-size: var(--text-xs);
   color: var(--text-faint);
+  letter-spacing: var(--ls-wide);
 }
 
 .topbar-right {
@@ -231,15 +241,15 @@ onMounted(() => events.start());
 }
 .lamps {
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 .lamp {
   display: flex;
   align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-xs);
+  gap: var(--space-2);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
-  transition: opacity 120ms ease;
+  transition: opacity 120ms var(--ease-std);
 }
 .lamp-dot {
   width: 7px;
@@ -248,32 +258,24 @@ onMounted(() => events.start());
 }
 .lamp--running .lamp-dot {
   background: var(--state-running);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--state-running) 70%, transparent);
   animation: breathe 2.4s ease-in-out infinite;
 }
 .lamp--queued .lamp-dot {
   background: var(--state-staged);
 }
 .lamp--alarm .lamp-dot {
-  background: var(--state-skipped);
+  background: var(--warn);
 }
 .lamp--dim {
   opacity: 0.4;
 }
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
-  }
-}
 
-/* ---- Toast（§4.6）---- */
+/* ---- Toast（§4.6）：右上滑入 240ms --ease-glide（全站唯一使用该曲线）---- */
 .toasts {
   position: fixed;
-  top: var(--topbar-height);
-  right: var(--space-5);
+  top: 68px;
+  right: var(--space-4);
   z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
@@ -288,8 +290,9 @@ onMounted(() => events.start());
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-pop);
-  padding: var(--space-3) var(--space-4);
-  min-width: 220px;
+  padding: 10px 10px 10px var(--space-3);
+  min-width: 240px;
+  max-width: 340px;
   pointer-events: auto;
   position: relative;
   overflow: hidden;
@@ -308,6 +311,7 @@ onMounted(() => events.start());
   background: var(--state-failed);
 }
 .toast .msg {
+  flex: 1;
   font-size: var(--text-sm);
   color: var(--text-primary);
 }
@@ -319,9 +323,15 @@ onMounted(() => events.start());
 .toast .close:hover {
   color: var(--text-primary);
 }
-.toast-enter-active,
+.toast-enter-active {
+  transition:
+    transform 240ms var(--ease-glide),
+    opacity 240ms var(--ease-glide);
+}
 .toast-leave-active {
-  transition: transform 240ms var(--ease-out), opacity 240ms var(--ease-out);
+  transition:
+    transform 200ms var(--ease-std),
+    opacity 200ms var(--ease-std);
 }
 .toast-enter-from,
 .toast-leave-to {

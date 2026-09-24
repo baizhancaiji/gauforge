@@ -239,7 +239,7 @@ async function archive(e: HistoryEntry) {
   border-bottom: 1px solid var(--border-hair);
   font-size: var(--text-xs);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ls-micro);
   color: var(--text-faint);
 }
 .row {
@@ -289,7 +289,7 @@ async function archive(e: HistoryEntry) {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  animation: slide 160ms ease-out;
+  animation: slide 160ms var(--ease-std);
 }
 @keyframes slide {
   from {
@@ -321,7 +321,7 @@ async function archive(e: HistoryEntry) {
 }
 .cell dt {
   font-size: var(--text-xs);
-  letter-spacing: 0.06em;
+  letter-spacing: var(--ls-micro);
   color: var(--text-faint);
   margin-bottom: var(--space-1);
 }

@@ -1,24 +1,29 @@
 <script setup lang="ts">
 /**
  * StateChip — 任务/队列状态唯一展示件（m0-frontend-design §4.1）。
- * `● STATE` mono 11px 大写、状态色文字、状态色 12% 底、3px 圆角药丸。
- * 同一状态全站颜色与措辞一致（信号系统纪律）；running 点亮点 2.4s 呼吸。
+ * `● STATE` mono 11px 大写、状态色文字。两档响度（信号响度原则 §1/§4.1）：
+ * - 安静档（默认，表格/列表内）：无底色，仅 6px 状态点 + 状态色文字；
+ * - 响亮档（loud：执行中页通道卡、停滞告警行、顶栏语义展示）：
+ *   状态色 12% 底 + 3px 圆角药丸 + mono 500；running 点 2.4s 呼吸。
+ * 同一状态全站颜色与措辞一致（信号系统纪律）。
  */
 import { computed } from "vue";
 
 const props = defineProps<{
-  /** 任务六态 + 队列四态 + archived（见 §4.1 状态变量映射） */
+  /** 任务六态 + 队列四态（见 §4.1 状态变量映射） */
   state: string;
   /** 覆盖默认英文大写措辞（如队列 completed 显示 COMPLETED） */
   label?: string;
+  /** 响亮档：状态色 12% 底（通道卡/告警行/语义展示专用） */
+  loud?: boolean;
 }>();
 
 const running = computed(() => props.state === "running");
 </script>
 
 <template>
-  <span class="chip mono" :class="`chip--${state}`" :data-running="running || undefined">
-    <i class="dot" aria-hidden="true"></i>
+  <span class="chip mono" :class="[`chip--${state}`, { 'chip--loud': loud }]">
+    <i class="dot" :class="{ breathe: running }" aria-hidden="true"></i>
     <span class="label">{{ label ?? state.toUpperCase() }}</span>
   </span>
 </template>
@@ -32,9 +37,12 @@ const running = computed(() => props.state === "running");
   padding: 0 8px;
   border-radius: var(--r-sm);
   font-size: var(--text-xs);
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--ls-micro);
   white-space: nowrap;
+}
+.chip--loud {
+  font-weight: 500;
+  background: color-mix(in srgb, currentColor var(--chip-bg-alpha), transparent);
 }
 .dot {
   width: 6px;
@@ -43,27 +51,18 @@ const running = computed(() => props.state === "running");
   background: currentColor;
   flex: none;
 }
-/* 状态色文字 + 12% 底（透明度由身份变量 --text-primary 注入 currentColor 同源） */
-.chip--staged    { color: var(--state-staged);    background: color-mix(in srgb, var(--state-staged) var(--chip-bg-alpha), transparent); }
-.chip--running   { color: var(--state-running);   background: color-mix(in srgb, var(--state-running) var(--chip-bg-alpha), transparent); }
-.chip--succeeded { color: var(--state-succeeded); background: color-mix(in srgb, var(--state-succeeded) var(--chip-bg-alpha), transparent); }
-.chip--failed    { color: var(--state-failed);    background: color-mix(in srgb, var(--state-failed) var(--chip-bg-alpha), transparent); }
-.chip--skipped   { color: var(--state-skipped);   background: color-mix(in srgb, var(--state-skipped) var(--chip-bg-alpha), transparent); }
-.chip--unsubmitted { color: var(--state-idle);    background: color-mix(in srgb, var(--state-idle) var(--chip-bg-alpha), transparent); }
-.chip--completed { color: var(--state-succeeded); background: color-mix(in srgb, var(--state-succeeded) var(--chip-bg-alpha), transparent); }
-.chip--archived  { color: var(--state-archived);  background: color-mix(in srgb, var(--state-archived) var(--chip-bg-alpha), transparent); }
+/* 状态色文字（安静档直接对容器底计算对比度，响亮档对 12% 同色底） */
+.chip--staged    { color: var(--state-staged); }
+.chip--running   { color: var(--state-running); }
+.chip--succeeded { color: var(--state-succeeded); }
+.chip--failed    { color: var(--state-failed); }
+.chip--skipped   { color: var(--state-skipped); }
+.chip--unsubmitted { color: var(--state-idle); }
+.chip--completed { color: var(--state-succeeded); }
+.chip--archived  { color: var(--state-archived); }
 
-/* running 状态点亮点呼吸（§4.1/§6；reduced-motion 由 base.css 全局关闭） */
-[data-running] .dot {
+/* running 状态点呼吸（§6；reduced-motion 由 base.css 全局关闭） */
+.dot.breathe {
   animation: breathe 2.4s ease-in-out infinite;
-}
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
 }
 </style>

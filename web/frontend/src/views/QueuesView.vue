@@ -114,7 +114,7 @@ const reasonLabel: Record<string, string> = {
   background: var(--bg-raised);
   border-bottom: 1px solid var(--border-hair);
   font-size: var(--text-xs);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ls-micro);
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -174,7 +174,7 @@ const reasonLabel: Record<string, string> = {
 .label {
   font-size: var(--text-xs);
   color: var(--text-faint);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--ls-micro);
 }
 .members {
   display: flex;

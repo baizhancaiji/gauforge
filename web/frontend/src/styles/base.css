@@ -1,5 +1,6 @@
 /**
- * base.css — reset / 全局框架 / 背景纹理 / 主题切换（m0-frontend-design.md §3）
+ * base.css — reset / 全局框架 / 背景纹理 / 基础接管清单 / 共享件
+ * 规范：docs/plans/m0-frontend-design.md §3/§4.2/§6。
  * 组件只引用 tokens 变量；本文件提供跨页共享的基础骨架。
  */
 *,
@@ -10,6 +11,10 @@
 
 * {
   margin: 0;
+}
+
+html {
+  color-scheme: dark; /* 随主题（tokens 亮色组覆盖为 light） */
 }
 
 html,
@@ -66,13 +71,42 @@ textarea {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   padding: 6px var(--space-2);
+  caret-color: var(--accent); /* §3 基础接管清单 */
 }
 
 input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--accent);
+}
+
+/* §3 基础接管清单：autofill 底色修正（防浏览器黄底破主题） */
+input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-inset) inset;
+  -webkit-text-fill-color: var(--text-primary);
+  transition: background-color 9999s var(--ease-std);
+}
+
+/* §3 基础接管清单：滚动条（10px，thumb border-strong、track 透明） */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* §3 基础接管清单：选区（accent 25% 底） */
+::selection {
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 /* 全局抽屉布局：侧栏 + 主区（§3 框架） */
@@ -110,42 +144,176 @@ textarea:focus {
   z-index: var(--z-nav);
 }
 
+/* §2.3 页面度量：六页统一内边距与宽度上限 */
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-6);
+  padding: var(--page-pad);
 }
 
-/* §4.3 数据表格：行高 40px（含两级表头），保证 hover 命中与触达目标。 */
+.content-inner {
+  max-width: var(--content-max);
+}
+
+/* §4.3 数据表格：行高 40px，保证 hover 命中与触达目标。 */
 .content table th,
 .content table td {
   height: 40px;
 }
 
-/* §6 视图切换动效（reduced-motion 下关闭）。
-   注意：视图切换用同帧交叉淡入淡出（不启用 mode="out-in"，避免异步路由
-   组件下 enter 偶发不触发导致的残留空白；见 App.vue 注释）。 */
+/* ---------- 共享按钮系统（§4.2，状态矩阵全类一致） ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-4);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  border: 1px solid transparent;
+  position: relative;
+  transition:
+    background-color 120ms var(--ease-std),
+    border-color 120ms var(--ease-std),
+    color 120ms var(--ease-std);
+}
+.btn--primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn--primary:active:not(:disabled) {
+  background: var(--accent-dim);
+}
+.btn--secondary {
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+}
+.btn--secondary:hover:not(:disabled) {
+  color: var(--text-primary);
+  border-color: var(--text-faint);
+}
+.btn--ghost {
+  color: var(--text-secondary);
+  padding: 0 10px;
+}
+.btn--ghost:hover:not(:disabled) {
+  background: var(--row-hover);
+  color: var(--text-primary);
+}
+.btn--danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+.btn--danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+/* loading（仅 primary）：文案换「提交中 …」+ 底部 1px 磷光扫描线，期间禁点 */
+.btn[data-loading]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--accent);
+  animation: scanline 1.2s var(--ease-std) infinite;
+}
+
+/* 焦点可见性（§7 双环：--border-strong 内环 + --accent 外环，1px 线 2px 偏移） */
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+/* ---------- 动效（§6，缓动一律 tokens；reduced-motion 全局关闭） ---------- */
+/* 视图切换：opacity 0→1 + translateY(6px→0)，160ms --ease-std（同帧交叉淡入
+   淡出；不启用 mode="out-in"，避免异步路由组件下 enter 偶发不触发的残留）。 */
 .view-enter-active {
-  transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out);
+  transition:
+    opacity 160ms var(--ease-std),
+    transform 160ms var(--ease-std);
 }
 .view-enter-from {
   opacity: 0;
-  transform: translateY(4px);
+  transform: translateY(6px);
 }
 .view-leave-active {
-  transition: opacity 100ms var(--ease-out);
+  transition: opacity 100ms var(--ease-std);
 }
 .view-leave-to {
   opacity: 0;
 }
 
-/* 焦点可见性（§7）：accent 1px 外描边 + 2px 偏移 */
-:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 2px;
+/* 列表入场：行/卡 stagger 每行 delay 18ms（>8 行截断统一入场），220ms；
+   容器加 .stagger，直接子元素即为行（全站仅此一处 stagger）。 */
+.stagger > * {
+  animation: row-in 220ms var(--ease-std) both;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 18ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 36ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 54ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 72ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 90ms;
+}
+.stagger > *:nth-child(7) {
+  animation-delay: 108ms;
+}
+.stagger > *:nth-child(n + 8) {
+  animation-delay: 126ms;
+}
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
-/* §6 硬规则：reduced-motion 关闭全部动效 */
+/* 表格/按钮加载扫描线（§4.3/§6）：1px 磷光线往返 1.2s */
+@keyframes scanline {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* running 呼吸（§6）：状态点/通道卡发光 opacity 0.65↔1，2.4s ease-in-out */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+/* §6 硬规则：reduced-motion 下全部动效关闭 */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

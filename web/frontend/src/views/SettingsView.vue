@@ -155,7 +155,7 @@ async function save() {
 .group-title {
   font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--ls-micro);
   color: var(--text-faint);
   margin-bottom: var(--space-4);
 }

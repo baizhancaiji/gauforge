@@ -1,10 +1,14 @@
 /**
- * g16web · 设计令牌（design tokens）— 唯一事实来源（m0-frontend-design.md §2）
+ * g16web · 设计令牌（design tokens）— 唯一事实来源
+ * 规范：docs/plans/m0-frontend-design.md §2（v2 设计评审定稿，本文件与样板
+ * assets/m0-ui-preview.html 的 :root 逐变量同值）。
  *
- * 纪律：任何组件只引用这些 CSS 变量，禁止硬编码色值/字号/间距。
- * 明暗双主题以 `html[data-theme=...]` 切换，组件不写主题分支。
+ * 纪律：任何组件只引用这些 CSS 变量，禁止硬编码色值/字号/字距/缓动；
+ * 明暗双主题以 `html[data-theme=...]` 整组覆盖，组件不写主题分支。
  */
 :root {
+  color-scheme: dark;
+
   /* ---- 字体栈（§2.2）---- */
   --font-mono:
     "IBM Plex Mono", "Noto Sans SC", ui-monospace, "SFMono-Regular", Menlo,
@@ -12,13 +16,13 @@
   --font-sans: "IBM Plex Sans", "Noto Sans SC", system-ui, "PingFang SC",
     "Microsoft YaHei", sans-serif;
 
-  /* ---- 字号阶梯（§2.2）---- */
-  --text-xs: 11px;
+  /* ---- 字号阶梯（§2.2，紧凑档）---- */
+  --text-xs: 11px; /* 纯拉丁大写微标签；含中文一律 12.5px 起 */
   --text-sm: 12.5px;
   --text-md: 13.5px;
   --text-lg: 16px;
   --text-xl: 20px;
-  --text-readout: 28px;
+  --text-readout: 28px; /* 通道卡监控大读数（tabular-nums） */
 
   /* ---- 间距（4 的倍数，§2.3）---- */
   --space-1: 4px;
@@ -32,9 +36,9 @@
   --space-12: 48px;
 
   /* ---- 圆角（§2.3）---- */
-  --r-sm: 3px;
-  --r-md: 6px;
-  --r-lg: 10px;
+  --r-sm: 3px; /* 徽标 */
+  --r-md: 6px; /* 卡片/按钮/输入 */
+  --r-lg: 10px; /* 模态 */
 
   /* ---- 层级（§2.3）---- */
   --z-nav: 100;
@@ -42,12 +46,21 @@
   --z-modal: 300;
   --z-toast: 400;
 
-  /* ---- 布局常量（§3）---- */
+  /* ---- 页面度量（§2.3，六页统一）---- */
   --side-width: 216px;
   --topbar-height: 56px;
+  --page-pad: 24px;
+  --content-max: 1280px;
+  --gap-card: 16px;
   --channel-card-width: 340px;
 
-  /* ---- 暗色主题（默认，长时间监控主场景） ---- */
+  /* ---- 缓动与字距（§2.4，全站仅这两档缓动、两档字距）---- */
+  --ease-std: cubic-bezier(0.2, 0.8, 0.3, 1); /* 全站标准出场 */
+  --ease-glide: cubic-bezier(0.16, 0.84, 0.3, 1); /* 仅 Toast */
+  --ls-micro: 0.08em; /* 全大写拉丁微标签：表头、徽标 */
+  --ls-wide: 0.14em; /* 刻度标签：区块 lab、CH、页码、导航英文小字 */
+
+  /* ---- 暗色主题（默认，长时间监控主场景）§2.1 ---- */
   /* 基底 */
   --bg-base: #0c1116;
   --bg-raised: #111820;
@@ -57,47 +70,53 @@
   --border-hair: #1e2a36;
   --border-strong: #2e3f4e;
 
-  /* 前景 */
+  /* 前景（三档明度 ≈15 / ≈9 / ≈5.9:1） */
   --text-primary: #dde7ef;
-  --text-secondary: #8da2b5;
+  --text-secondary: #9db2c5;
   --text-faint: #7b8fa2;
 
-  /* 品牌强调（磷光青） */
+  /* 品牌 / 交互强调（磷光青） */
   --accent: #38d4c2;
+  --accent-hover: #4ee0cf;
   --accent-dim: #2a9c8f;
   --accent-ink: #062019;
 
-  /* 状态语义色 */
+  /* 状态语义色（全站信号系统） */
   --state-staged: #7f96ab;
   --state-running: #38d4c2;
   --state-succeeded: #4cc38a;
-  --state-failed: #e5534b;
+  --state-failed: #ec5f57;
   --state-skipped: #d9a03f;
-  --state-archived: #55677a;
-  --state-idle: #55677a;
+  --state-archived: #71849a;
+  --state-idle: #71849a;
 
   /* 功能色 */
-  --warn: #d9a03f;
-  --danger: #e5534b;
+  --warn: #d9a03f; /* 仅「需要行动的警告」（琥珀纪律） */
+  --danger: #ec5f57;
 
-  /* 语义衍生 */
+  /* 语义衍生（透明度由令牌统一给出，不手调） */
   --chip-bg-alpha: 0.12;
   --row-hover: rgba(56, 212, 194, 0.04);
-  --backdrop-dim: rgba(12, 17, 22, 0.45); /* 抽屉/浮层遮罩（暗色：墨蓝压暗） */
+  --backdrop-dim: rgba(12, 17, 22, 0.45); /* 抽屉遮罩：纯压暗无模糊 */
+  --backdrop-modal: rgba(12, 17, 22, 0.75); /* 模态遮罩（§4.6） */
   --glow-running:
     0 0 0 1px rgba(56, 212, 194, 0.35), 0 0 24px rgba(56, 212, 194, 0.12);
   --grid-line: rgba(141, 162, 181, 0.035);
   --grid-dot: rgba(141, 162, 181, 0.05);
   --shadow-pop: 0 8px 28px rgba(4, 8, 12, 0.45);
-  /* 高阶精密化（high-end-visual-design 兼容项）：
-     内描边顶部高光 = Double-Bezel 内芯的 1px 顶光，造"玻璃嵌铝盘"的机加工质感；
-     统一缓动曲线，视图/Toast 过渡共用。 */
-  --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* 图表序列色（M3 预留，不进组件） */
+  --viz-1: #38d4c2;
+  --viz-2: #6fc0b4;
+  --viz-3: #9db2c5;
+  --viz-4: #d9a03f;
+  --viz-5: #71849a;
 }
 
-/* ---- 明亮主题（Light · 记录纸，§2.1）---- */
+/* ---- 明亮主题（Light · 记录纸，§2.1；值以设计文档为唯一来源）---- */
 html[data-theme="light"] {
+  color-scheme: light;
+
   --bg-base: #f2f5f7;
   --bg-raised: #ffffff;
   --bg-overlay: #ffffff;
@@ -108,29 +127,29 @@ html[data-theme="light"] {
 
   --text-primary: #1c2a35;
   --text-secondary: #4d6072;
-  --text-faint: #80909e;
+  --text-faint: #5f7080;
 
-  --accent: #0b8a7b;
-  --accent-dim: #0a7266;
+  --accent: #0a7266;
+  --accent-hover: #096a5f;
+  --accent-dim: #085c52;
   --accent-ink: #ffffff;
 
-  --state-staged: #5b7186;
-  --state-running: #0b8a7b;
-  --state-succeeded: #1a7c4c;
+  --state-staged: #526778;
+  --state-running: #0a7266;
+  --state-succeeded: #177246;
   --state-failed: #c23a31;
-  --state-skipped: #8f6a1f;
-  --state-archived: #8795a3;
-  --state-idle: #8795a3;
+  --state-skipped: #7d5c19;
+  --state-archived: #5b6a76;
+  --state-idle: #5b6a76;
 
-  --warn: #8f6a1f;
+  --warn: #7d5c19;
   --danger: #c23a31;
 
-  --row-hover: rgba(11, 138, 123, 0.05);
-  --backdrop-dim: rgba(28, 42, 53, 0.35); /* 亮色遮罩：石墨压暗纸面 */
-  --glow-running: 0 0 0 1px rgba(11, 138, 123, 0.45);
+  --row-hover: rgba(10, 114, 102, 0.05);
+  --backdrop-dim: rgba(28, 42, 53, 0.35);
+  --backdrop-modal: rgba(28, 42, 53, 0.45);
+  --glow-running: 0 0 0 1px rgba(10, 114, 102, 0.45); /* 无泛光，纯描边 */
   --grid-line: rgba(28, 42, 53, 0.045);
   --grid-dot: rgba(28, 42, 53, 0.06);
   --shadow-pop: 0 8px 24px rgba(28, 42, 53, 0.16);
-  --inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
 }
