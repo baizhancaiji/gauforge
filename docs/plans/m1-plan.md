@@ -269,12 +269,39 @@ g16web 启动序列：加载 SQLite 全量状态 → 确保 HQ server/worker 存
 |---|---|---|
 | S1 g16web 重启，HQ 活着、job 在跑 | HQ job Running | 接管：重新定位进程树、解析位点重扫、继续监控（§8.7：g16web 死亡不影响在跑计算） |
 | S2 重启期间 job 已终态 | HQ job 终态 | 按终态补齐历史（归因映射 §8.7），monitor_summary 置空 |
-| S3 WSL2 整体重启，journal 恢复重跑 | HQ job Running 且本地曾有中断痕迹（job 启动时间异于本地记录等特征，以 H4 实测为准） | **采纳重跑**（§8.6 定稿）：检测 `run/<id>/` 存在 chk——有 → 取消重跑、chk 移入 protected/ 保全、原执行归因外部中断落历史、以新执行目录原样重新提交（**重定向**，防 g16 重写 %CHK 抹掉续跑资产；断点续跑注入属 M4）；无 → 接管跟踪重跑 job，结局即原执行结局 |
+| S3 WSL2 整体重启，journal 恢复重跑 | HQ job Running 且本地曾有中断痕迹（H4 实测定稿：journal 恢复后同 id 回退 waiting、worker 重连后从头重跑；见下方实测结论 ②） | **采纳重跑**（§8.6 定稿）：检测 `run/<id>/` 存在 chk——有 → 取消重跑、chk 移入 protected/ 保全、原执行归因外部中断落历史、以新执行目录原样重新提交（**重定向**，防 g16 重写 %CHK 抹掉续跑资产；断点续跑注入属 M4）；无 → 接管跟踪重跑 job，结局即原执行结局 |
 | S4 HQ server 丢失/journal 缺失 | 本地 running 无对应 job | 归因外部中断、落历史（chk 若在则保全） |
 | S5 worker 失联自动重试（crash_limit≤5） | job 中途失联又 Running | 不中途落历史，仅最终终态入历史（识别重试，roadmap §5） |
 
 场景判定特征（尤其 S3 与 S1 的区分）以 H4 journal 实测结论为准回填修正；
 对账完成后发 `system.snapshot(server_restarted=true)` 供前端全量重建。
+
+**H4 journal 实测结论**（2026-09-24，`scripts/probe_hq_journal.sh`，P1–P4
+矩阵全部产出结论；记录见提交说明与探针输出）：
+
+1. **flush 周期约束（P1 关键修复）**：`journal_flush_period` 默认 30s；
+   RPC 提交/取消路径成功后即调 `flush_journal()`，HTTP 桥原本缺失——
+   kill -9 落在 flush 周期内时 Submit 事件不落盘，恢复后 `GET /jobs` 为空、
+   任务凭空消失（首跑实测现象）。已给 HTTP 桥补提交/取消后 flush（对齐
+   RPC，CLI 等价性），复跑证实恢复正常。**残留窗口**：非提交类事件
+   （task started/finished）仍在周期内，kill -9 后已启动任务恢复为
+   waiting——这正是 S3 重跑语义的机制来源，B10 按「重跑」处置正确。
+2. **S3 特征定稿（P1）**：journal 恢复后 job id 延续、任务回退 waiting、
+   worker 重连后**从头重跑**（副作用 start 标记 1→2 次证实，非续跑）；
+   重启后新提交 job id 计数延续。
+3. **S1 与 S3 区分**：S1（g16web 重启、HQ 存活）job 持续 Running、不回退
+   不重跑；S3 恢复后先观测到 waiting 再回 running 且从头执行。g16web
+   判据：对账时 HQ job 状态回退 waiting / 任务执行证据（如启动时间、
+   输出从头增长）异于本地记录 → S3。
+4. **Waiting 任务恰好执行一次（P2）**：journal 恢复后一次性任务只执行
+   一次，无重复提交。
+5. **crash_limit 重试可观测（P3，S5）**：worker 失联重试全程同 job id，
+   事件流特征 = `worker_lost` × N + 重试 `task_started` + 超出
+   MaxCrashes(5) 后单个 `task_failed`；每次重试都真执行（start 标记
+   6 次 = 6 次失联重试轮）。S5 识别「同 job 多轮 started/aborted」即可，
+   不中途落历史。
+6. **无 journal（P4，S4 佐证）**：重启后 job 全部丢失、id 计数归零——
+   本地 running 无对应 HQ job 即外部中断的归因依据成立。
 
 ## 3. 任务流程图
 
