@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:55+08:00",
+  "updated": "2026-09-25T12:10+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -272,6 +272,13 @@
       "type": "added",
       "scope": "web",
       "summary": "历史页真实化（输入/输出查看导出、重新排队与退回候选、独立归档页路由、清理统计回显、history.appended 驱动重拉）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "设置面板真实化（中性生效语义徽标、实际变更 on_restart 重启提示、席位上限调小挤出确认、范围提示）",
       "breaking": false,
       "migration": null
     }
