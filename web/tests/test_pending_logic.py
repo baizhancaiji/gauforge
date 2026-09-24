@@ -101,6 +101,26 @@ def test_reorder_with_locked_409():
     assert pending.snapshot()["seats"][0]["locked"] is True
 
 
+def test_reorder_allows_waiting_area_when_locked_in_place():
+    """锁定席位保持原下标 → 放行等待区互换（roadmap §2.1：未在执行
+    成员可重排）。GUI 走查实测：原实现存在锁定席位即全量 409，
+    等待区拖拽在窗口非空时永不生效。"""
+    t1, t2, t3 = (_cand(f"t{i}.gjf") for i in range(3))
+    pending.append_task(t1)  # s 头部，_run 后锁定
+    pending.append_task(t2)
+    pending.append_task(t3)
+    _run(t1)
+    current = [s["seat_id"] for s in pending.snapshot()["seats"]]
+    locked = current[0]
+    pending.reorder([current[0], current[2], current[1]])  # 锁定原位，等待区互换
+    assert [s["seat_id"] for s in pending.snapshot()["seats"]] == \
+        [current[0], current[2], current[1]]
+    with pytest.raises(ApiError) as ei:  # 移动锁定席位仍 409
+        pending.reorder([current[1], current[0], current[2]])
+    assert ei.value.body()["error"]["code"] == "SEAT_WINDOW_LOCKED"
+    assert ei.value.body()["error"]["details"]["seat_ids"] == [locked]
+
+
 # ---------------- 整席移除 ----------------
 
 def test_remove_task_seat_returns_candidate():

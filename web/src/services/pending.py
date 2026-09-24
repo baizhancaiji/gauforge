@@ -114,17 +114,26 @@ def append_queue(queue_id: str) -> int:
 
 
 def reorder(seat_order: list[int]) -> dict:
-    """PUT /pending/order 全量原子重排；存在窗口触及席位即 409。"""
-    existing = {s["seat_id"] for s in seats().list_by_position()}
+    """PUT /pending/order 全量原子重排。
+
+    锁定（窗口触及）席位不可移动：payload 保持其原下标不变则放行
+    （roadmap §2.1「未在执行的成员可重排」），移动即 409。
+    （GUI 走查修正：原实现只要存在锁定席位即全量拒绝，等待区拖拽
+    重排在窗口非空时永不生效。）
+    """
+    current = [s["seat_id"] for s in seats().list_by_position()]
+    existing = set(current)
     if (not isinstance(seat_order, list)
             or len(seat_order) != len(existing)
             or set(seat_order) != existing):
         raise err("INVALID_REQUEST", "seat_order 必须为在席席位的全量排列",
                   http=400)
     locked = locked_seat_ids()
-    if locked:
+    moved = [sid for sid in locked
+             if seat_order.index(sid) != current.index(sid)]
+    if moved:
         raise err("SEAT_WINDOW_LOCKED", "并行窗口已触及席位，不可整席重排",
-                  {"seat_ids": sorted(locked)}, http=409)
+                  {"seat_ids": sorted(moved)}, http=409)
     seats().reorder(list(seat_order))
     return snapshot()
 
