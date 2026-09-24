@@ -281,6 +281,16 @@
       "summary": "设置面板真实化（中性生效语义徽标、实际变更 on_restart 重启提示、席位上限调小挤出确认、范围提示）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "对齐前端设计令牌与基础样式至 v2 设计规范（令牌值修正与补全、页面度量与缓动/字距令牌、基础接管清单、StateChip 两档响度、Noto Sans SC 自托管）"
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修正 Link0 缺失指令名匹配与展示（后端 missing 为不带 % 前缀指令名，提交黄警缺省值回显此前永不命中）"
     }
   ],
   "in_progress": {
