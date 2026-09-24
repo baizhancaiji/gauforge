@@ -1,13 +1,16 @@
 <script setup lang="ts">
 /**
- * 06 设置（m0-frontend-design §5 · 表单型，lim-width 880px）
- * 启动级只读区在上，运行级分组表单在下；每项带生效语义徽标；
- * 数据驱动渲染（读 GET /settings 元数据），保存调 PUT（全有或全无，422 逐项报错）。
+ * 06 设置（m0-frontend-design §5 · 表单型限宽 880px；m1-plan C7 真实化）
+ * 启动级只读区（锁定 + 值 mono + 环境变量）在上，运行级分组表单在下；
+ * 每项带中性生效语义徽标（§4.6：即时/即时且追溯/新任务生效/重启生效，plain 档）；
+ * 保存后按实际变更提示（on_restart 项琥珀提示条）；席位上限调小弹
+ * 「将自队尾挤出」确认（挤出语义：只挤窗口未触及席位、在跑不追溯）。
  */
 import { computed, onMounted, ref } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
+import ConfirmModal from "@/components/ConfirmModal.vue";
 
 type SettingsResponse = components["schemas"]["SettingsResponse"];
 type SettingItem = components["schemas"]["SettingItem"];
@@ -15,9 +18,14 @@ type EffectKind = components["schemas"]["EffectKind"];
 
 const settings = ref<SettingsResponse | null>(null);
 const form = ref<Record<string, string>>({});
+/** 载入时的原始值（判断实际变更项）。 */
+const original = ref<Record<string, string>>({});
 const saving = ref(false);
 const saved = ref<{ ok: boolean; msg: string } | null>(null);
 const errors = ref<Record<string, string>>({});
+/** 实际变更且 on_restart 的 key（保存后琥珀提示条）。 */
+const restartKeys = ref<string[]>([]);
+const shrink = ref<{ from: number; to: number } | null>(null);
 
 const effectLabel: Record<EffectKind, string> = {
   immediate: "即时",
@@ -28,19 +36,29 @@ const effectLabel: Record<EffectKind, string> = {
 
 const runtime = computed(() => settings.value?.runtime ?? []);
 const startup = computed(() => settings.value?.startup ?? []);
-const pendingRestart = computed(() =>
-  runtime.value.filter((s) => s.effect === "on_restart").map((s) => s.key),
+const seatLimitItem = computed(() =>
+  runtime.value.find((s) => s.key === "pending_seat_limit"),
 );
 
-function initForm(s: SettingItem) {
-  form.value[s.key] = String(s.value ?? "");
+function rangeText(s: SettingItem): string {
+  if (!s.range) return "";
+  const min = s.range.min ?? "—";
+  const max = s.range.max ?? "—";
+  return `${min}–${max}`;
+}
+
+function initForm(items: SettingItem[]) {
+  for (const s of items) {
+    form.value[s.key] = String(s.value ?? "");
+    original.value[s.key] = String(s.value ?? "");
+  }
 }
 
 onMounted(async () => {
   const { data } = await client.GET("/settings");
   if (data) {
     settings.value = data;
-    data.runtime.forEach(initForm);
+    initForm(data.runtime);
   }
 });
 
@@ -51,10 +69,27 @@ function valueFor(s: SettingItem): number | string | boolean {
   return v;
 }
 
-async function save() {
-  saving.value = true;
+async function requestSave() {
   saved.value = null;
   errors.value = {};
+  restartKeys.value = [];
+
+  // 席位上限调小 → 挤出确认（C7：将自队尾挤出，在跑不追溯）。
+  const limitItem = seatLimitItem.value;
+  if (limitItem && form.value[limitItem.key] !== original.value[limitItem.key]) {
+    const from = Number(original.value[limitItem.key]);
+    const to = Number(form.value[limitItem.key]);
+    if (Number.isFinite(to) && to < from) {
+      shrink.value = { from, to };
+      return;
+    }
+  }
+  await doSave();
+}
+
+async function doSave() {
+  shrink.value = null;
+  saving.value = true;
   const body: Record<string, unknown> = {};
   runtime.value.forEach((s) => {
     body[s.key] = valueFor(s);
@@ -62,38 +97,46 @@ async function save() {
   const { data, error } = await client.PUT("/settings", { body: { values: body } });
   saving.value = false;
   if (error) {
-    saved.value = { ok: false, msg: (error as { error: { message: string } }).error?.message ?? "保存失败" };
-    const details = (error as { error?: { details?: { errors?: { key: string; reason: string }[] } } }).error?.details;
-    if (details?.errors) {
-      details.errors.forEach((d) => (errors.value[d.key] = d.reason));
+    const detail = (
+      error as unknown as {
+        error?: { message?: string; details?: { errors?: { key: string; reason: string }[] } };
+      }
+    ).error;
+    if (detail?.details?.errors?.length) {
+      saved.value = { ok: false, msg: "保存失败" };
+      detail.details.errors.forEach((d) => (errors.value[d.key] = d.reason));
+    } else {
+      saved.value = { ok: false, msg: detail?.message ?? "保存失败" };
     }
     return;
   }
   if (data) {
     settings.value = data;
-    data.runtime.forEach(initForm);
+    initForm(data.runtime);
   }
+  // 实际变更且 on_restart 的项（保存前对比原始值）→ 重启提示条。
+  restartKeys.value = runtime.value
+    .filter((s) => s.effect === "on_restart" && form.value[s.key] !== original.value[s.key])
+    .map((s) => s.key);
   saved.value = { ok: true, msg: "设置已保存" };
 }
 </script>
 
 <template>
   <div class="settings">
-    <div
-      v-if="settings"
-      :key="settings ? 'form' : 'loading'"
-      class="s-wrap"
-    >
-      <!-- 启动级只读 -->
+    <div v-if="settings" class="s-wrap">
+      <!-- 启动级只读（锁定 + 值 mono + 环境变量） -->
       <section class="group">
         <h2 class="group-title mono">启动级参数</h2>
         <div class="reads">
           <dl v-for="s in startup" :key="s.key" class="read">
             <dt class="mono">
-              <span class="lock" aria-hidden="true">🔒</span>
+              <span class="lock" aria-hidden="true">▪</span>
               {{ s.key }}
             </dt>
-            <dd class="mono val">{{ s.value }}<span class="env mono">{{ s.env_var }}</span></dd>
+            <dd class="mono val">
+              {{ s.value }}<span class="env mono">{{ s.env_var }}</span>
+            </dd>
             <dd class="note mono">{{ s.description }}</dd>
           </dl>
         </div>
@@ -112,28 +155,53 @@ async function save() {
               :step="s.value_type === 'number' ? 'any' : '1'"
             />
             <p class="hint mono">
-              {{ s.description }}
-              <span class="eff mono">{{ effectLabel[s.effect] }}</span>
+              <span>{{ s.description }}</span>
+              <span v-if="rangeText(s)" class="range">范围 {{ rangeText(s) }}</span>
             </p>
+            <!-- 生效语义：中性 plain 徽标（§4.6） -->
+            <span class="eff mono">{{ effectLabel[s.effect] }}</span>
             <p v-if="errors[s.key]" class="err mono">值越界或非法：{{ errors[s.key] }}</p>
           </div>
         </div>
       </section>
 
       <div class="savebar">
-        <button class="btn-primary mono" type="button" :disabled="saving" @click="save">
-          {{ saving ? "保存中 …" : "保存" }}
+        <button
+          class="btn btn--primary"
+          type="button"
+          :data-loading="saving || undefined"
+          :disabled="saving"
+          @click="requestSave"
+        >
+          {{ saving ? "保存中 …" : "保存设置" }}
         </button>
-        <span v-if="saved" class="saved-mono" :class="saved.ok ? 'ok' : 'bad'">
+        <span v-if="saved" class="saved mono" :class="saved.ok ? 'ok' : 'bad'">
           {{ saved.msg }}
         </span>
+        <!-- 重启提示条（琥珀纪律：保存条重启提示；仅实际变更项） -->
+        <span v-if="restartKeys.length" class="restart mono">
+          ⚠ 以下修改需重启 g16web 后生效：{{ restartKeys.join("、") }}
+        </span>
       </div>
-
-      <p v-if="pendingRestart.length" class="restart mono">
-        以下项保存后需重启生效：{{ pendingRestart.join("、") }}
-      </p>
     </div>
     <p v-else class="loading mono">读取设置 …</p>
+
+    <!-- 席位上限调小 → 挤出确认（C7） -->
+    <ConfirmModal
+      :open="shrink != null"
+      title="确认收缩席位上限"
+      confirm-text="确认收缩"
+      :loading="saving"
+      @confirm="doSave"
+      @close="shrink = null"
+    >
+      <p class="confirm-line">
+        在途席位上限由 <span class="mono strong">{{ shrink?.from }}</span> 调整为
+        <span class="mono strong">{{ shrink?.to }}</span>
+        — 将自队尾挤出 {{ (shrink?.from ?? 0) - (shrink?.to ?? 0) }} 个席位（窗口触及席位除外，
+        在跑不追溯），被挤出的任务将退回候选列表
+      </p>
+    </ConfirmModal>
   </div>
 </template>
 
@@ -148,13 +216,13 @@ async function save() {
 }
 .group {
   border: 1px solid var(--border-hair);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: var(--bg-raised);
   padding: var(--space-5);
 }
 .group-title {
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: var(--ls-micro);
   color: var(--text-faint);
   margin-bottom: var(--space-4);
@@ -172,7 +240,7 @@ async function save() {
 }
 .lock {
   font-size: 10px;
-  filter: grayscale(1);
+  color: var(--text-faint);
 }
 .read .val {
   font-size: var(--text-sm);
@@ -210,17 +278,23 @@ async function save() {
 }
 .hint {
   font-size: var(--text-xs);
-  color: var(--text-faint);
+  color: var(--text-secondary);
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
+.hint .range {
+  color: var(--text-faint);
+}
+/* 生效语义徽标：中性 plain 档（§4.6，不使用状态色） */
 .eff {
-  padding: 1px 6px;
+  align-self: flex-start;
+  font-size: var(--text-xs);
+  padding: 1px 8px;
   border-radius: var(--r-sm);
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
 }
 .field.has-err input {
   border-color: var(--danger);
@@ -233,31 +307,15 @@ async function save() {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  flex-wrap: wrap;
 }
-.btn-primary {
-  height: 32px;
-  padding: 0 var(--space-5);
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-radius: var(--r-md);
-  font-size: var(--text-sm);
-  font-weight: 500;
-  transition: background-color 120ms ease;
-}
-.btn-primary:hover:not(:disabled) {
-  background: var(--accent-dim);
-}
-.btn-primary:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-.saved-mono {
+.saved {
   font-size: var(--text-xs);
 }
-.saved-mono.ok {
+.saved.ok {
   color: var(--state-succeeded);
 }
-.saved-mono.bad {
+.saved.bad {
   color: var(--danger);
 }
 .restart {
@@ -267,6 +325,13 @@ async function save() {
 .loading {
   color: var(--text-faint);
   font-size: var(--text-sm);
+}
+.confirm-line {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.confirm-line .strong {
+  color: var(--text-primary);
 }
 @media (max-width: 768px) {
   .form-grid {
