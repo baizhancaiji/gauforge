@@ -298,11 +298,25 @@
       "summary": "修正引擎启动序列 Gateway 工厂模块路径（误用同级相对导入致引擎开启即启动失败，补 select_gateway 两分支回归测试）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "修正 worker 资源记账单位与启动探测语义（sum mem 的 ResourceAmount 内部整数误当 MiB 致内存虚高一万倍、--cpus 1 违背启动探测语义致默认任务永久停等）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "提交确认框按文本读取 text/plain 完整输入（openapi-fetch 默认 JSON 解析抛错致确认框卡读取中、Link0 黄警不出现）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M1 C 阶段收尾（GUI 走查）进行中；随后 D1–D3 集成验收",
-    "note": "C1–C7 已落库（提交 #22–28），遗留 GUI 走查按 m1-plan §4.4 各页质量标准执行（playwright+chromium，真引擎后端）。走查启动即发现引擎开启路径启动失败（select_gateway 同级相对导入引用 hq/ 下实现），已修复并补回归测试。后续发现随走查逐笔登记。"
+    "note": "C1–C7 已落库（提交 #22–28），遗留 GUI 走查按 m1-plan §4.4 各页质量标准执行（playwright+chromium，真引擎后端）。走查至今发现并修复三笔：引擎开启即启动失败（Gateway 工厂相对导入）、提交确认框卡读取中（text/plain 误按 JSON 解析）、worker 资源记账单位与 --cpus 1 停等（真实任务无法派发）。候选页 T1–T3 走查通过。后续发现随走查逐笔登记。"
   },
   "next_steps": [
     "M1 D1 端到端走查（真 g16，§7.1 十条留痕）",
