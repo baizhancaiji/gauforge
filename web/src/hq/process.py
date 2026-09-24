@@ -38,6 +38,29 @@ class HqProcessManager:
         except GatewayError:
             return False
 
+    # ---------- 内部辅助 ----------
+    def _base_cmd(self) -> list[str]:
+        return [self.hq_path, "--server-dir", str(self.server_dir)]
+
+    def _spawn(self, name: str, args: list[str]) -> subprocess.Popen:
+        """spawn 后台进程（start_new_session 脱离父组：g16web 退出不杀 HQ）。
+
+        日志句柄用 with 管理：子进程已复制 fd，父侧即刻关闭（watchdog
+        反复重启不累积句柄）。
+        """
+        with open(self.server_dir / f"{name}.log", "ab") as log:
+            return subprocess.Popen(self._base_cmd() + args, stdout=log,
+                                    stderr=subprocess.STDOUT,
+                                    start_new_session=True)
+
+    def _wait_alive(self, alive, timeout: float, what: str) -> None:
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if alive():
+                return
+            time.sleep(0.25)
+        raise GatewayError(f"HQ {what} 启动超时")
+
     # ---------- 启动 ----------
     def start(self, wait_timeout: float = 10.0) -> bool:
         """启动 server；已有实例则复用。返回是否新起了进程。"""
@@ -46,45 +69,29 @@ class HqProcessManager:
             self._ensure_watchdog()
             return False
         if self._server_proc is None:
-            log = open(self.server_dir / "server.log", "ab")
-            cmd = [self.hq_path, "--server-dir", str(self.server_dir),
-                   "server", "start", "--journal", str(self.journal_path)]
+            args = ["server", "start", "--journal", str(self.journal_path)]
             if self.http_port is not None:
-                cmd += ["--http-port", str(self.http_port)]
-            self._server_proc = subprocess.Popen(
-                cmd, stdout=log, stderr=subprocess.STDOUT,
-                start_new_session=True)
-        deadline = time.monotonic() + wait_timeout
-        while time.monotonic() < deadline:
-            if self.server_alive():
-                self._ensure_watchdog()
-                return True
-            time.sleep(0.25)
-        raise GatewayError("HQ server 启动超时")
+                args += ["--http-port", str(self.http_port)]
+            self._server_proc = self._spawn("server", args)
+        self._wait_alive(self.server_alive, wait_timeout, "server")
+        self._ensure_watchdog()
+        return True
 
     def ensure_worker(self, cpus: int = 1, wait_timeout: float = 10.0) -> int:
         """保证至少一个在线 worker，返回其 id。"""
         gw = CliGateway(self.hq_path, str(self.server_dir))
         online = [w for w in gw.workers() if w["online"]]
         if not online:
-            log = open(self.server_dir / "worker.log", "ab")
             # 不禁资源检测：mem 资源请求（B6 双账第二账）依赖 worker
-            # 上报 mem；--cpus 仍显式约束（cpus 闭区间上报见 cli_gateway）
-            cmd = [self.hq_path, "--server-dir", str(self.server_dir),
-                   "worker", "start", "--cpus", str(cpus),
-                   "--on-server-lost", "stop",
-                   "--work-dir", str(self.server_dir / "worker")]
-            proc = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
-                                    start_new_session=True)
-            self._worker_procs.append(proc)
-            deadline = time.monotonic() + wait_timeout
-            while time.monotonic() < deadline:
-                online = [w for w in gw.workers() if w["online"]]
-                if online:
-                    break
-                time.sleep(0.25)
-            else:
-                raise GatewayError("HQ worker 启动超时")
+            # 上报 mem；--cpus 仍显式约束（cpus 闭区间上报见 gateway）
+            self._worker_procs.append(self._spawn("worker", [
+                "worker", "start", "--cpus", str(cpus),
+                "--on-server-lost", "stop",
+                "--work-dir", str(self.server_dir / "worker")]))
+            self._wait_alive(
+                lambda: any(w["online"] for w in gw.workers()),
+                wait_timeout, "worker")
+            online = [w for w in gw.workers() if w["online"]]
         self._ensure_watchdog()
         return int(online[0]["id"])
 
@@ -121,9 +128,8 @@ class HqProcessManager:
     def stop(self) -> None:
         self._stop.set()
         try:
-            subprocess.run(
-                [self.hq_path, "--server-dir", str(self.server_dir),
-                 "server", "stop"], capture_output=True, timeout=10)
+            subprocess.run(self._base_cmd() + ["server", "stop"],
+                           capture_output=True, timeout=10)
         except (OSError, subprocess.TimeoutExpired):
             pass
         for proc in [*self._worker_procs, self._server_proc]:
