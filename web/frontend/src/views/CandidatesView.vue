@@ -134,7 +134,9 @@ async function openSubmit(c: Candidate) {
   submitError.value = null;
   submitFetching.value = true;
   const [inp, prev, set] = await Promise.all([
-    client.GET("/candidates/{id}/input", { params: { path: { id: c.id } } }),
+    // 该端点契约为 text/plain（openapi-fetch 默认按 JSON 解析会抛错），显式按文本取。
+    client.GET("/candidates/{id}/input",
+               { params: { path: { id: c.id } }, parseAs: "text" }),
     client.GET("/candidates/{id}/preview", { params: { path: { id: c.id } } }),
     client.GET("/settings"),
   ]);
