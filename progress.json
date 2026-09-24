@@ -375,6 +375,13 @@
       "summary": "席位重排放行锁定原位的等待区调整（原实现存在锁定席位即全量 409，窗口非空时等待区拖拽永不生效）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "S1 接管后监视器锚定改取 submitted_at（原以轮询 started_at 重锚致接管后进程树定位失败、读数全哑），locate 容差放宽至 30s",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
