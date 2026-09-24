@@ -10,8 +10,8 @@
 - 启动序列：start_engine 挂载引擎线程并完成对账；lifespan 引擎开关。
 
 隔离：SQLite 走 conftest autouse；config.HOME_DIR 重定向用例级 tmp_path；
-S3 重跑特征（rerun_probe）按 plan §2.4 注入替换（默认探测另行单测，
-真实 journal 联测随 H4 实测回填，plan §9 风险 2）。
+S3 重跑特征（rerun_probe）按 plan §2.4 注入替换（默认探测另行单测；
+真机 S1/S3 journal 联测随 H4 实测结论补齐，plan §2.4/§9 风险 2）。
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -486,5 +487,75 @@ def test_s1_real_hq_takeover(tmp_path):
         finally:
             d.stop()
         gw.cancel(jid)  # 清理：取消在跑作业
+    finally:
+        mgr.stop()
+
+
+@pytest.mark.skipif(HQ is None, reason="hq 不在 PATH")
+def test_s3_real_hq_journal_rerun(tmp_path):
+    """真机 S3 联测（H4 实测结论回填，plan §2.4）：journal 恢复后 job id 延续、
+    任务回退重跑；重跑特征成立且 run/<id>/ 无 chk → 接管跟踪重跑、不落历史。"""
+    from web.src.hq.cli_gateway import CliGateway
+    from web.src.hq.process import HqProcessManager
+
+    ws = tmp_path / "hqws"
+    mgr = HqProcessManager(HQ, ws)
+    mgr.start()
+    try:
+        mgr.ensure_worker(cpus=1)
+        gw = CliGateway(HQ, str(ws / "hq"))
+        tid = add_input(CHK_LOCAL)
+        submit_task(tid)
+        run_d = config.HOME_DIR / "run" / "903"
+        run_d.mkdir(parents=True)
+        jid = gw.submit(["bash", "-c", "sleep 30"], cwd=str(run_d),
+                        name="b10s3")
+        eid = executions().create(task_id=tid, filename="h2o.gjf",
+                                  resources={"nproc": {"value": 1,
+                                                       "defaulted": True},
+                                             "mem_gb": {"value": 1,
+                                                        "defaulted": True}},
+                                  state="running")
+        executions().update_hq_job_id(eid, int(jid))
+        job = None
+        for _ in range(40):  # 等 job 真正 Running
+            job = {j["id"]: j for j in gw.jobs()}.get(jid)
+            if job and job["state"] == "running":
+                break
+            time.sleep(0.25)
+        assert job and job["state"] == "running"
+
+        # S3 模拟：本地 started_at 停留在「故障前」（回溯 5 分钟 > 判定容差 120s，
+        # 等效 WSL2 重启间隙），随后 kill -9 server；journal 已由进程管理器传入，
+        # 看门狗自动带 journal 重启 server + worker → 任务重跑（H4 P1 特征）
+        past = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        executions().set_started_at(eid, past)
+        proc = mgr._server_proc
+        proc.kill()
+        proc.wait()
+        job = None
+        deadline = time.monotonic() + 40
+        while time.monotonic() < deadline:
+            try:
+                job = {j["id"]: j for j in gw.jobs()}.get(jid)
+            except GatewayError:
+                job = None
+            if job and job["state"] == "running":  # 恢复 + 重跑已在跑
+                break
+            time.sleep(0.5)
+        assert job is not None, "journal 恢复后 job 应延续（H4 P1：id 延续）"
+        assert job["state"] == "running"
+
+        d = Dispatcher(gw, run_root=config.HOME_DIR / "run")
+        try:
+            summary = d.reconcile()
+            after = executions().get(eid)
+            assert after["state"] == "running"  # 无 chk：接管跟踪重跑，不落历史
+            assert eid in summary["takeover"]
+            assert detect_rerun(after, run_d), \
+                "重跑进程 create_time 应显著晚于本地 started_at（H4 特征）"
+        finally:
+            d.stop()
+        gw.cancel(jid)  # 清理：取消重跑作业
     finally:
         mgr.stop()
