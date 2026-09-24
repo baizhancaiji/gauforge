@@ -340,6 +340,13 @@
       "summary": "S3 重跑判据补 server 重 spawn 确定性证据③（waiting 相位与进程证据可被启动对账时点错过致重跑误按接管、续跑资产无保全）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "g16 自洽环境随作业提交下发（GAUSS_* 全集经 Gateway env 传参贯通 CLI/HTTP 两实现，GAUSS_SCRDIR 强制 run/<执行id>/ 不再落到全局 scratch）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
