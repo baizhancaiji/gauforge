@@ -116,6 +116,28 @@ def test_sampler_tree_cpu_rss(tmp_path):
     assert ProcessSampler().sample(rd, since, elapsed=1.0) is None
 
 
+def test_monitor_since_anchored_at_dispatch_before_spawn(tmp_path):
+    """回归（GUI 走查实测）：HQ 在 submit 后立即 spawn g16，进程启动早于
+    轮询观察到的 started_at 1~2s，若监控基准取轮询时刻，双重校验会把真实
+    进程树整体误杀（locate 全空、monitor_summary 恒 0）。基准须取派发时刻
+    先行注入，且后续轮询调用不得覆盖。"""
+    from web.src.engine.monitor import ExecutionMonitor
+    rd = tmp_path / "run" / "7"
+    rd.mkdir(parents=True)
+    m = ExecutionMonitor(threshold_minutes=10)
+    m.note_started(7, _iso(datetime.now(timezone.utc) - timedelta(seconds=3)))
+    proc = subprocess.Popen([sys.executable, "-c",
+                             "import time;time.sleep(5)"], cwd=str(rd))
+    try:
+        # 轮询观察时刻（晚于 spawn）：不得覆盖既有基准
+        m.note_started(7, _iso(datetime.now(timezone.utc) + timedelta(seconds=5)))
+        payload, _ = m.step({"id": 7, "task_id": 7}, rd,
+                            _iso(datetime.now(timezone.utc)))
+        assert payload is not None and payload["mem_rss_mb"] >= 0
+    finally:
+        proc.wait(timeout=10)
+
+
 def test_monitor_summary_accumulation(tmp_path):
     rd = tmp_path / "run" / "7"
     rd.mkdir()

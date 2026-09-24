@@ -218,6 +218,10 @@ class Dispatcher:
             executions().delete(eid)  # 补偿：不留僵尸 running 行
             raise
         mem = _mem_mib(resolved["mem_gb"]["value"])
+        # 监控双重校验基准：须取派发时刻（早于 HQ spawn）——轮询观察到的
+        # started_at 晚于进程启动 1~2s，据此过滤会把真实 g16 进程树整体
+        # 误杀（GUI 走查实测 monitor_summary 恒 0 的根因）。
+        self._monitor.note_started(eid, now_iso())
         job_id = self._gw.submit(
             [str(g16_root / "g16"), "input.gjf"], cwd=str(run_d),
             name=task["filename"], resources={"cpus": int(resolved["nproc"]["value"]),
