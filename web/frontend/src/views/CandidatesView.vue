@@ -261,59 +261,84 @@ const causeLabel: Record<string, string> = {
         <template v-else-if="preview">
           <header class="p-head">
             <span class="p-name mono">{{ preview.filename }}</span>
-            <span v-if="preview.parse_errors?.length" class="p-err mono">
-              {{ preview.parse_errors.length }} 处解析失败
-            </span>
+            <StateChip
+              :state="originView[selected?.origin ?? 'imported']?.color ?? 'staged'"
+              :label="`ID ${preview.candidate_id}`"
+            />
           </header>
 
-          <dl class="block">
-            <dt class="mono">TITLE</dt>
-            <dd class="mono">{{ preview.blocks.title ?? "—" }}</dd>
-          </dl>
-
-          <div class="block">
-            <p class="mono label">LINK0</p>
-            <pre class="mono code">{{ preview.blocks.link0.lines.join("\n") || "（无声明）" }}</pre>
-            <p v-if="preview.blocks.link0.missing.length" class="missing mono">
-              缺 {{ preview.blocks.link0.missing.join("、") }}（提交将按默认补齐）
-            </p>
-          </div>
-
-          <dl class="block">
-            <dt class="mono label">ROUTE</dt>
-            <dd class="mono route">{{ preview.blocks.route || "—" }}</dd>
-          </dl>
-
-          <dl class="block">
-            <dt class="mono label">CHARGE / MULT</dt>
-            <dd class="mono">{{ preview.blocks.charge_mult || "—" }}</dd>
-          </dl>
-
-          <div class="block">
-            <p class="mono label">MOLECULE</p>
-            <div class="mol mono">
-              <span>{{ preview.blocks.molecule.atom_count }} 原子</span>
-              <span class="formula">{{ preview.blocks.molecule.formula }}</span>
+          <!-- 解析失败节容错条（C2：预览尽力而为，逐节标注不阻断） -->
+          <div v-if="preview.parse_errors?.length" class="p-errors" role="alert">
+            <div v-for="(pe, i) in preview.parse_errors" :key="i" class="pe-row mono">
+              <span class="pe-sec">{{ pe.section }}</span>
+              <span class="pe-line">第 {{ pe.line }} 行</span>
+              <span class="pe-msg">{{ pe.message }}</span>
             </div>
-            <p
-              v-if="preview.blocks.molecule.variables_present || preview.blocks.molecule.constants_present"
-              class="dim mono"
-            >
-              含变量/常数区
-            </p>
           </div>
 
           <div class="block">
-            <p class="mono label">ADDITIONAL SECTIONS</p>
-            <p v-if="!preview.blocks.additional_sections.length" class="dim mono">
+            <div class="lab mono">TITLE</div>
+            <div class="val mono">{{ preview.blocks.title ?? "—" }}</div>
+          </div>
+
+          <div class="block">
+            <div class="lab mono">LINK 0</div>
+            <div v-if="preview.blocks.link0.lines.length" class="val mono">
+              <span v-for="(ln, i) in preview.blocks.link0.lines" :key="i" class="l0-line">
+                <span v-if="ln.includes('=')" class="dim">{{ ln.slice(0, ln.indexOf("=") + 1) }}</span
+                >{{ ln.slice(ln.indexOf("=") + 1) }}
+              </span>
+            </div>
+            <div v-else class="val mono dim">（无声明）</div>
+            <!-- Link0 缺失琥珀注记（§5：M1 提交警告的伏笔） -->
+            <div v-if="preview.blocks.link0.missing.length" class="note mono">
+              ⚠ {{ preview.blocks.link0.missing.join("、") }} 未声明 · 提交时将按默认值补齐
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="lab mono">ROUTE</div>
+            <div class="val mono">{{ preview.blocks.route || "—" }}</div>
+          </div>
+
+          <div class="block">
+            <div class="lab mono">CHARGE · MULT</div>
+            <div class="val mono">{{ preview.blocks.charge_mult || "—" }}</div>
+          </div>
+
+          <div class="block">
+            <div class="lab mono">MOLECULE</div>
+            <div class="readout">
+              <div class="r">
+                <div class="n mono">{{ preview.blocks.molecule.atom_count }}</div>
+                <div class="l mono">ATOMS</div>
+              </div>
+              <div class="r">
+                <div class="n mono">{{ preview.blocks.molecule.formula }}</div>
+                <div class="l mono">FORMULA</div>
+              </div>
+              <div class="r">
+                <div class="n mono">{{ preview.blocks.molecule.variables_present ? "有" : "—" }}</div>
+                <div class="l mono">VARS</div>
+              </div>
+              <div class="r">
+                <div class="n mono">{{ preview.blocks.molecule.constants_present ? "有" : "—" }}</div>
+                <div class="l mono">CONSTS</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="block">
+            <div class="lab mono">ADDITIONAL · {{ preview.blocks.additional_sections.length }}</div>
+            <div v-if="!preview.blocks.additional_sections.length" class="val mono dim">
               无附加输入节
-            </p>
-            <ol v-else class="addi mono">
-              <li v-for="(sec, i) in preview.blocks.additional_sections" :key="i">
-                <span class="sec-idx">{{ i + 1 }}</span>
-                <pre class="code">{{ sec.lines.join("\n") }}</pre>
-              </li>
-            </ol>
+            </div>
+            <div v-else class="addi">
+              <div v-for="(sec, i) in preview.blocks.additional_sections" :key="i" class="addi-item">
+                <span class="sec-idx mono">{{ i + 1 }}</span>
+                <pre class="code mono">{{ sec.lines.join("\n") }}</pre>
+              </div>
+            </div>
           </div>
         </template>
         <template v-else>
@@ -513,12 +538,11 @@ tbody tr:hover {
 .empty-wrap {
   padding: var(--space-4);
 }
-/* ---------- 预览卡（C2 真实化的载体；右侧 380px 粘性） ---------- */
+/* ---------- 预览卡（C2：分块卡，右侧 380px 粘性，§5/样板） ---------- */
 .preview {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-raised);
-  padding: var(--space-5);
   position: sticky;
   top: var(--space-2);
   max-height: calc(100vh - 120px);
@@ -526,31 +550,105 @@ tbody tr:hover {
 }
 .p-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-hair);
 }
 .p-name {
-  font-weight: 600;
+  font-size: var(--text-sm);
+  font-weight: 500;
   color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.p-err {
+/* 解析失败节容错条（--danger：异常信号；预览尽力而为不阻断） */
+.p-errors {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--border-hair);
+  display: grid;
+  gap: 2px;
+}
+.pe-row {
+  display: flex;
+  gap: var(--space-3);
   font-size: var(--text-xs);
   color: var(--danger);
 }
+.pe-sec {
+  min-width: 64px;
+  color: var(--text-primary);
+}
+.pe-line {
+  min-width: 64px;
+}
+.pe-msg {
+  color: var(--danger);
+}
 .block {
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--border-hair);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-hair);
 }
-.block:first-of-type {
-  border-top: none;
+.block:last-child {
+  border-bottom: none;
 }
-.label {
-  font-size: var(--text-xs);
-  color: var(--text-faint);
+.lab {
+  font-size: 10px;
   letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--text-faint);
   margin-bottom: var(--space-1);
+}
+.val {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.val .dim,
+.dim {
+  color: var(--text-secondary);
+}
+/* Link0 逐行：指令名弱化（样板语义 %Chk= dim + 值亮） */
+.l0-line {
+  display: block;
+}
+.note {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--warn);
+}
+/* 分子四格读数（样板 readout：ATOMS/FORMULA/VARS/CONSTS） */
+.readout {
+  display: flex;
+  gap: var(--space-6);
+}
+.readout .r .n {
+  font-size: var(--text-lg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.readout .r .l {
+  font-size: 10px;
+  letter-spacing: var(--ls-wide);
+  color: var(--text-faint);
+}
+.addi {
+  display: grid;
+  gap: var(--space-2);
+}
+.addi-item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: var(--space-2);
+  align-items: start;
+}
+.sec-idx {
+  color: var(--text-faint);
+  font-size: var(--text-xs);
 }
 .code {
   font-size: var(--text-xs);
@@ -563,43 +661,8 @@ tbody tr:hover {
   white-space: pre-wrap;
   word-break: break-word;
 }
-.route {
-  font-size: var(--text-sm);
-  color: var(--text-primary);
-}
-.missing {
-  margin-top: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--warn);
-}
-.mol {
-  display: flex;
-  gap: var(--space-4);
-  align-items: baseline;
-  color: var(--text-primary);
-}
-.formula {
-  font-size: var(--text-lg);
-  color: var(--accent);
-}
-.addi {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: var(--space-2);
-}
-.addi li {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: var(--space-2);
-  align-items: start;
-}
-.sec-idx {
-  color: var(--text-faint);
-  font-size: var(--text-xs);
-}
 .preview-blank {
+  padding: var(--space-5);
   color: var(--text-faint);
   font-size: var(--text-sm);
 }
