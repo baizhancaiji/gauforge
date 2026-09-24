@@ -113,3 +113,66 @@ def test_e2e_fake_g16_pipeline(tmp_path, monkeypatch):
         assert seats().count() == 0
     finally:
         mgr.stop()
+
+
+# ---------------- §2.1 判据③：经 HttpGateway 的完整闭环（真实 HTTP 桥） ----------------
+
+def _free_port() -> int:
+    import socket
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        return int(s.getsockname()[1])
+
+
+def test_e2e_http_gateway_pipeline(tmp_path, monkeypatch):
+    """g16web 引擎经 HttpGateway 完成「提交 → 事件接收 → 终态落历史」一次
+    完整闭环：真实 server（--http-port）+ worker + fake g16（HQ 桥接验收
+    判据③，m1-plan §2.1）。"""
+    from web.src.hq.http_gateway import HttpGateway
+
+    fakebin = tmp_path / "fakebin"
+    fakebin.mkdir()
+    shutil.copy(Path(__file__).parent / "fake_g16.py", fakebin / "g16")
+    settings().set("g16_root", str(fakebin))
+    settings().set("link0_default_nproc", 1)
+    monkeypatch.setenv("G16_FAKE", "sleep=0.3;steps=2")
+
+    import_files([("h2o.gjf", SIMPLE.encode("utf-8"))])
+    tid = tasks().list_by_form("candidate")[0]["id"]
+    seats().append(kind="task", task_id=tid)
+    tasks().to_seat_task(tid)
+
+    port = _free_port()
+    # HTTP 桥仅存在于仓库构建产物（PATH 上游 hq 无 --http-port）
+    hq_bin = Path(__file__).resolve().parents[2] / "target" / "release" / "hq"
+    if not hq_bin.is_file():
+        pytest.skip("仓库构建 hq 缺失（cargo build --release 未运行）")
+    mgr = HqProcessManager(str(hq_bin), tmp_path / "hqws", http_port=port)
+    mgr.start()
+    mgr.ensure_worker(cpus=1)
+    gw = HttpGateway(f"http://127.0.0.1:{port}")
+    records: list[tuple[str, dict]] = []
+    disp = Dispatcher(gw, emitter=lambda e, d: records.append((e, d)))
+    try:
+        deadline = time.monotonic() + 60
+        rows: list[dict] = []
+        while time.monotonic() < deadline:
+            disp.tick()  # 事件经 HTTP /jobs 拉取 + SSE 线程差分
+            rows = executions().list_by_task(tid)
+            if rows and rows[-1]["state"] != "running":
+                break
+            time.sleep(0.2)
+        e = executions().get(rows[-1]["id"])
+        assert e["state"] == "succeeded", e
+        # 事件接收：SSE 线程消费到的 job_state 被引擎差分为终态管线
+        evs = records
+        sts = [(d["from"], d["to"]) for ev, d in evs
+               if ev == "task.status" and d.get("execution_id") == e["id"]]
+        assert sts == [("staged", "running"), ("running", "succeeded")]
+        assert any(ev == "history.appended" and d.get("execution_id") == e["id"]
+                   for ev, d in evs)
+        # 席位释放
+        assert seats().count() == 0
+    finally:
+        gw.close()
+        mgr.stop()
