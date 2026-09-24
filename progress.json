@@ -291,11 +291,18 @@
       "type": "fixed",
       "scope": "web",
       "summary": "修正 Link0 缺失指令名匹配与展示（后端 missing 为不带 % 前缀指令名，提交黄警缺省值回显此前永不命中）"
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "修正引擎启动序列 Gateway 工厂模块路径（误用同级相对导入致引擎开启即启动失败，补 select_gateway 两分支回归测试）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M1 C1–C7 前端真实化完成（提交 #22–28 已落库）；下一任务 D1–D3 集成验收",
-    "note": "C 阶段按 m1-plan §4.4 逐页真实化，并以 m0-frontend-design.md v2 为权威先行对齐令牌（前置 fix(frontend)：tokens 值/页面度量/缓动字距令牌/基础接管清单/StateChip 两档响度/中文字体自托管）。各页切换真实 API/SSE 驱动。质量闸：npm run build（vue-tsc）零错误；HTTP 层冒烟覆盖导入 422 整批原子/duplicate/提交/重排/挤出/满员 409/SSE 事件序/预览缺失项，据此修复 Link0 missing 无 % 前缀匹配缺陷。双闸门：pytest 214 通过、validate_progress OK。GUI 走查因本环境无浏览器后端未执行，建议桌面浏览器复查六页。"
+    "task": "M1 C 阶段收尾（GUI 走查）进行中；随后 D1–D3 集成验收",
+    "note": "C1–C7 已落库（提交 #22–28），遗留 GUI 走查按 m1-plan §4.4 各页质量标准执行（playwright+chromium，真引擎后端）。走查启动即发现引擎开启路径启动失败（select_gateway 同级相对导入引用 hq/ 下实现），已修复并补回归测试。后续发现随走查逐笔登记。"
   },
   "next_steps": [
     "M1 D1 端到端走查（真 g16，§7.1 十条留痕）",
