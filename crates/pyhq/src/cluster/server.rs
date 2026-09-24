@@ -36,6 +36,7 @@ impl RunningServer {
                 client_port: None,
                 worker_port: None,
                 journal_path: None,
+                http_port: None,
                 client_secret_key: None,
                 worker_secret_key: None,
                 server_uid: None,

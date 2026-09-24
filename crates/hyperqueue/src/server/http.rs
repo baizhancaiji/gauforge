@@ -128,7 +128,14 @@ async fn bridge_task(
                 let _ = reply.send(Reply::ok(compute_info(&state_ref)));
             }
             HttpQuery::Submit { request, reply } => {
-                let _ = reply.send(handle_submit_reply(&state_ref, &senders, request));
+                let response = handle_submit_reply(&state_ref, &senders, request);
+                // 与 RPC 路径对齐（server/client/mod.rs submit 分支）：成功后立即
+                // flush journal，消除 journal_flush_period（默认 30s）窗口内
+                // kill -9 丢失 Submit 事件的恢复缺口（H4 实测结论，§2.4）
+                if response.0.is_ok() {
+                    senders.events.flush_journal().await;
+                }
+                let _ = reply.send(response);
             }
             HttpQuery::JobsInfo { selector, reply } => {
                 let _ = reply.send(handle_jobs_info_reply(&state_ref, &selector));
@@ -137,7 +144,12 @@ async fn bridge_task(
                 let _ = reply.send(handle_job_info_reply(&state_ref, job_id));
             }
             HttpQuery::Cancel { job_id, reply } => {
-                let _ = reply.send(handle_cancel_reply(&state_ref, &senders, job_id).await);
+                let response = handle_cancel_reply(&state_ref, &senders, job_id).await;
+                // 与 RPC 路径对齐（server/client/mod.rs cancel 分支），理由同 Submit
+                if response.0.is_ok() {
+                    senders.events.flush_journal().await;
+                }
+                let _ = reply.send(response);
             }
             HttpQuery::Workers { reply } => {
                 let _ = reply.send(handle_workers_reply(&state_ref));
