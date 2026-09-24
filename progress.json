@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T11:25+08:00",
+  "updated": "2026-09-25T11:40+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -258,6 +258,13 @@
       "type": "added",
       "scope": "web",
       "summary": "待执行页真实化（拖拽重排/整席与成员移除二次确认/容量仪表超限示警/窗口边界与在途锁定态，pending.snapshot 驱动）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "执行中页真实化（通道卡 1Hz 节流读数、停滞琥珀灯行翻转与时长、停止 danger 二次确认）",
       "breaking": false,
       "migration": null
     }
