@@ -127,6 +127,16 @@ axum SSE 端点把 HQ 事件序列化为单行 JSON 帧（`event: <hq 事件类�
 job 提交/启动/结束/失败/取消、worker 注册/失联等），随 §2.1 定稿一并写入
 roadmap §8.8。
 
+**SSE 事件名清单**（H3 实现定稿，`event:` 取 HQ 变体 snake_case；`data`
+为单行 JSON，统一含 `time` 字段；`Submit.serialized_desc` 为 bincode 字节
+不透传）：job/task 域 `submit`、`job_open`、`job_close`、`job_idle`、
+`job_completed`、`job_cancel`、`task_started`、`task_finished`、
+`task_failed`、`tasks_canceled`、`tasks_aborted`、`task_notify`（message
+hex 透传）；worker 域 `worker_connected`、`worker_lost`；server 域
+`server_start`、`server_stop`。普通关闭式 job 的生命周期为
+`submit → task_started → task_finished → job_completed`（`job_open`/
+`job_close` 仅 open job 有）。
+
 **事件转换**（g16web 侧，B4/B11 实现）：HQ job 事件 + 本地映射
 （`hq_job_id → execution_id`，B6 派发时落库）→ 领域事件
 （`task.status`/`history.appended` 等 12 类之一）→ g16web SSE broker →
