@@ -111,54 +111,11 @@ impl Output for JsonOutput {
     fn print_job_detail(&self, jobs: Vec<JobDetail>, _worker_map: &WorkerMap, server_uid: &str) {
         let job_details: Vec<_> = jobs
             .into_iter()
-            .map(|job| {
-                let task_paths = resolve_task_paths(&job, server_uid);
-
-                let JobDetail {
-                    info,
-                    job_desc,
-                    submit_descs,
-                    tasks,
-                    tasks_not_found: _,
-                    submission_date,
-                    completion_date_or_now,
-                } = job;
-
-                let finished_at = if info.counters.is_terminated(info.n_tasks) {
-                    Some(completion_date_or_now)
-                } else {
-                    None
-                };
-
-                json!({
-                                    "info": format_job_info(&info),
-                                    "max_fails": job_desc.max_fails,
-                                    "started_at": format_datetime(submission_date),
-                                    "finished_at": finished_at.map(format_datetime),
-                                    "submits": submit_descs.iter().map(|submit_desc|
-                match &submit_desc.description().task_desc {
-                                    JobTaskDescription::Array { task_desc, resource_rq, .. } => {
-                                        json!({
-                                            "array": format_task_description(task_desc, resource_rq)
-                                        })
-                                    }
-                                    JobTaskDescription::Graph { tasks, resource_rqs } => {
-                                        let tasks: Vec<Value> = tasks
-                                            .iter()
-                                            .map(|task| format_task_description(&task.task_desc, &resource_rqs[task.resource_rq_id.as_usize()]))
-                                            .collect();
-                                        json!({
-                                            "graph": tasks
-                                        })
-                                    }
-                                }
-                                    ).collect::<Vec<_>>(),
-                                    "tasks": format_tasks(&tasks, task_paths)
-                                })
-            })
+            .map(|job| format_job_detail(job, server_uid))
             .collect();
         self.print(Value::Array(job_details));
     }
+
 
     fn print_job_wait(
         &self,
@@ -387,7 +344,54 @@ fn format_stdio_def(stdio: &StdioDef) -> Value {
     }
 }
 
-fn format_job_info(info: &JobInfo) -> Value {
+/// 单个 JobDetail 的 JSON 形状（与 `hq job info <id> --output-mode json` 的数组元素一致）。
+pub(crate) fn format_job_detail(job: JobDetail, server_uid: &str) -> Value {
+    let task_paths = resolve_task_paths(&job, server_uid);
+
+    let JobDetail {
+        info,
+        job_desc,
+        submit_descs,
+        tasks,
+        tasks_not_found: _,
+        submission_date,
+        completion_date_or_now,
+    } = job;
+
+    let finished_at = if info.counters.is_terminated(info.n_tasks) {
+        Some(completion_date_or_now)
+    } else {
+        None
+    };
+
+    json!({
+        "info": format_job_info(&info),
+        "max_fails": job_desc.max_fails,
+        "started_at": format_datetime(submission_date),
+        "finished_at": finished_at.map(format_datetime),
+        "submits": submit_descs.iter().map(|submit_desc|
+            match &submit_desc.description().task_desc {
+                JobTaskDescription::Array { task_desc, resource_rq, .. } => {
+                    json!({
+                        "array": format_task_description(task_desc, resource_rq)
+                    })
+                }
+                JobTaskDescription::Graph { tasks, resource_rqs } => {
+                    let tasks: Vec<Value> = tasks
+                        .iter()
+                        .map(|task| format_task_description(&task.task_desc, &resource_rqs[task.resource_rq_id.as_usize()]))
+                        .collect();
+                    json!({
+                        "graph": tasks
+                    })
+                }
+            }
+        ).collect::<Vec<_>>(),
+        "tasks": format_tasks(&tasks, task_paths)
+    })
+}
+
+pub(crate) fn format_job_info(info: &JobInfo) -> Value {
     let JobInfo {
         id,
         name,
@@ -541,7 +545,7 @@ fn format_allocation(allocation: Allocation) -> serde_json::Value {
     })
 }
 
-fn format_worker_info(worker_info: WorkerInfo) -> serde_json::Value {
+pub(crate) fn format_worker_info(worker_info: WorkerInfo) -> serde_json::Value {
     let manager_info = worker_info.configuration.get_manager_info();
 
     let WorkerInfo {

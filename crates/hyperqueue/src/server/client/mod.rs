@@ -32,7 +32,7 @@ use crate::common::serialization::Serialized;
 use crate::server::Senders;
 use crate::server::client::submit::{handle_open_job, handle_task_explain};
 use crate::server::event::payload::EventPayload;
-pub(crate) use submit::{submit_job_desc, validate_submit};
+pub(crate) use submit::{handle_submit, submit_job_desc, validate_submit};
 
 pub async fn handle_client_connections(
     state_ref: StateRef,
@@ -624,7 +624,7 @@ fn handle_worker_stop(
     ToClientMessage::StopWorkerResponse(responses)
 }
 
-fn compute_job_detail(
+pub(crate) fn compute_job_detail(
     state_ref: &StateRef,
     job_id_selector: IdSelector,
     task_selector: Option<TaskSelector>,
@@ -659,7 +659,7 @@ fn get_job_ids(state: &State, selector: &IdSelector) -> Vec<JobId> {
     }
 }
 
-fn compute_job_info(
+pub(crate) fn compute_job_info(
     state_ref: &StateRef,
     selector: &IdSelector,
     include_running_tasks: bool,
@@ -685,7 +685,7 @@ fn compute_job_info(
     ToClientMessage::JobInfoResponse(JobInfoResponse { jobs })
 }
 
-async fn handle_job_cancel(
+pub(crate) async fn handle_job_cancel(
     state_ref: &StateRef,
     senders: &Senders,
     selector: &IdSelector,
@@ -825,7 +825,7 @@ fn handle_job_forget(
     )
 }
 
-fn handle_get_list(state_ref: &StateRef, workers: bool) -> ToClientMessage {
+pub(crate) fn handle_get_list(state_ref: &StateRef, workers: bool) -> ToClientMessage {
     let state = state_ref.get();
 
     let workers = if workers {
@@ -841,7 +841,7 @@ fn handle_get_list(state_ref: &StateRef, workers: bool) -> ToClientMessage {
     ToClientMessage::GetListResponse(GetListResponse { workers })
 }
 
-fn handle_worker_info(
+pub(crate) fn handle_worker_info(
     state_ref: &StateRef,
     senders: &Senders,
     selector: IdSelector,
