@@ -88,6 +88,11 @@ const stopping = ref<LiveExecution | null>(null);
 const stopLoading = ref(false);
 const stopError = ref<string | null>(null);
 
+function openStop(exec: LiveExecution) {
+  stopError.value = null; // 清掉上一次失败的残留提示
+  stopping.value = exec;
+}
+
 async function confirmStop() {
   const exec = stopping.value;
   if (!exec) return;
@@ -162,7 +167,7 @@ async function confirmStop() {
             停滞告警 {{ stallMinutes(card.stall) }}
           </span>
           <span v-else class="quiet mono">{{ card.exec.progress?.last_line ?? "" }}</span>
-          <button class="btn btn--danger stop" type="button" @click="stopping = card.exec">
+          <button class="btn btn--danger stop" type="button" @click="openStop(card.exec)">
             停止
           </button>
         </footer>
