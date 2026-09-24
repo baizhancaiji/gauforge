@@ -263,7 +263,10 @@ export const useEventsStore = defineStore("events", () => {
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
-        for (const line of lines) {
+        for (let line of lines) {
+          // SSE 规范行尾可为 CRLF：剥尾部 \r，否则事件分隔空行识别为
+          // "\r" 而非 ""，全部事件将被静默吞掉（GUI 走查实测）。
+          if (line.endsWith("\r")) line = line.slice(0, -1);
           if (line === "") {
             dispatch();
             continue;
