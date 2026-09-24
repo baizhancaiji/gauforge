@@ -1,19 +1,35 @@
-"""queues 域路由（§2.3，M0 mock）。"""
+"""queues 域路由（§2.3；M1 真实化：真实 queues/tasks/seats 存储）。
+
+队列席位全语义（引擎序列展开/失败分流/回退）由引擎实现并以单测覆盖
+（m1-plan §0「无 UI 亦有引擎」）；本路由负责创建/编辑/提交在真实存储
+的落位与领域事件发射。GUI 队列组建属 M2。
+"""
 from __future__ import annotations
+
+import secrets
 
 from fastapi import APIRouter
 from fastapi import Response
+from starlette import status
 
 from ..errors import NOT_FOUND, VALIDATION_FAILED, err
-from ..mock import get_state
-from starlette import status
+from ..mock import get_state  # 事件总线（B11：emit → 领域事件扇出）
+from ..services import pending as pending_svc
+from ..store import queues as queues_store
+from ..store import tasks as tasks_store
 
 router = APIRouter(tags=["queues"])
 
 
+def _new_queue_id() -> str:
+    """短随机队列 id（大写字母数字去易混字符）。"""
+    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+    return "".join(secrets.choice(alphabet) for _ in range(6))
+
+
 @router.get("/queues")
 def list_queues() -> list:
-    return [dict(q) for q in get_state().queues]
+    return queues_store().list()
 
 
 @router.post("/queues", status_code=status.HTTP_201_CREATED)
@@ -30,80 +46,78 @@ def create_queue(payload: dict) -> dict:
     if not (2 <= len(member_ids) <= 10):
         raise err("QUEUE_MEMBER_RANGE", "队列成员数须为 2–10",
                   {"actual": len(member_ids), "min": 2, "max": 10}, http=422)
-    state = get_state()
-    q = state.create_queue(name, member_ids, bool(skip_failed))
+    # 成员必须全部存在且仍为候选（默认仅生成候选，from §2.4）
     for cid in member_ids:
-        if (c := state.get_candidate(cid)) is not None:
-            state.remove_candidate(cid)
-            state.emit("candidates.changed", {"action": "moved_out",
-                                              "candidate_id": cid})
-    state.emit("queues.changed", {"action": "created", "queue_id": q["id"]})
-    return dict(q)
+        row = tasks_store().get(cid)
+        if row is None or row["form"] != "candidate":
+            raise err("INVALID_MEMBERS",
+                      f"任务 {cid} 不存在或不在候选列表", http=422)
+    qid = _new_queue_id()
+    queues_store().create(qid, name=str(name), skip_failed=bool(skip_failed))
+    for pos, cid in enumerate(member_ids):
+        tasks_store().enqueue(cid, qid, pos)  # candidate → queue_member
+        get_state().emit("candidates.changed",
+                         {"action": "moved_out", "candidate_id": cid})
+    get_state().emit("queues.changed", {"action": "created", "queue_id": qid})
+    return queues_store().get(qid)
 
 
 @router.get("/queues/{id}")
 def get_queue(id: str) -> dict:
-    q = get_state().get_queue(id)
+    q = queues_store().get(id)
     if q is None:
         raise NOT_FOUND("queue", id)
-    return dict(q)
+    return q
 
 
 @router.patch("/queues/{id}")
 def update_queue(id: str, payload: dict) -> dict:
-    q = get_state().get_queue(id)
+    q = queues_store().get(id)
     if q is None:
         raise NOT_FOUND("queue", id)
     if q["state"] != "unsubmitted":
         raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可编辑",
                   {"state": q["state"]}, http=409)
+    fields: dict = {}
     if "name" in payload:
-        q["name"] = payload["name"]
+        fields["name"] = payload["name"]
     if "skip_failed" in payload:
-        q["skip_failed"] = bool(payload["skip_failed"])
-    if "member_ids" in payload:
-        q["member_ids"] = payload["member_ids"]
-    q["updated_at"] = _now_iso()
+        fields["skip_failed"] = bool(payload["skip_failed"])
+    queues_store().update(id, **fields)
     get_state().emit("queues.changed", {"action": "updated", "queue_id": id})
-    return dict(q)
+    return queues_store().get(id)
 
 
 @router.delete("/queues/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_queue(id: str) -> Response:
-    if not get_state().delete_queue(id):
+    q = queues_store().get(id)
+    if q is None:
         raise NOT_FOUND("queue", id)
+    if q["state"] != "unsubmitted":
+        # 已提交/执行中队列占席运行中，删除会与引擎派发冲突（M2 队列管理处理）
+        raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可删除",
+                  {"state": q["state"]}, http=409)
+    for m in tasks_store().list_queue_members(id):
+        tasks_store().return_to_candidate(m["id"], "returned_unrun")
+        get_state().emit("candidates.changed",
+                         {"action": "moved_in", "candidate_id": m["id"]})
+    queues_store().delete(id)
     get_state().emit("queues.changed", {"action": "deleted", "queue_id": id})
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/queues/{id}/submit")
 def submit_queue(id: str) -> dict:
-    state = get_state()
-    q = state.get_queue(id)
+    q = queues_store().get(id)
     if q is None:
         raise NOT_FOUND("queue", id)
     if q["state"] != "unsubmitted":
         raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可提交", http=409)
-    limit = int(state.get_runtime("pending_seat_limit"))
-    if len(state.seats) >= limit:
-        raise err("PENDING_CAPACITY_FULL", "在途席位满员",
-                  {"limit": limit}, http=409)
-    seat_id = state.next_id()
-    members = [{"task_id": cid,
-                "filename": (state.get_candidate(cid) or {}).get("filename",
-                                                                 f"job{cid}.gjf"),
-                "state": "staged"} for cid in q["member_ids"]]
-    state.seats.append({
-        "seat_id": seat_id, "kind": "queue", "task_id": None, "queue_id": id,
-        "position": len(state.seats), "members": members, "locked": False,
-    })
-    q["state"] = "submitted"
-    state.emit("queue.status", {"queue_id": id, "from": "unsubmitted",
-                                "to": "submitted"})
-    state.emit("pending.snapshot", state.pending())
-    return {"seat_id": seat_id, "task_id": q["member_ids"][0]}
-
-
-def _now_iso() -> str:
-    from datetime import datetime, timezone
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    # 整条队列占一席（尾部追加、容量校验、state→submitted），引擎按执行
+    # 序列展开派发（含失败分流/回退，engine/dispatcher）。
+    seat_id = pending_svc.append_queue(id)
+    get_state().emit("queue.status", {"queue_id": id, "from": "unsubmitted",
+                                      "to": "submitted"})
+    get_state().emit("pending.snapshot", pending_svc.snapshot())
+    first = tasks_store().list_queue_members(id)[0]
+    return {"seat_id": seat_id, "task_id": first["id"]}
