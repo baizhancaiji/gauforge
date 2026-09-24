@@ -354,11 +354,18 @@
       "summary": "SSE 解析器兼容 CRLF 行尾（此前前端从未真正处理过任何事件，读数/快照/Toast 全哑，页面仅靠 REST 轮询兜底）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "REST 基线轮询改合并语义（原整体覆盖卡片致 SSE 实时读数被周期性抹除）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M1 C 阶段收尾（GUI 走查）进行中；随后 D1–D3 集成验收",
-    "note": "C1–C7 已落库（提交 #22–28），遗留 GUI 走查按 m1-plan §4.4 各页质量标准执行（playwright+chromium，真引擎后端+真 g16）。走查至今发现并修复四笔：引擎开启即启动失败（Gateway 工厂相对导入）、提交确认框卡读取中（text/plain 误按 JSON 解析）、worker 资源记账单位与 --cpus 1/cpus list 形状（真实任务永久停等）、formchk chk 路径缺 .chk 追加（.fchk 一律缺失）。导入/预览/提交/派发/执行/历史闭环已在 GUI 冒烟走通（水分子真 g16 三连跑 succeeded）。后续发现随走查逐笔登记。"
+    "task": "M1 C 阶段收尾（GUI 走查）接近完成；随后 D1–D3 集成验收",
+    "note": "C1–C7 已落库（提交 #22–28）。GUI 走查累计发现并修复八笔缺陷：Gateway 工厂相对导入、text/plain 误按 JSON 解析、worker 资源单位与 cpus list 形状、formchk chk 路径缺 .chk 追加、监控双重校验基准时序、S3 判据竞态加固（server 重 spawn 证据③）、SSE 解析器 CRLF（前端自 M0 起从未处理过任何 SSE 事件）、REST 轮询覆盖实时读数。执行中页读数/进度/Toast/SSE 终态链路已实测恢复。"
   },
   "next_steps": [
     "M1 D1 端到端走查（真 g16，§7.1 十条留痕）",
