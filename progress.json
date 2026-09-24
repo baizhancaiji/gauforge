@@ -319,11 +319,18 @@
       "summary": "兼容 worker cpus 自动探测的 list 序列化形状（原 range 闭区间解析误算 1 核，自动探测 worker 仍永久停等）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "修正 formchk 前置 chk 路径解析（对齐 g16 无扩展名 %Chk 自动追加 .chk 语义，此前 succeeded 任务 .fchk 一律缺失）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M1 C 阶段收尾（GUI 走查）进行中；随后 D1–D3 集成验收",
-    "note": "C1–C7 已落库（提交 #22–28），遗留 GUI 走查按 m1-plan §4.4 各页质量标准执行（playwright+chromium，真引擎后端）。走查至今发现并修复三笔：引擎开启即启动失败（Gateway 工厂相对导入）、提交确认框卡读取中（text/plain 误按 JSON 解析）、worker 资源记账单位与 --cpus 1 停等（真实任务无法派发）。候选页 T1–T3 走查通过。后续发现随走查逐笔登记。"
+    "note": "C1–C7 已落库（提交 #22–28），遗留 GUI 走查按 m1-plan §4.4 各页质量标准执行（playwright+chromium，真引擎后端+真 g16）。走查至今发现并修复四笔：引擎开启即启动失败（Gateway 工厂相对导入）、提交确认框卡读取中（text/plain 误按 JSON 解析）、worker 资源记账单位与 --cpus 1/cpus list 形状（真实任务永久停等）、formchk chk 路径缺 .chk 追加（.fchk 一律缺失）。导入/预览/提交/派发/执行/历史闭环已在 GUI 冒烟走通（水分子真 g16 三连跑 succeeded）。后续发现随走查逐笔登记。"
   },
   "next_steps": [
     "M1 D1 端到端走查（真 g16，§7.1 十条留痕）",
