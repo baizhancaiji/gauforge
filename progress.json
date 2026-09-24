@@ -368,6 +368,13 @@
       "summary": "历史输入/输出查看按文本读取（text/plain 误按 JSON 解析致面板卡读取中）、停止模态重开清空残留错误",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "席位重排放行锁定原位的等待区调整（原实现存在锁定席位即全量 409，窗口非空时等待区拖拽永不生效）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
