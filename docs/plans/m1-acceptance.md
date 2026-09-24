@@ -87,12 +87,69 @@
 
 ## 3. D1 端到端走查（§7.1 十条留痕）
 
-（随 D1 执行填充）
+真 g16 环境（水分子 HF/B3LYP、萘体系 B3LYP 真实计算；产物抽查
+「Normal termination」与 .log 内容一致性）。逐条结论：
+
+| # | 验收项 | 结果 | 留痕 |
+|---|---|---|---|
+| 1 | 批量导入 3 份含重复 → 2 条新记录 + 重复识别提示（哈希+内容双校验） | 通过 | GUI：422 整批原子清单 / duplicate 提示截图；服务层单测锁定（同名同内容才 duplicate，同内容不同名不算） |
+| 2 | 行内预览五段结构渲染、无编辑入口 | 通过 | 预览分块卡截图（TITLE/LINK 0/ROUTE/CHARGE·MULT/MOLECULE/ADDITIONAL） |
+| 3 | 行内提交缺 %NProcShared/%Mem → 黄警并填默认值 → 确认入待执行 | 通过 | 黄警文案回显 %NProcShared=4、%Mem=8 GB（设置缺省值）；确认后席位出现 |
+| 4 | 席位流转：重排 → SSE 推送无刷新更新；容量满第 4 席位拒绝 | 通过 | 拖拽触发 PUT /pending/order、经 pending.snapshot 回推更新；满员拒绝实测返回 409 PENDING_CAPACITY_FULL（契约与 §1 B5 一致；§7.1 本条「422」为计划笔误） |
+| 5 | 实时监控：CPU%/MEM 采样跳变、优化步/SCF 推进且与 .out/.log 一致 | 通过 | 通道卡 CPU 396%（4 核）、RSS 14→126 MB；OPT STEP 4/SCF CYCLE 14，末行与 input.log「SCF Done: E(RB3LYP) = -386.948373122 A.U. after 14 cycles」一致 |
+| 6 | 强制停止：二次确认 → HQ cancel → 终态推送 → 历史归因 manually_stopped | 通过 | 停止模态（含归因文案）→ 历史 failed/manually_stopped；chk 保全 protected/ |
+| 7 | 失败归因：非零退出 → failed + program_error；skip_failed 两分支 | 通过 | 真 g16 报错（End of file in ZSymb）→ program_error；队列 skip_failed=false 分支实测（§4 演练）；skip_failed=true 分支由 test_failure_semantics 锁定 |
+| 8 | 并行双账：parallel_window=2 双任务同跑、声明账与 HQ 请求账一致、psutil 有读数 | 通过 | 双 exec 并发（hq_job 26/27 同刻 running），声明账 nproc 4/defaulted=False、mem 1GB 落库；HQ 请求账实测（历史 job 11 submits：cpus Compact 40000=4 核、mem Compact 10240000=1024 MiB×10000 内部单位，CLI→HQ 换算正确）；psutil 双卡读数 |
+| 9 | 重启恢复：g16web 重启 S1 接管不重复提交；WSL2 重启 S3 归因+保全+重跑新目录 | 通过 | S1：仅重启 g16web（SIGTERM），HQ 存活，exec 28 同 hq_job_id 接管、进程树未动、监视器重挂；S3：按已登记替代方案以 SIGKILL 故障注入执行（§4） |
+| 10 | 队列语义佐证：POST /queues 全生命周期 curl + 单测 | 通过 | 真实栈 curl：创建 2 成员队列 → 提交整队占席 → 派发（成员 1 先跑）→ 成员 1 failed/program_error → 成员 2 skipped/predecessor_failed → 队列回退 unsubmitted（rollback_count=1、last_failure 落库）→ 成员退回候选；skip_failed=true 与队列席位分支由单测覆盖（test_failure_semantics/test_pending_logic）；端到端整队 UI 验收随 M2 |
 
 ## 4. D2 演练执行记录
 
-（随 D2 执行填充）
+| 演练 | 执行 | 结果 |
+|---|---|---|
+| S1 g16web 重启接管 | 起长任务（萘 opt）→ 对 uvicorn 进程 SIGTERM（仅 g16web，start_new_session 设计使 HQ 存活）→ 重启 g16web | exec 28 同 hq_job_id 33 接管、不重复提交、started_at 保留、g16 进程树未动、席位保持锁定、监视器重挂后 execution.monitor 恢复（CPU 400% 读数） |
+| S3 外部中断归因+保全+重定向（**SIGKILL 替代方案**，登记见 m1-plan §4.5） | exec 28 运行中（chk 已生成）→ SIGKILL 同时硬杀 g16web、HQ server、HQ worker 与 g16 子进程树（数据库/journal/checkpoint 停在半路）→ 重启 g16web（启动序列自行拉起 server/worker，journal 恢复 job 回退 waiting → worker 重连重跑） | ① 重跑判定成立（判据③：server 重 spawn 时刻晚于本地 started_at）② 原执行归因 external_interrupt 落历史 ③ chk 保全 protected/ 落库 chk_snapshot ④ 被取消的重跑后以**新执行目录**原样重提交（exec 29 / hq_job 34，GAUSS_SCRDIR=run/29/ 隔离）⑤ 席位由新执行延续 |
+| 并行 2 双任务同跑与双账 | parallel_window=2 → 双任务提交 → 双通道卡同屏 | 同 §3 第 8 条 |
+
+**演练中发现的缺陷均已修复入库**（见 §1.2 表 #6/#7/#11 与 S1 锚定修复）。
 
 ## 5. M1 DoD 核对（§7.2）
 
-（随 D3 填充）
+### 5.1 系统级判据
+
+| 判据 | 结果 |
+|---|---|
+| `uv run pytest` 全绿（M0+M1 全量含契约回归） | 通过：224 passed |
+| `npm run build` + vue-tsc 零错误 | 通过（走查期间多次重建均零错误） |
+| `cargo test --workspace` 全绿 | 通过：212/227/1 passed, 0 failed（构建需 cmake/libclang，经 pip 用户级安装补齐） |
+| HQ 桥接判据（§2.1 五条） | ① curl 提交→查询→取消 JSON 等价 ✓ ② GET /events 生命周期单行 JSON 帧 ✓ ③ 经 HttpGateway 完整闭环集成测试 ✓（test_e2e_http_gateway_pipeline）④ 不传 --http-port 行为零变化 ✓（默认关，全部走查/单测走 CLI 路径）⑤ cargo test 全绿 ✓ |
+| 双闸门：`scripts/validate_progress.py` | 通过（每次提交前逐次执行） |
+
+### 5.2 不偏离核对（M1.1–M1.11 逐项）
+
+| 工作项 | 状态 | 说明 |
+|---|---|---|
+| M1.1 批量导入 | 完成 | 整批原子/重复提示/自然序/拷贝入库与源独立 |
+| M1.2 候选列表+预览+剔除 | 完成 | 来源标记与归因注记 |
+| M1.3 行内提交 | 完成 | 黄警缺省值/满员拒绝/限高滚动 |
+| M1.4 待执行队列页 | 完成 | 席位全语义（在途锁定/等待区重排/挤出/容量） |
+| M1.5 派发 | 完成 | 窗口推进/补位保序/停等/双账/env 强制 SCRDIR/输入哈希（GAUSS_SCRDIR 缺陷走查修复） |
+| M1.6 执行中页 | 完成 | psutil 采样/停滞只提示/停止二次确认（监控基准缺陷走查修复） |
+| M1.7 失败语义与归因 | 完成 | 手动停止/程序报错/外部中断三类实测 + 队列分流 |
+| M1.8 执行历史 | 完成 | 全字段/输入输出查看导出/归档不可删/重新排队/退回候选 |
+| M1.9 SSE 进度+持久化+对账 | 完成 | 序号持久化/五场景对账（S3 判据走查加固） |
+| M1.10 HQ HTTP/JSON+SSE 桥接 | 完成 | 五判据全过 |
+| M1.11 formchk+清理边界 | 完成 | 无扩展名 %Chk 语义对齐后 .fchk 实测生成；清理永不触碰输出/输入/保全 |
+
+**替代方案偏离声明**：S3 演练以 SIGKILL 故障注入替代真·WSL2 整机重启
+（登记：m1-plan §4.5 D2，含语义等价性论证），真·整机重启验证留作用户
+方便时的一次性补验，不阻塞 M1 验收。除此之外 M1 工作项与 §7.1 语义
+逐条对应，无其他偏离。
+
+### 5.3 提交序列核对（§6）
+
+§6 计划 28 笔提交的内容均已落库：A（#1/#2 由计划文档与 roadmap 增补
+提交承担）、B（#3–#14）、H（#15–#18）、B10/B11/HttpGateway（#19–#21）、
+C（#22–#28）；实际序列按「H 与 B 并行泳道」推进，GUI 走查（C 收尾）与
+D 阶段间穿插 13 笔走查缺陷 fix + 逐笔 chore(progress) 同步（AGENTS §九
+实时登记要求，未集中补录），类型与拆分符合 conventional_commits 约定。
