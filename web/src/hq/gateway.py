@@ -34,18 +34,21 @@ def worker_resources(configuration: dict) -> tuple[int, int]:
     """HQ worker configuration.resources → (cpus, mem_mib)（停等记账用）。
 
     HQ JSON 形状（crates client/output/json.rs format_resource_descriptor）：
-    cpus 为 range 序列化闭区间（--cpus 4 → start=0 end=3）；mem 为 sum
-    资源，size 为 ResourceAmount 内部整数 = MiB×10000 + 万分位小数
-    （tako amount.rs：FRACTIONS_PER_UNIT=10_000，"memory sizes are
-    always in mibibytes"），故须除以 10000 还原 MiB。CLI 与 HTTP 两实现
-    共用本解析（领域规则集中）。
+    cpus 有两种序列化——显式 --cpus N 为 range 闭区间（start=0 end=N-1）、
+    启动自动探测为 list（values=核 id 列表）；mem 为 sum 资源，size 为
+    ResourceAmount 内部整数 = MiB×10000 + 万分位小数（tako amount.rs：
+    FRACTIONS_PER_UNIT=10_000，"memory sizes are always in mibibytes"），
+    故须除以 10000 还原 MiB。CLI 与 HTTP 两实现共用本解析（领域规则集中）。
     """
     cpus = 0
     mem_mib = 0
     for res in (configuration.get("resources") or {}).get("resources", []):
         if res.get("name") == "cpus":
-            span = int(res.get("end", 0)) - int(res.get("start", 0)) + 1
-            cpus = max(cpus, span)
+            if res.get("kind") == "list" or "values" in res:
+                n = len(res.get("values") or [])
+            else:
+                n = int(res.get("end", 0)) - int(res.get("start", 0)) + 1
+            cpus = max(cpus, n)
         elif res.get("name") == "mem":
             raw = int(res.get("size") or 0)
             mem_mib = max(mem_mib, raw // FRACTIONS_PER_UNIT)

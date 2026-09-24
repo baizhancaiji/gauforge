@@ -102,6 +102,16 @@ def test_worker_resources_mem_fractions_units():
     assert worker_resources(cfg) == (12, 15883)
 
 
+def test_worker_resources_cpus_list_shape():
+    # 回归（GUI 走查发现）：启动自动探测的 cpus 以 list 序列化（核 id 列表），
+    # 显式 --cpus N 才是 range 闭区间；list 形状曾被误算为 1 核。
+    cfg = {"resources": {"resources": [
+        {"kind": "list", "name": "cpus",
+         "values": [str(i) for i in range(12)]},
+        {"name": "mem", "size": 158830898}]}}
+    assert worker_resources(cfg) == (12, 15883)
+
+
 def test_derive_job_state_pure():
     # 纯函数：task_stats → 单一状态（canceled > failed > finished > running > waiting）
     assert derive_job_state({"canceled": 0, "failed": 0, "finished": 0,
