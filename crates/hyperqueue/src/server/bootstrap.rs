@@ -54,6 +54,26 @@ pub struct ServerConfig {
     pub http_port: Option<u16>,
 }
 
+impl ServerConfig {
+    #[cfg(test)]
+    pub fn for_test(http_port: Option<u16>) -> ServerConfig {
+        ServerConfig {
+            worker_host: "localhost".to_string(),
+            client_host: "localhost".to_string(),
+            idle_timeout: None,
+            client_port: None,
+            worker_port: None,
+            journal_path: None,
+            journal_flush_period: Duration::from_secs(30),
+            worker_secret_key: None,
+            client_secret_key: None,
+            server_uid: None,
+            scheduler_mip_time_limit: Duration::from_secs(5),
+            http_port,
+        }
+    }
+}
+
 /// This function initializes the HQ server.
 ///
 /// It takes a path to a directory and tries to find metadata of a running HQ server either directly

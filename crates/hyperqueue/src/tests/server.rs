@@ -13,6 +13,8 @@ use tokio::time::timeout;
 pub struct RunningHqServer {
     dir: PathBuf,
     notify_quit: bool,
+    /// 内嵌 HTTP API 的实际监听端口（未启用时为 None，H4 测试用）
+    pub http_port: Option<u16>,
 }
 
 impl RunningHqServer {
@@ -40,30 +42,58 @@ where
     F: FnOnce(RunningHqServer) -> Fut,
     Fut: Future<Output = anyhow::Result<RunningHqServer>>,
 {
+    run_hq_test_with_cfg(ServerConfig::for_test(None), test_fn).await
+}
+
+/// Start the server with a custom configuration (e.g. the embedded HTTP API).
+pub async fn run_hq_test_with_cfg<F, Fut>(server_cfg: ServerConfig, test_fn: F)
+where
+    F: FnOnce(RunningHqServer) -> Fut,
+    Fut: Future<Output = anyhow::Result<RunningHqServer>>,
+{
     let tmp_dir = TempDir::with_prefix("hq-test").unwrap();
 
     let gsettings = GlobalSettings::new(
         tmp_dir.path().to_path_buf(),
         Box::new(CliOutput::new(ColorChoice::Never)),
     );
-    let server_cfg = ServerConfig {
-        worker_host: "localhost".to_string(),
-        client_host: "localhost".to_string(),
-        idle_timeout: None,
-        client_port: None,
-        worker_port: None,
-        journal_path: None,
-        journal_flush_period: Duration::from_secs(30),
-        worker_secret_key: None,
-        client_secret_key: None,
-        server_uid: None,
-        scheduler_mip_time_limit: Duration::from_secs(5),
-        http_port: None,
-    };
+    let ServerConfig {
+        worker_host,
+        client_host,
+        idle_timeout,
+        client_port,
+        worker_port,
+        journal_path,
+        journal_flush_period,
+        worker_secret_key,
+        client_secret_key,
+        server_uid,
+        scheduler_mip_time_limit,
+        http_port,
+    } = server_cfg;
     let (fut, notify, _state, _senders) =
-        initialize_server(&gsettings, server_cfg, 1.into(), 1, None)
-            .await
-            .unwrap();
+        initialize_server(
+            &gsettings,
+            ServerConfig {
+                worker_host,
+                client_host,
+                idle_timeout,
+                client_port,
+                worker_port,
+                journal_path,
+                journal_flush_period,
+                worker_secret_key,
+                client_secret_key,
+                server_uid,
+                scheduler_mip_time_limit,
+                http_port,
+            },
+            1.into(),
+            1,
+            None,
+        )
+        .await
+        .unwrap();
     let localset = LocalSet::new();
 
     // Run the server in the background, concurrently with the testing future
@@ -72,6 +102,7 @@ where
     let server = RunningHqServer {
         dir: tmp_dir.path().to_path_buf(),
         notify_quit: true,
+        http_port,
     };
     // Run the test itself. If it fails, we still try to finish the server itself,
     // for better error propagation.

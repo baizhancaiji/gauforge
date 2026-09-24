@@ -242,10 +242,10 @@ async fn handle_cancel_reply(state_ref: &StateRef, senders: &Senders, job_id: u3
             };
             use crate::transfer::messages::CancelJobResponse as C;
             match response {
-                C::Canceled(canceled, total) => Reply::ok(json!({
+                C::Canceled(canceled, already_finished) => Reply::ok(json!({
                     "id": job_id,
                     "canceled_tasks": canceled.len(),
-                    "already_finished": total - canceled.len() as u32,
+                    "already_finished": already_finished,
                 })),
                 C::InvalidJob => {
                     Reply::err(StatusCode::NOT_FOUND, format!("job {job_id} not found"))
@@ -596,4 +596,174 @@ fn service_unavailable() -> Response {
         axum::Json(json!({ "error": "server is shutting down" })),
     )
         .into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::server::event::Event;
+    use std::time::Duration as StdDuration;
+
+    #[test]
+    fn test_event_frame_names_and_payloads() {
+        let cases: Vec<(EventPayload, &str)> = vec![
+            (
+                EventPayload::Submit {
+                    job_id: 1.into(),
+                    closed_job: true,
+                    serialized_desc: crate::common::serialization::Serialized::new(
+                        &crate::transfer::messages::SubmitRequest {
+                            job_desc: crate::transfer::messages::JobDescription {
+                                name: "n".into(),
+                                max_fails: None,
+                            },
+                            submit_desc: crate::transfer::messages::JobSubmitDescription {
+                                task_desc: crate::transfer::messages::JobTaskDescription::Array {
+                                    ids: IntArray::from_id(0),
+                                    entries: None,
+                                    task_desc: sample_task_desc(),
+                                    resource_rq: sample_resource_rq(),
+                                },
+                                submit_dir: "/tmp".into(),
+                                stream_path: None,
+                            },
+                            job_id: None,
+                        },
+                    )
+                    .unwrap(),
+                },
+                "submit",
+            ),
+            (EventPayload::JobOpen(2.into(), sample_job_desc()), "job_open"),
+            (EventPayload::JobClose(2.into()), "job_close"),
+            (EventPayload::JobIdle(2.into()), "job_idle"),
+            (EventPayload::JobCompleted(2.into()), "job_completed"),
+            (
+                EventPayload::JobCancel {
+                    job_id: 2.into(),
+                    cancel_reason: "by hand".into(),
+                },
+                "job_cancel",
+            ),
+            (
+                EventPayload::TaskStarted {
+                    task_id: tako::TaskId::new(2.into(), 0.into()),
+                    instance_id: 0.into(),
+                    worker_ids: smallvec::smallvec![1.into()],
+                    rv_id: 0.into(),
+                },
+                "task_started",
+            ),
+            (
+                EventPayload::TaskFinished {
+                    task_id: tako::TaskId::new(2.into(), 0.into()),
+                },
+                "task_finished",
+            ),
+            (
+                EventPayload::TaskFailed {
+                    task_id: tako::TaskId::new(2.into(), 0.into()),
+                    error: "boom".into(),
+                },
+                "task_failed",
+            ),
+            (
+                EventPayload::TasksCanceled {
+                    task_ids: vec![tako::TaskId::new(2.into(), 0.into())],
+                },
+                "tasks_canceled",
+            ),
+            (EventPayload::ServerStop, "server_stop"),
+        ];
+        for (payload, name) in cases {
+            let event = Event::at(chrono::Utc::now(), payload);
+            let (got, data) = event_to_frame(&event);
+            assert_eq!(got, name);
+            // time 由流层并入，帧函数只管业务字段
+            assert!(!data.to_string().contains('\n'), "frame data must be single line");
+        }
+    }
+
+    #[test]
+    fn test_submit_frame_hides_serialized_desc() {
+        let request = crate::transfer::messages::SubmitRequest {
+            job_desc: crate::transfer::messages::JobDescription {
+                name: "n".into(),
+                max_fails: None,
+            },
+            submit_desc: crate::transfer::messages::JobSubmitDescription {
+                task_desc: crate::transfer::messages::JobTaskDescription::Array {
+                    ids: IntArray::from_id(0),
+                    entries: None,
+                    task_desc: sample_task_desc(),
+                    resource_rq: sample_resource_rq(),
+                },
+                submit_dir: "/tmp".into(),
+                stream_path: None,
+            },
+            job_id: None,
+        };
+        let event = Event::at(
+            chrono::Utc::now(),
+            EventPayload::Submit {
+                job_id: 1.into(),
+                closed_job: true,
+                serialized_desc: crate::common::serialization::Serialized::new(&request)
+                    .unwrap(),
+            },
+        );
+        let (name, data) = event_to_frame(&event);
+        assert_eq!(name, "submit");
+        let text = data.to_string();
+        assert!(text.contains("\"job_id\""), "{text}");
+        assert!(text.contains("closed_job"), "{text}");
+        // bincode 字节不透传
+        assert!(!text.contains("serialized_desc"), "{text}");
+        assert!(!text.contains("/tmp"), "{text}");
+    }
+
+    fn sample_job_desc() -> crate::transfer::messages::JobDescription {
+        crate::transfer::messages::JobDescription {
+            name: "probe".into(),
+            max_fails: None,
+        }
+    }
+
+    fn sample_task_desc() -> crate::transfer::messages::TaskDescription {
+        use crate::transfer::messages::{TaskDescription, TaskKind, TaskKindProgram};
+        use tako::program::ProgramDefinition;
+        TaskDescription {
+            kind: TaskKind::ExternalProgram(TaskKindProgram {
+                program: ProgramDefinition {
+                    args: vec![bstr::BString::from("sleep")],
+                    env: Map::new(),
+                    stdout: tako::program::StdioDef::Null,
+                    stderr: tako::program::StdioDef::Null,
+                    stdin: Vec::new(),
+                    cwd: "/tmp".into(),
+                },
+                pin_mode: PinMode::None,
+                task_dir: false,
+            }),
+            priority: UserPriority::new(0),
+            time_limit: Some(StdDuration::from_secs(1)),
+            crash_limit: CrashLimit::default(),
+        }
+    }
+
+    fn sample_resource_rq() -> tako::gateway::ResourceRequestVariants {
+        tako::gateway::ResourceRequestVariants::new(smallvec::smallvec![
+            tako::gateway::ResourceRequest {
+                n_nodes: 1,
+                min_time: StdDuration::ZERO,
+                resources: smallvec::smallvec![tako::gateway::ResourceRequestEntry {
+                    resource: "cpus".to_string(),
+                    policy: tako::resources::AllocationRequest::Compact(
+                        tako::resources::ResourceAmount::new_units(1),
+                    ),
+                }],
+                weight: Default::default(),
+            }
+        ])
+    }
 }
