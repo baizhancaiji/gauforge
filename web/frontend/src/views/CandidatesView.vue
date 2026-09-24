@@ -149,14 +149,15 @@ async function openSubmit(c: Candidate) {
   };
 }
 
-/** 黄警文案：缺失项 + 设置面板缺省值（验收路径第 3 步）。 */
+/** 黄警文案：缺失项 + 设置面板缺省值（验收路径第 3 步）。
+ *  后端 missing 为不带 % 前缀的指令名（如 "NProcShared"、"Mem"）。 */
 const submitWarnText = computed(() => {
   const parts: string[] = [];
-  if (submitMissing.value.includes("%NProcShared") && submitDefaults.value.nproc != null)
+  if (submitMissing.value.includes("NProcShared") && submitDefaults.value.nproc != null)
     parts.push(`%NProcShared=${submitDefaults.value.nproc}`);
-  if (submitMissing.value.includes("%Mem") && submitDefaults.value.mem != null)
+  if (submitMissing.value.includes("Mem") && submitDefaults.value.mem != null)
     parts.push(`%Mem=${submitDefaults.value.mem} GB`);
-  const head = submitMissing.value.join("、");
+  const head = submitMissing.value.map((m) => `%${m}`).join("、");
   return parts.length ? `${head} 未声明 · 提交时将按默认值补齐（${parts.join("、")}）` : `${head} 未声明 · 提交时将按默认值补齐`;
 });
 
@@ -360,9 +361,9 @@ const causeLabel: Record<string, string> = {
               </span>
             </div>
             <div v-else class="val mono dim">（无声明）</div>
-            <!-- Link0 缺失琥珀注记（§5：M1 提交警告的伏笔） -->
+            <!-- Link0 缺失琥珀注记（§5：M1 提交警告的伏笔；missing 为不带 % 的指令名） -->
             <div v-if="preview.blocks.link0.missing.length" class="note mono">
-              ⚠ {{ preview.blocks.link0.missing.join("、") }} 未声明 · 提交时将按默认值补齐
+              ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m}`).join("、") }} 未声明 · 提交时将按默认值补齐
             </div>
           </div>
 
