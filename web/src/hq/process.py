@@ -11,6 +11,7 @@ from __future__ import annotations
 import subprocess
 import threading
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .cli_gateway import CliGateway
@@ -29,6 +30,9 @@ class HqProcessManager:
         self._worker_procs: list[subprocess.Popen] = []
         self._stop = threading.Event()
         self._watchdog: threading.Thread | None = None
+        # 本次生命周期内 spawn server 的时刻（复用已有实例则保持 None）：
+        # S3 对账判据③的依据——server 比 job 新 ⇒ journal 恢复重跑。
+        self.server_spawn_ts: str | None = None
 
     # ---------- 存活探测 ----------
     def server_alive(self) -> bool:
@@ -73,6 +77,10 @@ class HqProcessManager:
             if self.http_port is not None:
                 args += ["--http-port", str(self.http_port)]
             self._server_proc = self._spawn("server", args)
+            # 与 store.db.now_iso 同格式（UTC ISO，秒精度），供 S3 判据③
+            # 与 executions.started_at 直接字符串比较
+            self.server_spawn_ts = datetime.now(timezone.utc).isoformat(
+                timespec="seconds")
         self._wait_alive(self.server_alive, wait_timeout, "server")
         self._ensure_watchdog()
         return True

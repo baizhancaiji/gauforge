@@ -84,6 +84,10 @@ class Dispatcher:
             from .reconcile import detect_rerun
             self._rerun_probe = detect_rerun
         self._reconciled = False  # 启动对账闩：成功一次后不再重复（B10）
+        # HQ server 本次生命周期被重新 spawn 的时刻（startup 接线；
+        # None=复用存活实例）。S3 对账判据③：server 比 job 新 ⇒ journal
+        # 恢复重跑（确定性，不受对账时点竞态影响）。
+        self.server_spawn_ts: str | None = None
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 

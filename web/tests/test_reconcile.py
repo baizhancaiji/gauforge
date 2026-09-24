@@ -229,6 +229,49 @@ def test_s3_waiting_state_signature_redirects(gw, rec):
     assert gw.submitted[-1]["cwd"].startswith(str(config.HOME_DIR / "run"))
 
 
+def test_s3_server_respawn_signature_redirects(gw, rec):
+    """§2.4 ③ 特征③（GUI 走查实测加固）：HQ server 本次生命周期被重新
+    spawn（journal 恢复）且本地 started_at 早于 server spawn——worker 快速
+    重连时 waiting 相位与进程 create_time 证据可被对账时点双双错过，
+    本判据确定性成立，不受对账时点竞态影响。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    run_d = config.HOME_DIR / "run" / str(row["id"])
+    (run_d / "w.chk").write_bytes(b"checkpoint")
+    gw.set_state(str(row["hq_job_id"]), "running")  # 已回 running（相位错过）
+
+    rec2: list[tuple[str, dict]] = []
+    d2 = restarted(gw, rec2, probe=lambda r, p: False)
+    d2.server_spawn_ts = (datetime.fromisoformat(row["started_at"])
+                          + timedelta(seconds=1)).isoformat()
+    d2.reconcile()
+
+    old = executions().get(row["id"])
+    assert old["state"] == "failed"
+    assert old["cause"] == "external_interrupt"
+    assert (run_d / "protected" / "w.chk").is_file()
+    assert len(executions().list_by_state("running")) == 1  # 新执行重提交
+
+
+def test_s1_not_flagged_when_server_reused(gw, rec):
+    """server 复用（未重 spawn）时判据③不得触发：S1 保持接管语义。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    started = row["started_at"]
+
+    rec2: list[tuple[str, dict]] = []
+    d2 = restarted(gw, rec2, probe=lambda r, p: False)
+    # server_spawn_ts 早于 started_at（正常先起 server 后派发）→ 非 S3
+    d2.server_spawn_ts = (datetime.fromisoformat(started)
+                          - timedelta(seconds=60)).isoformat()
+    d2.reconcile()
+
+    after = executions().get(row["id"])
+    assert after["state"] == "running"  # S1 接管
+    assert after["started_at"] == started
+    assert executions().list_terminal()[1] == 0
+
+
 def test_s3_rerun_without_chk_adopts(gw, rec):
     d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
     row = seed_running(gw, d1)
@@ -401,6 +444,7 @@ class FakePM:
     def __init__(self, root: Path) -> None:
         self.hq_path = "hq-fake"
         self.server_dir = root / "hq"
+        self.server_spawn_ts = None  # 未 spawn 真 server：S3 判据③不成立
 
     def start(self) -> bool:
         return True

@@ -15,7 +15,10 @@
 S3 重跑特征（§2.4 ③，H4 实测结论）：① job 状态回退 waiting 且本地已有
 started_at（journal 恢复后任务回退 waiting、worker 重连后从头重跑）——
 对账时点即可判定；② 进程 create_time 显著晚于本地 started_at
-（> RERUN_TOLERANCE_S）——回 running 后的佐证。任一成立即 S3。
+（> RERUN_TOLERANCE_S）——回 running 后的佐证；③ server 本次生命周期
+被重新 spawn 且本地 started_at 早于 server spawn（GUI 走查实测加固：
+worker 快速重连时 ①② 可被对账时点双双错过，③ 由 server spawn 时刻
+给出确定性判定）。任一成立即 S3。
 
 对账完成发 system.snapshot(server_restarted=true) 供前端全量重建。
 """
@@ -98,10 +101,17 @@ class Reconciler:
                 self._s2_settle(row, job["state"])
             else:  # running / waiting：在跑或待启动
                 run_d = self._d._run_root / str(row["id"])
-                # S3 判据（§2.4 ③）：job 状态回退 waiting 且本地曾 running
-                # → journal 恢复重跑；create_time 佐证仅覆盖已回 running 者
-                rerun = (job["state"] == "waiting"
-                         and bool(row.get("started_at"))) \
+                # S3 判据（§2.4 ③）：① job 状态回退 waiting 且本地曾 running；
+                # ② create_time 佐证（已回 running 者）；③ server 本次生命
+                # 周期被重新 spawn 且本地 started_at 早于 server spawn——
+                # journal 恢复重跑的确定性证据（前两者可能被对账时点错过：
+                # GUI 走查实测 worker 快速重连时 waiting 相位与进程证据均缺席）。
+                spawn_ts = self._d.server_spawn_ts
+                rerun = (spawn_ts is not None
+                         and bool(row.get("started_at"))
+                         and row["started_at"] < spawn_ts) \
+                    or (job["state"] == "waiting"
+                        and bool(row.get("started_at"))) \
                     or self._d._rerun_probe(row, run_d)
                 if rerun:
                     if has_chk(run_d) and self._seat_holds(row):

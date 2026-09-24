@@ -58,6 +58,7 @@ def start_engine(*, gateway: Gateway | None = None,
               file=sys.stderr)
 
     d = Dispatcher(gateway)
+    d.server_spawn_ts = pm.server_spawn_ts  # S3 判据③接线（server 重 spawn 证据）
     try:
         d.reconcile()
     except GatewayError as exc:
