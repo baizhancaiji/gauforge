@@ -361,6 +361,13 @@
       "summary": "REST 基线轮询改合并语义（原整体覆盖卡片致 SSE 实时读数被周期性抹除）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "历史输入/输出查看按文本读取（text/plain 误按 JSON 解析致面板卡读取中）、停止模态重开清空残留错误",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
