@@ -93,16 +93,19 @@ export const useEventsStore = defineStore("events", () => {
   function push(live: LiveExecution | HistoryEntry) {
     const e = live as LiveExecution;
     if (e.filename) knownNames.set(e.id, e.filename);
+    // 合并语义：REST 基线轮询只补齐身份字段，不得整体覆盖卡片——
+    // 否则会抹掉 SSE 写入的 monitor/progress 实时读数（GUI 走查实测）。
+    const prev = executions.get(e.id);
     executions.set(e.id, {
       id: e.id,
       task_id: e.task_id,
-      filename: e.filename || knownNames.get(e.id) || "—",
-      queue_id: e.queue_id,
+      filename: e.filename || prev?.filename || knownNames.get(e.id) || "—",
+      queue_id: e.queue_id ?? prev?.queue_id ?? null,
       state: e.state,
       submitted_at: e.submitted_at,
       started_at: e.started_at,
-      monitor: e.monitor ?? undefined,
-      progress: e.progress ?? undefined,
+      monitor: e.monitor ?? prev?.monitor,
+      progress: e.progress ?? prev?.progress,
     });
   }
 
