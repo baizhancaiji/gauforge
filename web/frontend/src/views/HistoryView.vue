@@ -475,15 +475,8 @@ async function confirmCleanup() {
   bottom: 0;
   height: 1px;
   background: var(--accent);
-  animation: scanx 1.2s var(--ease-std) infinite;
-}
-@keyframes scanx {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+  /* 引用 base.css 共用 scanline（--ease-std），不重复定义 keyframes */
+  animation: scanline 1.2s var(--ease-std) infinite;
 }
 .skel {
   border: 1px solid var(--border-hair);

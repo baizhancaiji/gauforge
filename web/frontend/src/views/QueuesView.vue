@@ -191,17 +191,7 @@ const reasonLabel: Record<string, string> = {
 .scanline {
   height: 1px;
   background: var(--accent);
-  animation: scan 1.2s ease-in-out infinite;
-}
-@keyframes scan {
-  0% {
-    opacity: 0.5;
-    transform: translateX(-100%);
-  }
-  50%,
-  100% {
-    opacity: 0.5;
-    transform: translateX(100%);
-  }
+  /* 引用 base.css 共用 scanline（--ease-std），不重复定义 keyframes */
+  animation: scanline 1.2s var(--ease-std) infinite;
 }
 </style>
