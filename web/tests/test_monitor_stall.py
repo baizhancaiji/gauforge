@@ -283,3 +283,14 @@ def test_terminal_success_carries_summary(tmp_path):
     assert row["monitor_summary"] is not None  # succeeded 落摘要
     assert {"cpu_peak_percent", "mem_peak_mb",
             "stall_alerts", "stall_total_minutes"} == set(row["monitor_summary"])
+
+
+def test_stall_threshold_follows_settings():
+    """停滞阈值逐 tick 跟随设置（新任务生效）：advance 后监测器阈值为
+    当前设置值；已建 entry 的检测器保有创建时刻阈值（不追溯）。"""
+    from web.src.store import settings as settings_store
+    disp = Dispatcher(FakeGateway(cpus=8))
+    assert disp._monitor.threshold == 10.0  # 构造时默认
+    settings_store().set("stall_threshold_minutes", 3)
+    disp.advance()
+    assert disp._monitor.threshold == 3.0

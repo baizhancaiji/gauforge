@@ -131,6 +131,9 @@ class Dispatcher:
     def advance(self) -> None:
         """自序列头按序推进并行窗口（哈希跳过/停等/物化/提交/回填）。"""
         window = int(settings().get("parallel_window"))
+        # 停滞阈值逐 tick 跟随设置（新任务生效）：新建监测 entry 用当前值，
+        # 已在跑 entry 的检测器保有创建时刻阈值，不追溯。
+        self._monitor.threshold = float(settings().get("stall_threshold_minutes"))
         running = executions().list_by_state("running")
         if len(running) >= window:
             return
