@@ -510,7 +510,7 @@ const causeLabel: Record<string, string> = {
   gap: var(--space-3);
 }
 .note-ok {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--state-succeeded);
 }
 .note-warn {
@@ -526,13 +526,13 @@ const causeLabel: Record<string, string> = {
   gap: var(--space-1);
 }
 .ie-head {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 .ie-row {
   display: flex;
   gap: var(--space-4);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 .ie-file {
   color: var(--text-primary);
@@ -555,20 +555,19 @@ const causeLabel: Record<string, string> = {
   gap: var(--space-3);
 }
 .submit-warn {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--warn);
 }
 .submit-ok {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
 }
 .submit-error {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 .input-cap {
-  font-size: var(--text-sm); /* 文案含中文：混排纪律下限，不用微标签档 */
-  letter-spacing: var(--ls-wide);
+  font-size: var(--text-sm); /* 文案含中文：混排纪律 1，不用微标签档、不加字距 */
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -606,9 +605,9 @@ const causeLabel: Record<string, string> = {
 }
 th {
   text-align: left;
-  font-size: var(--text-xs);
+  /* 表头样式类承载中文（混排纪律 1）：升 --text-sm、去字距 */
+  font-size: var(--text-sm);
   font-weight: 500;
-  letter-spacing: var(--ls-micro);
   text-transform: uppercase;
   color: var(--text-faint);
   padding: var(--space-2) var(--space-3);
@@ -662,7 +661,7 @@ tbody tr:hover {
 .failure {
   display: block;
   margin-top: 2px;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--warn);
 }
 .btn.remove {
@@ -699,7 +698,7 @@ tbody tr:hover {
 }
 .foot {
   padding: var(--space-2) var(--space-3);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
   border-top: 1px solid var(--border-hair);
 }
@@ -742,7 +741,7 @@ tbody tr:hover {
 .pe-row {
   display: flex;
   gap: var(--space-3);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 .pe-sec {
@@ -785,7 +784,7 @@ tbody tr:hover {
 }
 .note {
   margin-top: var(--space-2);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--warn);
 }
 /* 分子四格读数（样板 readout：ATOMS/FORMULA/VARS/CONSTS） */

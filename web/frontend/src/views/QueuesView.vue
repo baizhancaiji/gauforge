@@ -113,8 +113,8 @@ const reasonLabel: Record<string, string> = {
   top: 0;
   background: var(--bg-raised);
   border-bottom: 1px solid var(--border-hair);
-  font-size: var(--text-xs);
-  letter-spacing: var(--ls-micro);
+  /* 表头承载中文（混排纪律 1）：升 --text-sm、去字距 */
+  font-size: var(--text-sm);
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -165,16 +165,15 @@ const reasonLabel: Record<string, string> = {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-5);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 .warn {
   color: var(--warn);
 }
 .label {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（成员顺序） */
   color: var(--text-faint);
-  letter-spacing: var(--ls-micro);
 }
 .members {
   display: flex;

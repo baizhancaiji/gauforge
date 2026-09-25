@@ -144,11 +144,11 @@ async function confirmStop() {
         <div class="readouts" aria-live="off">
           <div class="ro">
             <div class="n mono">{{ fmtPercent(card.exec.monitor?.cpu_percent) }}</div>
-            <div class="l mono">CPU 占用</div>
+            <div class="l mono zh">CPU 占用</div>
           </div>
           <div class="ro">
             <div class="n mono">{{ fmtMemory(card.exec.monitor?.mem_rss_mb) }}</div>
-            <div class="l mono">内存 RSS</div>
+            <div class="l mono zh">内存 RSS</div>
           </div>
           <div class="ro ro--sub">
             <div class="n mono">{{ card.exec.progress?.opt_step ?? "—" }}</div>
@@ -199,7 +199,7 @@ async function confirmStop() {
   display: flex;
   gap: var(--space-6);
   margin-bottom: var(--space-4);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（在跑/可用）：混排纪律 1 */
   color: var(--text-faint);
 }
 .empty-wrap {
@@ -254,7 +254,7 @@ async function confirmStop() {
   white-space: nowrap;
 }
 .meta {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
@@ -274,10 +274,16 @@ async function confirmStop() {
   font-size: var(--text-lg);
 }
 .ro .l {
+  /* 纯拉丁读数标签档（OPT STEP/SCF CYCLE） */
   font-size: var(--text-2xs);
   letter-spacing: var(--ls-wide);
   color: var(--text-faint);
   margin-top: 3px;
+}
+/* 承载中文的读数标签（CPU 占用/内存 RSS）：混排纪律 1 升档去字距 */
+.ro .l.zh {
+  font-size: var(--text-sm);
+  letter-spacing: 0;
 }
 .foot {
   border-top: 1px solid var(--border-hair);
@@ -289,7 +295,7 @@ async function confirmStop() {
   min-height: 32px;
 }
 .stall {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--warn);
   display: flex;
   gap: var(--space-2);
@@ -322,7 +328,7 @@ async function confirmStop() {
 .stop {
   height: 26px;
   padding: 0 var(--space-3);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（停止） */
   flex: none;
 }
 .confirm-line {
@@ -334,7 +340,7 @@ async function confirmStop() {
 }
 .confirm-error {
   margin-top: var(--space-2);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 </style>

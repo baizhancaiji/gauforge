@@ -222,8 +222,7 @@ async function doSave() {
 }
 .group-title {
   font-size: var(--text-sm);
-  font-weight: 500;
-  letter-spacing: var(--ls-micro);
+  font-weight: 500; /* 文案含中文，不加字距 */
   color: var(--text-faint);
   margin-bottom: var(--space-4);
 }
@@ -255,7 +254,7 @@ async function doSave() {
   color: var(--text-faint);
 }
 .read .note {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
   margin-top: 2px;
 }
@@ -277,7 +276,7 @@ async function doSave() {
   height: 34px;
 }
 .hint {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-secondary);
   display: flex;
   align-items: baseline;
@@ -290,7 +289,7 @@ async function doSave() {
 /* 生效语义徽标：中性 plain 档（§4.6，不使用状态色） */
 .eff {
   align-self: flex-start;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 生效语义含中文 */
   padding: 1px 8px;
   border-radius: var(--r-sm);
   color: var(--text-secondary);
@@ -300,7 +299,7 @@ async function doSave() {
   border-color: var(--danger);
 }
 .err {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 .savebar {
@@ -310,7 +309,7 @@ async function doSave() {
   flex-wrap: wrap;
 }
 .saved {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 .saved.ok {
   color: var(--state-succeeded);
@@ -319,7 +318,7 @@ async function doSave() {
   color: var(--danger);
 }
 .restart {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--warn);
 }
 .loading {

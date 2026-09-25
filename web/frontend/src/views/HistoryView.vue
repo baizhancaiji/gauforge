@@ -414,15 +414,15 @@ const causeLabel: Record<string, string> = {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
 }
 .count {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--text-faint);
 }
 .cleanup-note {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--state-succeeded);
 }
 .table {
@@ -447,9 +447,9 @@ const causeLabel: Record<string, string> = {
   top: 0;
   background: var(--bg-raised);
   border-bottom: 1px solid var(--border-hair);
-  font-size: var(--text-xs);
+  /* 表头承载中文（混排纪律 1）：升 --text-sm、去字距 */
+  font-size: var(--text-sm);
   text-transform: uppercase;
-  letter-spacing: var(--ls-micro);
   color: var(--text-faint);
 }
 .row {
@@ -567,8 +567,7 @@ const causeLabel: Record<string, string> = {
   padding-top: var(--space-3);
 }
 .cell dt {
-  font-size: var(--text-xs);
-  letter-spacing: var(--ls-micro);
+  font-size: var(--text-sm); /* 承载中文（状态 / 归因 等） */
   color: var(--text-faint);
   margin-bottom: var(--space-1);
 }
@@ -578,7 +577,7 @@ const causeLabel: Record<string, string> = {
   color: var(--text-secondary);
 }
 .note {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
 }
 .note--ok {
   color: var(--state-succeeded);
@@ -593,7 +592,7 @@ const causeLabel: Record<string, string> = {
   margin-top: var(--space-2);
 }
 .archived-tag {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--state-archived);
   align-self: center;
 }
@@ -609,7 +608,7 @@ const causeLabel: Record<string, string> = {
   justify-content: space-between;
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-hair);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（输入原文/输出预览） */
   color: var(--text-faint);
 }
 /* 输出预览限高滚动（C6） */

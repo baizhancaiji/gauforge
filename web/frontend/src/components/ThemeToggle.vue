@@ -26,6 +26,6 @@ onMounted(apply);
 .theme-toggle {
   height: 28px;
   padding: 0 var(--space-3);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（亮色/暗色） */
 }
 </style>

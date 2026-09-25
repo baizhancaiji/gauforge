@@ -19,10 +19,17 @@ const props = defineProps<{
 }>();
 
 const running = computed(() => props.state === "running");
+// 同一样式类承载中文与拉丁时以中文档位为准（混排纪律 1）：
+// 默认英文大写措辞用微标签档，中文覆盖措辞（等待/导入/失败退回 等）升 --text-sm 并去字距。
+const CJK = /[\u4e00-\u9fff]/;
+const zh = computed(() => CJK.test(props.label ?? ""));
 </script>
 
 <template>
-  <span class="chip mono" :class="[`chip--${state}`, { 'chip--loud': loud }]">
+  <span
+    class="chip mono"
+    :class="[`chip--${state}`, { 'chip--loud': loud, 'chip--zh': zh }]"
+  >
     <i class="dot" :class="{ breathe: running }" aria-hidden="true"></i>
     <span class="label">{{ label ?? state.toUpperCase() }}</span>
   </span>
@@ -39,6 +46,10 @@ const running = computed(() => props.state === "running");
   font-size: var(--text-xs);
   letter-spacing: var(--ls-micro);
   white-space: nowrap;
+}
+.chip--zh {
+  font-size: var(--text-sm);
+  letter-spacing: 0;
 }
 .chip--loud {
   font-weight: 500;

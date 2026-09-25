@@ -304,8 +304,7 @@ async function confirmRemove() {
   font-size: var(--text-sm);
 }
 .g-label {
-  font-size: var(--text-sm); /* 文案含中文（OCCUPIED 在途席位）：不用微标签档 */
-  letter-spacing: var(--ls-wide);
+  font-size: var(--text-sm); /* 文案含中文（OCCUPIED 在途席位）：不用微标签档、不加字距 */
   color: var(--text-faint);
 }
 .cells {
@@ -333,11 +332,11 @@ async function confirmRemove() {
   font-variant-numeric: tabular-nums;
 }
 .g-over {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--warn);
 }
 .op-error {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 .seats {
@@ -349,8 +348,7 @@ async function confirmRemove() {
 }
 .divider-note {
   margin: var(--space-2) 0;
-  font-size: var(--text-sm); /* 文案含中文（等待区注记）：不用微标签档 */
-  letter-spacing: var(--ls-wide);
+  font-size: var(--text-sm); /* 文案含中文（等待区注记）：不加字距 */
   color: var(--text-faint);
   display: flex;
   align-items: center;
@@ -420,8 +418,7 @@ async function confirmRemove() {
   flex: none;
 }
 .win-tag {
-  font-size: var(--text-sm); /* 文案含中文（在途）：不用微标签档 */
-  letter-spacing: var(--ls-wide);
+  font-size: var(--text-sm); /* 文案含中文（在途）：不加字距 */
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -468,7 +465,7 @@ async function confirmRemove() {
 }
 .m-remove {
   height: 24px;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（移除） */
 }
 .confirm-line {
   font-size: var(--text-sm);
@@ -479,7 +476,7 @@ async function confirmRemove() {
 }
 .confirm-error {
   margin-top: var(--space-2);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--danger);
 }
 </style>

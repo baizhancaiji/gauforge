@@ -215,7 +215,7 @@ onMounted(() => events.start());
   background: var(--state-idle);
 }
 .hq-text {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 文案含中文（HQ 未连接） */
 }
 
 .topbar-title {
