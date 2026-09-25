@@ -33,15 +33,15 @@
 | 事件 | 类 | 触发条件（何时推） | 载荷字段（类型） | 频率/节流 |
 |---|---|---|---|---|
 | `system.heartbeat` | 保活 | 定时 | `ts` | 每 `sse_heartbeat_seconds`（默认 15s，设置项即时生效） |
-| `system.snapshot` | 恢复 | 重连且 Last-Event-ID 超出重放窗口 / 首次连接（可选主动）/ 序号无法识别 | `pending`（席位全量，同 GET /pending）、`executions_running[]`（精简执行对象）、`queues_summary[]`（id/state/rollback_flag/rollback_count）、`hq`（`{state, workers_online}`，侧栏 HQ 连接状态，同 `hq.status` 载荷）、`server_restarted: boolean` | 仅按需 |
+| `system.snapshot` | 恢复 | 重连且 Last-Event-ID 超出重放窗口 / 首次连接（可选主动）/ 序号无法识别 | `pending`（席位全量，同 GET /pending）、`executions_running[]`（精简执行对象；引擎已掌握时附带 `progress` 字段——进度状态随快照恢复，monitor 读数属采样态不随快照携带、重连后 ≤2s 重建）、`queues_summary[]`（id/state/rollback_flag/rollback_count）、`hq`（`{state, workers_online}`，侧栏 HQ 连接状态，同 `hq.status` 载荷）、`server_restarted: boolean` | 仅按需 |
 | `candidates.changed` | 通知 | 候选增（导入/历史退回候选，新 id）、删（剔除）、转化（入队/提交移出）、退回（席位移除/挤出/成员移除退回候选形态，id 延续） | `action: created/deleted/moved_out/moved_in`、`candidate_id?` | 变更即推 |
 | `queues.changed` | 通知 | 队列创建/删除/成员构成或名称变更 | `action: created/updated/deleted`、`queue_id?` | 变更即推 |
 | `queue.status` | 数据 | 队列状态流转（含失败回退、成功终结） | `queue_id`、`from`、`to`、`finish_reason?`、`failure_positions?: [task_id]`、`rollback_count?`、`ts` | 变更即推 |
 | `pending.snapshot` | 数据 | 席位任何变化（追加/整席移除/重排/成员移除/挤出/锁定变化） | 同 GET /pending 响应体 | 变更即推；全量快照式（席位≤10，快照防止漏中间态） |
 | `task.status` | 数据 | 任务状态转换：staged→running（派发，此时执行记录已建）、running→succeeded/failed、→skipped（失败中止即时/手动停止） | `task_id`、`execution_id?`（staged 无）、`queue_id?`、`from`、`to`、`cause?: FailureCause`（终态时）、`ts` | 变更即推 |
-| `execution.progress` | 数据 | 增量解析发现新优化步/SCF 迭代 | `execution_id`、`task_id`、`opt_step?`、`scf_cycle?`、`converged?`、`last_line?`（截断 200 字符）、`ts` | **每 execution 至多 1 条/s**（1s 合并窗口内多条则推最新值） |
+| `execution.progress` | 数据 | 增量解析发现新优化步/SCF 迭代；引擎重启（S1 接管）首读快进吞历史行后若含既有进度，补发一条最新状态（每执行至多一条，避免重扫风暴） | `execution_id`、`task_id`、`opt_step?`、`scf_cycle?`、`converged?`、`last_line?`（截断 200 字符）、`ts` | **每 execution 至多 1 条/s**（1s 合并窗口内多条则推最新值） |
 | `execution.monitor` | 数据 | psutil 采样完成（采样周期 2s，M1 实测校准） | `execution_id`、`cpu_percent`、`mem_rss_mb`、`elapsed_s`、`ts` | 2s/条，随采样直推 |
-| `execution.stalled` | 数据 | 超过停滞阈值无新优化步/SCF 迭代（置位）/恢复新进度（解除） | `execution_id`、`task_id`、`stalled: boolean`、`threshold_minutes`、`last_progress_ts`、`ts` | 状态翻转即推（同一停滞期开始/解除各一条） |
+| `execution.stalled` | 数据 | 超过停滞阈值无新优化步/SCF 迭代（置位）/恢复新进度（解除） | `execution_id`、`task_id`、`stalled: boolean`、`threshold_minutes`、`last_progress_ts`、`ts` | 状态翻转即推（同一停滞期开始/解除各一条）。引擎重启（S1 接管）后停滞检测重新起算：重启前未解除的告警不随快照恢复（客户端重建时清空），阈值重新超出再置位 |
 | `history.appended` | 数据 | 执行到达终态、历史条目落库 | `execution_id`、`task_id`、`queue_id?`、`state`、`cause?`、`ts` | 变更即推 |
 | `settings.updated` | 通知 | PUT /settings 成功 | `keys: []`、`ts` | 变更即推（多标签页同步） |
 | `hq.status` | 数据 | HQ server 可达性或 worker 在线数变化（引擎 tick 以 workers 列表探测，随 2s 周期） | `state: off/down/up`（off=引擎未启用，down=server 不可达，up=可达）、`workers_online: int`、`ts` | 翻转即推（稳态不重发；引擎未启用不推，快照恒 off） |
