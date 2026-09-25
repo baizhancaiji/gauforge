@@ -46,7 +46,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 分页列表（含实时 title） */
+        /**
+         * 分页列表（含实时 title）
+         * @description items 先按导入时间倒序（created_at，新批在上）对全量排序后再分页， 同一秒导入的同批文件批内按文件名自然序（不区分大小写、字母先于数字， 与 web/src/parse/naturalsort 同规则），跨页全局有序。
+         */
         get: operations["listCandidates"];
         put?: never;
         /**
@@ -499,6 +502,11 @@ export interface components {
          * @enum {string}
          */
         CandidateOrigin: "imported" | "returned_unrun" | "returned_failed" | "returned_succeeded";
+        /**
+         * @description 历史列表排序：submitted_desc 提交时间倒序（默认，id 逆序实现）； finished_desc / finished_asc 按完成时间（finished_at，终态统一存在）； filename_asc / filename_desc 按文件名自然序（不区分大小写、字母先于 数字，与候选列表批内同规则）。各排序并列时保持提交倒序（稳定排序）， 全量排序后分页，跨页全局有序。
+         * @enum {string}
+         */
+        HistorySort: "submitted_desc" | "finished_desc" | "finished_asc" | "filename_asc" | "filename_desc";
         /**
          * @description 执行终态归因；succeeded 为 null
          * @enum {string}
@@ -1434,6 +1442,7 @@ export interface operations {
                 state?: components["schemas"]["TaskState"];
                 queue_id?: string;
                 archived?: boolean;
+                sort?: components["schemas"]["HistorySort"];
                 page?: components["parameters"]["PageParam"];
                 page_size?: components["parameters"]["PageSizeParam"];
             };

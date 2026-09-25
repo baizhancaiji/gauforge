@@ -32,6 +32,8 @@ const total = ref(0);
 const loading = ref(false);
 const everLoaded = ref(false);
 const filter = ref<"all" | "succeeded" | "failed" | "skipped">("all");
+/** 排序（openapi HistorySort）：默认提交倒序（上线前行为）。 */
+const sort = ref<components["schemas"]["HistorySort"]>("submitted_desc");
 const selected = ref<HistoryEntry | null>(null);
 const textView = ref<{ kind: "input" | "output"; content: string; error: string | null } | null>(null);
 const actionNote = ref<{ ok: boolean; msg: string } | null>(null);
@@ -43,6 +45,7 @@ async function load() {
       query: {
         ...(filter.value === "all" ? {} : { state: filter.value }),
         archived: archived.value,
+        sort: sort.value,
         page: 1,
         page_size: 100,
       },
@@ -189,6 +192,16 @@ async function confirmCleanup() {
           <option value="succeeded">SUCCEEDED</option>
           <option value="failed">FAILED</option>
           <option value="skipped">SKIPPED</option>
+        </select>
+      </label>
+      <label class="mono filter">
+        <span>排序</span>
+        <select v-model="sort" @change="load">
+          <option value="submitted_desc">提交时间 · 新→旧</option>
+          <option value="finished_desc">完成时间 · 新→旧</option>
+          <option value="finished_asc">完成时间 · 旧→新</option>
+          <option value="filename_asc">文件名 · A→Z</option>
+          <option value="filename_desc">文件名 · Z→A</option>
         </select>
       </label>
       <span class="mono count">共 {{ total }}</span>
