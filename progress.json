@@ -515,11 +515,18 @@
       "summary": "历史列表支持多排序（sort 参数：提交倒序默认/完成时间升降/文件名自然序升降），历史页工具条新增排序切换；取数端全量稳定排序后切片，跨页全局有序",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "历史页归档入口按钮文案「归档视图」改为「归档管理」",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "归档视图入口按钮文案改为「归档管理」",
-    "note": "用户要求的历史页入口按钮文案微调（HistoryView RouterLink）。"
+    "task": "二审修复批次执行完毕，回到发布流程（changelog-spec §1.6）",
+    "note": "M1 收尾插队完成 §1.3 全部可修遗留（侧栏 HQ 连接状态、挤出模态席位数、长寿命标签页 A/B/C、候选自然序跨页全局有序——原裁决 M2 经用户指示提前；默认序随后调整为导入时间倒序·同批内自然序）+ 用户追加需求：历史页多排序（提交倒序默认/完成时间升降/文件名自然序升降）、归档入口文案改「归档管理」。走查留痕见 m1-acceptance §1.3。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
