@@ -47,7 +47,7 @@ async function load() {
         archived: archived.value,
         sort: sort.value,
         page: 1,
-        page_size: 100,
+        // page_size 省略 → 后端回落设置值（列表分页大小，即时生效）
       },
     },
   });
