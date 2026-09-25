@@ -17,6 +17,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
+import { causeLabel } from "@/utils/labels";
 
 type HistoryEntry = components["schemas"]["HistoryEntry"];
 
@@ -176,14 +177,6 @@ async function confirmCleanup() {
     cleanupNote.value = `清理完成 — 检查 ${data.checked} 项 · 移除 chk ${data.removed_chk} · rwf ${data.removed_rwf}`;
   }
 }
-
-const causeLabel: Record<string, string> = {
-  manually_stopped: "手动停止",
-  program_error: "程序错误",
-  external_interrupt: "外部中断",
-  predecessor_failed: "前驱失败",
-  queue_manually_stopped: "队列停止",
-};
 </script>
 
 <template>

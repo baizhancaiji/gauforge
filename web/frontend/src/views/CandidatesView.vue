@@ -14,6 +14,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime } from "@/utils/format";
+import { causeLabel } from "@/utils/labels";
 import { naturalCompare } from "@/utils/naturalsort";
 
 type Candidate = components["schemas"]["Candidate"];
@@ -236,13 +237,6 @@ const originView: Record<string, { color: string; label: string }> = {
   returned_unrun: { color: "skipped", label: "未运行退回" },
   returned_failed: { color: "failed", label: "失败退回" },
   returned_succeeded: { color: "succeeded", label: "成功退回" },
-};
-const causeLabel: Record<string, string> = {
-  manually_stopped: "手动停止",
-  program_error: "程序错误",
-  external_interrupt: "外部中断",
-  predecessor_failed: "前驱失败",
-  queue_manually_stopped: "队列停止",
 };
 </script>
 
