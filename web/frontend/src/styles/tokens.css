@@ -16,14 +16,14 @@
   --font-sans: "IBM Plex Sans", "Noto Sans SC", system-ui, "PingFang SC",
     "Microsoft YaHei", sans-serif;
 
-  /* ---- 字号阶梯（§2.2，紧凑档）---- */
-  --text-2xs: 10px; /* 纯拉丁微标签下限与刻度/装饰符号；承载中文一律 --text-sm */
-  --text-xs: 11px; /* 纯拉丁大写微标签；承载中文一律 --text-sm（混排纪律 1） */
-  --text-sm: 12.5px;
-  --text-md: 13.5px;
-  --text-lg: 16px;
-  --text-xl: 20px;
-  --text-readout: 28px; /* 通道卡监控大读数（tabular-nums） */
+  /* ---- 字号阶梯（§2.2，紧凑档；2026-09 面向 2K 视口整档上浮 ≈11%，层级比例不变）---- */
+  --text-2xs: 11px; /* 纯拉丁微标签下限与刻度/装饰符号；承载中文一律 --text-sm */
+  --text-xs: 12px; /* 纯拉丁大写微标签；承载中文一律 --text-sm（混排纪律 1） */
+  --text-sm: 14px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-readout: 31px; /* 通道卡监控大读数（tabular-nums） */
 
   /* ---- 间距（4 的倍数，§2.3）---- */
   --space-1: 4px;
