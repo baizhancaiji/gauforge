@@ -86,6 +86,8 @@
 /* 语义衍生（透明度由 tokens 统一给出，不手调） */
 --chip-bg-alpha: 0.12;   /* 响亮档徽标底 = 状态色 12% */
 --row-hover: rgba(56, 212, 194, 0.04);
+--backdrop-dim: rgba(12, 17, 22, 0.45);    /* 抽屉遮罩：纯压暗无模糊 */
+--backdrop-modal: rgba(12, 17, 22, 0.75);  /* 模态遮罩（§4.6） */
 --glow-running: 0 0 0 1px rgba(56,212,194,0.35), 0 0 24px rgba(56,212,194,0.12);
 --grid-line: rgba(141,162,181,.035);   /* 记录纸网格线（§3 背景纹理） */
 --grid-dot:  rgba(141,162,181,.05);    /* 十字基准点 */
@@ -142,6 +144,7 @@ html[data-theme="light"]{
   --warn:#7d5c19; --danger:#c23a31;   /* 与 skipped/failed 同源关系在两主题下保持 */
   --glow-running:0 0 0 1px rgba(10,114,102,.45);   /* 无泛光，纯描边 */
   --row-hover:rgba(10,114,102,.05);
+  --backdrop-dim:rgba(28,42,53,.35); --backdrop-modal:rgba(28,42,53,.45);
   --grid-line:rgba(28,42,53,.045); --grid-dot:rgba(28,42,53,.06);
   --shadow-pop:0 8px 24px rgba(28,42,53,.16);
   color-scheme:light;   /* 原生控件（滚动条角落/下拉）随主题 */
@@ -212,9 +215,11 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
 - 间距：`--space-1: 4px` 起，4/8/12/16/20/24/32/40/48（4 的倍数制）。
 - 圆角：`--r-sm: 3px`（徽标）、`--r-md: 6px`（卡片/按钮/输入）、`--r-lg: 10px`（模态）。
 - 层级：`z-nav 100 / z-dropdown 200 / z-modal 300 / z-toast 400`。
-- **页面度量（本版新增，六页统一）**：`--page-pad: 24px`（内容区内边距）、
+- **页面度量（本版新增，六页统一）**：`--side-width: 216px`（侧栏固定宽）、
+  `--topbar-height: 56px`（顶栏高）、`--page-pad: 24px`（内容区内边距）、
   `--content-max: 1280px`（全部页面含表格页的宽度上限——超宽屏上表格行不许
-  无限拉伸）、`--gap-card: 16px`（通道卡网格与双栏间距）。
+  无限拉伸）、`--gap-card: 16px`（通道卡网格与双栏间距）、
+  `--channel-card-width: 340px`（通道卡网格 minmax 基准，§4.4）。
 - **最小支持视口 1280×720，不做响应式**；更窄窗口出横向滚动，不折叠布局。
 - 深色界面阴影弱化：层级靠描边与底色阶梯；唯一「发光」保留给 running 态
   （`--glow-running`），发光即「通电」语义，不滥用；亮色主题下发光收敛为
