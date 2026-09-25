@@ -168,15 +168,17 @@ html[data-theme="light"]{
 
 **分发（自托管，本版起为硬性要求）**：身份字体按基础设施对待，不走 CDN——
 g16web 的典型运行环境是内网/离线实验室机器，外链字体失败会让整套仪器身份静默
-坍塌为系统字 dashboard。具体：
+坍塌为系统字 dashboard。实现口径为 **@fontsource 构建期打包**（`main.ts` 引入、
+版本经 package.json 锁定，woff2 随构建产物分发）：
 
-1. woff2 全部落 `web/frontend/public/fonts/` 入库（构建期工具拉取一次即可）：
-   `IBM Plex Mono` 400/500/600、`IBM Plex Sans` 400/500、`Noto Sans SC`
-   400/500（子集化，只打包实际用字）；
-2. `@font-face` 分策略：读数/导航/UI 用 `font-display:block`（短暂不可见优于
-   错位跳变），正文用 `swap`；
-3. 关键字重（Mono 400/500）加 `<link rel="preload">`；
-4. 离线回落栈保留为最后防线，不破版。
+1. `@fontsource/ibm-plex-mono` 400/500/600、`@fontsource/ibm-plex-sans`
+   400/500、`@fontsource/noto-sans-sc` 400/500 按 npm 依赖锁定（`package.json`），
+   构建期打包进产物，运行期零外链；Noto Sans SC 由 fontsource 按
+   unicode-range 子集分片，浏览器仅加载实际用字分片；
+2. `font-display` 统一 `swap`（fontsource 默认），加载期以回落栈渲染不破版；
+   产物文件名带内容哈希，无法静态 preload，不做 preload 要求；
+3. 离线可用（硬性要求）：字体随构建产物分发，内网/离线环境不回退 CDN、
+   不破版；组件字体栈回落段为最后防线。
 
 **混排纪律**（mono 拉丁 + Sans 中文同屏，规则只有四条）：
 
@@ -443,7 +445,7 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
 
 1. C1 建立 `src/styles/tokens.css`（§2 全量，含明暗双主题变量组与缓动/字距
    token）+ `base.css`（reset/框架/背景纹理/主题切换/基础接管清单 §3）；
-   **字体自托管入库（§2.2），不走外链**；
+   **字体自托管随构建打包（§2.2 @fontsource），运行期零外链**；
 2. C3/C4 六页组件严格引用 tokens，禁止组件内硬编码色值/字号/字距/缓动
    （走查抽查）；
 3. 验收（并入 m0-plan.md §8）：
