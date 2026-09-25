@@ -396,6 +396,13 @@
       "summary": "字号阶梯补 --text-2xs 档位并对齐可视化样板（纯拉丁微标签 10px 下限成 token，承载中文一律 --text-sm）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "六页硬编码字号收编 tokens 并修正中文微标签字号越限（4 处中文标签 10px 升 --text-sm，新增 --text-2xs 档承载纯拉丁微标签与刻度符号）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
