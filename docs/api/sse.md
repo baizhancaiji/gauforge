@@ -23,9 +23,9 @@
   必含，并行执行下多任务同屏，roadmap M0 工作项 4）；所有载荷含 `ts`；
   `event`/`id` 走帧头，data 内不重复。
 - 事件命名规范：`<域>.<对象>.<动作|性质>`，小写点分，域 ∈
-  {system, candidates, queues, queue, pending, task, execution, history, settings}。
+  {system, candidates, queues, queue, pending, task, execution, history, settings, hq}。
 
-## 2. 事件全集枚举（12 类）
+## 2. 事件全集枚举（13 类）
 
 分三类语义：**数据事件**（载荷即最新状态，可直接渲染）、**通知事件**
 （触发客户端重拉 REST）、**保活/恢复事件**。
@@ -33,7 +33,7 @@
 | 事件 | 类 | 触发条件（何时推） | 载荷字段（类型） | 频率/节流 |
 |---|---|---|---|---|
 | `system.heartbeat` | 保活 | 定时 | `ts` | 每 `sse_heartbeat_seconds`（默认 15s，设置项即时生效） |
-| `system.snapshot` | 恢复 | 重连且 Last-Event-ID 超出重放窗口 / 首次连接（可选主动）/ 序号无法识别 | `pending`（席位全量，同 GET /pending）、`executions_running[]`（精简执行对象）、`queues_summary[]`（id/state/rollback_flag/rollback_count）、`server_restarted: boolean` | 仅按需 |
+| `system.snapshot` | 恢复 | 重连且 Last-Event-ID 超出重放窗口 / 首次连接（可选主动）/ 序号无法识别 | `pending`（席位全量，同 GET /pending）、`executions_running[]`（精简执行对象）、`queues_summary[]`（id/state/rollback_flag/rollback_count）、`hq`（`{state, workers_online}`，侧栏 HQ 连接状态，同 `hq.status` 载荷）、`server_restarted: boolean` | 仅按需 |
 | `candidates.changed` | 通知 | 候选增（导入/历史退回候选，新 id）、删（剔除）、转化（入队/提交移出）、退回（席位移除/挤出/成员移除退回候选形态，id 延续） | `action: created/deleted/moved_out/moved_in`、`candidate_id?` | 变更即推 |
 | `queues.changed` | 通知 | 队列创建/删除/成员构成或名称变更 | `action: created/updated/deleted`、`queue_id?` | 变更即推 |
 | `queue.status` | 数据 | 队列状态流转（含失败回退、成功终结） | `queue_id`、`from`、`to`、`finish_reason?`、`failure_positions?: [task_id]`、`rollback_count?`、`ts` | 变更即推 |
@@ -44,6 +44,7 @@
 | `execution.stalled` | 数据 | 超过停滞阈值无新优化步/SCF 迭代（置位）/恢复新进度（解除） | `execution_id`、`task_id`、`stalled: boolean`、`threshold_minutes`、`last_progress_ts`、`ts` | 状态翻转即推（同一停滞期开始/解除各一条） |
 | `history.appended` | 数据 | 执行到达终态、历史条目落库 | `execution_id`、`task_id`、`queue_id?`、`state`、`cause?`、`ts` | 变更即推 |
 | `settings.updated` | 通知 | PUT /settings 成功 | `keys: []`、`ts` | 变更即推（多标签页同步） |
+| `hq.status` | 数据 | HQ server 可达性或 worker 在线数变化（引擎 tick 以 workers 列表探测，随 2s 周期） | `state: off/down/up`（off=引擎未启用，down=server 不可达，up=可达）、`workers_online: int`、`ts` | 翻转即推（稳态不重发；引擎未启用不推，快照恒 off） |
 
 ## 3. 推送时机表（逐事件「何时推什么」速查）
 
@@ -64,6 +65,7 @@
 | 席位重排/移除 | `pending.snapshot`（+被移除者：单任务 `candidates.changed(moved_in)`、队列 `queue.status(→unsubmitted)`） |
 | 席位上限调小挤出 | `pending.snapshot` + 尾部席位逐个退回事件（`candidates.changed(moved_in)`/`queue.status(→unsubmitted)`） |
 | 运行中 | 持续 `execution.monitor`（2s）、`execution.progress`（≤1s/条）、停滞时 `execution.stalled` |
+| HQ server 上线/失联（引擎监控翻转）或 worker 在线数变化 | `hq.status` |
 | 归档历史条目 | 无专门事件（归档为冻结后唯一可变标记，归档列表属拉取型页面，按需重拉）；`history.appended` 不重发 |
 | 历史重新排队 | `pending.snapshot`（追加席位；历史条目本身不变） |
 | 历史退回候选 | `candidates.changed(created)`（新 id、带来源标记） |
@@ -113,4 +115,5 @@ M1 B11 起事件唯一来源为**领域事件总线**：引擎与路由在真实
 统一 emit（记入重放窗口，序号写 `sse_seq` 持久化），经全局 fanout 广播。
 M0 的 mock 推流剧本（六页联演）已随 B11 退役，不再作为事件源；各事件的
 真实触发时机以 §3 推送时机表为准（`test_sse_events.py` 为端到端断言清单：
-12 类事件全部由真实动作触发过至少一次）。
+13 类事件全部由真实动作触发过至少一次；`hq.status` 由引擎 tick 探测翻转
+触发，引擎未启用时仅经快照携带 `hq: {state: "off"}`）。

@@ -75,6 +75,7 @@
 | 健康/启动冒烟 | GET /api/v1/system/health | — |
 | SSE 实时事件订阅 | GET /api/v1/events | 全事件 |
 | 侧栏电源灯（服务在线态） | — | `system.heartbeat` / `system.snapshot` |
+| 侧栏 HQ 连接状态行（LED + 已连接/未连接/未启用） | — | `hq.status` / `system.snapshot`（`hq` 字段） |
 
 ## 端点覆盖对照（无孤儿检查）
 
