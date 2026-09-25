@@ -98,7 +98,7 @@
 | 4 | 席位流转：重排 → SSE 推送无刷新更新；容量满第 4 席位拒绝 | 通过 | 拖拽触发 PUT /pending/order、经 pending.snapshot 回推更新；满员拒绝实测返回 409 PENDING_CAPACITY_FULL（契约与 §1 B5 一致；§7.1 本条「422」为计划笔误） |
 | 5 | 实时监控：CPU%/MEM 采样跳变、优化步/SCF 推进且与 .out/.log 一致 | 通过 | 通道卡 CPU 396%（4 核）、RSS 14→126 MB；OPT STEP 4/SCF CYCLE 14，末行与 input.log「SCF Done: E(RB3LYP) = -386.948373122 A.U. after 14 cycles」一致 |
 | 6 | 强制停止：二次确认 → HQ cancel → 终态推送 → 历史归因 manually_stopped | 通过 | 停止模态（含归因文案）→ 历史 failed/manually_stopped；chk 保全 protected/ |
-| 7 | 失败归因：非零退出 → failed + program_error；skip_failed 两分支 | 通过 | 真 g16 报错（End of file in ZSymb）→ program_error；队列 skip_failed=false 分支实测（§4 演练）；skip_failed=true 分支由 test_failure_semantics 锁定 |
+| 7 | 失败归因：非零退出 → failed + program_error；skip_failed 两分支 | 通过 | 真 g16 报错（End of file in ZSymb）→ program_error；队列 skip_failed=false 分支实测（§4 演练）；skip_failed=true 分支由 test_failure_semantics 单测锁定，并经 test_e2e_queue_skip_failed_continues 真实栈端到端复核（成员 1 fake g16 非零退出落 program_error、成员 2 继续派发成功、队列 finished_with_failures 回退；2026-09-25 审查收尾补齐） |
 | 8 | 并行双账：parallel_window=2 双任务同跑、声明账与 HQ 请求账一致、psutil 有读数 | 通过 | 双 exec 并发（hq_job 26/27 同刻 running），声明账 nproc 4/defaulted=False、mem 1GB 落库；HQ 请求账实测（历史 job 11 submits：cpus Compact 40000=4 核、mem Compact 10240000=1024 MiB×10000 内部单位，CLI→HQ 换算正确）；psutil 双卡读数 |
 | 9 | 重启恢复：g16web 重启 S1 接管不重复提交；WSL2 重启 S3 归因+保全+重跑新目录 | 通过 | S1：仅重启 g16web（SIGTERM），HQ 存活，exec 28 同 hq_job_id 接管、进程树未动、监视器重挂；S3：按已登记替代方案以 SIGKILL 故障注入执行（§4） |
 | 10 | 队列语义佐证：POST /queues 全生命周期 curl + 单测 | 通过 | 真实栈 curl：创建 2 成员队列 → 提交整队占席 → 派发（成员 1 先跑）→ 成员 1 failed/program_error → 成员 2 skipped/predecessor_failed → 队列回退 unsubmitted（rollback_count=1、last_failure 落库）→ 成员退回候选；skip_failed=true 与队列席位分支由单测覆盖（test_failure_semantics/test_pending_logic）；端到端整队 UI 验收随 M2 |
