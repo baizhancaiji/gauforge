@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T15:25+08:00",
+  "updated": "2026-09-25T16:05+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -483,8 +483,8 @@
     }
   ],
   "in_progress": {
-    "task": "二审修复批次执行完毕，回到发布流程（changelog-spec §1.6）",
-    "note": "m1-review2-fix-plan 23 项全部完成；M1 收尾插队完成 §1.3 两项遗留（侧栏 HQ 连接状态真实化、挤出确认模态席位数精度），走查留痕见 m1-acceptance §1.3 勾销注记。"
+    "task": "长寿命标签页跨服务重启读数重建缺口修复（m1-acceptance §1.3 遗留项，A/B/C 三项全修）",
+    "note": "A=快照并入进度状态+快进补发一条（同时覆盖运行中新开页面）；B=重建改差量合并消空白闪烁+断连读数降档延迟提示（控制台刷屏属浏览器固有行为，登记说明）；C=停滞重启重新起算写入 sse.md。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
