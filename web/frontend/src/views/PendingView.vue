@@ -290,7 +290,7 @@ async function confirmRemove() {
   font-size: var(--text-sm);
 }
 .g-label {
-  font-size: 10px;
+  font-size: var(--text-sm); /* 文案含中文（OCCUPIED 在途席位）：不用微标签档 */
   letter-spacing: var(--ls-wide);
   color: var(--text-faint);
 }
@@ -335,7 +335,7 @@ async function confirmRemove() {
 }
 .divider-note {
   margin: var(--space-2) 0;
-  font-size: 10px;
+  font-size: var(--text-sm); /* 文案含中文（等待区注记）：不用微标签档 */
   letter-spacing: var(--ls-wide);
   color: var(--text-faint);
   display: flex;
@@ -406,7 +406,7 @@ async function confirmRemove() {
   flex: none;
 }
 .win-tag {
-  font-size: 10px;
+  font-size: var(--text-sm); /* 文案含中文（在途）：不用微标签档 */
   letter-spacing: var(--ls-wide);
   color: var(--accent);
   display: flex;

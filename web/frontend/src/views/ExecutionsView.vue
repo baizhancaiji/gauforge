@@ -274,7 +274,7 @@ async function confirmStop() {
   font-size: var(--text-lg);
 }
 .ro .l {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   letter-spacing: var(--ls-wide);
   color: var(--text-faint);
   margin-top: 3px;
@@ -312,7 +312,7 @@ async function confirmStop() {
   }
 }
 .quiet {
-  font-size: 10px;
+  font-size: var(--text-2xs); /* g16 输出末行回显（机器文本，非界面文案） */
   color: var(--text-faint);
   overflow: hidden;
   text-overflow: ellipsis;

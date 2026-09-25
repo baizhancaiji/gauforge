@@ -534,7 +534,7 @@ const causeLabel: Record<string, string> = {
   color: var(--danger);
 }
 .input-cap {
-  font-size: 10px;
+  font-size: var(--text-sm); /* 文案含中文：混排纪律下限，不用微标签档 */
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--text-faint);
@@ -730,7 +730,7 @@ tbody tr:hover {
   border-bottom: none;
 }
 .lab {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--text-faint);
@@ -767,7 +767,7 @@ tbody tr:hover {
   color: var(--text-primary);
 }
 .readout .r .l {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   letter-spacing: var(--ls-wide);
   color: var(--text-faint);
 }
@@ -813,7 +813,7 @@ tbody tr:hover {
   border-radius: var(--r-md);
 }
 .pe-glyph {
-  font-size: 24px;
+  font-size: var(--text-xl); /* 空态刻度符号收编阶梯（原 24px 不在档位） */
   line-height: 1;
   color: var(--accent-dim);
   opacity: 0.7;

@@ -239,7 +239,7 @@ async function doSave() {
   gap: var(--space-2);
 }
 .lock {
-  font-size: 10px;
+  font-size: var(--text-2xs); /* 锁定刻度符号（▪） */
   color: var(--text-faint);
 }
 .read .val {

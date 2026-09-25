@@ -195,7 +195,7 @@ onMounted(() => events.start());
   font-size: var(--text-sm);
 }
 .nav-en {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   color: var(--text-faint);
   letter-spacing: var(--ls-wide);
 }
