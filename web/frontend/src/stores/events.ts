@@ -10,6 +10,7 @@
 import { defineStore } from "pinia";
 import { computed, reactive, ref } from "vue";
 
+import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 
 type Execution = components["schemas"]["Execution"];
@@ -76,10 +77,11 @@ export const useEventsStore = defineStore("events", () => {
   /** 队列名缓存（Toast 队列成员通知取「所属队列名」，设计 §4.6）。 */
   let queueNames: Map<string, string> | null = null;
   function refreshQueueNames() {
-    fetch("/api/v1/queues")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((qs: { id: string; name: string }[]) => {
-        queueNames = new Map(qs.map((q) => [q.id, q.name]));
+    // 走契约 client（§4.4 全部 REST 经生成类型；拉取失败回退 id 展示，下次再试）
+    client
+      .GET("/queues")
+      .then(({ data }) => {
+        if (data) queueNames = new Map(data.map((q) => [q.id, q.name]));
       })
       .catch(() => {
         /* 拉取失败：Toast 回退 id 展示，下次再试 */
@@ -225,6 +227,8 @@ export const useEventsStore = defineStore("events", () => {
     if (!queueNames) refreshQueueNames(); // 连接前预热队列名缓存（Toast 用）
     controller = new AbortController();
     try {
+      // 例外：SSE 流式响应不走契约 client——openapi-fetch 不支持流式读取，
+      // 需原生 fetch + ReadableStream 掌控重连与 Last-Event-ID（文件头说明）。
       const res = await fetch("/api/v1/events", {
         headers: {
           Accept: "text/event-stream",
