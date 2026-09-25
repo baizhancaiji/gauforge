@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T16:40+08:00",
+  "updated": "2026-09-25T22:32+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -527,6 +527,104 @@
       "type": "changed",
       "scope": "web",
       "summary": "设置页每个参数行布局互换：上方显示中文释义、下方小字注释显示参数名（含启动级只读参数）；范围与生效徽标保留",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复设置保存后不实时生效：PUT /settings 触及待执行快照字段（席位上限/并行窗口）时无条件补发 pending.snapshot（原仅挤出席位场景发送），执行中页 WINDOW、待执行页 OCCUPIED 上限与侧栏灯排即时刷新，无需刷新页面",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "前端消费 settings.updated 通知（脏计数驱动设置页重拉，多标签页同步；有未保存编辑时不覆盖输入）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "停滞告警阈值改为派发 tick 实时跟随设置（新任务生效，在跑不追溯；原引擎构造时固化、重启才生效）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "历史页废除 page_size=100 硬编码，省略参数由后端回落设置值（列表分页大小设置即时生效，与候选页同模式）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "调整前端字号阶梯整档上浮约 11%（2K 视口可读性：正文 13.5→15px 等七档同步），tokens/样板/设计文档三处同值，布局度量不变",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复 Link0 核数检测对 %nproc 早期同义形式与 %nprocshare 截断形式的误报（blocks 缺失判定与执行前缺省注入两处；检测取 %nproc 前缀超集，避免缺省注入与用户声明并存）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "Link0 核资源检测纳入 %CPU=proc-list（0,1,2 / 0-5 / 混合，绑定逻辑处理器语义）：视为已声明且不注入缺省 %NProcShared，记账核数 %nproc 优先、仅 %CPU 时按列表推导",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "待执行页队列席位行去冗余（QUEUE 徽标旁不再重复 queue 字样），补展示队列名、成员数与提交时刻",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "待执行页队列成员子表补全属性（队列内序号/任务 id/文件名/标题/资源声明含缺省补齐标记），契约 PendingSeat 及成员项同步扩字段（resources 提取为命名模式复用）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "任务 id 展示全站统一三位零填充（候选/待执行/队列成员概览；padStart 只补齐不截断，≥1000 自然加宽），资源读数收敛为共享格式化函数",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复 GET /queues 回归契约（补 member_ids 聚合、last_failure 反序列化、SQLite 整数布尔还原），队列页真实数据下成员数列渲染崩溃",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "提交确认框输入区读数改「完整输入」，括注实现语义（纯文本·含坐标）移回注释",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "执行中页读数「WINDOW n」改「并行上限」（原英文代号随设置值变、语义歧义且与在跑/可用重复）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "执行中页按并行上限渲染槽位：在跑卡按执行 id 序占槽，空槽为虚线占位框（槽位号+横线+空闲），撤销整页空态；设计文档 §4.4/§4.5/页表同步",
       "breaking": false,
       "migration": null
     }
