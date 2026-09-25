@@ -239,8 +239,9 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
 --ls-wide:  .14em;  /* 刻度标签：区块 lab、CH 通道号、读数标签、页码、导航英文小字 */
 ```
 
-全站只允许这两个缓动、两档字距；组件内禁止出现其他 `transition-timing` /
-`letter-spacing` 值（§8 走查抽查项）。
+全站只允许以上两条曲线加**呼吸曲线 `ease-in-out`**（CSS 关键字，仅呼吸类
+动效使用，登记见 §6）、两档字距；组件内禁止出现其他缓动值 /
+`transition-timing` / `letter-spacing` 值（§8 走查抽查项）。
 
 ## 3. 全局框架
 
@@ -267,7 +268,8 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
     --ls-wide)`，当前项左侧 2px 磷光青指示条 + 中文转 500 + 文字转
     `--text-primary`；
   - 底部：HQ 连接状态行（LED 点 + `HQ 已连接`/`HQ 未连接`）——M0 为静态占位
-    （恒「未连接」淡化态，不接事件），M1 接入真实连接态（§9）。
+    （恒「未连接」淡化态，不接事件），真实连接态接入随 M2（§9，2026-09-25
+    二审移项；电源灯颜色已随 SSE 连接态指示）。
 - **顶栏**（56px，`--bg-raised`，下发丝线）：
   - 左：页面中文标题（`--text-lg` 16px、Sans 500）+ 旁边 mono 页码
     `02 / QUEUES`（faint、`--ls-wide`）；
@@ -397,7 +399,7 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
   （§4.2 同款：内 `--border-strong` + 外 `--accent`）；disabled 保形 40% 不
   透明；label 12.5px + 辅助说明 12.5px faint（原 11px 与混排纪律 1 冲突，
   随 K1 口径统一升至 `--text-sm`；整句提示文字用 secondary）；
-  select/checkbox/toggle M1 补充规格，M0 沿用输入框同款描边体系；设置项生效
+  select/checkbox/toggle 规格随 M2 补充（§9，2026-09-25 二审移项），沿用输入框同款描边体系；设置项生效
   语义用**中性**微型徽标（`即时`/`即时且追溯`/`新任务生效`/`重启生效`，plain
   档，对应 m0-plan §2.2 `effect` 四值枚举）。
 
@@ -425,7 +427,9 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
 |---|---|---|
 | 视图切换 | 内容区 opacity 0→1 + translateY(6px→0)，160ms `--ease-std` | 导航反馈 |
 | 列表入场 | 行/卡 stagger：每行 delay 18ms（>8 行截断统一入场），220ms `--ease-std` | 一次编排好的加载（全站仅此一处 stagger） |
-| running 呼吸 | 状态点/通道卡发光 opacity 0.65↔1，2.4s ease-in-out | 「通电中」 |
+| running 呼吸 | 状态点 opacity 0.65↔1（`breathe`）；通道卡发光 box-shadow 收敛↔泛光（`cardpulse`），均 2.4s ease-in-out | 「通电中」 |
+| 停滞告警呼吸 | 停滞琥珀灯点 opacity 1↔0.4，1.6s ease-in-out（`stallbreathe`，仅告警中） | 停滞提示（只提示不终止） |
+| 断线闪烁 | 侧栏电源灯 opacity 1↔0.3，1.2s ease-in-out（`pulse`，仅断线态） | 服务失联 |
 | 加载扫描线 | 表格/按钮底部 1px 磷光线往返 1.2s | 数据在途 |
 | hover | 行/按钮 120ms `--ease-std` | 命中反馈 |
 | 行展开/收起 | `grid-template-rows 0fr↔1fr`，160ms `--ease-std`；展开图标随状态旋转 90° | 揭示成员/归因 |
@@ -466,9 +470,10 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
 ## 9. 演进预留（不在 M0 实施）
 
 - M1：真实 SSE 接入后，状态灯排/通道卡读数（1Hz 节流）/席位窗口边界由事件流
-  驱动（数据接口已按 m0-plan.md §3 对齐）；HQ 断线态（侧栏电源灯闪烁）接入；
-  select/checkbox/toggle 规格。
-- M2：编辑态样式（输入框/校验错误 `--danger` 描边 + 11px 错误注记、拼写检查
+  驱动（数据接口已按 m0-plan.md §3 对齐）。
+- M2：HQ 断线态（侧栏电源灯闪烁）接入与 select/checkbox/toggle 规格——M1
+  未实施，2026-09-25 二审经文档 diff 自 M1 行移入（与 m1-acceptance.md §1.3
+  存案一致）；编辑态样式（输入框/校验错误 `--danger` 描边 + 11px 错误注记、拼写检查
   非阻断警告琥珀注记 `--warn`——m0-plan 决策点 11）、
   拖拽排序的位移动效（120ms、无弹性）。
 - M3：结果分析视图（能量曲线/谱图）沿用 tokens——图表轴线 `--border-hair`、
