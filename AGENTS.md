@@ -117,7 +117,10 @@ cargo build --release                             # 构建 hq（Rust 核心）
 - 数据类：覆盖率、一致性、边界值。
 - 效果类：与基线逐条对照，回退条目必须逐条归因（区分真实回退与环境噪声）。
 
-脚本失败即退出码非零，纳入提交前检查。（本仓库当前闸门：`scripts/validate_progress.py`、`uv run pytest`。）
+脚本失败即退出码非零，纳入提交前检查。（本仓库当前闸门：
+`scripts/validate_progress.py`、`uv run pytest`、`scripts/check_tokens.py`——
+设计令牌逐变量一致性、`scripts/check_contrast.py`——WCAG 对比度全组合
+≥ 4.5:1；涉及前端视觉或派发链路的改动另见 §6.1 第 4 条 hq 产物检查。）
 
 ## 七、长程脚本规范
 
