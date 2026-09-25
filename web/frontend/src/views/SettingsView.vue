@@ -146,14 +146,14 @@ async function doSave() {
         <h2 class="group-title mono">启动级参数</h2>
         <div class="reads">
           <dl v-for="s in startup" :key="s.key" class="read">
-            <dt class="mono">
+            <dt>
               <span class="lock" aria-hidden="true">▪</span>
-              {{ s.key }}
+              {{ s.description }}
             </dt>
             <dd class="mono val">
               {{ s.value }}<span class="env mono">{{ s.env_var }}</span>
             </dd>
-            <dd class="note mono">{{ s.description }}</dd>
+            <dd class="note mono">{{ s.key }}</dd>
           </dl>
         </div>
       </section>
@@ -163,15 +163,15 @@ async function doSave() {
         <h2 class="group-title mono">运行级参数</h2>
         <div class="form-grid">
           <div v-for="s in runtime" :key="s.key" class="field" :class="{ 'has-err': errors[s.key] }">
-            <label class="mono" :for="s.key">{{ s.key }}</label>
+            <label :for="s.key">{{ s.description }}</label>
             <input
               :id="s.key"
               :type="s.value_type === 'integer' || s.value_type === 'number' ? 'number' : 'text'"
               v-model="form[s.key]"
               :step="s.value_type === 'number' ? 'any' : '1'"
             />
-            <p class="hint mono">
-              <span>{{ s.description }}</span>
+            <p class="hint">
+              <span class="key mono">{{ s.key }}</span>
               <span v-if="rangeText(s)" class="range">范围 {{ rangeText(s) }}</span>
             </p>
             <!-- 生效语义：中性 plain 徽标（§4.6） -->
@@ -252,7 +252,7 @@ async function doSave() {
   gap: var(--space-4);
 }
 .read dt {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm); /* 释义含中文（混排纪律 1），不用微标签档 */
   color: var(--text-secondary);
   display: flex;
   align-items: center;
@@ -275,7 +275,7 @@ async function doSave() {
   color: var(--text-faint);
 }
 .read .note {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs); /* 参数名小字注释（纯拉丁，微标签档） */
   color: var(--text-faint);
   margin-top: 2px;
 }
@@ -303,6 +303,10 @@ async function doSave() {
   align-items: baseline;
   gap: var(--space-2);
   flex-wrap: wrap;
+}
+.hint .key {
+  font-size: var(--text-xs); /* 参数名小字注释（纯拉丁，微标签档） */
+  color: var(--text-faint);
 }
 .hint .range {
   color: var(--text-faint);
