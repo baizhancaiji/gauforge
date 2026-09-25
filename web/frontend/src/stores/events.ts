@@ -145,10 +145,18 @@ export const useEventsStore = defineStore("events", () => {
         if (d.pending) pending.value = d.pending as PendingResponse;
         if (d.hq) hq.value = d.hq as { state: HqState; workers_online: number };
         if (Array.isArray(d.executions_running)) {
-          // 重建基线：先清空旧态，避免重连后残留已结束执行的僵尸卡。
-          executions.clear();
+          // 差量重建基线：移除快照中已不存在的卡（防终态僵尸卡），
+          // 存活卡经 push 合并语义保留既有读数——重建瞬间不再整体清空
+          // 闪烁（长寿命标签页跨重启走查）；快照行自带的 progress 字段
+          // （引擎已掌握的进度状态）随 push 合入（sse.md §2）。
+          const incoming = d.executions_running as HistoryEntry[];
+          const ids = new Set(incoming.map((e) => Number(e.id)));
+          for (const eid of [...executions.keys()]) {
+            if (!ids.has(eid)) executions.delete(eid);
+          }
+          // 停滞检测重启后重新起算：重启前告警不随快照恢复（sse.md §2）
           stalled.clear();
-          (d.executions_running as HistoryEntry[]).forEach(push);
+          incoming.forEach(push);
         }
         break;
       case "pending.snapshot":

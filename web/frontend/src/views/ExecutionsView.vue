@@ -59,8 +59,14 @@ let pollId: number | null = null;
 let tickId: number | null = null;
 
 async function pollRunning() {
-  const { data } = await client.GET("/executions", { params: { query: { state: "running" } } });
-  (data ?? []).forEach((e) => events.push(e as unknown as LiveExecution));
+  try {
+    const { data } = await client.GET("/executions", {
+      params: { query: { state: "running" } },
+    });
+    (data ?? []).forEach((e) => events.push(e as unknown as LiveExecution));
+  } catch {
+    /* 服务不可达（重启窗口）：保持现状，连接恢复后基线回流 */
+  }
   refreshSnap();
 }
 
@@ -82,6 +88,9 @@ onBeforeUnmount(() => {
 const windowSize = computed(() => events.pending?.window_size ?? 0);
 // 当前可用并行槽位 = 窗口 − 在跑数（下限 0）。
 const available = computed(() => Math.max(0, windowSize.value - snap.value.length));
+
+// 断连窗口（SSE 非 open）：读数降档并标注延迟，避免陈值误读（§4.4）。
+const stale = computed(() => events.connection !== "open");
 
 // ---------- 手动停止（二次确认 → cancel → 归因 manually_stopped） ----------
 const stopping = ref<LiveExecution | null>(null);
@@ -116,6 +125,9 @@ async function confirmStop() {
     <div class="run-meta mono">
       <span class="meta-item">WINDOW {{ windowSize || "—" }}</span>
       <span class="meta-item">在跑 {{ snap.length }} / 可用 {{ available }}</span>
+      <span v-if="stale" class="meta-item stale-note mono" role="status">
+        连接中断 · 读数延迟
+      </span>
     </div>
 
     <div v-if="!snap.length" class="empty-wrap">
@@ -141,7 +153,7 @@ async function confirmStop() {
           已运行 {{ fmtDuration(elapsed(card.exec)) }}
         </p>
 
-        <div class="readouts" aria-live="off">
+        <div class="readouts" :class="{ 'readouts--stale': stale }" aria-live="off">
           <div class="ro">
             <div class="n mono">{{ fmtPercent(card.exec.monitor?.cpu_percent) }}</div>
             <div class="l mono zh">CPU 占用</div>
@@ -262,6 +274,14 @@ async function confirmStop() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3) var(--space-5);
+  transition: opacity 160ms var(--ease-std);
+}
+/* 断连窗口读数降档（陈值不误读为实时；重连 open 后恢复） */
+.readouts--stale {
+  opacity: 0.45;
+}
+.stale-note {
+  color: var(--warn);
 }
 .ro .n {
   font-size: var(--text-readout);
