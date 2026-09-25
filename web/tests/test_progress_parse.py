@@ -141,14 +141,41 @@ def test_offset_resume_reads_only_new_lines(tmp_path):
     assert tr.step(eid, log) is None  # 无新数据不重扫不发射
 
 
-def test_catchup_swallows_initial_content(tmp_path):
+def test_catchup_emits_latest_state_once(tmp_path):
     log = tmp_path / "input.log"
     log.write_text(CYCLE1 % 1 + CYCLE1 % 2, encoding="utf-8")
     tr = ProgressTracker(window_s=0)
-    assert tr.step(1, log) is None  # 首读快进：历史行不推事件（重启重扫）
+    # 首读快进：历史行不逐条推，但含既有进度 → 补发一条最新状态
+    # （S1 接管后读数即时恢复，sse.md execution.progress）
+    f = tr.step(1, log)
+    assert f is not None and f["scf_cycle"] == 2
+    assert tr.step(1, log) is None  # 补发仅一条
     append(log, CYCLE1 % 3)
     f = tr.step(1, log)
     assert f is not None and f["scf_cycle"] == 3  # 其后增量正常推
+
+
+def test_catchup_without_progress_stays_silent(tmp_path):
+    log = tmp_path / "input.log"
+    log.write_text(" Standard NFock=2  Pure=1\n", encoding="utf-8")  # 无进度行
+    tr = ProgressTracker(window_s=0)
+    assert tr.step(1, log) is None  # 快进无既有进度 → 不补发
+    append(log, CYCLE1 % 1)
+    assert tr.step(1, log)["scf_cycle"] == 1
+
+
+def test_state_accessor_exposes_progress(tmp_path):
+    log = tmp_path / "input.log"
+    tr = ProgressTracker(window_s=0)
+    assert tr.state(1) is None  # 未探测过
+    append(log, STEP1 % 1 + CYCLE1 % 2)
+    tr.step(1, log)  # 快进（含补发）
+    st = tr.state(1)
+    assert st is not None
+    assert st["opt_step"] == 1 and st["scf_cycle"] == 2
+    assert st["last_line"].startswith(" Cycle")  # 末匹配行为 Cycle 行
+    tr.forget(1)
+    assert tr.state(1) is None
 
 
 def test_merge_window_coalesces_to_latest(tmp_path):
@@ -172,13 +199,15 @@ def test_merge_window_coalesces_to_latest(tmp_path):
     assert f["scf_cycle"] == 3  # 合并窗口内多条推最新值
 
 
-def test_truncated_file_rescans_silently(tmp_path):
+def test_truncated_file_resets_state_and_rescans(tmp_path):
     tr, log, eid = fresh_tracker(tmp_path)
     append(log, STEP1 % 1 + CYCLE1 % 1 + CYCLE1 % 2)
     assert tr.step(eid, log)["scf_cycle"] == 2
-    # 截断重写（文件缩短）：静默重扫不推事件
+    # 截断重写（文件缩短）：从头重扫并重置进度状态，按快进语义补发一条
+    # （不携带旧日志的字段陈值）
     log.write_text(STEP1 % 1, encoding="utf-8")
-    assert tr.step(eid, log) is None
+    f = tr.step(eid, log)
+    assert f["opt_step"] == 1 and "scf_cycle" not in f
     append(log, CYCLE1 % 6)
     assert tr.step(eid, log)["scf_cycle"] == 6  # 重扫后 offset 正常续传
 
@@ -234,8 +263,9 @@ def test_dispatcher_emits_progress_and_releases_stall(home):
     log = home / "run" / str(eid) / "input.log"
 
     log.write_text(CYCLE1 % 1, encoding="utf-8")
-    disp.tick()  # 首读快进：历史行不产生事件
-    assert not [d for e, d in rec if e == "execution.progress"]
+    disp.tick()  # 首读快进：历史行不逐条推，补发一条最新状态
+    prog = [d for e, d in rec if e == "execution.progress"]
+    assert len(prog) == 1 and prog[0]["scf_cycle"] == 1
 
     # 预置停滞态：新进度喂入后同周期解除（_progress_step 先于 _monitor_step）
     stall = disp._monitor._entry(eid)["stall"]
@@ -245,8 +275,8 @@ def test_dispatcher_emits_progress_and_releases_stall(home):
     disp.tick()
 
     prog = [d for e, d in rec if e == "execution.progress"]
-    assert len(prog) == 1
-    p = prog[0]
+    assert len(prog) == 2  # 快进补发 1 条 + 新增量 1 条
+    p = prog[-1]
     assert p["execution_id"] == eid and p["task_id"] == tid
     assert p["scf_cycle"] == 2 and p["converged"] is False
     assert "last_line" in p and "ts" in p

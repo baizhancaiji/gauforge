@@ -296,6 +296,10 @@ class Dispatcher:
                    {"state": state, "workers_online": online,
                     "ts": now_iso()})
 
+    def progress_state(self, execution_id: int) -> dict | None:
+        """快照恢复用：该执行当前已掌握的进度状态（未探测返回 None）。"""
+        return self._progress.state(execution_id)
+
     def _find_running(self, job_id: int) -> dict | None:
         for e in executions().list_by_state("running"):
             if e.get("hq_job_id") == job_id:
