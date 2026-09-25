@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
  * 04 执行中（m0-frontend-design §4.4 通道卡；m1-plan C5 真实化）
- * 每在跑任务一张编号通道卡（CH nnn）：大号等宽读数由 SSE
- * execution.monitor/progress 驱动，UI 以 1Hz 节流刷新（仪器刷新率语义）；
- * running 态卡描边磷光呼吸；停滞时卡脚琥珀灯行（翻转即现/隐，只提示不终止）；
- * 停止走 danger 二次确认（POST /executions/{id}/stop，归因手动停止）。
+ * 页面按「并行上限」渲染等量槽位：在跑任务按通道序填槽为通道卡
+ * （CH nnn），空槽为虚线占位框（槽位号 + 横线 + 空闲）。
+ * 卡内大号等宽读数由 SSE execution.monitor/progress 驱动，UI 以 1Hz
+ * 节流刷新（仪器刷新率语义）；running 态卡描边磷光呼吸；停滞时卡脚
+ * 琥珀灯行（翻转即现/隐，只提示不终止）；停止走 danger 二次确认
+ * （POST /executions/{id}/stop，归因手动停止）。
  * 8s REST 基线轮询兜底（SSE 死窗口外的卡补齐）。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
@@ -84,10 +86,14 @@ onBeforeUnmount(() => {
   if (tickId != null) window.clearInterval(tickId);
 });
 
-// WINDOW = 当前并行执行数（window_size，来自 pending 快照）；不是排队数。
+// 并行上限 = 运行级设置 parallel_window（pending 快照 window_size 字段）；
+// 在跑数与可用数已在其旁读出，不再重复用英文代号表达。
 const windowSize = computed(() => events.pending?.window_size ?? 0);
-// 当前可用并行槽位 = 窗口 − 在跑数（下限 0）。
+// 当前可用并行槽位 = 上限 − 在跑数（下限 0）。
 const available = computed(() => Math.max(0, windowSize.value - snap.value.length));
+// 在跑卡按执行 id 升序稳定占槽（CH 编号序），其余槽位渲染为空闲占位框。
+const sortedCards = computed(() => [...snap.value].sort((a, b) => a.exec.id - b.exec.id));
+const placeholderCount = computed(() => Math.max(0, windowSize.value - sortedCards.value.length));
 
 // 断连窗口（SSE 非 open）：读数降档并标注延迟，避免陈值误读（§4.4）。
 const stale = computed(() => events.connection !== "open");
@@ -123,20 +129,21 @@ async function confirmStop() {
 <template>
   <div>
     <div class="run-meta mono">
-      <span class="meta-item">WINDOW {{ windowSize || "—" }}</span>
+      <span class="meta-item">并行上限 {{ windowSize || "—" }}</span>
       <span class="meta-item">在跑 {{ snap.length }} / 可用 {{ available }}</span>
       <span v-if="stale" class="meta-item stale-note mono" role="status">
         连接中断 · 读数延迟
       </span>
     </div>
 
-    <div v-if="!snap.length" class="empty-wrap">
-      <EmptyState glyph="▦" :text="`暂无在跑任务 — 窗口 ${windowSize || 0} 空闲`" />
+    <!-- 快照未达的首帧兜底（正常运行时窗口数已知，不出现整页空态） -->
+    <div v-if="!windowSize && !snap.length" class="empty-wrap">
+      <EmptyState glyph="▦" text="读取并行上限 …" />
     </div>
 
     <div v-else class="grid">
       <article
-        v-for="card in snap"
+        v-for="card in sortedCards"
         :key="card.exec.id"
         class="card"
         :class="{ 'card--running': card.exec.monitor || card.exec.progress?.opt_step != null }"
@@ -184,6 +191,13 @@ async function confirmStop() {
           </button>
         </footer>
       </article>
+
+      <!-- 空闲占位槽（§4.4）：虚线框，居中槽位号，横线分隔，下注「空闲」 -->
+      <div v-for="i in placeholderCount" :key="`slot-${i}`" class="slot">
+        <span class="slot-no mono">{{ sortedCards.length + i }}</span>
+        <span class="slot-line" aria-hidden="true"></span>
+        <span class="slot-zh">空闲</span>
+      </div>
     </div>
 
     <!-- 停止二次确认（§4.6 危险确认模态） -->
@@ -221,6 +235,32 @@ async function confirmStop() {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--channel-card-width), 1fr));
   gap: var(--gap-card);
+}
+/* 空闲占位槽（§4.4）：与通道卡同网格轨，虚线框 + 居中槽位号 + 横线 + 空闲 */
+.slot {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md);
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.slot-no {
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  line-height: 1.1;
+}
+.slot-line {
+  width: 72px;
+  height: 1px;
+  background: var(--border-strong);
+}
+.slot-zh {
+  font-size: var(--text-sm);
+  color: var(--text-faint);
 }
 .card {
   border: 1px solid var(--border-hair);
