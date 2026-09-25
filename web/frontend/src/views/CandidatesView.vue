@@ -184,7 +184,7 @@ const submitWarnText = computed(() => {
   if (submitMissing.value.includes("Mem") && submitDefaults.value.mem != null)
     parts.push(`%Mem=${submitDefaults.value.mem} GB`);
   const head = submitMissing.value.map((m) => `%${m}`).join("、");
-  return parts.length ? `${head} 未声明 · 提交时将按默认值补齐（${parts.join("、")}）` : `${head} 未声明 · 提交时将按默认值补齐`;
+  return parts.length ? `${head} 未声明 · 执行时将按默认值补齐（${parts.join("、")}）` : `${head} 未声明 · 执行时将按默认值补齐`;
 });
 
 async function confirmSubmit() {
@@ -383,7 +383,7 @@ const originView: Record<string, { color: string; label: string }> = {
             <div v-else class="val mono dim">（无声明）</div>
             <!-- Link0 缺失琥珀注记（§5：M1 提交警告的伏笔；missing 为不带 % 的指令名） -->
             <div v-if="preview.blocks.link0.missing.length" class="note mono">
-              ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m}`).join("、") }} 未声明 · 提交时将按默认值补齐
+              ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m}`).join("、") }} 未声明 · 执行时将按默认值补齐
             </div>
           </div>
 
