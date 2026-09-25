@@ -65,15 +65,35 @@ const importing = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const dirInput = ref<HTMLInputElement | null>(null);
 const importNote = ref<string | null>(null);
+const filterNote = ref<string | null>(null);
 const importErrors = ref<{ filename: string; message: string }[]>([]);
+
+/** B3：文件夹导入仅提交受支持输入文件（.gjf/.com，不区分大小写）。
+ *  整目录直传会因杂文件触发整批 422，前端先行过滤（F-03）。 */
+const SUPPORTED_EXTS = [".gjf", ".com"];
+
+function isSupported(f: File): boolean {
+  const dot = f.name.lastIndexOf(".");
+  const ext = dot >= 0 ? f.name.slice(dot).toLowerCase() : "";
+  return SUPPORTED_EXTS.includes(ext);
+}
+
+/** webkitRelativePath 任一段以「.」开头即视为隐藏目录内文件，跳过。 */
+function inHiddenDir(f: File): boolean {
+  const rel =
+    (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name;
+  return rel.split("/").some((seg) => seg.startsWith("."));
+}
 
 function pickFiles() {
   importNote.value = null;
+  filterNote.value = null;
   importErrors.value = [];
   fileInput.value?.click();
 }
 function pickFolder() {
   importNote.value = null;
+  filterNote.value = null;
   importErrors.value = [];
   dirInput.value?.click();
 }
@@ -83,12 +103,22 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
   const files = Array.from(input.files ?? []);
   input.value = ""; // 允许再次选择同一批文件
   if (!files.length) return;
+  let picked = files;
+  if (mode === "folder") {
+    picked = files.filter((f) => isSupported(f) && !inHiddenDir(f));
+    if (!picked.length) {
+      // 过滤后为空：提示且不发请求（避免整批 422 噪声）
+      filterNote.value = "所选文件夹内无受支持的输入文件（.gjf/.com）— 未发起导入";
+      return;
+    }
+  }
   importing.value = true;
   importNote.value = null;
+  filterNote.value = null;
   importErrors.value = [];
   const fd = new FormData();
   fd.append("mode", mode);
-  for (const f of files) fd.append("files", f, f.name);
+  for (const f of picked) fd.append("files", f, f.name);
   const { data, error } = await client.POST("/candidates", {
     body: fd as never,
   });
@@ -251,6 +281,7 @@ const causeLabel: Record<string, string> = {
       />
 
       <span v-if="importNote" class="note-ok mono">{{ importNote }}</span>
+      <span v-if="filterNote" class="note-warn mono" role="status">{{ filterNote }}</span>
     </div>
 
     <!-- 导入失败清单（422 details 逐文件） -->
@@ -482,6 +513,10 @@ const causeLabel: Record<string, string> = {
 .note-ok {
   font-size: var(--text-xs);
   color: var(--state-succeeded);
+}
+.note-warn {
+  font-size: var(--text-sm);
+  color: var(--warn);
 }
 .import-errors {
   border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
