@@ -13,6 +13,7 @@ from .. import config
 from ..errors import err, not_found
 from ..mock import get_state
 from ..parse.blocks import parse_input
+from ..parse.naturalsort import natural_key
 from ..services import candidates as candidates_svc
 from ..services import pending as pending_svc
 from ..store import settings as settings_store
@@ -58,6 +59,9 @@ def list_candidates(origin: str | None = None, page: int = 1,
              for r in tasks_store().list_by_form("candidate")]
     if origin:
         items = [c for c in items if c["origin"] == origin]
+    # 切片前全量自然序排序（openapi /candidates）：排序唯一实现在取数端，
+    # 跨页全局有序；列表源为 id 逆序，稳定排序使并列保持 id 逆序
+    items.sort(key=lambda c: natural_key(c["filename"]))
     total = len(items)
     size = (page_size if page_size is not None
             else int(settings_store().get("page_size")))
