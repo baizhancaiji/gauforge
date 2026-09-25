@@ -494,21 +494,27 @@
       "summary": "执行中页断连窗口读数降档并提示延迟（SSE 非 open 时 45% 降档+琥珀注记），快照重建改差量合并消除重建瞬间读数清空闪烁",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "候选列表改为后端全局自然序排序后分页（切片前按 natural_key 稳定排序，跨页全局有序、并列保持 id 逆序）；前端废止页内排序并删除 naturalsort.ts 双实现",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "§1.3 末项修复：候选自然序改为后端全局排序后分页",
-    "note": "原裁决 M2（K6），用户指示提前修复。方案：list_candidates 切片前按 natural_key 稳定排序（页内渲染不变，跨页获得全局序，不扩契约）；前端废止页内排序、删除 naturalsort.ts 双实现。"
+    "task": "二审修复批次执行完毕，回到发布流程（changelog-spec §1.6）",
+    "note": "M1 收尾插队完成 §1.3 全部可修遗留（侧栏 HQ 连接状态、挤出模态席位数、长寿命标签页 A/B/C、候选自然序跨页全局有序——原裁决 M2 经用户指示提前）。走查留痕见 m1-acceptance §1.3。§1.3 全部收口。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
     "用户方便时补验：真·WSL2 整机重启的 S3 演练（替代方案已登记，不阻塞）",
-    "M2 输入工程：候选分块编辑与队列组建管理 UI（含 select/checkbox/toggle 规格、自然序跨页全局有序、favicon 等走查遗留小项）"
+    "M2 输入工程：候选分块编辑与队列组建管理 UI（含 select/checkbox/toggle 规格、favicon 等走查遗留小项）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
-    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
-    "候选自然序仅页内有序（前端 page_size 页内排序，跨页全局有序未保证且前后端双实现无对照测试）；M2 处理，M1 不扩契约"
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
   "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。"
 }
