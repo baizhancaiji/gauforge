@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:45+08:00",
+  "updated": "2026-09-25T12:25+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -413,8 +413,8 @@
     }
   ],
   "in_progress": {
-    "task": "M1 验收后审查修复批次完成，回到发布流程（changelog-spec §1.6）",
-    "note": "审查修复 9 笔提交全部入库：决策点 3 关闭登记、skip_failed=true 端到端用例（test_e2e_queue_skip_failed_continues，附带修正 fake_g16 内嵌覆盖解析）与验收记录回填、字号阶梯补 --text-2xs 档与样板同步、11 处硬编码字号收编 tokens（4 处中文标签越限升 --text-sm）、v2 评审留痕补记、getText 封装、stalled 双结构捆扎、空 favicon。设计规范 v2 评审留痕以 m1-acceptance §1/§3 走查记录为据。.codebuddy 忽略行经核实保留（本机实际存在的本地工具目录）。两笔历史 progress 提交 summary 规范化为动词开头（filter-branch，本地分支未推送）。"
+    "task": "执行 M1 C/D 二审修复清单（docs/plans/m1-review2-fix-plan.md，待裁决 K1–K7 均取建议值）",
+    "note": "批次 0 先行冻结设计文档：D-01/D-06 令牌登记与样板对齐 + check_tokens 闸门、D-02/03/05/08 文档修订、D-04 对比度闸门与亮色 failed 调色；随后批次 1–3 代码修复、D-07/F-01 走查留痕、F-13–F-15 记录同步。每项独立提交，闸门逐项执行。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
