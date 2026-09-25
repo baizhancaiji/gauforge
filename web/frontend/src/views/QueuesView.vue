@@ -40,7 +40,7 @@ const reasonLabel: Record<string, string> = {
 </script>
 
 <template>
-  <section class="queues" :class="{ 'is-loading': loading }">
+  <section class="queues">
     <div v-if="!list.length && !loading" class="empty-wrap">
       <EmptyState glyph="▮" text="暂无队列 — 可从候选任务组合创建（M2）" />
     </div>
@@ -122,7 +122,7 @@ const reasonLabel: Record<string, string> = {
   border-bottom: 1px solid var(--border-hair);
   font-size: var(--text-sm);
   cursor: pointer;
-  min-height: 44px;
+  min-height: 40px; /* §4.3 行高 40px */
 }
 .row:hover,
 .row--open {
@@ -187,9 +187,6 @@ const reasonLabel: Record<string, string> = {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-sm);
   padding: 2px 8px;
-}
-.is-loading {
-  opacity: 0.4;
 }
 .scanline {
   height: 1px;

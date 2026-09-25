@@ -218,7 +218,7 @@ async function confirmCleanup() {
       />
     </div>
 
-    <section v-else class="table" :class="{ 'is-loading': loading }">
+    <section v-else class="table">
       <div class="thead mono">
         <span>ID</span>
         <span>任务</span>
@@ -448,7 +448,7 @@ async function confirmCleanup() {
 .row {
   border-bottom: 1px solid var(--border-hair);
   cursor: pointer;
-  min-height: 44px;
+  min-height: 40px; /* §4.3 行高 40px */
   transition: background-color 120ms var(--ease-std);
 }
 .row:last-child {
@@ -467,9 +467,6 @@ async function confirmCleanup() {
 }
 .dim {
   color: var(--text-faint);
-}
-.is-loading {
-  opacity: 0.4;
 }
 .scanline {
   position: absolute;
