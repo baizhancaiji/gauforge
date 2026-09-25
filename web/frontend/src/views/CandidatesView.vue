@@ -134,9 +134,8 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
     return;
   }
   if (data) {
-    const dups = data.files
-      .filter((f) => (f as { duplicate?: boolean }).duplicate)
-      .map((f) => f.filename ?? "");
+    // duplicate 已入契约（openapi.yaml CandidateCreate.files），不再强转读取
+    const dups = data.files.filter((f) => f.duplicate).map((f) => f.filename ?? "");
     importNote.value = dups.length
       ? `已导入 ${data.files.length} 份（${dups.length} 份与既有候选同名同内容，已另行建目）`
       : `已导入 ${data.files.length} 份`;
