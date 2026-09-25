@@ -392,8 +392,8 @@
     }
   ],
   "in_progress": {
-    "task": "M1 D 阶段集成验收完成（C 收尾走查 + D1/D2/DoD）；待发布流程（changelog-spec §1.6）与用户补验",
-    "note": "C 阶段收尾 GUI 走查（playwright+chromium 黑盒，真引擎+真 g16）六页 26 项全部通过，累计发现并修复 12 笔缺陷（含 SSE 解析器 CRLF、worker 资源单位、GAUSS_SCRDIR 下发、S3 判据竞态、queues 端点 mock 残留等，详见 docs/plans/m1-acceptance.md §1.2）。D1 §7.1 十条逐条留痕通过；D2 三演练通过（S1 接管、S3 以已登记的 SIGKILL 替代方案执行：external_interrupt 归因+chk 保全+重定向重提交，并行 2 双账核对）；DoD 系统级判据全过（pytest 224、npm build 零错误、cargo test 212/227/1 全绿、桥接五判据含新增判据③集成测试、validate_progress 逐次通过）。不偏离核对 M1.1–M1.11 逐项完成，S3 替代方案已在 m1-plan §4.5 登记并在验收记录声明。"
+    "task": "M1 验收后审查修复批次（C/D 阶段双轴代码审查 + 视觉检查发现的收尾项）",
+    "note": "审查范围 5d6d4b3b9...HEAD。修复项：① 11 处硬编码字号收编 tokens（含 4 处中文微标签 10px 越限升 --text-sm、规范阶梯补 --text-2xs 档）；② m1-plan §8 决策点 3 关闭登记（webkitdirectory 与建议值偏离留痕）；③ §7.1 第 7 条 skip_failed=true 分支补端到端用例并回填验收记录；④ 设计规范 v2 评审留痕补记；⑤ text/plain 读取封装与 stalled 双结构捆扎（审查判断题）；⑥ 空 favicon 声明消除控制台 404。另将两笔 progress 历史提交 summary 规范化为动词开头（filter-branch，仅本地未推送分支）。.codebuddy 目录经核实为本机实际存在的本地工具目录，忽略行保留不动。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
