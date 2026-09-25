@@ -720,9 +720,9 @@ paths:
       operationId: listCandidates
       summary: 分页列表（含实时 title）
       description: >-
-        items 先按文件名自然序（不区分大小写、字母先于数字，与
-        web/src/parse/naturalsort 同规则）对全量排序后再分页，
-        跨页全局有序；并列保持 id 逆序（稳定排序）。
+        items 先按导入时间倒序（created_at，新批在上）对全量排序后再分页，
+        同一秒导入的同批文件批内按文件名自然序（不区分大小写、字母先于数字，
+        与 web/src/parse/naturalsort 同规则），跨页全局有序。
       parameters:
         - name: origin
           in: query
