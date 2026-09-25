@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T01:17+0800",
+  "updated": "2026-09-26T02:45+0800",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -639,6 +639,13 @@
       "type": "added",
       "scope": "docs",
       "summary": "新增 M2 输入工程执行计划（WBS 四阶段/分块编辑与队列语义设计定稿/流程图三张/测试矩阵/提交序列/验收 DoD/风险预案）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修正候选页行内提交黄警文案与设计样板（「提交时」→「执行时」按默认值补齐，与派发/物化时补齐的实现时机一致）",
       "breaking": false,
       "migration": null
     }
