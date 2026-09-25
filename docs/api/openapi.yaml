@@ -596,6 +596,9 @@ components:
                 type: integer
               filename:
                 type: string
+              duplicate:
+                type: boolean
+                description: 与既有候选同名且内容哈希一致的提示（不阻断导入，另行建目）
 
     SubmitResponse:
       type: object

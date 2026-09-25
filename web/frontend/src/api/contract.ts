@@ -589,8 +589,11 @@ export interface components {
                     cause?: components["schemas"]["FailureCause"];
                 }[];
             } | null;
-            /** @description T；最近一次执行结束时写入 */
-            finish_reason: components["schemas"]["QueueFinishReason"];
+            /**
+             * @description T；最近一次执行结束时写入；取值同 QueueFinishReason
+             * @enum {string|null}
+             */
+            finish_reason: "success" | "abort_on_failure" | "finished_with_failures" | "manually_stopped" | null;
             /**
              * Format: date-time
              * @description C；补充字段提案
@@ -692,8 +695,11 @@ export interface components {
              * @description F
              */
             finished_at: string;
-            /** @description F；succeeded 为 null */
-            cause: components["schemas"]["FailureCause"];
+            /**
+             * @description F；终态归因（同 FailureCause）；succeeded 为 null
+             * @enum {string|null}
+             */
+            cause: "manually_stopped" | "program_error" | "external_interrupt" | "predecessor_failed" | "queue_manually_stopped" | null;
             /** @description F；started_at→finished_at 派生 */
             wall_time_s: number;
             /** @description F；仅 succeeded */
@@ -785,6 +791,8 @@ export interface components {
             files: {
                 id?: number;
                 filename?: string;
+                /** @description 与既有候选同名且内容哈希一致的提示（不阻断导入，另行建目） */
+                duplicate?: boolean;
             }[];
         };
         SubmitResponse: {
