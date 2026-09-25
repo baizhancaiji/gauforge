@@ -55,6 +55,20 @@ def test_link0_missing_detection():
     assert r2["blocks"]["link0"]["lines"] == []
 
 
+def test_link0_nproc_synonyms_not_missing():
+    """%nproc 系变体与 %CPU proc-list 均视为核资源已声明，不再误报缺失。
+
+    %NProc 为 G16 早期同义形式（手册 %CPU 条目 replaces the earlier
+    %NProcShared and %NProc）；%nprocshare 截断形式无文档背书但实测可用，
+    检测取 %nproc 前缀超集；%CPU=proc-list 为现行推荐（列表/区间/混合，
+    gaussian.com/run），语义是绑定具体逻辑处理器，同样算已声明。"""
+    for line in ("%NProcShared=4", "%nprocshared=4", "%nproc=4", "%NProc=4",
+                 "%nprocshare=4", "%CPU=0-3", "%cpu=0,1,2,3", "%CPU=0-2,5"):
+        r = parse_input(f"{line}\n%mem=2GB\n\n#p hf/sto-3g\n\nt\n\n0 1\nO\n"
+                        "H 1 0.96\nH 1 0.96 2 1.0\n")
+        assert r["blocks"]["link0"]["missing"] == [], line
+
+
 def test_title_over_five_lines_rejected():
     body = "#p hf/sto-3g\n\n" + "\n".join(f"line{i}" for i in range(1, 7)) \
         + "\n\n0 1\nO\n"

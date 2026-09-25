@@ -88,9 +88,15 @@ def parse_input(text: str) -> dict:
         blocks["link0"]["lines"].append(lines[i].strip())
         i += 1
     low = [ln.casefold() for ln in blocks["link0"]["lines"]]
+    # 核资源已声明的判定：%nproc 前缀超集覆盖 %NProcShared 与早期同义 %NProc、
+    # 实测可用的 %nprocshare 截断形式（%NProc 同义性见手册 %CPU 条目 replaces
+    # the earlier %NProcShared and %NProc）；%CPU=proc-list 为现行推荐，语义是
+    # 绑定具体逻辑处理器（0,1,2 / 0-5 / 混合，gaussian.com/run），与 %nproc
+    # 的分配核数语义并行不混同，任一存在即不告警。%Mem 带 % 前缀防 chk 行误判。
     blocks["link0"]["missing"] = [
-        nm for nm in ("NProcShared", "Mem")
-        if not any(nm.casefold() in ln for ln in low)]
+        nm for nm, pats in (("NProcShared", ("%nproc", "%cpu")),
+                            ("Mem", ("%mem",)))
+        if not any(p in ln for ln in low for p in pats)]
 
     # Route：# 行起连续非空行，终止空行必需
     while i < n and (blank(i) or comment(i)):
