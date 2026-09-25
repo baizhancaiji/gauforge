@@ -4,7 +4,7 @@
  * 全宽表格（id/任务/状态徽标/归因/提交/结束/耗时/资源/队列归属）+ 顶部状态筛选；
  * 行点击 → 详情抽屉：终态冻结全字段 + 输入查看 / 输出预览（限高滚动）与
  * ?download=true 导出 + 归档 + failed/skipped 重新排队与退回候选（409 提示）
- * + 清理入口（统计回显）。归档视图承载 archived=true（独立路由 /archive，
+ * + 清理入口（统计回显）。归档管理视图承载 archived=true（独立路由 /archive，
  * 决策点 10），仅保留查看动作。
  */
 import { computed, ref, watch } from "vue";
@@ -207,7 +207,7 @@ async function confirmCleanup() {
       <span class="mono count">共 {{ total }}</span>
 
       <span class="spacer"></span>
-      <RouterLink v-if="!archived" class="btn btn--secondary" to="/archive">归档视图</RouterLink>
+      <RouterLink v-if="!archived" class="btn btn--secondary" to="/archive">归档管理</RouterLink>
       <RouterLink v-else class="btn btn--secondary" to="/history">返回历史</RouterLink>
       <button
         v-if="!archived"
