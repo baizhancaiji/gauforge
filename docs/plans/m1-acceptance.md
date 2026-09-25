@@ -24,7 +24,7 @@
 | 行内提交 | 满员 409 → 模态内红字「在途席位满员 — 请在待执行页移除席位或调高上限后再试」 | 通过 |
 | 待执行页 | 容量仪表满格/超限示警、在途锁定区与等待区分离展示 | 通过 |
 | 待执行页 | 等待区整席移除二次确认 → 任务退回候选（origin=returned_unrun） | 通过 |
-| 待执行页 | 拖拽重排 → PUT /pending/order（锁定席位保持原位时放行） | 通过 |
+| 待执行页 | 拖拽重排 → PUT /pending/order（原记录「锁定席位保持原位时放行」超前于前端实现——当时前端存在锁定席位即禁用全部拖拽，一审复核证伪；F-01 修复后含锁定席位场景复测通过，见 §1.5） | 复测通过 |
 | 执行中页 | 通道卡真实读数：CPU 396%、RSS 14→126 MB 随采样跳变 | 通过 |
 | 执行中页 | OPT STEP / SCF CYCLE 推进，进度末行与 run/<id>/input.log 一致 | 通过 |
 | 执行中页 | 停止 danger 二次确认（文案含归因「手动停止」）→ 终态卡实时移除 | 通过 |
@@ -59,6 +59,7 @@
 | 10 | 通道卡实时读数被周期性抹除 | 8s REST 基线轮询 push 整体覆盖卡片对象，monitor/progress 归 undefined | push 改合并语义：仅补齐身份字段，保留既有实时读数 |
 | 11 | 窗口非空时等待区拖拽重排永不生效（PUT 409） | 后端存在任何锁定席位即全量 409，与 roadmap §2.1「未在执行的成员可重排」矛盾 | 改按 payload 下标判定：锁定席位保持原位即放行，移动即 409；补正反测试 |
 | 12 | 历史详情输入/输出面板卡「读取中」；停止模态残留上次错误 | 同 #2 的 text/plain 解析问题；stopError 未在重开时清空 | parseAs:"text"；openStop 时清空 stopError |
+| 13 | 窗口非空时等待区拖拽重排永不生效（前端存在锁定席位即禁用全部拖拽，与后端「锁定原位即放行」矛盾；§1.1 原记录因此不可复现） | 前端 canDrag 门控含 anyLocked 条件，后端 c6a0906e3 放行后前端未跟进（二审修复 F-01） | 门控改为锁定席位不可作拖源/落点，提交前本地校验锁定席位下标不变；含锁定席位场景走查复测通过（§1.5） |
 
 ### 1.3 记录在案、不在本轮修复的事项
 
@@ -80,6 +81,62 @@
 - 走查期间发现样本几何被脚本损坏导致 g16 报错（End of file in ZSymb），
   该意外验证了 failed→program_error 归因与 chk 保全（protected/）路径，
   随后以正确样本重跑。
+
+### 1.5 设计规范 v2 落地复核（2026-09-25 二审修复补记，D-07/F-01）
+
+走查环境：演示实例 `G16WEB_ENGINE=0 uv run python -m web.src.main`
+（隔离 G16WEB_HOME，端口经设置库预置避开常驻实例）+ Playwright/Chromium
+1440×800 黑盒驱动；锁定席位场景另起引擎实例（G16WEB_ENGINE=1、真 hq 取
+`target/release/hq`、fake g16 `G16_FAKE="sleep=240;steps=4"` 制造长任务）。
+截图不入库，结论与实测输出留痕如下。
+
+**令牌对齐（D-01/D-06）**——`uv run python scripts/check_tokens.py`（新增
+闸门，逐变量 diff tokens.css 与样板）：
+
+```text
+暗色 :root: tokens 71 变量 / 样板 71 变量
+明亮 html[data-theme=light]: tokens 30 变量 / 样板 30 变量
+check_tokens: OK — 逐变量 diff 为空
+```
+
+故障注入验证：改坏样板 `--side-width` 值 → 退出码 1，报
+`[暗色 :root] --side-width 值不一致: tokens=216px 样板=220px`；还原后恢复通过。
+
+**对比度实测（D-04）**——`uv run python scripts/check_contrast.py`（新增
+闸门）：调色前亮色 failed 徽标实测 4.462 < 4.5 报错；`#c23a31 → #bd352b`
+后全组合达标（亮色 failed 徽标 4.72:1，全表见设计 §2.1 实测回填值）。
+
+**基础接管清单 6 项逐条**（getComputedStyle 实测）：
+
+| # | 接管项 | 实测 |
+|---|---|---|
+| 1 | 滚动条 | `::-webkit-scrollbar` width 10px；thumb 亮色 rgb(174,188,200)（=--border-strong） |
+| 2 | `::selection` | accent 25% 底：color(srgb 0.039 0.447 0.4 / 0.25)（亮色 accent #0a7266） |
+| 3 | caret-color | rgb(10,114,102)（亮色 accent） |
+| 4 | autofill 修正 | base.css `input:-webkit-autofill` 底色/text-fill-color 修正（代码核验；headless 无法触发真实 autofill） |
+| 5 | color-scheme 随主题 | 亮色实测 `light`（默认暗色 `dark`，切换按钮即改） |
+| 6 | `:focus-visible` 双环 | Tab 聚焦导航项：outline 1px accent offset 2px + inset 1px border-strong |
+
+**reduced-motion 实测**——`page.emulateMedia({ reducedMotion: "reduce" })`：
+running 灯点 `animation-duration: 1e-06s`、`animation-iteration-count: 1`，
+按钮 `transition-duration: 1e-06s`（§6 硬规则成立，全部动效关闭）。
+
+**并排走查结论**：六页与样板（assets/m0-ui-preview.html）逐页对照——候选
+（表格+预览分块卡+Link0 琥珀注记）、队列（空态）、待执行（容量仪表+席位+
+等待区分隔注记）、执行中（通道卡读数）、历史（筛选+空态）、设置（启动级
+只读+运行级分组表单+生效语义徽标）布局骨架与组件形态一致；中文微标签
+12.5px 档（F-06 整改后）、亮暗双主题切换、亮色 #bd352b failed 色渲染正确。
+
+**F-01 锁定席位拖拽走查**（引擎实例，窗口触及 S02、等待区 S03/S04）：
+
+1. S02 锁定态：左侧 2px 磷光条 + 泛光 + 「在途」标记 + 无移除按钮；
+   `draggable="false"`（不可作拖源），等待席位 `draggable="true"`；
+2. 拖 S04 → 锁定 S02：本地拒绝，页面提示「重排越界 — 锁定席位不可作落点」，
+   未发 PUT（REST 核对顺序不变 [2,3,4]）；
+3. 拖 S04 → 等待 S03：PUT /pending/order 放行，SSE 回推顺序 [2,4,3]，
+   锁定席位下标不变（REST 核对 position 1,2,3）。
+
+三步均复现通过，§1.1 对应行表述已据此修正。
 
 ## 2. D2 演练记录（S1/S3/并行双账）
 
