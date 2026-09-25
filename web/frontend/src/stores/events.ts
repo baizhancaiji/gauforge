@@ -61,11 +61,12 @@ export const useEventsStore = defineStore("events", () => {
   // 通知类事件的脏计数——列表页 watch 后重拉 REST 当前页（契约 §3.5⑥）。
   const dirty = reactive({ candidates: 0, queues: 0, history: 0 });
 
-  /** 停滞告警集合（execution_id），点亮告警灯。 */
-  const stalled = reactive(new Set<number>());
-
-  /** 停滞详情（事件载荷 last_progress_ts/threshold_minutes），通道卡琥珀行展示用。 */
-  const stalledInfo = reactive(
+  /**
+   * 停滞告警表（execution_id → 详情）。键存在即告警中（点亮告警灯、
+   * 通道卡琥珀行），载荷为事件明细（last_progress_ts/threshold_minutes）。
+   * 原 Set+Map 双结构总需成对增删，捆扎为单一 Map 消除漂移面。
+   */
+  const stalled = reactive(
     new Map<number, { last_progress_ts: string | null; threshold_minutes: number | null }>(),
   );
 
@@ -134,7 +135,6 @@ export const useEventsStore = defineStore("events", () => {
           // 重建基线：先清空旧态，避免重连后残留已结束执行的僵尸卡。
           executions.clear();
           stalled.clear();
-          stalledInfo.clear();
           (d.executions_running as HistoryEntry[]).forEach(push);
         }
         break;
@@ -169,14 +169,12 @@ export const useEventsStore = defineStore("events", () => {
       case "execution.stalled": {
         const id = Number(d.execution_id);
         if (d.stalled) {
-          stalled.add(id);
-          stalledInfo.set(id, {
+          stalled.set(id, {
             last_progress_ts: (d.last_progress_ts as string) ?? null,
             threshold_minutes: (d.threshold_minutes as number) ?? null,
           });
         } else {
           stalled.delete(id);
-          stalledInfo.delete(id);
         }
         break;
       }
@@ -191,7 +189,6 @@ export const useEventsStore = defineStore("events", () => {
         const eid = Number(d.execution_id);
         executions.delete(eid);
         stalled.delete(eid);
-        stalledInfo.delete(eid);
         dirty.history++; // 历史页按需重拉当前页
         if (st === "succeeded" || st === "failed") {
           // 名称规则（设计 §4.6）：单任务取任务名（M0 mock 的 title 与文件名
@@ -314,7 +311,6 @@ export const useEventsStore = defineStore("events", () => {
     toasts,
     dirty,
     stalled,
-    stalledInfo,
     push,
     dismissToast,
     start,

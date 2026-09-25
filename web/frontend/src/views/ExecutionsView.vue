@@ -33,7 +33,7 @@ function refreshSnap() {
       monitor: exec.monitor ? { ...exec.monitor } : undefined,
       progress: exec.progress ? { ...exec.progress } : undefined,
     },
-    stall: events.stalledInfo.get(exec.id) ?? null,
+    stall: events.stalled.get(exec.id) ?? null,
   }));
 }
 
