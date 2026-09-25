@@ -153,6 +153,27 @@ def test_monitor_summary_accumulation(tmp_path):
     assert s["stall_alerts"] == 0 and s["stall_total_minutes"] == 0.0
 
 
+def test_monitor_elapsed_is_real_duration(tmp_path):
+    """elapsed_s 为真实运行时长（now - started_at），非硬编码 0（F-02 回归）。
+
+    now_iso 秒级精度下，派发当拍采样的 elapsed 可为 0；故以注入时间戳直接
+    断言数值，不依赖真实 sleep 跨秒。
+    """
+    rd = tmp_path / "run" / "9"
+    rd.mkdir(parents=True)
+    mon = ExecutionMonitor(threshold_minutes=10)
+    t0 = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+    mon.note_started(9, _iso(t0))
+    proc = subprocess.Popen([sys.executable, "-c", "import time;time.sleep(3)"],
+                            cwd=str(rd))
+    try:
+        payload, _ = mon.step({"id": 9}, rd, _iso(t0 + timedelta(seconds=5)))
+        assert payload is not None
+        assert payload["elapsed_s"] == 5.0
+    finally:
+        proc.wait(timeout=10)
+
+
 # ---------------- Dispatcher 集成：monitor 事件 + stop ----------------
 
 def _setup(tmp_path):

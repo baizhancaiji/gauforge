@@ -199,14 +199,17 @@ class ExecutionMonitor:
         if gap >= min_interval:
             st["last_sample"] = now_mono
             since = None
+            elapsed_s = 0.0
             if st["started"]:
-                since = _ts(st["started"]).timestamp()
+                started_dt = _ts(st["started"])
+                since = started_dt.timestamp()
+                elapsed_s = max(0.0, (_ts(now_iso) - started_dt).total_seconds())
             sample = self._sampler.sample(run_dir, since, gap)
             if sample is not None:
                 payload = {"execution_id": execution["id"],
                            "cpu_percent": sample["cpu_percent"],
                            "mem_rss_mb": sample["mem_rss_mb"],
-                           "elapsed_s": 0.0, "ts": now_iso}
+                           "elapsed_s": elapsed_s, "ts": now_iso}
                 st["cpu_peak"] = max(st["cpu_peak"], sample["cpu_percent"])
                 st["mem_peak"] = max(st["mem_peak"], sample["mem_rss_mb"])
         flip = st["stall"].check(now_iso, has_progress=st.pop("has_progress",
