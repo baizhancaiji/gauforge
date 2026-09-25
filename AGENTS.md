@@ -53,6 +53,9 @@ uv run pytest tests/                              # 上游 HQ 集成测试（需
 cargo build --release                             # 构建 hq（Rust 核心）
 ```
 
+g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
+[docs/references/development.md](docs/references/development.md)。
+
 ## 五、仓库纪律
 
 ### 5.1 提交
