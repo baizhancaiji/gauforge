@@ -241,10 +241,32 @@ components:
           format: date-time
           description: "T；补充字段提案"
 
+    Resources:
+      type: object
+      description: "C；Link0 声明与补齐标记（roadmap §2.6）；defaulted=true 表示运行级缺省值补齐"
+      required: [nproc, mem_gb]
+      properties:
+        nproc:
+          type: object
+          required: [value, defaulted]
+          properties:
+            value:
+              type: integer
+            defaulted:
+              type: boolean
+        mem_gb:
+          type: object
+          required: [value, defaulted]
+          properties:
+            value:
+              type: number
+            defaulted:
+              type: boolean
+
     PendingSeat:
       type: object
       description: 待执行席位（get /pending 响应项）
-      required: [seat_id, kind, position, members, locked]
+      required: [seat_id, kind, position, members, locked, submitted_at]
       properties:
         seat_id:
           type: integer
@@ -259,6 +281,14 @@ components:
           type: string
           nullable: true
           description: "C；kind=queue 时"
+        queue_name:
+          type: string
+          nullable: true
+          description: "C；kind=queue 时的队列名（实时取自队列）"
+        submitted_at:
+          type: string
+          format: date-time
+          description: "T；入席时刻即提交时刻（席位 created_at）"
         position:
           type: integer
           minimum: 0
@@ -275,7 +305,18 @@ components:
                 type: string
               state:
                 $ref: '#/components/schemas/TaskState'
-          description: "T；队列席位成员概览（kind=task 为单元素）"
+              position:
+                type: integer
+                minimum: 0
+                nullable: true
+                description: "T；队列内序号（0 起）；kind=task 席位为 null"
+              title:
+                type: string
+                nullable: true
+                description: "—；响应中实时解析注入（解析失败为 null），不落库（同候选 title 口径）"
+              resources:
+                $ref: '#/components/schemas/Resources'
+          description: "T；队列席位成员概览（kind=task 为单元素）；title/resources 实时解析，输入文件不可读时 resources 键缺省"
         locked:
           type: boolean
           description: "T；并行窗口已触及 → 不可整席重排/移除"
@@ -339,26 +380,7 @@ components:
           nullable: true
           description: "C；sha256:<hex>，skipped 无（null）"
         resources:
-          type: object
-          description: "C；Link0 声明与补齐标记（roadmap §2.6）"
-          required: [nproc, mem_gb]
-          properties:
-            nproc:
-              type: object
-              required: [value, defaulted]
-              properties:
-                value:
-                  type: integer
-                defaulted:
-                  type: boolean
-            mem_gb:
-              type: object
-              required: [value, defaulted]
-              properties:
-                value:
-                  type: number
-                defaulted:
-                  type: boolean
+          $ref: '#/components/schemas/Resources'
         hq_job_id:
           type: integer
           nullable: true

@@ -613,6 +613,17 @@ export interface components {
              */
             updated_at?: string;
         };
+        /** @description C；Link0 声明与补齐标记（roadmap §2.6）；defaulted=true 表示运行级缺省值补齐 */
+        Resources: {
+            nproc: {
+                value: number;
+                defaulted: boolean;
+            };
+            mem_gb: {
+                value: number;
+                defaulted: boolean;
+            };
+        };
         /** @description 待执行席位（get /pending 响应项） */
         PendingSeat: {
             /** @description C；席位标识（追加自增） */
@@ -622,13 +633,25 @@ export interface components {
             task_id?: number | null;
             /** @description C；kind=queue 时 */
             queue_id?: string | null;
+            /** @description C；kind=queue 时的队列名（实时取自队列） */
+            queue_name?: string | null;
+            /**
+             * Format: date-time
+             * @description T；入席时刻即提交时刻（席位 created_at）
+             */
+            submitted_at: string;
             /** @description T；席位顺序（0 起） */
             position: number;
-            /** @description T；队列席位成员概览（kind=task 为单元素） */
+            /** @description T；队列席位成员概览（kind=task 为单元素）；title/resources 实时解析，输入文件不可读时 resources 键缺省 */
             members: {
                 task_id: number;
                 filename: string;
                 state: components["schemas"]["TaskState"];
+                /** @description T；队列内序号（0 起）；kind=task 席位为 null */
+                position?: number | null;
+                /** @description —；响应中实时解析注入（解析失败为 null），不落库（同候选 title 口径） */
+                title?: string | null;
+                resources?: components["schemas"]["Resources"];
             }[];
             /** @description T；并行窗口已触及 → 不可整席重排/移除 */
             locked: boolean;
@@ -669,17 +692,7 @@ export interface components {
             started_at?: string | null;
             /** @description C；sha256:<hex>，skipped 无（null） */
             input_hash: string | null;
-            /** @description C；Link0 声明与补齐标记（roadmap §2.6） */
-            resources: {
-                nproc: {
-                    value: number;
-                    defaulted: boolean;
-                };
-                mem_gb: {
-                    value: number;
-                    defaulted: boolean;
-                };
-            };
+            resources: components["schemas"]["Resources"];
             /** @description T；提交 HQ 后回填（M0 mock 给演示值） */
             hq_job_id?: number | null;
             /** @description T；运行中实时（psutil） */
