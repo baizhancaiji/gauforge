@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:25+08:00",
+  "updated": "2026-09-25T12:45+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -408,6 +408,13 @@
       "type": "fixed",
       "scope": "web",
       "summary": "声明空 favicon 消除控制台 404 噪声",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "亮色主题 failed 徽标对比度达标（#c23a31 调至 #bd352b，新增 WCAG 对比度实测闸门）",
       "breaking": false,
       "migration": null
     }
