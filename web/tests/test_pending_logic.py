@@ -4,9 +4,16 @@
 """
 import pytest
 
+from web.src import config
 from web.src.errors import ApiError
 from web.src.services import pending
-from web.src.store import executions, queues, seats, tasks
+from web.src.store import executions, queues, seats, settings, tasks
+
+
+@pytest.fixture(autouse=True)
+def home(tmp_path, monkeypatch):
+    """snapshot 成员 title/resources 实时读 inputs/：触盘面重定向 tmp_path。"""
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
 
 
 def _cand(name: str) -> int:
@@ -42,8 +49,10 @@ def test_append_task_tail_and_form_transition():
     snap = pending.snapshot()
     assert snap["capacity"] == {"limit": 3, "occupied": 2, "available": 1}
     assert snap["window_size"] == 1
-    assert snap["seats"][0]["members"] == [
-        {"task_id": t1, "filename": "a.gjf", "state": "staged"}]
+    m = snap["seats"][0]["members"][0]
+    assert (m["task_id"], m["filename"], m["state"]) == (t1, "a.gjf", "staged")
+    assert m["position"] is None and m["title"] is None  # 单任务席位无队列序号；无输入文件
+    assert "resources" not in m  # 文件不可读 → 资源键缺省（契约可选）
 
 
 def test_append_queue_marks_submitted_one_seat():
@@ -55,6 +64,37 @@ def test_append_queue_marks_submitted_one_seat():
     assert snap["seats"][0]["kind"] == "queue"
     assert [m["task_id"] for m in snap["seats"][0]["members"]] == \
         [m["id"] for m in tasks().list_queue_members(qid)]
+
+
+def test_snapshot_queue_seat_enrichment_and_member_extras():
+    """席位行增强（队列名/提交时刻）+ 成员实时解析注入（队列内序号/
+    标题/资源声明与缺省补齐），待执行页展开子表数据源。"""
+    qid = _queue("qb", 2)
+    sid = pending.append_queue(qid)
+    m0, m1 = [m["id"] for m in tasks().list_queue_members(qid)]
+    ind = config.HOME_DIR / "inputs"
+    ind.mkdir()
+    (ind / str(m0)).write_text(
+        "%chk=a.chk\n%nprocshared=4\n%mem=2GB\n\n#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\n",
+        encoding="utf-8")
+    (ind / str(m1)).write_text(
+        "%chk=b.chk\n\n#p HF/6-31G(d)\n\n氢\n\n0 1\nH 0 0 0\n", encoding="utf-8")
+    snap = pending.snapshot()
+    seat = snap["seats"][0]
+    assert seat["queue_name"] == "qb"
+    assert seat["submitted_at"] is not None  # 入席时刻即提交时刻
+    assert [m["position"] for m in seat["members"]] == [0, 1]
+    by_id = {m["task_id"]: m for m in seat["members"]}
+    assert by_id[m0]["title"] == "水"
+    assert by_id[m0]["resources"] == {  # Link0 声明值原样
+        "nproc": {"value": 4, "defaulted": False},
+        "mem_gb": {"value": 2.0, "defaulted": False}}
+    assert by_id[m1]["title"] == "氢"
+    assert by_id[m1]["resources"] == {  # 未声明 → 运行级缺省补齐
+        "nproc": {"value": int(settings().get("link0_default_nproc")),
+                  "defaulted": True},
+        "mem_gb": {"value": float(settings().get("link0_default_mem_gb")),
+                   "defaulted": True}}
 
 
 def test_capacity_full_409():

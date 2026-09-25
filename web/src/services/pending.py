@@ -17,8 +17,11 @@
 """
 from __future__ import annotations
 
+from ..engine.workspace import resolve_link0
 from ..errors import err, not_found
+from ..parse.blocks import parse_input
 from ..store import executions, queues, seats, settings, tasks
+from .candidates import default_inputs_dir
 
 
 def _limit() -> int:
@@ -55,6 +58,21 @@ def capacity() -> dict:
             "available": max(0, limit - occupied)}
 
 
+def _parse_extra(task_id: int) -> dict:
+    """成员展示增强的实时解析注入（同候选 title 口径，不落库）：
+    title 解析失败为 null；输入文件不可读时仅返回 title 键，
+    resources 键缺省（契约可选字段）。"""
+    try:
+        text = (default_inputs_dir() / str(task_id)).read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return {"title": None}
+    resolved = resolve_link0(text, int(settings().get("link0_default_nproc")),
+                             float(settings().get("link0_default_mem_gb")))
+    return {"title": parse_input(text)["blocks"]["title"],
+            "resources": {"nproc": resolved["nproc"],
+                          "mem_gb": resolved["mem_gb"]}}
+
+
 def _member_view(m: dict) -> dict:
     exs = executions().list_by_task(m["id"])
     if any(e["state"] == "running" for e in exs):
@@ -63,22 +81,29 @@ def _member_view(m: dict) -> dict:
         state = exs[-1]["state"]  # 最近一次终态
     else:
         state = "staged"
-    return {"task_id": m["id"], "filename": m["filename"], "state": state}
+    return {"task_id": m["id"], "filename": m["filename"], "state": state,
+            "position": m["position"] if m["queue_id"] else None,
+            **_parse_extra(m["id"])}
 
 
 def snapshot() -> dict:
-    """PendingResponse：席位（含成员概览/locked）+ 容量 + 窗口。"""
+    """PendingResponse：席位（含队列名/提交时刻/成员概览/locked）+ 容量 + 窗口。"""
     locked = locked_seat_ids()
     items = []
     for s in seats().list_by_position():
         if s["kind"] == "task":
             row = tasks().get(s["task_id"])
             members = [_member_view(row)] if row else []
+            queue_name = None
         else:
             members = [_member_view(m)
                        for m in tasks().list_queue_members(s["queue_id"])]
+            q = queues().get(s["queue_id"])
+            queue_name = q["name"] if q else None
         items.append({"seat_id": s["seat_id"], "kind": s["kind"],
                       "task_id": s["task_id"], "queue_id": s["queue_id"],
+                      "queue_name": queue_name,
+                      "submitted_at": s["created_at"],
                       "position": s["position"], "members": members,
                       "locked": s["seat_id"] in locked})
     return {"seats": items, "capacity": capacity(),
