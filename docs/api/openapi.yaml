@@ -719,6 +719,10 @@ paths:
       tags: [candidates]
       operationId: listCandidates
       summary: 分页列表（含实时 title）
+      description: >-
+        items 先按文件名自然序（不区分大小写、字母先于数字，与
+        web/src/parse/naturalsort 同规则）对全量排序后再分页，
+        跨页全局有序；并列保持 id 逆序（稳定排序）。
       parameters:
         - name: origin
           in: query
