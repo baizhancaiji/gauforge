@@ -20,7 +20,7 @@ from pathlib import Path
 
 
 def _conf() -> dict[str, str]:
-    conf = dict(kv.split("=", 1) for kv in
+    conf = dict(kv.strip().split("=", 1) for kv in
                 os.environ.get("G16_FAKE", "").split(";") if kv.strip())
     # 输入内嵌覆盖：! FAKE: k=v; k=v
     try:
