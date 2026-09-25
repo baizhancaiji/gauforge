@@ -6,7 +6,7 @@
  * 保存后按实际变更提示（on_restart 项琥珀提示条）；席位上限调小弹
  * 「将自队尾挤出」确认（挤出语义：只挤窗口未触及席位、在跑不追溯）。
  */
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
@@ -76,6 +76,18 @@ onMounted(async () => {
     settings.value = data;
     initForm(data.runtime);
   }
+});
+
+// settings.updated（多标签页同步，sse.md §2）：无未保存修改时静默重拉；
+// 有编辑中的输入则不动表单（保存时以表单为准，成功后由响应收敛）。
+watch(() => events.dirty.settings, async () => {
+  const { data } = await client.GET("/settings");
+  if (!data) return;
+  settings.value = data;
+  const untouched = Object.keys(form.value).every(
+    (k) => form.value[k] === original.value[k],
+  );
+  if (untouched) initForm(data.runtime);
 });
 
 function valueFor(s: SettingItem): number | string | boolean {

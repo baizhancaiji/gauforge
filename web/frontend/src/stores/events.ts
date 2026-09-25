@@ -70,7 +70,7 @@ export const useEventsStore = defineStore("events", () => {
   const toasts = ref<Toast[]>([]);
 
   // 通知类事件的脏计数——列表页 watch 后重拉 REST 当前页（契约 §3.5⑥）。
-  const dirty = reactive({ candidates: 0, queues: 0, history: 0 });
+  const dirty = reactive({ candidates: 0, queues: 0, history: 0, settings: 0 });
 
   /**
    * 停滞告警表（execution_id → 详情）。键存在即告警中（点亮告警灯、
@@ -229,6 +229,10 @@ export const useEventsStore = defineStore("events", () => {
           state: d.state as HqState,
           workers_online: Number(d.workers_online),
         };
+        break;
+      case "settings.updated":
+        // 设置变更通知（多标签页同步，sse.md §2）：设置页 watch 后重拉。
+        dirty.settings++;
         break;
       case "candidates.changed":
         dirty.candidates++;
