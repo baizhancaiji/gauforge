@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T00:59+08:00",
+  "updated": "2026-09-26T01:17+0800",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -634,6 +634,13 @@
       "summary": "修复测试运行污染工作区：SSOT models 再生比对改写临时目录（原原地再生自比较，每次 pytest 后 models.py 残留时间戳脏差异）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "新增 M2 输入工程执行计划（WBS 四阶段/分块编辑与队列语义设计定稿/流程图三张/测试矩阵/提交序列/验收 DoD/风险预案）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
@@ -643,7 +650,7 @@
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
     "用户方便时补验：真·WSL2 整机重启的 S3 演练（替代方案已登记，不阻塞）",
-    "M2 输入工程：候选分块编辑与队列组建管理 UI（含 select/checkbox/toggle 规格、favicon 等走查遗留小项）"
+    "M2 输入工程：按 docs/plans/m2-plan.md 实施（A 设计定稿→B 后端→C 前端→D 验收；契约 diff 提交先行）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
