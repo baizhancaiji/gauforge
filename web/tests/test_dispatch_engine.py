@@ -113,6 +113,36 @@ def test_link0_declared_kept_and_units(home):
         "value": 2 * 8 * 1024 / 1024**3, "defaulted": False}
 
 
+def test_link0_nproc_synonyms_extracted(home):
+    """%nproc 系变体提取实际值，不注入缺省（避免与用户声明冲突的双指令）。"""
+    for line in ("%NProcShared=6", "%nprocshared=6", "%nproc=6", "%NProc=6",
+                 "%nprocshare=6"):
+        r = resolve_link0(f"{line}\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+        assert r["nproc"] == {"value": 6, "defaulted": False}, line
+        assert r["completed_text"].startswith(line)
+
+
+def test_link0_cpu_list_semantics(home):
+    """%CPU 绑定具体逻辑处理器（0,1,2 / 0-5 / 混合），与 %nproc 不混同：
+    不注入缺省；记账核数优先取 %nproc，仅 %CPU 时按 proc-list 推导。"""
+    # 仅 %CPU：推导核数记账，且绝不注入 %NProcShared（会与核位绑定冲突）
+    assert resolve_link0("%CPU=0-5\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)["nproc"] == {
+        "value": 6, "defaulted": False}
+    r = resolve_link0("%CPU=0,2,4,6\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r["nproc"] == {"value": 4, "defaulted": False}
+    assert "%NProcShared" not in r["completed_text"]
+    # 混合区间+列表
+    assert resolve_link0("%CPU=0-2,5\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)["nproc"] == {
+        "value": 4, "defaulted": False}
+    # 两者同给（常见形态）：按 %nproc 记账，不注入
+    r2 = resolve_link0("%nproc=6\n%CPU=0-5\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r2["nproc"] == {"value": 6, "defaulted": False}
+    assert "%NProcShared" not in r2["completed_text"]
+    # 无法识别的 %CPU 值：视作未声明，走缺省注入
+    r3 = resolve_link0("%CPU=x\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r3["nproc"] == {"value": 4, "defaulted": True}
+
+
 def test_g16_env_construction(home):
     root = home / "g16"
     env = g16_env(root, home / "run" / "7")

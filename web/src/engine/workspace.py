@@ -47,12 +47,34 @@ def _fmt_gb(v: float) -> str:
     return str(int(v)) if float(v).is_integer() else f"{v:g}"
 
 
+def _cpu_list_count(raw: str) -> int | None:
+    """%CPU proc-list → 核数：单项 3、列表 0,2,4、区间 0-5 及混合均可
+    （gaussian.com/run，绑定具体逻辑处理器）；无法识别返回 None。"""
+    total = 0
+    for tok in raw.replace(" ", "").split(","):
+        if not tok:
+            return None
+        lo, sep, hi = tok.partition("-")
+        try:
+            a = int(lo)
+            b = int(hi) if sep else a
+        except ValueError:
+            return None
+        if b < a:
+            return None
+        total += b - a + 1
+    return total or None
+
+
 def resolve_link0(text: str, nproc_default: int,
                   mem_gb_default: float) -> dict:
     """解析 Link0 区 → 声明资源 + 补齐后的实际执行文本。
 
     返回 {"completed_text", "nproc": {value, defaulted}, "mem_gb": {…}}；
     缺失/不可识别的 %NProcShared/%Mem 按运行级设置缺省值注入（defaulted=True）。
+    核资源两类声明并行不混同：%nproc 系给分配核数（%nproc 前缀超集，判定依据
+    见 parse/blocks.py），%CPU 给具体逻辑处理器（不注入 %NProcShared，会与
+    核位绑定冲突）；记账核数优先取 %nproc，仅 %CPU 时取 proc-list 推导值。
     """
     lines = text.replace("\r\n", "\n").split("\n")
     # Link 0 = 前导空行/注释后的连续 % 行（与 parse/blocks 同规则，其后无空行要求）
@@ -65,24 +87,28 @@ def resolve_link0(text: str, nproc_default: int,
     end = i  # [start, end) 为 Link0 行区间
 
     nproc: int | None = None
+    cpu_count: int | None = None
     mem_gb: float | None = None
     for ln in lines[start:end]:
         body = ln.strip().lstrip("%")
         key, _, val = body.partition("=")
         k = key.strip().casefold()
-        if k == "nprocshared":
+        if k.startswith("nproc"):
             try:
                 nproc = int(val.strip())
             except ValueError:
                 pass
+        elif k == "cpu":
+            cpu_count = _cpu_list_count(val)
         elif k == "mem":
             mem_gb = _mem_to_gb(val)
 
+    declared = nproc if nproc is not None else cpu_count
     inject: list[str] = []
-    nproc_defaulted = nproc is None
+    nproc_defaulted = declared is None
     if nproc_defaulted:
-        nproc = int(nproc_default)
-        inject.append(f"%NProcShared={nproc}")
+        declared = int(nproc_default)
+        inject.append(f"%NProcShared={declared}")
     mem_defaulted = mem_gb is None
     if mem_defaulted:
         mem_gb = float(mem_gb_default)
@@ -90,7 +116,7 @@ def resolve_link0(text: str, nproc_default: int,
 
     completed = "\n".join(lines[:end] + inject + lines[end:])
     return {"completed_text": completed,
-            "nproc": {"value": nproc, "defaulted": nproc_defaulted},
+            "nproc": {"value": declared, "defaulted": nproc_defaulted},
             "mem_gb": {"value": mem_gb, "defaulted": mem_defaulted}}
 
 
