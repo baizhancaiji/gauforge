@@ -88,6 +88,10 @@ class Dispatcher:
         # None=复用存活实例）。S3 对账判据③：server 比 job 新 ⇒ journal
         # 恢复重跑（确定性，不受对账时点竞态影响）。
         self.server_spawn_ts: str | None = None
+        # 侧栏 HQ 连通性（hq.status，sse.md §2 契约增量）：None=尚未探测
+        # （首 tick 定初值）；workers_online 为探测到的在线 worker 数。
+        self.hq_state: str | None = None
+        self.hq_workers_online = 0
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -250,7 +254,10 @@ class Dispatcher:
     # ---------------- 终态处理与失败分流 ----------------
 
     def tick(self) -> None:
-        """一轮状态推进：消费 Gateway 事件（终态）→ 窗口推进补位。"""
+        """一轮状态推进：HQ 连通性探测 → 消费 Gateway 事件（终态）→ 窗口推进补位。"""
+        # 探测须先于 poll_events：HQ 失联时后者抛 GatewayError 提前返回，
+        # 状态翻转推送不能被短路漏掉
+        self._hq_status_step()
         try:
             events = self._gw.poll_events()
         except GatewayError:
@@ -269,6 +276,25 @@ class Dispatcher:
         self._progress_step()
         self._monitor_step()
         self.advance()
+
+    def _hq_status_step(self) -> None:
+        """侧栏 HQ 连通性监控（m1-acceptance §1.3 遗留项真实化）。
+
+        以 workers 列表探测 server 可达性（CLI/HTTP 双实现同语义，随 tick
+        2s 周期），状态或 worker 在线数变化才推 hq.status——稳态不重发，
+        引擎未启用时无 Dispatcher、仅快照携带 hq: off。
+        """
+        try:
+            online = sum(1 for w in self._gw.workers() if w.get("online"))
+            state = "up"
+        except GatewayError:
+            online, state = 0, "down"
+        if state == self.hq_state and online == self.hq_workers_online:
+            return
+        self.hq_state, self.hq_workers_online = state, online
+        self._emit("hq.status",
+                   {"state": state, "workers_online": online,
+                    "ts": now_iso()})
 
     def _find_running(self, job_id: int) -> dict | None:
         for e in executions().list_by_state("running"):

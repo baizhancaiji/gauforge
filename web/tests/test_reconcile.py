@@ -403,7 +403,7 @@ def test_snapshot_payload_shape(gw, rec):
     restarted(gw, rec2).reconcile()
     snap = events(rec2, "system.snapshot")[-1]
     assert set(snap) == {"pending", "executions_running", "queues_summary",
-                         "server_restarted"}
+                         "hq", "server_restarted"}
     assert snap["server_restarted"] is True
     assert set(snap["pending"]) == {"seats", "capacity", "window_size"}
 

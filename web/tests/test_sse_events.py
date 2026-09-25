@@ -1,6 +1,6 @@
 """SSE 事件总线真实化测试（m1-plan B11；§5 测试表 test_sse_events 逐条）。
 
-- 12 类事件全部由真实动作触发（REST 端点 + 引擎 FakeGateway 流；M0 mock
+- 13 类事件全部由真实动作触发（REST 端点 + 引擎 FakeGateway 流；M0 mock
   推流剧本已退役），并经 emit→重放窗口→fanout→broker 交付为帧；
 - seq 全局单调递增；服务重启后延续（sse_seq 持久化，重连不误判、超窗仍走
   快照）；
@@ -31,12 +31,12 @@ from web.src.store.db import now_iso
 
 SIMPLE = "%chk=w.chk\n\n#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\n"
 
-# 领域事件全集（12 类除去 system.heartbeat/system.snapshot，后两者见专测）
+# 领域事件全集（13 类除去 system.heartbeat/system.snapshot，后两者见专测）
 DOMAIN_EVENTS = {
     "candidates.changed", "queues.changed", "queue.status",
     "pending.snapshot", "task.status", "execution.progress",
     "execution.monitor", "execution.stalled", "history.appended",
-    "settings.updated",
+    "settings.updated", "hq.status",
 }
 
 
@@ -108,11 +108,12 @@ def drain_queue(q) -> list:
             return out
 
 
-# ---------------- 12 类事件：真实动作触发 + 管道端到端交付 ----------------
+# ---------------- 13 类事件：真实动作触发 + 管道端到端交付 ----------------
 
 def test_domain_events_from_real_actions(gw):
     settings().set("stall_threshold_minutes", 0.01)  # 停滞翻转秒级可观测
     disp = make_disp(gw)
+    disp.tick()  # HQ 连通性探测 → hq.status(up)（首个 tick 定初值）
 
     with TestClient(app) as client:  # lifespan 拉起 fanout
         sub_id = broker.subscribe()
@@ -183,7 +184,7 @@ def test_domain_events_from_real_actions(gw):
                     frames.extend(drain_queue(q)),
                     {f.event for f in frames} >= DOMAIN_EVENTS)[1])
                 assert got, (
-                    "12 类领域事件应由真实动作触发并经 broker 交付",
+                    "13 类领域事件应由真实动作触发并经 broker 交付",
                     sorted({f.event for f in frames}))
             finally:
                 proc.terminate()

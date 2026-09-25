@@ -7,6 +7,7 @@ from __future__ import annotations
 
 
 def system_snapshot(*, server_restarted: bool) -> dict:
+    from ..engine.runtime import hq_status
     from ..store import executions, queues
     from .pending import snapshot as pending_snapshot
     return {
@@ -16,5 +17,6 @@ def system_snapshot(*, server_restarted: bool) -> dict:
                             "rollback_flag": q["rollback_flag"],
                             "rollback_count": q["rollback_count"]}
                            for q in queues().list()],
+        "hq": hq_status(),
         "server_restarted": server_restarted,
     }

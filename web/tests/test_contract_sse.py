@@ -55,9 +55,9 @@ def test_first_frame_is_snapshot_with_valid_data():
     frame = _run(_first_frame(timeout=3.0))
     assert frame["event"] == "system.snapshot", "首帧（无 Last-Event-ID）应为快照"
     data = json.loads(frame["data"])
-    # 快照载荷字段（sse.md §2 system.snapshot）。
+    # 快照载荷字段（sse.md §2 system.snapshot，hq 为侧栏 HQ 连接状态）。
     assert set(data) == {"pending", "executions_running", "queues_summary",
-                         "server_restarted"}
+                         "hq", "server_restarted"}
     assert "id" in frame and frame["id"].isdigit()
 
 
