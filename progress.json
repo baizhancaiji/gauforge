@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T22:32+08:00",
+  "updated": "2026-09-26T00:59+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -625,6 +625,13 @@
       "type": "changed",
       "scope": "web",
       "summary": "执行中页按并行上限渲染槽位：在跑卡按执行 id 序占槽，空槽为虚线占位框（槽位号+横线+空闲），撤销整页空态；设计文档 §4.4/§4.5/页表同步",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复测试运行污染工作区：SSOT models 再生比对改写临时目录（原原地再生自比较，每次 pytest 后 models.py 残留时间戳脏差异）",
       "breaking": false,
       "migration": null
     }
