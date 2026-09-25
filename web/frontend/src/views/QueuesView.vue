@@ -9,7 +9,7 @@ import type { components } from "@/api/contract";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
-import { fmtDateTime } from "@/utils/format";
+import { fmtDateTime, fmtTaskId } from "@/utils/format";
 
 type Queue = components["schemas"]["Queue"];
 
@@ -77,7 +77,7 @@ const reasonLabel: Record<string, string> = {
           </div>
           <p class="mono label">成员顺序（id）</p>
           <div class="members mono">
-            <span v-for="m in q.member_ids" :key="m" class="mem">#{{ m }}</span>
+            <span v-for="m in q.member_ids" :key="m" class="mem">{{ fmtTaskId(m) }}</span>
           </div>
         </div>
       </template>

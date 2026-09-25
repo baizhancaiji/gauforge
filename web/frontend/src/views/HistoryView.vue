@@ -16,7 +16,7 @@ import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
-import { fmtDateTime, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
+import { fmtDateTime, fmtDeclaredRes, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
 type HistoryEntry = components["schemas"]["HistoryEntry"];
@@ -257,10 +257,7 @@ async function confirmCleanup() {
         <span class="mono dim">{{ fmtDateTime(h.submitted_at) }}</span>
         <span class="mono dim">{{ fmtDateTime(h.finished_at) }}</span>
         <span class="mono">{{ fmtDuration(h.wall_time_s) }}</span>
-        <span class="mono dim">
-          {{ h.resources.nproc.value }}C{{ h.resources.nproc.defaulted ? "*" : "" }} /
-          {{ h.resources.mem_gb.value }}G{{ h.resources.mem_gb.defaulted ? "*" : "" }}
-        </span>
+        <span class="mono dim">{{ fmtDeclaredRes(h.resources) }}</span>
         <span class="mono dim">{{ h.queue_id ?? "直提" }}</span>
       </div>
       <div class="scanline" aria-hidden="true" v-if="loading"></div>

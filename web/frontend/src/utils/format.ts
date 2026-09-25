@@ -52,3 +52,23 @@ export function fmtHash(h?: string | null): string {
   const body = h.startsWith("sha256:") ? h.slice("sha256:".length) : h;
   return body.length > 12 ? `${body.slice(0, 12)}…` : body;
 }
+
+/**
+ * 任务/候选 id → "034"（三位零填充是显示下宽，不是上限：
+ * padStart 只补齐不截断，id ≥ 1000 自然加宽为 "1000"）。
+ * 全站任务 id 统一用此形式（候选/待执行/队列成员概览），勿再写 `#34`。
+ */
+export function fmtTaskId(n?: number | null): string {
+  return n == null ? "—" : String(n).padStart(3, "0");
+}
+
+/** Link0 声明资源 → "4C* / 8G*"（* = 运行级缺省补齐；缺省 "—"）。 */
+export function fmtDeclaredRes(
+  r?: {
+    nproc: { value: number; defaulted: boolean };
+    mem_gb: { value: number; defaulted: boolean };
+  } | null,
+): string {
+  if (!r?.nproc || !r?.mem_gb) return "—";
+  return `${r.nproc.value}C${r.nproc.defaulted ? "*" : ""} / ${r.mem_gb.value}G${r.mem_gb.defaulted ? "*" : ""}`;
+}

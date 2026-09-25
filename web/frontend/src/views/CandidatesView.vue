@@ -14,7 +14,7 @@ import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
-import { fmtDateTime } from "@/utils/format";
+import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
 type Candidate = components["schemas"]["Candidate"];
@@ -311,7 +311,7 @@ const originView: Record<string, { color: string; label: string }> = {
                 :class="{ 'row--active': selected?.id === c.id }"
                 @click="loadPreview(c)"
               >
-                <td class="mono">{{ String(c.id).padStart(3, "0") }}</td>
+                <td class="mono">{{ fmtTaskId(c.id) }}</td>
                 <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
                 <td class="title" :title="c.title ?? ''">{{ c.title ?? "—" }}</td>
                 <td>
