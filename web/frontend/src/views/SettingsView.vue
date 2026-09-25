@@ -11,6 +11,7 @@ import { computed, onMounted, ref } from "vue";
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
+import { useEventsStore } from "@/stores/events";
 
 type SettingsResponse = components["schemas"]["SettingsResponse"];
 type SettingItem = components["schemas"]["SettingItem"];
@@ -26,6 +27,21 @@ const errors = ref<Record<string, string>>({});
 /** 实际变更且 on_restart 的 key（保存后琥珀提示条）。 */
 const restartKeys = ref<string[]>([]);
 const shrink = ref<{ from: number; to: number } | null>(null);
+
+const events = useEventsStore();
+
+/**
+ * 实际可挤席位数（m1-acceptance §1.3 文案精度修复）：与后端
+ * apply_capacity_limit 同口径——超限幅度与未锁定（窗口未触及）席位数
+ * 取小，锁定席位在跑不追溯（可临时超限）。自 pending 快照实时取数
+ * （SSE 随席位变化推送），确认前席位变动时计数跟随更新。
+ */
+const squeezeCount = computed(() => {
+  if (!shrink.value) return 0;
+  const seats = events.pending?.seats ?? [];
+  const unlocked = seats.filter((s) => !s.locked).length;
+  return Math.min(Math.max(0, seats.length - shrink.value.to), unlocked);
+});
 
 const effectLabel: Record<EffectKind, string> = {
   immediate: "即时",
@@ -198,8 +214,13 @@ async function doSave() {
       <p class="confirm-line">
         在途席位上限由 <span class="mono strong">{{ shrink?.from }}</span> 调整为
         <span class="mono strong">{{ shrink?.to }}</span>
-        — 将自队尾挤出 {{ (shrink?.from ?? 0) - (shrink?.to ?? 0) }} 个席位（窗口触及席位除外，
-        在跑不追溯），被挤出的任务将退回候选列表
+        <template v-if="squeezeCount > 0">
+          — 将自队尾挤出 <span class="mono strong">{{ squeezeCount }}</span>
+          个席位（窗口触及席位除外，在跑不追溯），被挤出的任务将退回候选列表
+        </template>
+        <template v-else>
+          — 当前在途席位未超新上限，暂不挤出席位（此后超出时自队尾挤出，窗口触及席位除外，在跑不追溯）
+        </template>
       </p>
     </ConfirmModal>
   </div>
