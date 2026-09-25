@@ -27,9 +27,24 @@ def _new_queue_id() -> str:
     return "".join(secrets.choice(alphabet) for _ in range(6))
 
 
+def _queue_view(row: dict) -> dict:
+    """契约 Queue 视图：聚合 member_ids（position 序）+ last_failure 反序列化
+    （库行存 JSON 文本；list 路径的行未经 repo.get 解码）+ SQLite 整数布尔
+    还原（skip_failed/rollback_flag 契约为 boolean）。"""
+    row = dict(row)
+    row["member_ids"] = [m["id"] for m in tasks_store().list_queue_members(row["id"])]
+    row["skip_failed"] = bool(row.get("skip_failed"))
+    row["rollback_flag"] = bool(row.get("rollback_flag"))
+    lf = row.get("last_failure")
+    if isinstance(lf, str):
+        import json
+        row["last_failure"] = json.loads(lf)
+    return row
+
+
 @router.get("/queues")
 def list_queues() -> list:
-    return queues_store().list()
+    return [_queue_view(r) for r in queues_store().list()]
 
 
 @router.post("/queues", status_code=status.HTTP_201_CREATED)
@@ -59,7 +74,7 @@ def create_queue(payload: dict) -> dict:
         get_state().emit("candidates.changed",
                          {"action": "moved_out", "candidate_id": cid})
     get_state().emit("queues.changed", {"action": "created", "queue_id": qid})
-    return queues_store().get(qid)
+    return _queue_view(queues_store().get(qid))
 
 
 @router.get("/queues/{id}")
@@ -67,7 +82,7 @@ def get_queue(id: str) -> dict:
     q = queues_store().get(id)
     if q is None:
         raise NOT_FOUND("queue", id)
-    return q
+    return _queue_view(q)
 
 
 @router.patch("/queues/{id}")
@@ -85,7 +100,7 @@ def update_queue(id: str, payload: dict) -> dict:
         fields["skip_failed"] = bool(payload["skip_failed"])
     queues_store().update(id, **fields)
     get_state().emit("queues.changed", {"action": "updated", "queue_id": id})
-    return queues_store().get(id)
+    return _queue_view(queues_store().get(id))
 
 
 @router.delete("/queues/{id}", status_code=status.HTTP_204_NO_CONTENT)

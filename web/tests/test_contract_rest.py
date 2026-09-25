@@ -52,6 +52,24 @@ def test_pending_shape():
     assert "window_size" in body
 
 
+def test_queues_response_carries_member_ids():
+    """契约 Queue.member_ids 必需：列表/详情均须聚合成员（回归：曾返回
+    裸库行，队列页真实数据下 q.member_ids.length 直接崩）。"""
+    from web.src.store import queues as queues_store, tasks as tasks_store
+    qid = "QVIEW01"
+    queues_store().create(qid, name="n1")
+    a = tasks_store().create_candidate("a.gjf", "imported")
+    b = tasks_store().create_candidate("b.gjf", "imported")
+    tasks_store().enqueue(a, qid, 0)
+    tasks_store().enqueue(b, qid, 1)
+    rows = client.get("/api/v1/queues").json()
+    row = next(r for r in rows if r["id"] == qid)
+    assert row["member_ids"] == [a, b]
+    one = client.get(f"/api/v1/queues/{qid}").json()
+    assert one["member_ids"] == [a, b]
+    assert_contract_schema(spec, "GET", "/api/v1/queues", 200, rows)
+
+
 def test_settings_two_groups():
     r = client.get("/api/v1/settings")
     body = r.json()
