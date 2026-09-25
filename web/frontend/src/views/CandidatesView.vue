@@ -3,8 +3,8 @@
  * 01 候选任务（m0-frontend-design §5 · 表格型双栏；m1-plan C1 真实化）
  * 左列列表（id/文件名/title/来源徽标——失败退回附琥珀归因注记）+ 导入交互
  * （文件多选/文件夹 webkitdirectory、422 逐文件失败清单、重复导入提示）
- * + 剔除（二次确认）。列表由后端全局自然序排序后返回（openapi /candidates），
- * 前端不再页内重排（原 utils/naturalsort.ts 双实现已删除）。
+ * + 剔除（二次确认）。列表由后端按导入时间倒序（同批内文件名自然序）
+ * 排序后返回（openapi /candidates），前端按响应序渲染（原页内排序双实现已删）。
  */
 import { computed, ref, watch } from "vue";
 

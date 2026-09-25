@@ -59,9 +59,12 @@ def list_candidates(origin: str | None = None, page: int = 1,
              for r in tasks_store().list_by_form("candidate")]
     if origin:
         items = [c for c in items if c["origin"] == origin]
-    # 切片前全量自然序排序（openapi /candidates）：排序唯一实现在取数端，
-    # 跨页全局有序；列表源为 id 逆序，稳定排序使并列保持 id 逆序
+    # 切片前全量排序（openapi /candidates）：导入时间倒序为主序（新批在上），
+    # 同秒导入的批内按自然序（先自然序、再 created_at 倒序，两趟稳定排序）；
+    # created_at 为恒定时区 UTC ISO，字典序即时序。排序唯一实现在取数端，
+    # 跨页全局有序
     items.sort(key=lambda c: natural_key(c["filename"]))
+    items.sort(key=lambda c: c["created_at"], reverse=True)
     total = len(items)
     size = (page_size if page_size is not None
             else int(settings_store().get("page_size")))
