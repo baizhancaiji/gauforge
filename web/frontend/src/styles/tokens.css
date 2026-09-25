@@ -138,13 +138,13 @@ html[data-theme="light"] {
   --state-staged: #526778;
   --state-running: #0a7266;
   --state-succeeded: #177246;
-  --state-failed: #c23a31;
+  --state-failed: #bd352b;
   --state-skipped: #7d5c19;
   --state-archived: #5b6a76;
   --state-idle: #5b6a76;
 
   --warn: #7d5c19;
-  --danger: #c23a31;
+  --danger: #bd352b;
 
   --row-hover: rgba(10, 114, 102, 0.05);
   --backdrop-dim: rgba(28, 42, 53, 0.35);
