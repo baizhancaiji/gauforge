@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T12:45+08:00",
+  "updated": "2026-09-25T13:05+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -415,6 +415,27 @@
       "type": "fixed",
       "scope": "web",
       "summary": "亮色主题 failed 徽标对比度达标（#c23a31 调至 #bd352b，新增 WCAG 对比度实测闸门）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "通道卡「已运行」恢复真实计时（elapsed_s 改取 now-started_at，此前硬编码 0 恒 0s）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "文件夹导入前端过滤受支持输入文件（.gjf/.com、跳过隐藏目录，过滤后为空提示且不发请求）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "待执行页等待区重排在窗口非空时生效（前端门控对齐后端锁定原位放行语义）",
       "breaking": false,
       "migration": null
     }
