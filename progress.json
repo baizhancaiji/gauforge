@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T13:05+08:00",
+  "updated": "2026-09-25T13:30+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -436,6 +436,20 @@
       "type": "fixed",
       "scope": "web",
       "summary": "待执行页等待区重排在窗口非空时生效（前端门控对齐后端锁定原位放行语义）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "api",
+      "summary": "候选导入响应契约补登 duplicate 字段并同步两侧生成物（前端去强转改走契约类型）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "中文微标签字号与字距全量整改（承载中文升 --text-sm、去 letter-spacing，StateChip/读数标签拆中文/拉丁两档）",
       "breaking": false,
       "migration": null
     }
