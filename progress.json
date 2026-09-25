@@ -389,6 +389,13 @@
       "summary": "queues 端点真实化（队列创建/编辑/删除/提交切真实 queues/tasks/seats 存储与事件，整队占席走引擎派发路径，修复 mock 残留致 §7.1 第 10 条无法在真实栈成立）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "docs",
+      "summary": "字号阶梯补 --text-2xs 档位并对齐可视化样板（纯拉丁微标签 10px 下限成 token，承载中文一律 --text-sm）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
