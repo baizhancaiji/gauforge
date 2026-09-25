@@ -3,7 +3,8 @@
  * 01 候选任务（m0-frontend-design §5 · 表格型双栏；m1-plan C1 真实化）
  * 左列列表（id/文件名/title/来源徽标——失败退回附琥珀归因注记）+ 导入交互
  * （文件多选/文件夹 webkitdirectory、422 逐文件失败清单、重复导入提示）
- * + 剔除（二次确认）。列表按自然序展示（与后端 naturalsort 同规则）。
+ * + 剔除（二次确认）。列表由后端全局自然序排序后返回（openapi /candidates），
+ * 前端不再页内重排（原 utils/naturalsort.ts 双实现已删除）。
  */
 import { computed, ref, watch } from "vue";
 
@@ -15,7 +16,6 @@ import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
-import { naturalCompare } from "@/utils/naturalsort";
 
 type Candidate = components["schemas"]["Candidate"];
 type InputPreview = components["schemas"]["InputPreview"];
@@ -30,11 +30,6 @@ const everLoaded = ref(false);
 const selected = ref<Candidate | null>(null);
 const preview = ref<InputPreview | null>(null);
 const previewLoading = ref(false);
-
-/** 自然序展示（M1.1：不区分大小写、字母先于数字；并列保持 id 序）。 */
-const sorted = computed(() =>
-  [...list.value].sort((a, b) => naturalCompare(a.filename, b.filename)),
-);
 
 async function load() {
   loading.value = true;
@@ -311,7 +306,7 @@ const originView: Record<string, { color: string; label: string }> = {
             </thead>
             <tbody class="stagger">
               <tr
-                v-for="c in sorted"
+                v-for="c in list"
                 :key="c.id"
                 :class="{ 'row--active': selected?.id === c.id }"
                 @click="loadPreview(c)"
