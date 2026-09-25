@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T15:10+08:00",
+  "updated": "2026-09-25T15:35+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -476,8 +476,8 @@
     }
   ],
   "in_progress": {
-    "task": "二审修复批次执行完毕，回到发布流程（changelog-spec §1.6）",
-    "note": "m1-review2-fix-plan D-01~D-08、F-01~F-15 共 23 项全部完成并逐项独立提交（31 笔，含 in_progress 登记、逐批进度同步与收尾回填）；K1–K7 取建议值。新增闸门 check_tokens.py/check_contrast.py 已纳入 AGENTS §6.3。D-07 留痕与 F-01 锁定席位走查见 m1-acceptance §1.5（令牌 diff/对比度/接管清单/reduced-motion/并排走查/拖拽三步）。M1 收尾插队完成侧栏 HQ 连接状态真实化（§1.3 遗留项，走查见该节勾销注记）。"
+    "task": "挤出确认模态席位数改按实际可挤数计算（m1-acceptance §1.3 遗留项）",
+    "note": "前端按后端 apply_capacity_limit 同口径（min(超限幅度, 未锁定席位数)）从 pending 快照实时计算，替换按新旧上限差的虚高文案。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
