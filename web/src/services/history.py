@@ -58,13 +58,13 @@ def _terminal_row(execution_id: int) -> dict:
 
 
 def list_entries(state: str | None, queue_id: str | None,
-                 archived: bool | None, page: int,
-                 page_size: int | None) -> dict:
+                 archived: bool | None, page: int, page_size: int | None,
+                 sort: str = "submitted_desc") -> dict:
     size = page_size if page_size is not None \
         else int(settings().get("page_size"))
     items, total = executions().list_terminal(
         state=state, queue_id=queue_id, archived=archived,
-        page=page, page_size=size)
+        page=page, page_size=size, sort=sort)
     return {"items": [entry_shape(r) for r in items], "page": page,
             "page_size": size, "total": total}
 

@@ -343,3 +343,62 @@ def test_cleanup_endpoint_stats_and_scope(home):
     assert (rd / "input.log").is_file() and (rd / "input.gjf").is_file()
     assert (rd / "protected" / "keep.chk").is_file()  # protected/ 不触碰
     assert (rd2 / "input.chk").is_file()  # 未超期不动
+
+
+# ---------------- 排序（openapi HistorySort；跨页全局有序） ----------------
+
+def _seed_three_out_of_order() -> None:
+    """播种三行：提交序 = w10, h2, a9（id 1..3），完成时间乱序（h2 最晚）。"""
+    seed_terminal("succeeded", filename="w10.gjf",
+                  finished_at="2026-01-02T00:00:00+00:00")
+    seed_terminal("succeeded", filename="h2.gjf",
+                  finished_at="2026-03-01T00:00:00+00:00")
+    seed_terminal("succeeded", filename="a9.gjf",
+                  finished_at="2026-01-01T00:00:00+00:00")
+
+
+def _list_sort(sort: str | None = None, **kw) -> list[str]:
+    params: dict = {"page_size": 50}
+    if sort is not None:
+        params["sort"] = sort
+    params.update(kw)
+    r = client.get("/api/v1/history", params=params)
+    assert r.status_code == 200
+    return [e["filename"] for e in r.json()["items"]]
+
+
+def test_history_default_sort_is_submitted_desc(home):
+    _seed_three_out_of_order()
+    # 默认 = 提交时间倒序（id 逆序），与排序参数上线前行为一致
+    assert _list_sort(None) == ["a9.gjf", "h2.gjf", "w10.gjf"]
+    assert _list_sort("submitted_desc") == ["a9.gjf", "h2.gjf", "w10.gjf"]
+
+
+def test_history_sort_by_finished_time(home):
+    _seed_three_out_of_order()
+    assert _list_sort("finished_desc") == ["h2.gjf", "w10.gjf", "a9.gjf"]
+    assert _list_sort("finished_asc") == ["a9.gjf", "w10.gjf", "h2.gjf"]
+
+
+def test_history_sort_by_filename_natural(home):
+    _seed_three_out_of_order()
+    assert _list_sort("filename_asc") == ["a9.gjf", "h2.gjf", "w10.gjf"]
+    assert _list_sort("filename_desc") == ["w10.gjf", "h2.gjf", "a9.gjf"]
+
+
+def test_history_sort_cross_page_and_ties(home):
+    _seed_three_out_of_order()
+    # 跨页拼接 = 全量序（切片在排序后）
+    p1 = _list_sort("finished_desc", page=1, page_size=2)
+    p2 = _list_sort("finished_desc", page=2, page_size=2)
+    assert p1 + p2 == ["h2.gjf", "w10.gjf", "a9.gjf"]
+    # 完成时间并列（两行同 finished_at）：稳定排序保持提交倒序（新者在前）
+    seed_terminal("succeeded", filename="t1.gjf",
+                  finished_at="2026-03-01T00:00:00+00:00")  # 与 h2 同秒
+    assert _list_sort("finished_desc")[:2] == ["t1.gjf", "h2.gjf"]
+
+
+def test_history_sort_invalid_value_400(home):
+    r = client.get("/api/v1/history", params={"sort": "name_desc"})
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "INVALID_REQUEST"

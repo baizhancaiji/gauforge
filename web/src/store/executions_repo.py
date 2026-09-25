@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 
+from ..parse.naturalsort import natural_key
 from .db import Database, now_iso
 
 
@@ -89,8 +90,16 @@ class ExecutionsRepo:
 
     def list_terminal(self, *, state: str | None = None,
                       queue_id: str | None = None, archived: bool | None = None,
-                      page: int = 1, page_size: int = 50) -> tuple[list[dict], int]:
-        """终态条目分页（历史列表）：(items, total)，id 倒序。"""
+                      page: int = 1, page_size: int = 50,
+                      sort: str = "submitted_desc") -> tuple[list[dict], int]:
+        """终态条目分页（历史列表）：(items, total)。
+
+        sort（openapi HistorySort）：submitted_desc（默认，id 逆序）/
+        finished_desc / finished_asc（finished_at，终态统一存在）/
+        filename_asc / filename_desc（自然序，与候选列表批内同规则）。
+        取数端全量稳定排序后切片，跨页全局有序；基准序 id 逆序，
+        稳定排序使并列保持提交倒序。单机终态量级小，全量载入可忽略。
+        """
         conds = ["state IN ('succeeded','failed','skipped')"]
         params: list[object] = []
         if state is not None:
@@ -103,11 +112,16 @@ class ExecutionsRepo:
             conds.append("archived = ?")
             params.append(1 if archived else 0)
         where = " AND ".join(conds)
-        total_row = self._db.one(
-            f"SELECT COUNT(*) AS n FROM executions WHERE {where}", tuple(params))
-        total = int(total_row["n"]) if total_row else 0
-        rows = self._db.query(
-            f"SELECT * FROM executions WHERE {where} ORDER BY id DESC"
-            " LIMIT ? OFFSET ?",
-            (*params, page_size, (page - 1) * page_size))
-        return [self._deserialize(r) for r in rows], total
+        rows = [self._deserialize(r) for r in self._db.query(
+            f"SELECT * FROM executions WHERE {where} ORDER BY id DESC",
+            tuple(params))]
+        if sort == "finished_desc":
+            rows.sort(key=lambda r: r.get("finished_at") or "", reverse=True)
+        elif sort == "finished_asc":
+            rows.sort(key=lambda r: r.get("finished_at") or "")
+        elif sort == "filename_asc":
+            rows.sort(key=lambda r: natural_key(r["filename"]))
+        elif sort == "filename_desc":
+            rows.sort(key=lambda r: natural_key(r["filename"]), reverse=True)
+        start = (page - 1) * page_size
+        return rows[start:start + page_size], len(rows)

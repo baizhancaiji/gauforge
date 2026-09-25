@@ -20,15 +20,21 @@ from ..services import history as history_svc
 router = APIRouter(tags=["history"])
 
 _STATES = ("succeeded", "failed", "skipped")
+_SORTS = ("submitted_desc", "finished_desc", "finished_asc",
+          "filename_asc", "filename_desc")
 
 
 @router.get("/history")
 def list_history(state: str | None = None, queue_id: str | None = None,
                  archived: bool | None = None, page: int = 1,
-                 page_size: int | None = None) -> dict:
+                 page_size: int | None = None,
+                 sort: str | None = None) -> dict:
     if state is not None and state not in _STATES:
         raise err("INVALID_REQUEST", "state 取值不合法", http=400)
-    return history_svc.list_entries(state, queue_id, archived, page, page_size)
+    if sort is not None and sort not in _SORTS:
+        raise err("INVALID_REQUEST", "sort 取值不合法", http=400)
+    return history_svc.list_entries(state, queue_id, archived, page, page_size,
+                                    sort or "submitted_desc")
 
 
 @router.post("/history/cleanup")
