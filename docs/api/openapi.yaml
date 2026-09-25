@@ -61,6 +61,15 @@ components:
       type: string
       enum: [imported, returned_unrun, returned_failed, returned_succeeded]
       description: 候选来源标记（roadmap §2.1 退回路径穷举）
+    HistorySort:
+      type: string
+      enum: [submitted_desc, finished_desc, finished_asc, filename_asc, filename_desc]
+      description: >-
+        历史列表排序：submitted_desc 提交时间倒序（默认，id 逆序实现）；
+        finished_desc / finished_asc 按完成时间（finished_at，终态统一存在）；
+        filename_asc / filename_desc 按文件名自然序（不区分大小写、字母先于
+        数字，与候选列表批内同规则）。各排序并列时保持提交倒序（稳定排序），
+        全量排序后分页，跨页全局有序。
     FailureCause:
       type: string
       enum: [manually_stopped, program_error, external_interrupt, predecessor_failed, queue_manually_stopped]
@@ -1217,6 +1226,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: sort
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/HistorySort'
         - $ref: '#/components/parameters/PageParam'
         - $ref: '#/components/parameters/PageSizeParam'
       responses:

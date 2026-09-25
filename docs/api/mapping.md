@@ -52,6 +52,7 @@
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
 | 历史表格（终态/归因/耗时/资源/队列归属） | GET /api/v1/history | `history.appended` → 重拉当前页 |
+| 排序切换（提交时间/完成时间/文件名，升降；`sort` 参数） | GET /api/v1/history?sort=… | 同上（重拉当前页） |
 | 行点击 → 详情抽屉（全字段 + input_hash/监控摘要/chk 快照/result_ref） | GET /api/v1/history/{id} | — |
 | 查看输入原文 | GET /api/v1/history/{id}/input | — |
 | 输出预览 / 导出 | GET /api/v1/history/{id}/output | — |
