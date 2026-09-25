@@ -25,6 +25,20 @@ const pageNo = computed(() => (route.meta.page as string) ?? "");
 const lamps = computed(() => events.lamps);
 const hasAlarm = computed(() => events.lamps.alarm > 0);
 
+// 侧栏 HQ 连接状态行（§5；hq.status 事件 + 快照 hq 字段驱动，M1 真实化）。
+const hqText = computed(() => {
+  switch (events.hq.state) {
+    case "up":
+      return "HQ 已连接";
+    case "down":
+      return "HQ 未连接";
+    case "off":
+      return "HQ 未启用";
+    default:
+      return "HQ 连接中";
+  }
+});
+
 onMounted(() => events.start());
 </script>
 
@@ -51,8 +65,8 @@ onMounted(() => events.start());
       </nav>
 
       <div class="hq-status">
-        <span class="hq-led" aria-hidden="true"></span>
-        <span class="mono hq-text">HQ 未连接</span>
+        <span class="hq-led" :data-state="events.hq.state" aria-hidden="true"></span>
+        <span class="mono hq-text">{{ hqText }}</span>
       </div>
     </aside>
 
@@ -214,8 +228,18 @@ onMounted(() => events.start());
   border-radius: 50%;
   background: var(--state-idle);
 }
+/* 连接三态（hq.status）：up=accent 常亮辉光、down=danger 闪烁、
+   off/快照未达=淡化 idle（引擎未启用/演示模式） */
+.hq-led[data-state="up"] {
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+.hq-led[data-state="down"] {
+  background: var(--danger);
+  animation: pulse 1.2s ease-in-out infinite;
+}
 .hq-text {
-  font-size: var(--text-sm); /* 文案含中文（HQ 未连接） */
+  font-size: var(--text-sm); /* 文案含中文（已连接/未连接/未启用） */
 }
 
 .topbar-title {

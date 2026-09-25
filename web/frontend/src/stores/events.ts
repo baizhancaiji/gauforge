@@ -36,6 +36,10 @@ export interface Toast {
   state: string;
 }
 
+/** 侧栏 HQ 连接状态（hq.status 契约增量）：off=引擎未启用、down=失联、
+ * up=可达；null=快照未达（页面刚载入，显示「连接中」）。 */
+export type HqState = "off" | "down" | "up";
+
 const BACKOFF = [1000, 2000, 5000, 10000];
 
 export const useEventsStore = defineStore("events", () => {
@@ -55,6 +59,12 @@ export const useEventsStore = defineStore("events", () => {
 
   // 待执行席位全量（pending.snapshot 快照式覆盖）。
   const pending = ref<PendingResponse | null>(null);
+
+  // 侧栏 HQ 连接状态（hq.status 翻转推送 / system.snapshot hq 字段重建）。
+  const hq = ref<{ state: HqState | null; workers_online: number }>({
+    state: null,
+    workers_online: 0,
+  });
 
   // Toast 队列（右上滑入、自动消）。
   const toasts = ref<Toast[]>([]);
@@ -133,6 +143,7 @@ export const useEventsStore = defineStore("events", () => {
     switch (event) {
       case "system.snapshot":
         if (d.pending) pending.value = d.pending as PendingResponse;
+        if (d.hq) hq.value = d.hq as { state: HqState; workers_online: number };
         if (Array.isArray(d.executions_running)) {
           // 重建基线：先清空旧态，避免重连后残留已结束执行的僵尸卡。
           executions.clear();
@@ -205,6 +216,12 @@ export const useEventsStore = defineStore("events", () => {
         }
         break;
       }
+      case "hq.status":
+        hq.value = {
+          state: d.state as HqState,
+          workers_online: Number(d.workers_online),
+        };
+        break;
       case "candidates.changed":
         dirty.candidates++;
         break;
@@ -312,6 +329,7 @@ export const useEventsStore = defineStore("events", () => {
     lamps,
     executions,
     pending,
+    hq,
     toasts,
     dirty,
     stalled,
