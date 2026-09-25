@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-25T13:50+08:00",
+  "updated": "2026-09-25T14:30+08:00",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -462,17 +462,18 @@
     }
   ],
   "in_progress": {
-    "task": "执行 M1 C/D 二审修复清单（docs/plans/m1-review2-fix-plan.md，待裁决 K1–K7 均取建议值）",
-    "note": "批次 0 先行冻结设计文档：D-01/D-06 令牌登记与样板对齐 + check_tokens 闸门、D-02/03/05/08 文档修订、D-04 对比度闸门与亮色 failed 调色；随后批次 1–3 代码修复、D-07/F-01 走查留痕、F-13–F-15 记录同步。每项独立提交，闸门逐项执行。"
+    "task": "二审修复批次执行完毕，回到发布流程（changelog-spec §1.6）",
+    "note": "m1-review2-fix-plan D-01~D-08、F-01~F-15 共 23 项全部完成并逐项独立提交（31 笔，含 in_progress 登记、逐批进度同步与收尾回填）；K1–K7 取建议值。新增闸门 check_tokens.py/check_contrast.py 已纳入 AGENTS §6.3。D-07 留痕与 F-01 锁定席位走查见 m1-acceptance §1.5（令牌 diff/对比度/接管清单/reduced-motion/并排走查/拖拽三步）。"
   },
   "next_steps": [
     "按 changelog-spec §1.6 走 M1 发布流程（冻结 unreleased、打 tag，预计 minor）",
     "用户方便时补验：真·WSL2 整机重启的 S3 演练（替代方案已登记，不阻塞）",
-    "M2 输入工程：候选分块编辑与队列组建管理 UI（含 HQ 连接状态行真实化、favicon 等走查遗留小项）"
+    "M2 输入工程：候选分块编辑与队列组建管理 UI（含 HQ 连接状态行真实化、select/checkbox/toggle 规格、自然序跨页全局有序、favicon 等走查遗留小项）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
-    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
+    "候选自然序仅页内有序（前端 page_size 页内排序，跨页全局有序未保证且前后端双实现无对照测试）；M2 处理，M1 不扩契约"
   ],
   "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。"
 }
