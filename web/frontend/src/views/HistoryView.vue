@@ -10,7 +10,7 @@
 import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import { client } from "@/api/client";
+import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
@@ -85,14 +85,11 @@ async function viewText(kind: "input" | "output") {
   const e = selected.value;
   if (!e) return;
   textView.value = { kind, content: "", error: null };
-  // 两端点契约均为 text/plain：显式按文本取（openapi-fetch 默认按 JSON
-  // 解析会对 "#p ..." 抛 SyntaxError，面板将永远停在读取中）。
+  // 两端点契约均为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
   const res =
     kind === "input"
-      ? await client.GET("/history/{id}/input",
-                         { params: { path: { id: e.id } }, parseAs: "text" })
-      : await client.GET("/history/{id}/output",
-                         { params: { path: { id: e.id } }, parseAs: "text" });
+      ? await getText("/history/{id}/input", e.id)
+      : await getText("/history/{id}/output", e.id);
   if (res.error) {
     textView.value = {
       kind,

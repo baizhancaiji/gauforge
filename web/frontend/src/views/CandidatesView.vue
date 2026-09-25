@@ -7,7 +7,7 @@
  */
 import { computed, ref, watch } from "vue";
 
-import { client } from "@/api/client";
+import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
@@ -134,9 +134,8 @@ async function openSubmit(c: Candidate) {
   submitError.value = null;
   submitFetching.value = true;
   const [inp, prev, set] = await Promise.all([
-    // 该端点契约为 text/plain（openapi-fetch 默认按 JSON 解析会抛错），显式按文本取。
-    client.GET("/candidates/{id}/input",
-               { params: { path: { id: c.id } }, parseAs: "text" }),
+    // 该端点契约为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
+    getText("/candidates/{id}/input", c.id),
     client.GET("/candidates/{id}/preview", { params: { path: { id: c.id } } }),
     client.GET("/settings"),
   ]);
