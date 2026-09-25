@@ -22,7 +22,7 @@ from web.src.engine import Dispatcher
 from web.src.hq.cli_gateway import CliGateway
 from web.src.hq.process import HqProcessManager
 from web.src.services.candidates import import_files
-from web.src.store import executions, seats, settings, tasks
+from web.src.store import executions, queues, seats, settings, tasks
 
 HQ = shutil.which("hq")
 
@@ -175,4 +175,76 @@ def test_e2e_http_gateway_pipeline(tmp_path, monkeypatch):
         assert seats().count() == 0
     finally:
         gw.close()
+        mgr.stop()
+
+
+# ---------------- §7.1 第 7 条：队列 skip_failed=true 分支端到端（真实派发链路） ----------------
+
+FAILING = SIMPLE + "! FAKE: exit=1\n"  # 成员 1 经输入内嵌覆盖 fake g16 退出码
+
+
+def test_e2e_queue_skip_failed_continues(tmp_path, monkeypatch):
+    """§7.1 第 7 条 skip_failed=true 分支端到端：队列两成员经真实 CliGateway
+    + HQ + fake g16 全链路——成员 1 非零退出（program_error），成员 2 继续
+    派发并成功。判别断言：skip_failed=false 分支下成员 2 会被即时 skipped、
+    不产生执行记录（test_failure_semantics 锁定），此处断言其真实跑完；
+    队列收尾按失败结局回退（与 test_queue_skip_failed_continues 引擎语义
+    一致，本用例复核其在真实栈成立）。"""
+    fakebin = tmp_path / "fakebin"
+    fakebin.mkdir()
+    shutil.copy(Path(__file__).parent / "fake_g16.py", fakebin / "g16")
+    settings().set("g16_root", str(fakebin))
+    settings().set("link0_default_nproc", 1)
+    monkeypatch.setenv("G16_FAKE", "sleep=0.3;steps=2")  # worker 继承；exit 由成员 1 输入内嵌覆盖
+
+    m1 = import_files([("fail.gjf", FAILING.encode("utf-8"))])[0]["id"]
+    m2 = import_files([("ok.gjf", SIMPLE.encode("utf-8"))])[0]["id"]
+
+    qid = f"q{int(time.monotonic_ns() % 100000):05d}"
+    queues().create(qid, name="t", skip_failed=True)
+    tasks().enqueue(m1, qid, 0)
+    tasks().enqueue(m2, qid, 1)
+    queues().set_state(qid, "submitted")  # 提交动作（append_queue 同语义）
+    seats().append(kind="queue", queue_id=qid)
+
+    # HTTP 桥仅存在于仓库构建产物（PATH 上游 hq 无本项目改造）
+    hq_bin = Path(__file__).resolve().parents[2] / "target" / "release" / "hq"
+    if not hq_bin.is_file():
+        pytest.skip("仓库构建 hq 缺失（cargo build --release 未运行）")
+    mgr = HqProcessManager(str(hq_bin), tmp_path / "hqws")
+    mgr.start()
+    mgr.ensure_worker(cpus=1)
+    records: list[tuple[str, dict]] = []
+    disp = Dispatcher(CliGateway(str(hq_bin), str(mgr.server_dir)),
+                      emitter=lambda e, d: records.append((e, d)))
+    try:
+        deadline = time.monotonic() + 90
+        q: dict = {}
+        while time.monotonic() < deadline:
+            disp.tick()
+            q = queues().get(qid)
+            if q["state"] in ("unsubmitted", "completed"):
+                break
+            time.sleep(0.2)
+        # 成员 1：真实非零退出 → failed + program_error（§8.7 归因映射）
+        e1 = executions().list_by_task(m1)[-1]
+        assert e1["state"] == "failed" and e1["cause"] == "program_error", e1
+        # 成员 2：skip_failed=true → 继续真实派发并成功
+        e2 = executions().list_by_task(m2)[-1]
+        assert e2["state"] == "succeeded", e2
+        # 队列收尾：全部结束时按失败结局回退，席位释放
+        assert q["state"] == "unsubmitted", q
+        assert q["finish_reason"] == "finished_with_failures", q
+        assert q["rollback_count"] == 1, q
+        assert seats().count() == 0
+        # 事件序（同 execution 内有序）：两成员各自走到终态并入史
+        sts1 = [(d["from"], d["to"]) for ev, d in records
+                if ev == "task.status" and d.get("task_id") == m1]
+        assert sts1[-1] == ("running", "failed"), sts1
+        sts2 = [(d["from"], d["to"]) for ev, d in records
+                if ev == "task.status" and d.get("task_id") == m2]
+        assert sts2 == [("staged", "running"), ("running", "succeeded")], sts2
+        assert any(ev == "history.appended" and d.get("task_id") == m2
+                   for ev, d in records)
+    finally:
         mgr.stop()

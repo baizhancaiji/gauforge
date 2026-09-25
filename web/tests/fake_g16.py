@@ -28,7 +28,7 @@ def _conf() -> dict[str, str]:
                                                errors="replace").splitlines():
             s = ln.strip()
             if s.lower().startswith("! fake:"):
-                conf.update(kv.split("=", 1) for kv in
+                conf.update(kv.strip().split("=", 1) for kv in
                             s.split(":", 1)[1].split(";") if kv.strip())
     except OSError:
         pass
