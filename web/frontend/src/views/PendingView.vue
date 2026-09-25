@@ -14,6 +14,7 @@ import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
+import { fmtDateTime, fmtDeclaredRes, fmtTaskId } from "@/utils/format";
 import { useEventsStore } from "@/stores/events";
 
 type PendingResponse = components["schemas"]["PendingResponse"];
@@ -198,9 +199,20 @@ async function confirmRemove() {
           <div class="seat-body">
             <div class="seat-line" @click="s.kind === 'queue' && toggle(s.seat_id)">
               <span class="kind mono">{{ s.kind === "queue" ? "QUEUE" : "TASK" }}</span>
-              <span class="mono seat-name">
-                {{ s.kind === "queue" ? `queue ${s.queue_id}` : s.members[0]?.filename ?? "—" }}
+              <span
+                class="mono seat-name"
+                :title="s.kind === 'queue' ? (s.queue_id ?? undefined) : s.members[0]?.filename"
+              >
+                {{
+                  s.kind === "queue"
+                    ? (s.queue_name ?? s.queue_id)
+                    : s.members[0]?.filename ?? "—"
+                }}
               </span>
+              <span v-if="s.kind === 'queue'" class="mono seat-meta">
+                {{ s.members.length }} 个任务
+              </span>
+              <span class="mono seat-meta dim">{{ fmtDateTime(s.submitted_at) }}</span>
               <span v-if="s.kind === 'task' && s.members[0]" class="state-slot">
                 <StateChip
                   :state="s.members[0].state"
@@ -216,11 +228,24 @@ async function confirmRemove() {
               >▸</span>
             </div>
 
-            <!-- 队列席位展开成员概览（§4.5）：未执行成员可移除 -->
+            <!-- 队列席位展开成员子表（§4.5）：序号/任务id/文件名/标题/资源/状态，
+                 未执行成员可移除 -->
             <div v-if="s.kind === 'queue' && expanded[s.seat_id]" class="sub">
-              <div v-for="m in s.members" :key="m.task_id" class="sub-row">
-                <span class="mono m-id">#{{ m.task_id }}</span>
+              <div class="sub-row sub-head mono" aria-hidden="true">
+                <span>#</span>
+                <span>ID</span>
+                <span>文件名</span>
+                <span>标题</span>
+                <span>资源</span>
+                <span>状态</span>
+                <span></span>
+              </div>
+              <div v-for="(m, mi) in s.members" :key="m.task_id" class="sub-row">
+                <span class="mono m-idx">{{ (m.position ?? mi) + 1 }}</span>
+                <span class="mono m-id">{{ fmtTaskId(m.task_id) }}</span>
                 <span class="mono m-file" :title="m.filename">{{ m.filename }}</span>
+                <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
+                <span class="mono m-res">{{ fmtDeclaredRes(m.resources) }}</span>
                 <StateChip
                   :state="m.state"
                   :label="m.state === 'staged' ? '等待' : undefined"
@@ -262,12 +287,12 @@ async function confirmRemove() {
       <p class="confirm-line">
         <template v-if="removing?.task_id != null">
           将把任务
-          <span class="mono strong">#{{ removing.task_id }} {{ removing.seat.members.find((m) => m.task_id === removing?.task_id)?.filename }}</span>
+          <span class="mono strong">{{ fmtTaskId(removing.task_id) }} {{ removing.seat.members.find((m) => m.task_id === removing?.task_id)?.filename }}</span>
           退回候选列表
         </template>
         <template v-else-if="removing?.seat.kind === 'task'">
           将把任务
-          <span class="mono strong">#{{ removing.seat.task_id }} {{ removing.seat.members[0]?.filename }}</span>
+          <span class="mono strong">{{ fmtTaskId(removing.seat.task_id) }} {{ removing.seat.members[0]?.filename }}</span>
           退回候选列表
         </template>
         <template v-else>
@@ -414,6 +439,15 @@ async function confirmRemove() {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.seat-meta {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+.seat-meta.dim {
+  color: var(--text-faint);
+}
 .state-slot {
   flex: none;
 }
@@ -448,14 +482,43 @@ async function confirmRemove() {
 }
 .sub-row {
   display: grid;
-  grid-template-columns: 48px 1fr auto auto;
+  /* 序号/id 列 minmax 收窄但不截断：id ≥ 1000 时自然加宽（034 为显示下宽）；
+     状态/操作列定宽——表头与数据行是两个独立 grid，auto 轨随内容宽漂移会错位 */
+  grid-template-columns:
+    20px minmax(36px, auto) minmax(0, 1.2fr) minmax(0, 1fr) 108px 72px 64px;
   gap: var(--space-3);
   align-items: center;
   font-size: var(--text-sm);
 }
+.sub-head {
+  color: var(--text-faint);
+  font-size: var(--text-xs); /* 表头含中文（文件名等）：不加字距 */
+}
+.m-idx {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 .m-id {
   color: var(--text-faint);
   font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.m-file {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m-title {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.m-res {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 .m-file {
   color: var(--text-secondary);
