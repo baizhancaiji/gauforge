@@ -8,6 +8,8 @@ execution.monitor 为采样命中型事件（2s 节流 + 进程存活窗口）�
 先天非确定性：读数正确性由 test_monitor_stall 注入覆盖；此处仅断言
 若命中则必落在 running 窗口内。
 hq 不在 PATH 时跳过（§5：单测不依赖真 g16 环境，本链路依赖真 hq）。
+提交前检查清单要求 hq 产物存在（AGENTS §6.1）：skip 是本机未构建时的
+降级路径，不视为闸门通过的依据；通过数须与实际执行数核对。
 """
 from __future__ import annotations
 
