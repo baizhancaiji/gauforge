@@ -34,14 +34,18 @@ def test_openapi_json_equals_contract_yaml():
     assert served == disk, "/openapi.json 应回读落盘契约，不得与契约漂移"
 
 
-def test_models_regenerate_no_diff():
+def test_models_regenerate_no_diff(tmp_path):
+    """再生产物与入库产物比对零差异（时间戳剥离）。
+
+    生成写入 tmp_path 再比对：测试不得改写工作区，原「原地再生后自比较」
+    实现会在每次 pytest 后给 models.py 留下时间戳脏差异（测试污染源）。"""
     script = Path(__file__).resolve().parents[1] / "scripts" / "gen_models.py"
     out_file = Path(__file__).resolve().parents[1] / "src" / "models" / "models.py"
-    before = _norm(out_file.read_bytes()) if out_file.exists() else b""
+    regen = tmp_path / "models.py"
     proc = subprocess.run(
-        [sys.executable, str(script)],
+        [sys.executable, str(script), "--output", str(regen)],
         cwd=config.PROJECT_ROOT, capture_output=True, text=True,
     )
     assert proc.returncode == 0, f"gen_models 失败:\n{proc.stderr}"
-    after = _norm(out_file.read_bytes())
-    assert after == before, "models/ 生成产物与当前契约不一致（请重跑 gen_models.py）"
+    assert _norm(regen.read_bytes()) == _norm(out_file.read_bytes()), \
+        "models/ 生成产物与当前契约不一致（请重跑 gen_models.py）"
