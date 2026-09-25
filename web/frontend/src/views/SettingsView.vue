@@ -332,9 +332,4 @@ async function doSave() {
 .confirm-line .strong {
   color: var(--text-primary);
 }
-@media (max-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
 </style>

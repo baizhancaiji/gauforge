@@ -207,17 +207,4 @@ const reasonLabel: Record<string, string> = {
     transform: translateX(100%);
   }
 }
-/* 竖屏收紧列 */
-@media (max-width: 1023px) {
-  .thead,
-  .row {
-    grid-template-columns: 72px 1fr 1fr 90px 90px;
-  }
-  .thead > :nth-child(5),
-  .thead > :nth-child(6),
-  .row > :nth-child(5),
-  .row > :nth-child(6) {
-    display: none;
-  }
-}
 </style>
