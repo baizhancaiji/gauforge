@@ -460,7 +460,8 @@ const originView: Record<string, { color: string; label: string }> = {
 
         <p v-if="submitError" class="submit-error mono" role="alert">{{ submitError }}</p>
 
-        <div class="input-cap mono">完整输入（纯文本 · 含坐标）</div>
+        <!-- 读数仅「完整输入」；纯文本含坐标属实现语义，见 .input-text 样式注释 -->
+        <div class="input-cap mono">完整输入</div>
         <pre class="input-text mono">{{ submitFetching ? "读取中 …" : submitInput }}</pre>
       </div>
     </ConfirmModal>
