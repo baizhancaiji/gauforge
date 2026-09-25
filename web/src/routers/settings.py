@@ -14,6 +14,10 @@ from ..store import settings as settings_store
 
 router = APIRouter(tags=["settings"])
 
+# 触及待执行快照展示字段（capacity.limit / window_size）的运行级 key：
+# 任一被改动即补发 pending.snapshot（不再依赖「有席位被挤出」这一窄路径）。
+PENDING_SNAPSHOT_KEYS = {"pending_seat_limit", "parallel_window"}
+
 
 def _item(meta: dict) -> dict:
     key = meta["key"]
@@ -68,8 +72,12 @@ def update_settings(payload: dict) -> dict:
                 get_state().emit("queue.status",
                                  {"queue_id": qid, "from": "submitted",
                                   "to": "unsubmitted"})
-        if out["removed"]:
-            get_state().emit("pending.snapshot", pending_svc.snapshot())
+
+    # 上限/窗口变更即时生效（immediate_retroactive / 窗口按新值收敛）：
+    # 无条件补发快照，前端 SSE store 即时刷新（执行中页 WINDOW、
+    # 待执行页 OCCUPIED 上限与侧栏灯排），无需刷新页面。
+    if not PENDING_SNAPSHOT_KEYS.isdisjoint(values):
+        get_state().emit("pending.snapshot", pending_svc.snapshot())
 
     return {
         "startup": [_item(m) for m in config.STARTUP_SETTINGS],
