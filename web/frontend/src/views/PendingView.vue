@@ -2,10 +2,10 @@
 /**
  * 03 待执行（m0-frontend-design §5 · 席位型；m1-plan C4 真实化）
  * 页首容量仪表（OCCUPIED 分段 LED，超限段琥珀示警）；席位纵向列表，
- * 窗口触及席位（locked）加左侧 2px 磷光条 + 「在途」标记，不可整席重排/移除；
- * 其后为等待区（分隔注记），支持拖拽重排（PUT /pending/order 全量原子）与
- * 整席/席位内未执行成员移除（二次确认）。数据源：SSE pending.snapshot 驱动
- * events store；首帧回落 REST GET /pending。
+ * 窗口触及席位（locked）加左侧 2px 磷光条 + 「在途」标记，不可作拖源/落点
+ * 亦不可移除；其后为等待区（分隔注记），支持拖拽重排（PUT /pending/order
+ * 全量原子，锁定席位保持原下标即放行）与整席/席位内未执行成员移除（二次
+ * 确认）。数据源：SSE pending.snapshot 驱动 events store；首帧回落 REST。
  */
 import { computed, reactive, ref, watch } from "vue";
 
@@ -50,12 +50,13 @@ function toggle(seatId: number) {
   expanded[seatId] = !expanded[seatId];
 }
 
-// ---------- 拖拽重排（PUT /pending/order 全量原子；窗口触及即不可重排） ----------
+// ---------- 拖拽重排（PUT /pending/order 全量原子；锁定席位不可作拖源/落点，
+// 等待区可拖；提交 order 保证锁定席位下标不变，越界本地拒绝并提示） ----------
 const dragId = ref<number | null>(null);
 const overId = ref<number | null>(null);
 const orderError = ref<string | null>(null);
 
-const canDrag = (s: PendingSeat) => !anyLocked.value && !s.locked;
+const canDrag = (s: PendingSeat) => !s.locked;
 
 function onDragStart(s: PendingSeat, e: DragEvent) {
   dragId.value = s.seat_id;
@@ -73,16 +74,29 @@ async function onDrop(s: PendingSeat) {
   dragId.value = null;
   overId.value = null;
   if (from == null || from === s.seat_id) return;
-  const ids = seats.value.map((x) => x.seat_id);
-  const src = ids.indexOf(from);
-  const dst = ids.indexOf(s.seat_id);
+  if (s.locked) {
+    orderError.value = "重排越界 — 锁定席位不可作落点";
+    return;
+  }
+  const before = seats.value.map((x) => x.seat_id);
+  const src = before.indexOf(from);
+  const dst = before.indexOf(s.seat_id);
   if (src < 0 || dst < 0) return;
+  const ids = [...before];
   ids.splice(dst, 0, ...ids.splice(src, 1));
+  // 后端语义（锁定席位保持原下标即放行，c6a0906e3）：本地先校验，越界不发请求
+  const movedLocked = seats.value.some(
+    (x) => x.locked && ids.indexOf(x.seat_id) !== before.indexOf(x.seat_id),
+  );
+  if (movedLocked) {
+    orderError.value = "重排越界 — 锁定席位必须保持原位";
+    return;
+  }
   const { data, error } = await client.PUT("/pending/order", {
     body: { seat_order: ids },
   });
   if (error) {
-    orderError.value = "重排被拒绝 — 窗口已触及席位";
+    orderError.value = "重排被拒绝 — 锁定席位必须保持原位";
     return;
   }
   if (data) applySnapshot(data);
