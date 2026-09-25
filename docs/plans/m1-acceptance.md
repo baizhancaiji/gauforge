@@ -63,7 +63,9 @@
 
 ### 1.3 记录在案、不在本轮修复的事项
 
-- favicon 404：装饰性资源缺失，不影响功能（低优先）。
+- ~~favicon 404：装饰性资源缺失，不影响功能（低优先）~~ 已修复
+  （声明空 favicon 消除 404 噪声，2026-09-25 二审前入库；二审复核据此移入
+  已修复项）。
 - 侧栏「HQ 未连接」为静态占位：m0-frontend-design §5 明示「M0 为静态
   占位」，M1 计划未排期其真实化，且契约 12 类事件无 HQ 连通性事件；
   真实化需契约增量，留 M2 决策。
@@ -72,6 +74,10 @@
   触及除外）。
 - 长寿命标签页跨服务重启：SSE 退避重连后经 system.snapshot 全量重建，
   快照/读数随之恢复（#9 修复后实测）；断连窗口内读数短暂缺席属预期。
+- 候选自然序仅页内有序：自然序排序在前端页内执行（page_size=50，与后端
+  同规则），跨页全局有序未保证，且前后端双实现无对照测试；登记为已知
+  限制，M2 处理（统一取数端排序或扩契约），M1 不扩契约
+  （2026-09-25 二审登记，裁决 K6）。
 
 ### 1.4 走查环境准备记录（与测试动作的区分）
 
@@ -176,7 +182,7 @@ running 灯点 `animation-duration: 1e-06s`、`animation-iteration-count: 1`，
 
 | 判据 | 结果 |
 |---|---|
-| `uv run pytest` 全绿（M0+M1 全量含契约回归） | 通过：224 passed |
+| `uv run pytest` 全绿（M0+M1 全量含契约回归） | 通过：225 passed（2026-09-25 二审复核值；二审修复批次补 elapsed_s 回归后全量 226 passed，见 §1.5） |
 | `npm run build` + vue-tsc 零错误 | 通过（走查期间多次重建均零错误） |
 | `cargo test --workspace` 全绿 | 通过：212/227/1 passed, 0 failed（构建需 cmake/libclang，经 pip 用户级安装补齐） |
 | HQ 桥接判据（§2.1 五条） | ① curl 提交→查询→取消 JSON 等价 ✓ ② GET /events 生命周期单行 JSON 帧 ✓ ③ 经 HttpGateway 完整闭环集成测试 ✓（test_e2e_http_gateway_pipeline）④ 不传 --http-port 行为零变化 ✓（默认关，全部走查/单测走 CLI 路径）⑤ cargo test 全绿 ✓ |
@@ -210,3 +216,6 @@ running 灯点 `animation-duration: 1e-06s`、`animation-iteration-count: 1`，
 C（#22–#28）；实际序列按「H 与 B 并行泳道」推进，GUI 走查（C 收尾）与
 D 阶段间穿插 13 笔走查缺陷 fix + 逐笔 chore(progress) 同步（AGENTS §九
 实时登记要求，未集中补录），类型与拆分符合 conventional_commits 约定。
+2026-09-25 二审复核：§6 表 28 笔与 §5.2 工作项对应关系经逐项核对成立；
+M1 验收后的二审修复批次（docs/plans/m1-review2-fix-plan.md，D-01–D-08、
+F-01–F-15）另行逐项独立提交并回填该清单状态，不计入本表。
