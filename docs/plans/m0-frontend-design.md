@@ -101,18 +101,19 @@
 --viz-5: #71849a;   /* 暗灰 */
 ```
 
-**对比度核算表**（按 WCAG 相对亮度公式核算的近似值；C1 落 tokens 时以工具实测
-回填本表，作为后续改色的回归基准）：
+**对比度核算表**（由 `scripts/check_contrast.py` 闸门脚本按 WCAG 相对亮度
+公式实测并逐项核对，全组合 ≥ 4.5:1；下表为实测回填值，作为后续改色的
+回归基准）：
 
 | 组合 | 暗色 | 亮色 |
 |---|---|---|
-| `--text-primary` / `--bg-base` | ≈15:1 | ≈13:1 |
-| `--text-secondary` / `--bg-base` | ≈9:1 | ≈6:1 |
-| `--text-faint` / `--bg-base` | ≈5.9:1 | ≈4.7:1 |
-| running 徽标文字 / 响亮档 12% 底 | ≈7.7:1 | ≈5.0:1 |
-| failed 徽标文字 / 响亮档 12% 底 | ≈4.8:1 | ≈4.6:1 |
-| 安静档状态色 / `--bg-raised` | ≈4.6–8.1:1 | ≈5.6–6.1:1 |
-| primary 按钮 ink / accent 底 | ≈9.8:1 | ≈5.8:1 |
+| `--text-primary` / `--bg-base` | 15.13:1 | 13.39:1 |
+| `--text-secondary` / `--bg-base` | 8.68:1 | 5.93:1 |
+| `--text-faint` / `--bg-base` | 5.68:1 | 4.66:1 |
+| running 徽标文字 / 响亮档 12% 底 | 7.67:1 | 4.89:1 |
+| failed 徽标文字 / 响亮档 12% 底 | 4.71:1 | 4.72:1 |
+| 安静档状态色 / `--bg-raised` | 4.65–8.07:1 | 5.57–6.15:1 |
+| primary 按钮 ink / accent 底 | 9.25:1 | 5.81:1 |
 
 **accent 使用纪律**（语义优先级：信号 > 交互 > 禁止装饰）。允许的完整清单：
 running 信号（发光/呼吸/彩底）、侧栏电源灯、primary 按钮（每视图 ≤1）、
@@ -139,9 +140,9 @@ html[data-theme="light"]{
   --text-primary:#1c2a35; --text-secondary:#4d6072; --text-faint:#5f7080;
   --accent:#0a7266; --accent-hover:#096a5f; --accent-dim:#085c52; --accent-ink:#ffffff;
   --state-staged:#526778; --state-running:#0a7266; --state-succeeded:#177246;
-  --state-failed:#c23a31; --state-skipped:#7d5c19; --state-archived:#5b6a76;
+  --state-failed:#bd352b; --state-skipped:#7d5c19; --state-archived:#5b6a76;
   --state-idle:#5b6a76;
-  --warn:#7d5c19; --danger:#c23a31;   /* 与 skipped/failed 同源关系在两主题下保持 */
+  --warn:#7d5c19; --danger:#bd352b;   /* 与 skipped/failed 同源关系在两主题下保持 */
   --glow-running:0 0 0 1px rgba(10,114,102,.45);   /* 无泛光，纯描边 */
   --row-hover:rgba(10,114,102,.05);
   --backdrop-dim:rgba(28,42,53,.35); --backdrop-modal:rgba(28,42,53,.45);
@@ -437,9 +438,9 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
 
 ## 7. 可访问性与可用性底线
 
-- 对比度：§2.1 核算表所列组合 ≥ 4.5:1（C1 落 tokens 时用工具实测回填该表，
-  作为回归基准；`--text-faint` 仅用于 ≤11px 短标签，整句提示文字一律
-  `--text-secondary`）。
+- 对比度：§2.1 核算表所列组合 ≥ 4.5:1（由 `scripts/check_contrast.py` 闸门
+  实测保证并回填该表，作为回归基准；`--text-faint` 仅用于 ≤11px 短标签，整句
+  提示文字一律 `--text-secondary`）。
 - 键盘：全部交互可 Tab 触达、焦点可见（双环：`--border-strong` 内环 +
   `--accent` 外环，1px 线、2px 偏移）；模态内焦点圈定、Esc 关闭。
 - 语义：状态不只靠颜色——徽标自带文字（`● FAILED`），色弱可用；Toast
