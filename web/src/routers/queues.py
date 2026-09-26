@@ -6,8 +6,6 @@
 """
 from __future__ import annotations
 
-import secrets
-
 from fastapi import APIRouter
 from fastapi import Response
 from starlette import status
@@ -21,12 +19,6 @@ from ..store import queues as queues_store
 from ..store import tasks as tasks_store
 
 router = APIRouter(tags=["queues"])
-
-
-def _new_queue_id() -> str:
-    """短随机队列 id（大写字母数字去易混字符）。"""
-    alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-    return "".join(secrets.choice(alphabet) for _ in range(6))
 
 
 def _queue_view(row: dict) -> dict:
@@ -59,7 +51,7 @@ def create_queue(payload: dict) -> dict:
         if row is None or row["form"] != "candidate":
             raise err("INVALID_MEMBERS",
                       f"任务 {cid} 不存在或不在候选列表", http=422)
-    qid = _new_queue_id()
+    qid = queues_svc.new_queue_id()  # 对照全库（含历史引用）查重
     queues_store().create(qid, name=str(name), skip_failed=bool(skip_failed))
     for pos, cid in enumerate(member_ids):
         tasks_store().enqueue(cid, qid, pos)  # candidate → queue_member
@@ -101,19 +93,18 @@ def update_queue(id: str, payload: dict) -> dict:
 
 @router.delete("/queues/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_queue(id: str) -> Response:
-    q = queues_store().get(id)
-    if q is None:
-        raise NOT_FOUND("queue", id)
-    if q["state"] != "unsubmitted":
-        # 已提交/执行中队列占席运行中，删除会与引擎派发冲突（M2 队列管理处理）
-        raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可删除",
-                  {"state": q["state"]}, http=409)
-    for m in tasks_store().list_queue_members(id):
-        tasks_store().return_to_candidate(m["id"], "returned_unrun")
+    """队列删除（M2 分级：submitted 撤席/completed 成员只留历史）。
+
+    事件时序（sse.md §3）：moved_in ×N → queues.changed(deleted)；
+    删除在待执行队列另推 pending.snapshot（在两者之后，席位撤销释放）。
+    """
+    action = queues_svc.delete_queue(id)
+    for tid in action["moved_in"]:
         get_state().emit("candidates.changed",
-                         {"action": "moved_in", "candidate_id": m["id"]})
-    queues_store().delete(id)
+                         {"action": "moved_in", "candidate_id": tid})
     get_state().emit("queues.changed", {"action": "deleted", "queue_id": id})
+    if action["seat_removed"]:
+        get_state().emit("pending.snapshot", pending_svc.snapshot())
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

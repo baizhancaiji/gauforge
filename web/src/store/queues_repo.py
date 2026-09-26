@@ -15,6 +15,10 @@ class QueuesRepo:
             row["last_failure"] = json.loads(row["last_failure"])
         return row
 
+    def exists(self, queue_id: str) -> bool:
+        return self._db.one(
+            "SELECT 1 AS x FROM queues WHERE id = ?", (queue_id,)) is not None
+
     def list(self) -> list[dict]:
         """默认 id 倒序（新在前）。"""
         return self._db.query("SELECT * FROM queues ORDER BY id DESC")

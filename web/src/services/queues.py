@@ -9,16 +9,26 @@ from __future__ import annotations
 
 from ..errors import ApiError, err, not_found, validation_failed
 from .candidates import copy_execution_input, default_inputs_dir
-from ..store import executions, queues, tasks
+from ..store import executions, queues, seats, tasks
 
 _MEMBER_FIELDS = ("name", "skip_failed", "member_ids")
 
 
 def new_queue_id() -> str:
-    """短随机队列 id（大写字母数字去易混字符），B4 起对照全库查重。"""
+    """短随机队列 id（大写字母数字去易混字符）。
+
+    生成时对照全库查重（roadmap §2.1/§2.6③）：queues 全表 + 任务/执行记录
+    中已使用的 queue_id（含已删除队列的历史引用），命中即重试、永不复用，
+    防止历史条目归属歧义。
+    """
     import secrets
     alphabet = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
-    return "".join(secrets.choice(alphabet) for _ in range(6))
+    while True:
+        qid = "".join(secrets.choice(alphabet) for _ in range(6))
+        if (not queues().exists(qid)
+                and qid not in tasks().used_queue_ids()
+                and qid not in executions().used_queue_ids()):
+            return qid
 
 
 def _invalid_field(field: str, reason: str, message: str) -> ApiError:
@@ -148,4 +158,40 @@ def patch_queue(queue_id: str, payload: dict) -> dict:
         _maybe_auto_success(queue_id,
                             [by_id[tid] for tid in new_ids], action)
     action["queue"] = queue_view(queues().get(queue_id))
+    return action
+
+
+def delete_queue(queue_id: str) -> dict:
+    """DELETE /queues/{id} 分级处置（m2-plan §2.2、roadmap §2.4）。
+
+    - unsubmitted：未执行成员退回候选（returned_unrun）→ 删行；
+    - submitted：席位撤销（pending.snapshot 由路由层补发）→ 成员退回 → 删行；
+    - executing：409（执行中不可删除）；
+    - completed：全成员已执行 → detach_finished（只留历史，经历史页触达）→ 删行。
+
+    返回 {"moved_in": [task_id…], "seat_removed": bool} 供路由层发事件。
+    """
+    q = queues().get(queue_id)
+    if q is None:
+        raise not_found("queue", queue_id)
+    state = q["state"]
+    if state == "executing":
+        raise err("QUEUE_STATE_CONFLICT", "执行中队列不可删除",
+                  {"state": state}, http=409)
+    action: dict = {"moved_in": [], "seat_removed": False}
+    if state == "completed":
+        for m in tasks().list_queue_members(queue_id):
+            tasks().detach_finished(m["id"])
+    else:  # unsubmitted / submitted
+        for m in tasks().list_queue_members(queue_id):
+            tasks().return_to_candidate(m["id"], "returned_unrun")
+            action["moved_in"].append(m["id"])
+    if state == "submitted":
+        seat = next((s for s in seats().list_by_position()
+                     if s["kind"] == "queue" and s["queue_id"] == queue_id),
+                    None)
+        if seat is not None:
+            seats().remove(seat["seat_id"])
+            action["seat_removed"] = True
+    queues().delete(queue_id)
     return action

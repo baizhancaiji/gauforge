@@ -35,6 +35,13 @@ class ExecutionsRepo:
             "SELECT * FROM executions WHERE task_id = ? ORDER BY id", (task_id,))
         return [self._deserialize(r) for r in rows]  # type: ignore[misc]
 
+    def used_queue_ids(self) -> set[str]:
+        """执行记录已引用的 queue_id（含已删除队列的历史引用，查重用）。"""
+        rows = self._db.query(
+            "SELECT DISTINCT queue_id AS qid FROM executions"
+            " WHERE queue_id IS NOT NULL")
+        return {r["qid"] for r in rows}
+
     def create(self, *, task_id: int, filename: str, resources: dict,
                queue_id: str | None = None, input_hash: str | None = None,
                hq_job_id: int | None = None,

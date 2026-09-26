@@ -28,6 +28,12 @@ class TasksRepo:
         row = self._db.one("SELECT COUNT(*) AS n FROM tasks WHERE form = ?", (form,))
         return int(row["n"]) if row else 0
 
+    def used_queue_ids(self) -> set[str]:
+        """任务表已引用的 queue_id（含已删除队列的成员行，查重用）。"""
+        rows = self._db.query(
+            "SELECT DISTINCT queue_id AS qid FROM tasks WHERE queue_id IS NOT NULL")
+        return {r["qid"] for r in rows}
+
     # ---------------- 写入 ----------------
 
     def create_candidate(self, filename: str, origin: str,
