@@ -92,11 +92,18 @@
       "summary": "M2 计划登记修订说明六（B 阶段收尾）：决策点 7 关闭（%Mem 手册核查结论）、实施中修正的两处 M1 引擎缺陷与回退事件对齐登记",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "api",
+      "summary": "契约登记 GET preview/input 跨形态守卫口径：id 跨形态延续（候选与失败回退队列成员可读，守卫与 PUT blocks 一致，其余形态 404），mapping 增补编辑初始化与 CRLF 检出映射行",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段完成（#5–#12 全部落库，全量 346 测试通过，双闸门+前端令牌/对比度闸门通过）；下一阶段 C 前端真实化（#13 预览编辑态）"
+    "note": "C 阶段进行中：C1 开工前修复跨形态守卫缺口（契约口径已先行落盘，后端放行与前端组件随 C1 落库）"
   },
   "next_steps": [
     "M2 提交#13 (C1) 预览编辑态",
