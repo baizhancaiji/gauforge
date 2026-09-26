@@ -15,6 +15,7 @@ from starlette import status
 from ..errors import NOT_FOUND, VALIDATION_FAILED, err
 from ..mock import get_state  # 事件总线（B11：emit → 领域事件扇出）
 from ..services import pending as pending_svc
+from ..services import queues as queues_svc
 from ..services import verify as verify_svc
 from ..store import queues as queues_store
 from ..store import tasks as tasks_store
@@ -29,18 +30,8 @@ def _new_queue_id() -> str:
 
 
 def _queue_view(row: dict) -> dict:
-    """契约 Queue 视图：聚合 member_ids（position 序）+ last_failure 反序列化
-    （库行存 JSON 文本；list 路径的行未经 repo.get 解码）+ SQLite 整数布尔
-    还原（skip_failed/rollback_flag 契约为 boolean）。"""
-    row = dict(row)
-    row["member_ids"] = [m["id"] for m in tasks_store().list_queue_members(row["id"])]
-    row["skip_failed"] = bool(row.get("skip_failed"))
-    row["rollback_flag"] = bool(row.get("rollback_flag"))
-    lf = row.get("last_failure")
-    if isinstance(lf, str):
-        import json
-        row["last_failure"] = json.loads(lf)
-    return row
+    """契约视图统一走服务层实现（services.queues.queue_view）。"""
+    return queues_svc.queue_view(row)
 
 
 @router.get("/queues")
@@ -88,20 +79,24 @@ def get_queue(id: str) -> dict:
 
 @router.patch("/queues/{id}")
 def update_queue(id: str, payload: dict) -> dict:
-    q = queues_store().get(id)
-    if q is None:
-        raise NOT_FOUND("queue", id)
-    if q["state"] != "unsubmitted":
-        raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可编辑",
-                  {"state": q["state"]}, http=409)
-    fields: dict = {}
-    if "name" in payload:
-        fields["name"] = payload["name"]
-    if "skip_failed" in payload:
-        fields["skip_failed"] = bool(payload["skip_failed"])
-    queues_store().update(id, **fields)
+    """队列编辑（M2 全语义，m2-plan §2.2 状态分级矩阵）。
+
+    事件时序（sse.md §3 队列编辑行）：退回成员 moved_in ×N 在前 →
+    queues.changed(updated) → 自动成功 queue.status(unsubmitted→completed)；
+    submitted 态成员变化另推 pending.snapshot（席位成员表更新）。
+    """
+    out = queues_svc.patch_queue(id, payload)
+    for tid in out["moved_in"]:
+        get_state().emit("candidates.changed",
+                         {"action": "moved_in", "candidate_id": tid})
     get_state().emit("queues.changed", {"action": "updated", "queue_id": id})
-    return _queue_view(queues_store().get(id))
+    if out["auto_success"]:
+        get_state().emit("queue.status",
+                         {"queue_id": id, "from": "unsubmitted",
+                          "to": "completed", "finish_reason": "success"})
+    elif out["members_changed"] and out["queue"]["state"] == "submitted":
+        get_state().emit("pending.snapshot", pending_svc.snapshot())
+    return out["queue"]
 
 
 @router.delete("/queues/{id}", status_code=status.HTTP_204_NO_CONTENT)

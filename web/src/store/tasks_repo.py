@@ -64,6 +64,14 @@ class TasksRepo:
             "UPDATE tasks SET form = 'finished', updated_at = ? WHERE id = ?",
             (now_iso(), task_id))
 
+    def detach_finished(self, task_id: int) -> None:
+        """queue_member →（队列编辑移除脱离）finished：清队列归属
+        （历史经执行记录触达，roadmap §2.4）。"""
+        self._db.run(
+            "UPDATE tasks SET form = 'finished', queue_id = NULL,"
+            " position = NULL, updated_at = ? WHERE id = ?",
+            (now_iso(), task_id))
+
     def return_to_candidate(self, task_id: int, origin: str,
                             failure_note: str | None = None) -> None:
         """queue_member →（回退/移除退回）candidate：origin 分流

@@ -157,6 +157,21 @@ def resolve_title(task_id: int, inputs_dir: Path | None = None) -> str | None:
     return parse_input(text)["blocks"]["title"]
 
 
+def copy_execution_input(execution_id: int, task_id: int,
+                         inputs_dir: Path | None = None) -> bytes:
+    """以 run/<执行id>/input.gjf 实际执行副本为源读取输入（缺失回落任务
+    输入副本，skipped 等无执行目录者）。
+
+    历史退回候选与队列移除分流（m2-plan §2.2）共用同一复制源语义
+    （§9 风险 5：不另写复制逻辑）。
+    """
+    src = config.HOME_DIR / "run" / str(execution_id) / "input.gjf"
+    if not src.is_file():
+        src = (inputs_dir if inputs_dir is not None
+               else default_inputs_dir()) / str(task_id)
+    return src.read_bytes()
+
+
 # ---------------- 分块编辑保存（M2 B2，m2-plan §2.1） ----------------
 
 def _verr(section: str, line: int, reason: str, message: str) -> dict:
