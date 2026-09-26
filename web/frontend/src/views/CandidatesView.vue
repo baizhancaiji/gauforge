@@ -674,7 +674,7 @@ function onQueueClosed() {
 }
 .duo {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--preview-col);
+  grid-template-columns: minmax(0, 1fr) var(--preview-width);
   gap: var(--gap-card);
   align-items: start;
 }
