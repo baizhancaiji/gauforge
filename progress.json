@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T20:00+0800",
+  "updated": "2026-09-26T20:20+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -50,16 +50,23 @@
       "summary": "提交前输入核验真实化：CRLF→LF 与空行规约器、三提交路径（行内/队列逐成员/历史重新排队）建席前统一核验，解析失败与多步拒绝 422 且不落盘、规范化原子写回并自证结构不变、响应携带 normalized 标记",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "队列编辑全语义：PATCH 状态分级矩阵（unsubmitted 全量/submitted 仅成员/executing、completed 409）、member_ids 子集去重下限校验与移除分流四类（退回/脱离/failed、skipped 新候选同源复制）、回退编辑移除全部 failed/skipped 自动成功终结、在跑成员移除拒绝",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：提交 #7（B6 提交核验）已落库，开始 #8（B3 队列编辑全语义）"
+    "note": "B 阶段进行中：提交 #8（B3 队列编辑全语义）已落库，开始 #9（B4 队列删除增强与 id 查重）"
   },
   "next_steps": [
-    "M2 提交#8 (B3) 队列编辑全语义",
     "M2 提交#9 (B4) 队列删除增强与 id 查重",
-    "M2 提交#10 (B5) 导入成队"
+    "M2 提交#10 (B5) 导入成队",
+    "M2 提交#11 (B7) 错误码语义实现与替换"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
