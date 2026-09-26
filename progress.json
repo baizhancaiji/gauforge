@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T19:40+0800",
+  "updated": "2026-09-26T20:00+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -43,16 +43,23 @@
       "summary": "分块编辑保存真实化：parse/blocks 节定位与区间替换重组器（编辑不转换行尾、目标节末恰一空行规约）、services save_block 全流水（形态守卫七路径/逐节校验 422/round-trip 自证 500 拒绝落盘/原子写/全局写锁）、PUT blocks 端点消解占位节名、route 拼写检查（近邻命中才警告）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "提交前输入核验真实化：CRLF→LF 与空行规约器、三提交路径（行内/队列逐成员/历史重新排队）建席前统一核验，解析失败与多步拒绝 422 且不落盘、规范化原子写回并自证结构不变、响应携带 normalized 标记",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：提交 #6（B2 分块保存）已落库，开始 #7（B6 提交前输入核验）"
+    "note": "B 阶段进行中：提交 #7（B6 提交核验）已落库，开始 #8（B3 队列编辑全语义）"
   },
   "next_steps": [
-    "M2 提交#7 (B6) 提交前输入核验",
     "M2 提交#8 (B3) 队列编辑全语义",
-    "M2 提交#9 (B4) 队列删除增强与 id 查重"
+    "M2 提交#9 (B4) 队列删除增强与 id 查重",
+    "M2 提交#10 (B5) 导入成队"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
