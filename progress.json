@@ -225,6 +225,20 @@
       "summary": "候选页双栏塌单列回归修复：令牌化重构删除页内变量 --preview-col 后 .duo 的 grid-template-columns 引用漏改，声明无效回退 none 致预览区落到表格下方；改引 --preview-width 并补全量悬空变量审计（83 引用全部有定义）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "候选页工具条导入组主从分级：「保存为队列」与两导入按钮间加竖分割线（组间距 12→25px）、复选框贴近宿主按钮（8px）并降字号至 12px 下限档，体现其对「导入文件夹」的从属（计划外人为修正）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "设计文档混排纪律 1 登记「保存为队列」12px 从属档例外（随工具条主从分级的人为修正同步）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
