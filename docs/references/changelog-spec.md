@@ -74,7 +74,9 @@
 2. **冻结**：将该行 `status` 改为 `released`，补齐 `version`（按 1.7 判定）、`date`（ISO 8601 精确到分钟并带时区偏移）、`semver`。
 3. 在文件末尾**追加新的空 unreleased 行**：`{"version":null,"status":"unreleased","changes":[]}`。
 4. 更新 `progress.json`：清空 `unreleased`，更新 `latest_released_version`。
-5. 本地打 git tag：`git tag v<version>`，并提示协作者执行。
+5. 本地打 git tag：`git tag g16-v<version>`（**本项目标签一律带 `g16-` 前缀**
+   ——仓库同时承载上游 HyperQueue 历史，其 `v<version>` 标签已占用同命名空间，
+   前缀区分避免冲突），并提示协作者执行。
 
 ### 1.7 semver 判定
 
