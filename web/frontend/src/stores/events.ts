@@ -130,8 +130,11 @@ export const useEventsStore = defineStore("events", () => {
   }
 
   function pushToast(title: string, state: string) {
-    toasts.value.push({ id: ++toastSeq, title, state });
-    setTimeout(() => dismissToast(toastSeq), 5000);
+    // 先取本条 id 再入定时器：捕获最新序号会漏掉更早的 toast（永不消失，
+    // 遮挡工具条——D1 走查实测缺陷）
+    const id = ++toastSeq;
+    toasts.value.push({ id, title, state });
+    setTimeout(() => dismissToast(id), 5000);
   }
 
   function dismissToast(id: number) {
