@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T00:20+0800",
+  "updated": "2026-09-27T03:41+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -239,11 +239,32 @@
       "summary": "设计文档混排纪律 1 登记「保存为队列」12px 从属档例外（随工具条主从分级的人为修正同步）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "设计文档回填视口固定布局纪律（100vh 锁定、body 无全局滚动条、侧栏 HQ 状态常驻、列表容器局部滚动、退场视图绝对定位离场）与标准表格底部套件规格（共 n 项右对齐、分页控件居中与显隐规则、SVG 图标、输入框交互与边界钳制），roadmap §2.5 分页大小标注三页全局统一（人为验收修正指定，修复前先行回填）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "管理面板锁定视口高度与列表局部滚动：app-frame 100vh + overflow hidden + 网格行高 minmax(0,1fr)，长列表不再撑破面板、body 不再出现全局滚动条，侧栏 HQ 状态行常驻窗口底部；候选/队列/历史三页列表容器化（滚动包裹层吃剩余高度、粘性表头贴滚动容器顶、候选预览卡改随行高拉伸自管滚动），视图切换退场视图绝对定位离场防双视图挤压",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "标准表格底部套件 TablePager 落地候选/队列/历史三页：「共 n 项」计数右对齐统一口径（删除「n 项 — 共 n」双口径与历史页顶部重复计数）、分页控件绝对居中（首页/上一页/下一页/尾页线性 SVG 图标按钮）、页码输入框自然数过滤回车跳转 0 落首页超上限落尾页、总数小于分页大小时控件整体隐藏不占位；候选/历史接入真实页码取数修复超过分页大小直接截断且无分页样式的缺陷（筛选/排序回第 1 页、页码越界钳末页重取），队列前端切片分页，设置项 page_size 三页全局统一并随 settings.updated 即时跟随",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 发布流程（changelog-spec §1.6：冻结 unreleased → 追加新行 → progress 清空 → 打 tag g16-v0.2.0）",
-    "note": "M2 全部工作项（M2.1–M2.7）完成，D1 走查九条路径通过留痕（docs/plans/m2-acceptance.md），D2 提交序列与 §6 核对一致；双闸门（349 passed + validate_progress）与前端闸门（npm build/check_tokens/check_contrast）全绿。发布冻结待用户确认执行"
+    "note": "M2 全部工作项完成，发布冻结待用户确认执行；期间按人为验收修正完成视口固定布局与标准表格底部套件（已登记 unreleased，双闸门与浏览器冒烟通过）"
   },
   "next_steps": [
     "M2 发布：确认 CHANGELOG unreleased 完整后冻结 0.2.0（date 带时区偏移、semver=minor）、追加空 unreleased 行、清空 progress unreleased、本地打 tag g16-v0.2.0",
