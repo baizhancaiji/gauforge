@@ -218,6 +218,13 @@
       "summary": "前端硬编码度量与动效时长收口为设计令牌：新增复用度量 9 个、时长档 8 个、字距复位档 1 个（tokens.css 与样板 HTML 同步，check_tokens 89/89），12 文件约 50 处字面量改引令牌，BlockEditor 防抖升命名常量；值恒等替换视觉零回归",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "候选页双栏塌单列回归修复：令牌化重构删除页内变量 --preview-col 后 .duo 的 grid-template-columns 引用漏改，声明无效回退 none 致预览区落到表格下方；改引 --preview-width 并补全量悬空变量审计（83 引用全部有定义）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
