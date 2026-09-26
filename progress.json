@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T21:20+0800",
+  "updated": "2026-09-26T22:00+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -78,14 +78,23 @@
       "summary": "错误码治理落位：席位私有码替换为全集码（QUEUE_MEMBER_FLOOR/TASK_EXECUTED_IMMUTABLE）、导入 reason 对齐 INPUT_PARSE_FAILED、设置域 409 SETTING_READONLY / 422 SETTING_VALUE_INVALID 与 reason 词表对齐；test_error_codes 静态闸门（实现 ⊆ 契约 19 码、退役码零残留）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "契约回归更新与整队生命周期 e2e：fake g16 全链路（创建/提交核验/中段失败分流/补位/回退归因/哈希跳过/重跑/自动成功）与 PUT blocks、PATCH member_ids、提交响应 normalized 的 openapi-core 零漂移校验",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：提交 #11（B7 错误码治理）已落库，开始 #12（契约回归更新，B 收尾）"
+    "note": "B 阶段完成（#5–#12 全部落库）；C 阶段（前端真实化）待开工"
   },
   "next_steps": [
-    "M2 提交#12 契约回归更新（B 收尾）"
+    "M2 提交#13 (C1) 预览编辑态",
+    "M2 提交#14 (C2) 候选页多选与队列编辑对话框",
+    "M2 提交#17 (D1) 端到端走查"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
