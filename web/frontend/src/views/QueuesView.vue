@@ -19,6 +19,7 @@ import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import QueueEditorModal from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
+import TablePager from "@/components/TablePager.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
@@ -41,14 +42,42 @@ const list = ref<Queue[]>([]);
 const loading = ref(false);
 const expanded = ref(<Record<string, boolean>>{});
 
+// 分页（m0-frontend-design §4.3 列表底栏）：/queues 全量返回 → 前端切片；
+// 分页大小取设置项 page_size（全局统一，即时生效），settings.updated 跟随。
+const page = ref(1);
+const pageSize = ref(50);
+const paged = computed(() => {
+  const size = Math.max(1, pageSize.value);
+  const start = (page.value - 1) * size;
+  return list.value.slice(start, start + size);
+});
+
+/** 页码越界（删除/新增后总页数收缩）→ 钳到末页。 */
+function clampPage() {
+  const tp = Math.max(1, Math.ceil(list.value.length / Math.max(1, pageSize.value)));
+  if (page.value > tp) page.value = tp;
+}
+
+async function loadPageSize() {
+  const { data } = await client.GET("/settings");
+  const v = data?.runtime.find((s) => s.key === "page_size")?.value;
+  if (v != null) {
+    pageSize.value = Number(v) || pageSize.value;
+    clampPage();
+  }
+}
+watch(() => events.dirty.settings, loadPageSize);
+
 async function load() {
   loading.value = true;
   const { data } = await client.GET("/queues");
   loading.value = false;
   list.value = data ?? [];
+  clampPage();
 }
 watch(() => events.dirty.queues, load);
 load();
+loadPageSize();
 
 function toggle(id: string) {
   expanded.value[id] = !expanded.value[id];
@@ -220,7 +249,7 @@ async function confirmDelete() {
         <span class="right">已更新</span>
         <span class="right">动作</span>
       </div>
-      <template v-for="q in list" :key="q.id">
+      <template v-for="q in paged" :key="q.id">
         <div class="row" :class="{ 'row--open': expanded[q.id] }" @dblclick="openEditor(q)">
           <span
             class="expand mono"
@@ -305,6 +334,14 @@ async function confirmDelete() {
       </template>
     </div>
     <div class="scanline" v-if="loading" aria-hidden="true"></div>
+    <!-- 列表底栏（§4.3 标准套件）：计数右对齐 + 分页控件居中（单页时控件隐藏） -->
+    <TablePager
+      v-if="list.length"
+      :total="list.length"
+      :page="page"
+      :page-size="pageSize"
+      @change="(p) => (page = p)"
+    />
 
     <!-- 队列编辑对话框（双击行；C2 组件按状态分级渲染） -->
     <QueueEditorModal

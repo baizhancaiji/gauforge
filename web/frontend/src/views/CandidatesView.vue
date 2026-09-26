@@ -18,6 +18,7 @@ import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import QueueEditorModal, { type MemberRow } from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
+import TablePager from "@/components/TablePager.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
@@ -30,6 +31,10 @@ const router = useRouter();
 
 const list = ref<Candidate[]>([]);
 const total = ref(0);
+/** 分页状态（m0-frontend-design §4.3 列表底栏）：page 当前页（1 起），
+ *  pageSize 取后端信封回落值（设置项 page_size，全局统一）。 */
+const page = ref(1);
+const pageSize = ref(0);
 const loading = ref(false);
 /** 首载骨架行（§4.3 加载两态）：首帧渲染骨架，此后刷新仅底部扫描线。 */
 const everLoaded = ref(false);
@@ -37,13 +42,27 @@ const selected = ref<Candidate | null>(null);
 
 async function load() {
   loading.value = true;
-  const { data } = await client.GET("/candidates", { params: { query: {} } });
+  const { data } = await client.GET("/candidates", {
+    params: { query: { page: page.value } },
+  });
   loading.value = false;
   everLoaded.value = true;
   if (data) {
-    list.value = (data.items as Candidate[]) ?? [];
     total.value = data.total ?? 0;
+    pageSize.value = data.page_size ?? 50;
+    // 页码越界（删减后总页数收缩）→ 钳到末页并重取一次
+    const tp = Math.max(1, Math.ceil(total.value / Math.max(1, pageSize.value)));
+    if (page.value > tp) {
+      page.value = tp;
+      return load();
+    }
+    list.value = (data.items as Candidate[]) ?? [];
   }
+}
+
+function goPage(p: number) {
+  page.value = p;
+  load();
 }
 
 function select(c: Candidate) {
@@ -474,9 +493,14 @@ function onQueueClosed() {
           </div>
           <div class="scanline" aria-hidden="true" v-if="loading"></div>
         </template>
-        <div class="foot mono" v-if="list.length">
-          {{ list.length }} 项 — 共 {{ total }}
-        </div>
+        <!-- 列表底栏（§4.3 标准套件）：计数右对齐 + 分页控件居中（单页时控件隐藏） -->
+        <TablePager
+          v-if="list.length"
+          :total="total"
+          :page="page"
+          :page-size="pageSize"
+          @change="goPage"
+        />
       </section>
 
       <section class="preview">
@@ -809,13 +833,6 @@ tbody tr:hover {
 }
 .skel .sk-row:nth-child(4) {
   animation-delay: calc(var(--stagger-step) * 3);
-}
-.foot {
-  flex-shrink: 0;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--text-faint);
-  border-top: 1px solid var(--border-hair);
 }
 .empty-wrap {
   padding: var(--space-4);

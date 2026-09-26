@@ -15,6 +15,7 @@ import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
+import TablePager from "@/components/TablePager.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtDeclaredRes, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
@@ -29,6 +30,10 @@ const archived = computed(() => route.meta.archived === true);
 
 const list = ref<HistoryEntry[]>([]);
 const total = ref(0);
+/** 分页状态（m0-frontend-design §4.3 列表底栏）：筛选/排序变更回第 1 页，
+ *  SSE 增量与路由往返保持在当前页；pageSize 取后端信封回落值。 */
+const page = ref(1);
+const pageSize = ref(0);
 const loading = ref(false);
 const everLoaded = ref(false);
 const filter = ref<"all" | "succeeded" | "failed" | "skipped">("all");
@@ -46,7 +51,7 @@ async function load() {
         ...(filter.value === "all" ? {} : { state: filter.value }),
         archived: archived.value,
         sort: sort.value,
-        page: 1,
+        page: page.value,
         // page_size 省略 → 后端回落设置值（列表分页大小，即时生效）
       },
     },
@@ -54,18 +59,37 @@ async function load() {
   loading.value = false;
   everLoaded.value = true;
   if (data) {
-    list.value = (data.items as HistoryEntry[]) ?? [];
     total.value = data.total ?? 0;
+    pageSize.value = data.page_size ?? 50;
+    // 页码越界（归档/清理后总页数收缩）→ 钳到末页并重取一次
+    const tp = Math.max(1, Math.ceil(total.value / Math.max(1, pageSize.value)));
+    if (page.value > tp) {
+      page.value = tp;
+      return load();
+    }
+    list.value = (data.items as HistoryEntry[]) ?? [];
   }
 }
 
-// history.appended（终态落库）→ 重拉当前页；路由切换（历史↔归档）重载。
+/** 筛选/排序变更：回到第 1 页再取。 */
+function resetPage() {
+  page.value = 1;
+  load();
+}
+
+function goPage(p: number) {
+  page.value = p;
+  load();
+}
+
+// history.appended（终态落库）→ 重拉当前页；路由切换（历史↔归档）回第 1 页重载。
 watch(() => events.dirty.history, load);
 watch(
   () => route.fullPath,
   () => {
     everLoaded.value = false;
     selected.value = null;
+    page.value = 1;
     load();
   },
 );
@@ -195,7 +219,7 @@ async function confirmCleanup() {
     <div class="controls">
       <label v-if="!archived" class="mono filter">
         <span>状态筛选</span>
-        <select v-model="filter" @change="load">
+        <select v-model="filter" @change="resetPage">
           <option value="all">全部</option>
           <option value="succeeded">SUCCEEDED</option>
           <option value="failed">FAILED</option>
@@ -204,7 +228,7 @@ async function confirmCleanup() {
       </label>
       <label class="mono filter">
         <span>排序</span>
-        <select v-model="sort" @change="load">
+        <select v-model="sort" @change="resetPage">
           <option value="submitted_desc">提交时间 · 新→旧</option>
           <option value="finished_desc">完成时间 · 新→旧</option>
           <option value="finished_asc">完成时间 · 旧→新</option>
@@ -212,7 +236,6 @@ async function confirmCleanup() {
           <option value="filename_desc">文件名 · Z→A</option>
         </select>
       </label>
-      <span class="mono count">共 {{ total }}</span>
 
       <span class="spacer"></span>
       <RouterLink v-if="!archived" class="btn btn--secondary" to="/archive">归档管理</RouterLink>
@@ -271,6 +294,14 @@ async function confirmCleanup() {
         </div>
       </div>
       <div class="scanline" aria-hidden="true" v-if="loading"></div>
+      <!-- 列表底栏（§4.3 标准套件）：计数右对齐 + 分页控件居中（单页时控件隐藏） -->
+      <TablePager
+        v-if="list.length"
+        :total="total"
+        :page="page"
+        :page-size="pageSize"
+        @change="goPage"
+      />
     </section>
 
     <!-- 详情抽屉（行点击；终态冻结字段全量） -->
@@ -430,10 +461,6 @@ async function confirmCleanup() {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--text-faint);
-}
-.count {
   font-size: var(--text-sm);
   color: var(--text-faint);
 }
