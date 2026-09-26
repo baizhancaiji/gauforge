@@ -1,3 +1,18 @@
+<script lang="ts">
+/** 成员行视图（创建态来自候选行；编辑态经 last_failure/pending 交叉）。
+ *  置于普通 script 块：script setup 内 export 会引发模块初始化 ReferenceError
+ *  （对话框 chunk 加载即崩溃，D1 走查实测；vue-tsc/vite build 均不拦截）。 */
+export interface MemberRow {
+  id: number;
+  /** 创建态来自候选行；编辑态契约 Queue 无成员明细，缺省显示 — */
+  filename?: string;
+  title?: string | null;
+  /** 失败归因交叉（Queue.last_failure.members，编辑/只读态） */
+  state?: string;
+  cause?: string | null;
+}
+</script>
+
 <script setup lang="ts">
 /**
  * QueueEditorModal — 队列编辑对话框（m2-plan §2.2/§2.4/§4.3 C2；创建/编辑共用）。
@@ -22,16 +37,6 @@ import { fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
 type Queue = components["schemas"]["Queue"];
-
-export interface MemberRow {
-  id: number;
-  /** 创建态来自候选行；编辑态契约 Queue 无成员明细，缺省显示 — */
-  filename?: string;
-  title?: string | null;
-  /** 失败归因交叉（Queue.last_failure.members，编辑/只读态） */
-  state?: string;
-  cause?: string | null;
-}
 
 const props = defineProps<{
   open: boolean;
