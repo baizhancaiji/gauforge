@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T17:50+0800",
+  "updated": "2026-09-26T18:05+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -8,11 +8,18 @@
       "summary": "契约增补导入成队参数与提交响应规范化标记（queue_from_folder/folder_name、CandidateCreate.queue、SubmitResponse.normalized），mapping/sse 时机表同步",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "api",
+      "summary": "错误码全集 19 码与两张 reason 词表落位 openapi.yaml 文件头作为 SSOT 载体（含 M1 私有码补录与实现码语义标注），ErrorBody.code 描述改指该清单",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "提交 #2（导入成队契约增补）已落库；下一提交 #3 错误码全集落 openapi.yaml 文件头"
+    "note": "提交 #3（错误码全集载体落位）已落库；下一提交 #4 表单控件与编辑态设计规格增补"
   },
   "next_steps": [
     "M2 提交#2 导入成队契约增补",
