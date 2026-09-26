@@ -31,6 +31,26 @@ def _candidate_row(cid: int) -> dict:
     return row
 
 
+def _readable_row(cid: int) -> dict:
+    """预览/原文读取守卫（M2：id 跨形态延续，与 PUT blocks 守卫一致）。
+
+    放行候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）——
+    分块编辑初始化与 CRLF 检出需要两端点；其余形态 404（契约 openapi.yaml
+    previewCandidate/getCandidateInput 描述口径）。
+    """
+    row = tasks_store().get(cid)
+    if row is None:
+        raise not_found("candidate", cid)
+    if row["form"] == "candidate":
+        return row
+    if row["form"] == "queue_member":
+        q = candidates_svc.get_queue_row(row["queue_id"])
+        if q is not None and q["state"] == "unsubmitted" \
+                and bool(q.get("rollback_flag")):
+            return row
+    raise not_found("candidate", cid)
+
+
 def _candidate_view(row: dict) -> dict:
     return {"id": row["id"], "filename": row["filename"],
             "origin": row["origin"], "failure_note": row["failure_note"],
@@ -39,8 +59,11 @@ def _candidate_view(row: dict) -> dict:
 
 
 def _load_input(cid: int) -> str:
-    """读 inputs/<id> 原文（副本与源文件独立，CRLF 不转）。"""
-    _candidate_row(cid)
+    """读 inputs/<id> 原文（副本与源文件独立，CRLF 不转）。
+
+    守卫走 _readable_row（M2 跨形态：候选与失败回退队列成员可读）。
+    """
+    _readable_row(cid)
     try:
         return (candidates_svc.default_inputs_dir() / str(cid)).read_text(
             encoding="utf-8")
@@ -129,7 +152,7 @@ def delete_candidate(id: int) -> Response:
 
 @router.get("/candidates/{id}/preview")
 def preview_candidate(id: int) -> dict:
-    row = _candidate_row(id)
+    row = _readable_row(id)
     r = parse_input(_load_input(id))
     return {"candidate_id": row["id"], "filename": row["filename"],
             "blocks": r["blocks"], "parse_errors": r["parse_errors"]}

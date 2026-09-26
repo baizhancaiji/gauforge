@@ -187,3 +187,42 @@ def test_queue_submit_response_carries_normalized(tmp_path, monkeypatch):
     assert_contract_schema(spec, "POST", "/queues/{id}/submit", 200, body)
     assert body["normalized"] is True  # CRLF 副本经提交核验规范化
     assert verify_svc  # 核验入口存在（三路径接入断言之锚）
+
+
+def _mk_member(tmp_path, monkeypatch, *, rollback: bool) -> int:
+    """构造队列成员（rollback=True 同时置回退标记），返回任务 id。"""
+    from web.src import config
+    from web.src.store import queues as queues_store
+    from web.src.store import tasks as tasks_store
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    (tmp_path / "inputs").mkdir(exist_ok=True)
+    tid = tasks_store().create_candidate("m.gjf", "imported")
+    (tmp_path / "inputs" / str(tid)).write_text(SAMPLE, encoding="utf-8")
+    qid = f"QP{tid:04d}"
+    queues_store().create(qid, name="q", skip_failed=False)
+    tasks_store().enqueue(tid, qid, 0)
+    if rollback:
+        queues_store().update(qid, rollback_flag=True)
+    return tid
+
+
+def test_preview_and_input_readable_for_rollback_member(tmp_path, monkeypatch):
+    """M2 跨形态守卫（契约 previewCandidate/getCandidateInput 描述）：
+    失败回退队列成员可读预览与原文（分块编辑初始化 + CRLF 检出依赖）。"""
+    tid = _mk_member(tmp_path, monkeypatch, rollback=True)
+    r = client.get(f"/api/v1/candidates/{tid}/preview")
+    assert r.status_code == 200
+    assert r.json()["candidate_id"] == tid
+    assert_contract_schema(spec, "GET", "/candidates/{id}/preview", 200,
+                           r.json())
+    r2 = client.get(f"/api/v1/candidates/{tid}/input")
+    assert r2.status_code == 200
+    assert "#p hf/sto-3g" in r2.text
+
+
+def test_preview_and_input_404_for_locked_member(tmp_path, monkeypatch):
+    """新建未提交成员（非回退）不可读预览与原文——404 语义不变。"""
+    tid = _mk_member(tmp_path, monkeypatch, rollback=False)
+    assert client.get(
+        f"/api/v1/candidates/{tid}/preview").status_code == 404
+    assert client.get(f"/api/v1/candidates/{tid}/input").status_code == 404
