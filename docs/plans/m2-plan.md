@@ -117,6 +117,16 @@ roadmap 回填与设计文档先行落盘的提交归属（#1 扩为含 m0-plan 
 D1 的说明；⑧ M2.6/M2.7「非 roadmap 原文」标注修正（roadmap 已回填，改注
 「已同步回填」）。
 
+**修订说明五**（2026-09-26，B1 开工前按用户指令落实）：
+**B1 字典抽取源变更**——不再对 `/mnt/e/gaussian-knowledge_base/data/raw/keyword/`
+离线 HTML 自行解析，改用 **gaussian-kb MCP**（官方 HTML 知识库经抽取结构化的
+知识库检索服务，本地服务 `http://127.0.0.1:18765/mcp/`，其结构化数据目录
+`~/gaussian-kb/data`，页面清单 `page_manifest.json` 与 MCP
+`list_gaussian_pages` 同源同数）；`--kb-dir/--out` 参数语义保留
+（--kb-dir 指向结构化数据目录）。A1「知识库 HTML 结构实地核查」随之改为
+**对 MCP 页面清单甄别**（结论见 §2.1 字典抽取小节，已当场完成），非关键词页
+剔除有据。本修订随 B1 开工先行落盘（docs(plans) 提交）。
+
 **既有文档口径勘误（覆盖）登记**（2026-09-26，跨文档一致性；m0-plan 相关
 条目以本计划为准，#9/§2.4 示例/§9 决策点 11 已随本批提交打勘误注记）：
 
@@ -275,15 +285,26 @@ kind, suggestion}`）：
   点 11 的「知情保存」语义由近邻命中承担（真正的疑似拼错才提示）。
 - 大小写不敏感匹配（G16 输入大小写不敏感，roadmap §2.7）。
 
-**字典抽取**（B1）：
+**字典抽取**（B1；抽取源与规则已按修订说明五定稿，A1 实地核查结论回填）：
 
-- 来源：`/mnt/e/gaussian-knowledge_base/data/raw/keyword/`（实测存在，每
-  关键词一页 HTML，文件名即关键词名，如 `admp.html`/`cbs.html`）。
-- `scripts/extract_keywords.py`：`--kb-dir`（默认上述路径，可配置）扫描
-  `*.html`，抽取关键词全集（文件名 + A1 实地核查后定的页内变体规则，如
-  同页列出的等价形式）；`--out` 输出字典文件（默认
-  `web/src/parse/keywords.txt`，每行一词、按码点排序——确定性输出保证
-  「纳入版本管理、可重生成」且重跑幂等）。
+- 来源（修订说明五，2026-09-26）：**gaussian-kb MCP 结构化知识库**——官方
+  HTML 知识库经 gaussian-kb 抽取结构化的页面清单（`~/gaussian-kb/data/
+  page_manifest.json`，与 MCP `list_gaussian_pages(category=keyword)` 同源）。
+  A1 实地核查结论：keyword 分类共 **94 页**，其中 8 页为文章/技术札记/版本
+  说明非路由关键词，**剔除**：`afc`/`g09_c01`/`nmrcomp`/`oniom_technote`/
+  `qst2`/`thermo`/`vcd`/`vib`（标题逐一核对留档）；`name`(Name=)/
+  `frozencore`(Window 族)/`modred`(ModRedundant 语法)/`testmo`(TestMO) 经
+  MCP 页面内容核查为真关键词页，保留。真关键词页 **86 页**。
+- `scripts/extract_keywords.py`：`--kb-dir`（默认上述结构化数据目录，可配置）
+  读页面清单，`--out` 输出字典文件（默认
+  `web/src/parse/keywords.txt`）。**词条规则（决策点 4 关闭）**：slug 全集为
+  基线 + 标题等价变体——标题按「 and 」/「&」切分且各侧均为无空格单词时
+  收两侧（如 `densityfit` 页收 `nodensityfit`、`cc` 页收 `ccd`/`ccsd`、
+  `cas` 页收 `casscf`、`temp` 页收 `temperature`），词条小写化、按码点排序、
+  去重——确定性输出保证「纳入版本管理、可重生成」且重跑幂等（86 slug +
+  11 变体 = 97 词条，随首次运行登记）。
+- 拼写警告策略（决策点 5 关闭）：近邻命中才警告（`difflib.get_close_matches`
+  cutoff=0.80 + suggestion），纯新词不警告（§2.1 定稿）。
 - 字典路径属部署级配置，不列为设置面板项（m0-plan 决策点 11 既定）；后端
   启动加载，缺失时拼写检查降级为「零警告」并在日志登记（不阻断保存）。
 
@@ -710,9 +731,9 @@ CHANGELOG.jsonl unreleased 与 progress.json（AGENTS §九），提交前双闸
 
 ### 4.1 A 阶段：设计定稿
 
-**A1 分块编辑与校验规格**：① 实地抽样知识库 HTML（≥10 页：单变体/多变体/
-复合关键词页），定稿抽取规则（文件名全集 + 页内变体的识别方式）与拼写检查
-策略（§2.1 建议：近邻命中才警告）——结论回填本文 §2.1；② 逐节校验规则对照
+**A1 分块编辑与校验规格**：① 实地抽样知识库（原定 HTML 抽样，随修订说明五
+改为对 gaussian-kb MCP 页面清单甄别，**已完成**：94 页甄别剔除 8 篇文章页，
+词条规则与拼写策略结论已回填 §2.1）；② 逐节校验规则对照
 roadmap §2.7 与 G16 手册（%Mem 单位、title 禁用字符集）逐条走查，含多步
 任务声明（`--Link1--` 由 M0 决策点 1 拒绝导入，不在编辑范围）与 link0 核
 资源识别集合复用 M1 实现的确认；③ 守卫矩阵对照 roadmap §2.1「编辑与移除
@@ -773,12 +794,14 @@ Link0 无空行、文件末节空行）；③ 与哈希跳过交互（规范化�
 
 ### 4.2 B 阶段：后端核心（web/）
 
-**B1 关键词字典生成**：① 先写测试（对 fixtures 内 mini 知识库样本断言抽取
-结果；两次运行输出一致）；② `scripts/extract_keywords.py`（参数 --kb-dir/
---out，排序输出；AGENTS §八：输出路径参数化）；③ 对真实知识库全集运行，
+**B1 关键词字典生成**：① 先写测试（对 fixtures 内 mini 结构化清单样本断言
+抽取结果；两次运行输出一致）；② `scripts/extract_keywords.py`（参数
+--kb-dir/--out，读 gaussian-kb 结构化页面清单（修订说明五），排序输出；
+AGENTS §八：输出路径参数化）；③ 对真实知识库全集运行，
 字典文件 `web/src/parse/keywords.txt` 入版本管理；④ `parse/keywords.py`
 加载器（启动读入、缺失降级零警告+日志）。质量标准：脚本可重生成（幂等）；
-字典规模与知识库页数一致（登记实际数字）。交付物：脚本 + 字典 + 测试。
+字典规模与知识库页数一致（登记实际数字：86 页 → 97 词条）。交付物：脚本 +
+字典 + 测试。
 
 **B2 分块保存服务**：① 先写测试（§5 test_block_save：重组不变式 ×5 类
 构造样本、逐节校验正反例、守卫矩阵七路径、round-trip、金标准 4+ 份 .out
@@ -1029,8 +1052,8 @@ check_tokens/check_contrast）。M2 关闭前 D2 核对本表与实际 git log �
 | 1 | molecule/未知 section 拒绝码 | 400 INVALID_REQUEST（路径参数级错误，区别于形态 409） | A1 |
 | 2 | submitted 队列可否改名 | 不可（409 维持契约现语义；roadmap 仅授权 member_ids 的重排/移除，改名未授权——从严） | A2 |
 | 3 | completed 队列可否删除 | 可删、成员只留历史（依据 roadmap §2.4 删除队列退回规则的通用语义：已执行成员不退回、经历史触达；成功终态「不提供回退重提交」不涉删除）。若评审从严则改 409 并登记 roadmap 澄清 | A2 |
-| 4 | 字典抽取规则（文件名 vs 页内变体） | 文件名全集为基线 + A1 实地核查后定的页内变体规则（如等价形式行） | A1（实地核查） |
-| 5 | 拼写警告策略 | 近邻命中才警告（cutoff=0.80 + suggestion）；纯新词不警告（防方法学/基组全量误报致检查失效） | A1 |
+| 4 | 字典抽取规则（文件名 vs 页内变体） | slug 全集为基线 + 标题等价变体（「X and Y」/「X & Y」双侧单词收两侧）；A1 实地核查（MCP 页面清单甄别）已完成，结论落 §2.1 | **已关闭**（2026-09-26，随修订说明五） |
+| 5 | 拼写警告策略 | 近邻命中才警告（cutoff=0.80 + suggestion）；纯新词不警告（防方法学/基组全量误报致检查失效） | **已关闭**（2026-09-26，§2.1 定稿） |
 | 6 | 导入成队响应形状 | CandidateCreate 增 `queue: {queue_id, name}\|null` + `queue_fallback_reason: string\|null` | A2（随契约 diff 评审） |
 | 7 | %Mem 缺省单位与校验粒度 | 按 G16 手册核查后定（值数值 + 可选单位后缀；类型错才 422） | A1 |
 | 8 | 队列编辑对话框内已提交队列的操作入口 | submitted 行双击打开对话框、仅渲染重排+移除（其余字段只读+禁用原因提示）；executing/completed 双击展示只读详情（成员状态徽标与归因） | A3（交互规格） |
