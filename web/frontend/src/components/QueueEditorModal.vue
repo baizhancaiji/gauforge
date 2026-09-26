@@ -17,10 +17,12 @@ export interface MemberRow {
 /**
  * QueueEditorModal — 队列编辑对话框（m2-plan §2.2/§2.4/§4.3 C2；创建/编辑共用）。
  * 布局（m0-frontend-design §4.6 定稿，复用 ConfirmModal 弹层基础）：顶部队列名
- * 输入（创建默认 yyyymmddhhmmss 时间戳可改）+ 队列 id 只读（创建显「保存后
- * 生成」占位）；中部成员列表（任务 id/文件名/title，「-」移除剩 1 禁用、拖动
- * 排序 120ms --ease-std）；「自动跳过失败任务」toggle 开关；底部「取消」/
- * 「保存」（primary，每视图至多一个）/「直接提交」（secondary）。
+ * 输入（创建默认 yyyymmddhhmmss 时间戳可改；创建态不渲染队列 id 字段——id
+ * 保存后由后端生成，编辑/只读态只读展示真实 id，2026-09-27 计划外人为修正
+ * 去除「保存后生成」占位注记）；中部成员列表（任务 id/文件名/title，「-」
+ * 移除剩 1 禁用、拖动排序 120ms --ease-std）；「自动跳过失败任务」toggle
+ * 开关；底部「取消」/「保存」（primary，每视图至多一个）/「直接提交」
+ * （secondary）。
  * 状态分级（m2-plan §2.2 矩阵）：unsubmitted 全量可编辑；submitted 仅成员
  * （改名/开关 409，A2 决策点 2/9——禁用并注明）；executing/completed 只读详情。
  * 「直接提交」= 保存 + submit 链式；submit 失败时队列保留 unsubmitted，展示
@@ -105,9 +107,8 @@ function defaultQueueName(): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 
-const qidLabel = computed(() =>
-  props.mode === "create" ? "保存后生成" : (props.queue?.id ?? "—"),
-);
+/** 队列 id 只读展示；创建态该字段不渲染（id 保存后由后端生成，不再显示占位注记）。 */
+const qidLabel = computed(() => props.queue?.id ?? "—");
 
 const canSave = computed(() => {
   if (!name.value.trim().length) return false;
@@ -244,7 +245,8 @@ function tryClose() {
             maxlength="64"
           />
         </label>
-        <div class="q-field q-id-field">
+        <!-- 队列 id 只读展示仅编辑/只读态；创建态不渲染（id 保存后生成，无占位注记） -->
+        <div v-if="mode !== 'create'" class="q-field q-id-field">
           <span class="q-label mono">队列 ID</span>
           <span class="q-id mono">{{ qidLabel }}</span>
         </div>
