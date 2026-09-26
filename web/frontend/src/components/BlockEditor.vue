@@ -33,19 +33,10 @@ const loading = ref(false);
 const parseErrors = computed(() => preview.value?.parse_errors ?? []);
 const warnings = ref<SaveWarning[]>([]);
 
-async function loadPreview() {
-  loading.value = true;
-  exitEditLocal();
-  const { data } = await client.GET("/candidates/{id}/preview", {
-    params: { path: { id: props.taskId } },
-  });
-  loading.value = false;
-  preview.value = data ?? null;
-}
-watch(() => props.taskId, loadPreview, { immediate: true });
-onBeforeUnmount(clearTimers);
-
 // ---------- 编辑态 ----------
+// 注意：编辑态状态必须先于 loadPreview 的 immediate watch 声明——
+// immediate 回调同步执行 exitEditLocal（触达未初始化 ref 即 TDZ 崩溃，
+// 预览卡恒卡「读取预览」，D1 走查实测；vue-tsc/vite build 均不拦截）。
 const editing = ref(false);
 /** 原文检出 CRLF（编辑不转换——提交时统一规范化，m2-plan §2.5）。 */
 const crlf = ref(false);
@@ -61,6 +52,18 @@ const edits = reactive(new Map<string, EditState>());
 
 const timers = new Map<string, number>();
 const saveSeq = new Map<string, number>();
+
+async function loadPreview() {
+  loading.value = true;
+  exitEditLocal();
+  const { data } = await client.GET("/candidates/{id}/preview", {
+    params: { path: { id: props.taskId } },
+  });
+  loading.value = false;
+  preview.value = data ?? null;
+}
+watch(() => props.taskId, loadPreview, { immediate: true });
+onBeforeUnmount(clearTimers);
 
 function clearTimers() {
   for (const t of timers.values()) window.clearTimeout(t);
