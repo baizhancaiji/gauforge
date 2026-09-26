@@ -99,6 +99,13 @@
       "summary": "契约登记 GET preview/input 跨形态守卫口径：id 跨形态延续（候选与失败回退队列成员可读，守卫与 PUT blocks 一致，其余形态 404），mapping 增补编辑初始化与 CRLF 检出映射行",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "core",
+      "summary": "预览与原文端点对失败回退队列成员放行（读取守卫与 PUT blocks 一致，其余形态 404），补路由级断言回退成员 200、非回退成员 404",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
