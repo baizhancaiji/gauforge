@@ -9,20 +9,24 @@
  * 拼写警告与 CRLF 中性注记），本页仅负责行选中与提交动作。
  */
 import { computed, ref, watch } from "vue";
+import { useRouter } from "vue-router";
 
 import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 import BlockEditor from "@/components/BlockEditor.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import QueueEditorModal, { type MemberRow } from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
 type Candidate = components["schemas"]["Candidate"];
+type Queue = components["schemas"]["Queue"];
 
 const events = useEventsStore();
+const router = useRouter();
 
 const list = ref<Candidate[]>([]);
 const total = ref(0);
@@ -231,6 +235,64 @@ const originView: Record<string, { color: string; label: string }> = {
   returned_failed: { color: "failed", label: "失败退回" },
   returned_succeeded: { color: "succeeded", label: "成功退回" },
 };
+
+// ---------- 多选 + 队列组建（M2 C2，m2-plan §4.3 C2/§2.4） ----------
+const checkedIds = ref<Set<number>>(new Set());
+const QUEUE_MIN = 2;
+const QUEUE_MAX = 10;
+
+const allChecked = computed(
+  () => list.value.length > 0 && list.value.every((c) => checkedIds.value.has(c.id)),
+);
+const queueBtnDisabled = computed(
+  () => checkedIds.value.size < QUEUE_MIN || checkedIds.value.size > QUEUE_MAX,
+);
+/** 越界禁用提示（创建校验前置）：勾选数不在 2–10 时说明原因。 */
+const queueHint = computed(() => {
+  const n = checkedIds.value.size;
+  if (n === 0) return null;
+  if (n > QUEUE_MAX) return `已选 ${n} 个 — 超出队列成员上限 ${QUEUE_MAX}`;
+  if (n < QUEUE_MIN) return `已选 ${n} 个 — 组建队列至少勾选 ${QUEUE_MIN} 个任务`;
+  return null;
+});
+
+function toggleRow(id: number) {
+  const next = new Set(checkedIds.value);
+  if (!next.delete(id)) next.add(id);
+  checkedIds.value = next;
+}
+function toggleAll() {
+  checkedIds.value = allChecked.value
+    ? new Set()
+    : new Set(list.value.map((c) => c.id));
+}
+
+// 「+队列」对话框（创建态；成员行带候选完整信息）
+const queueModalOpen = ref(false);
+const queueInitial = ref<MemberRow[]>([]);
+
+function openQueueModal() {
+  queueInitial.value = list.value
+    .filter((c) => checkedIds.value.has(c.id))
+    .map((c) => ({ id: c.id, filename: c.filename, title: c.title }));
+  queueModalOpen.value = true;
+}
+
+/** 保存（不提交）：关闭对话框并跳转队列页（m2-plan C2：关闭并跳转/刷新） */
+function onQueueSaved(_q: Queue) {
+  queueModalOpen.value = false;
+  checkedIds.value = new Set();
+  router.push("/queues");
+}
+
+/** 直接提交：注记在对话框内展示，关闭后留候选页（列表经 SSE 自动刷新） */
+function onQueueSubmitted() {
+  checkedIds.value = new Set();
+}
+
+function onQueueClosed() {
+  queueModalOpen.value = false;
+}
 </script>
 
 <template>
@@ -270,6 +332,19 @@ const originView: Record<string, { color: string; label: string }> = {
       <span v-if="filterNote" class="note-warn mono" role="status">{{ filterNote }}</span>
       <!-- 提交核验规范化注记（中性信息档，§4.6/§2.5） -->
       <span v-if="submitNote" class="note-info mono" role="status">{{ submitNote }}</span>
+
+      <span class="spacer"></span>
+      <!-- 多选组建队列（C2）：已选 2–10 可用，越界禁用+提示（创建校验前置） -->
+      <span v-if="checkedIds.size" class="note-info mono">已选 {{ checkedIds.size }}</span>
+      <span v-if="queueHint" class="note-warn mono" role="status">{{ queueHint }}</span>
+      <button
+        class="btn btn--secondary"
+        type="button"
+        :disabled="queueBtnDisabled || importing"
+        @click="openQueueModal"
+      >
+        + 队列
+      </button>
     </div>
 
     <!-- 导入失败清单（422 details 逐文件） -->
@@ -296,6 +371,7 @@ const originView: Record<string, { color: string; label: string }> = {
           <table class="table">
             <thead>
               <tr>
+                <th class="chk-col"><input class="ck" type="checkbox" :checked="allChecked" aria-label="全选候选任务" @change="toggleAll" /></th>
                 <th class="mono">ID</th>
                 <th class="mono">文件名</th>
                 <th class="mono">标题</th>
@@ -311,6 +387,15 @@ const originView: Record<string, { color: string; label: string }> = {
                 :class="{ 'row--active': selected?.id === c.id }"
                 @click="select(c)"
               >
+                <td class="chk-col" @click.stop>
+                  <input
+                    class="ck"
+                    type="checkbox"
+                    :checked="checkedIds.has(c.id)"
+                    :aria-label="`选择 ${c.filename}`"
+                    @change="toggleRow(c.id)"
+                  />
+                </td>
                 <td class="mono">{{ fmtTaskId(c.id) }}</td>
                 <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
                 <td class="title" :title="c.title ?? ''">{{ c.title ?? "—" }}</td>
@@ -406,6 +491,16 @@ const originView: Record<string, { color: string; label: string }> = {
         的输入副本与记录，不可恢复
       </p>
     </ConfirmModal>
+
+    <!-- 队列编辑对话框（C2 创建态；编辑/只读模式由队列页 C3 接入） -->
+    <QueueEditorModal
+      :open="queueModalOpen"
+      mode="create"
+      :initial-members="queueInitial"
+      @saved="onQueueSaved"
+      @submitted="onQueueSubmitted"
+      @close="onQueueClosed"
+    />
   </div>
 </template>
 
@@ -422,6 +517,14 @@ const originView: Record<string, { color: string; label: string }> = {
   display: flex;
   align-items: center;
   gap: var(--space-3);
+}
+.spacer {
+  flex: 1;
+}
+/* 复选框列（§4.6 checkbox 规格，样式类 .ck 全局定义） */
+.chk-col {
+  width: 32px;
+  text-align: center;
 }
 .note-ok {
   font-size: var(--text-sm);

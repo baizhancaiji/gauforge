@@ -65,19 +65,21 @@ function trapFocus(e: KeyboardEvent) {
         <slot />
       </div>
       <div class="foot">
-        <button ref="cancelButton" class="btn btn--ghost" type="button" @click="tryClose">
-          {{ cancelText ?? "取消" }}
-        </button>
-        <button
-          class="btn"
-          :class="danger ? 'btn--danger' : 'btn--primary'"
-          type="button"
-          :data-loading="loading || undefined"
-          :disabled="loading || disabled"
-          @click="emit('confirm')"
-        >
-          {{ loading ? `${confirmText ?? "确认"}中 …` : confirmText ?? "确认" }}
-        </button>
+        <slot name="foot">
+          <button ref="cancelButton" class="btn btn--ghost" type="button" @click="tryClose">
+            {{ cancelText ?? "取消" }}
+          </button>
+          <button
+            class="btn"
+            :class="danger ? 'btn--danger' : 'btn--primary'"
+            type="button"
+            :data-loading="loading || undefined"
+            :disabled="loading || disabled"
+            @click="emit('confirm')"
+          >
+            {{ loading ? `${confirmText ?? "确认"}中 …` : confirmText ?? "确认" }}
+          </button>
+        </slot>
       </div>
     </div>
   </div>

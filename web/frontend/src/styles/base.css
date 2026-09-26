@@ -229,6 +229,46 @@ html {
   animation: scanline 1.2s var(--ease-std) infinite;
 }
 
+/* ---------- checkbox（§4.6 A3 定稿：16×16 方形，描边 --border-strong，
+   选中底 --accent + 反差勾，禁用 40% 不透明；勾色取 --accent-ink——
+   accent 底上的既定反差色，与 primary 按钮同源） ---------- */
+.ck {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  background: var(--bg-inset);
+  cursor: pointer;
+  display: inline-grid;
+  place-content: center;
+  vertical-align: middle;
+  transition:
+    background-color 120ms var(--ease-std),
+    border-color 120ms var(--ease-std);
+}
+.ck::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  background: var(--accent-ink);
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  transform: scale(0);
+  transition: transform 120ms var(--ease-std);
+}
+.ck:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ck:checked::before {
+  transform: scale(1);
+}
+.ck:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* 焦点可见性（§7 双环：--border-strong 内环 + --accent 外环，1px 线 2px 偏移） */
 :focus-visible {
   outline: 1px solid var(--accent);

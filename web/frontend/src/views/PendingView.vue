@@ -16,6 +16,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { fmtDateTime, fmtDeclaredRes, fmtTaskId } from "@/utils/format";
 import { useEventsStore } from "@/stores/events";
+import { useDragSort } from "@/composables/useDragSort";
 
 type PendingResponse = components["schemas"]["PendingResponse"];
 type PendingSeat = components["schemas"]["PendingSeat"];
@@ -52,39 +53,32 @@ function toggle(seatId: number) {
 }
 
 // ---------- 拖拽重排（PUT /pending/order 全量原子；锁定席位不可作拖源/落点，
-// 等待区可拖；提交 order 保证锁定席位下标不变，越界本地拒绝并提示） ----------
-const dragId = ref<number | null>(null);
-const overId = ref<number | null>(null);
+// 等待区可拖；提交 order 保证锁定席位下标不变，越界本地拒绝并提示。
+// 拖拽状态管理与移动计算走公共组合式 useDragSort——与队列编辑对话框共用） ----------
+const drag = useDragSort();
 const orderError = ref<string | null>(null);
 
 const canDrag = (s: PendingSeat) => !s.locked;
 
 function onDragStart(s: PendingSeat, e: DragEvent) {
-  dragId.value = s.seat_id;
+  if (!canDrag(s)) return;
   orderError.value = null;
-  e.dataTransfer?.setData("text/plain", String(s.seat_id));
-  if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+  drag.start(s.seat_id, e);
 }
 function onDragOver(s: PendingSeat, e: DragEvent) {
-  if (dragId.value == null || !canDrag(s)) return;
-  overId.value = s.seat_id;
-  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  drag.over(s.seat_id, e, canDrag(s));
 }
 async function onDrop(s: PendingSeat) {
-  const from = dragId.value;
-  dragId.value = null;
-  overId.value = null;
+  const from = drag.dragId.value;
+  drag.end();
   if (from == null || from === s.seat_id) return;
   if (s.locked) {
     orderError.value = "重排越界 — 锁定席位不可作落点";
     return;
   }
   const before = seats.value.map((x) => x.seat_id);
-  const src = before.indexOf(from);
-  const dst = before.indexOf(s.seat_id);
-  if (src < 0 || dst < 0) return;
-  const ids = [...before];
-  ids.splice(dst, 0, ...ids.splice(src, 1));
+  const ids = drag.move(before, from, s.seat_id);
+  if (!ids) return;
   // 后端语义（锁定席位保持原下标即放行，c6a0906e3）：本地先校验，越界不发请求
   const movedLocked = seats.value.some(
     (x) => x.locked && ids.indexOf(x.seat_id) !== before.indexOf(x.seat_id),
@@ -94,7 +88,7 @@ async function onDrop(s: PendingSeat) {
     return;
   }
   const { data, error } = await client.PUT("/pending/order", {
-    body: { seat_order: ids },
+    body: { seat_order: ids as number[] },
   });
   if (error) {
     orderError.value = "重排被拒绝 — 锁定席位必须保持原位";
@@ -185,13 +179,13 @@ async function confirmRemove() {
           class="seat"
           :class="{
             'seat--locked': s.locked,
-            'seat--dragging': dragId === s.seat_id,
-            'seat--over': overId === s.seat_id && dragId !== s.seat_id,
+            'seat--dragging': drag.dragId.value === s.seat_id,
+            'seat--over': drag.overId.value === s.seat_id && drag.dragId.value !== s.seat_id,
           }"
           :draggable="canDrag(s)"
           @dragstart="onDragStart(s, $event)"
           @dragover.prevent="onDragOver(s, $event)"
-          @dragleave="overId === s.seat_id && (overId = null)"
+          @dragleave="drag.leave(s.seat_id)"
           @drop.prevent="onDrop(s)"
         >
           <span class="seat-no mono">S{{ String(s.seat_id).padStart(2, "0") }}</span>
