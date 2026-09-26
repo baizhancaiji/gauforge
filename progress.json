@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T18:05+0800",
+  "updated": "2026-09-26T18:20+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -15,16 +15,23 @@
       "summary": "错误码全集 19 码与两张 reason 词表落位 openapi.yaml 文件头作为 SSOT 载体（含 M1 私有码补录与实现码语义标注），ErrorBody.code 描述改指该清单",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "设计文档增补表单控件与编辑态规格定稿（select/checkbox/toggle/编辑态描边裁决/自动保存触发/队列对话框布局/拖拽动效/手势分工），M2 移项销号",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "提交 #3（错误码全集载体落位）已落库；下一提交 #4 表单控件与编辑态设计规格增补"
+    "note": "A 阶段文档定稿全部完成（#1–#4）；进入 B 阶段，先做提交 #5（B1 关键词字典）"
   },
   "next_steps": [
-    "M2 提交#2 导入成队契约增补",
-    "M2 提交#3 错误码全集落 openapi.yaml 文件头",
-    "M2 提交#4 表单控件与编辑态设计规格增补"
+    "M2 提交#5 (B1) 关键词字典生成脚本与字典入库",
+    "M2 提交#6 (B2) 分块保存服务与 PUT blocks",
+    "M2 提交#7 (B6) 提交前输入核验"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
