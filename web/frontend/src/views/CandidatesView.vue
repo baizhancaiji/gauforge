@@ -335,6 +335,9 @@ function onQueueClosed() {
       >
         {{ importing ? "导入中 …" : "导入文件" }}
       </button>
+      <!-- 主/从分组（2026-09-27 人为修正）：竖分割线分隔「导入文件」与
+           「导入文件夹 + 保存为队列」从属组——成队选项仅对文件夹导入生效 -->
+      <span class="tb-divider" aria-hidden="true"></span>
       <button class="btn btn--secondary" type="button" :disabled="importing" @click="pickFolder">
         导入文件夹
       </button>
@@ -557,12 +560,23 @@ function onQueueClosed() {
 .hidden-input {
   display: none;
 }
-/* 保存为队列（C4）：勾选框 + 队列名预填输入 */
+/* 主/从分组分割线：拉大「导入文件」与「导入文件夹」组间距（配合工具条 12px
+   gap，两按钮间视觉间距 12+1+12=25px，线居中） */
+.tb-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  flex: none;
+}
+/* 保存为队列（C4）：「导入文件夹」的从属选项——贴近宿主按钮（-4px 抵消
+   工具条 gap → 8px）并降字号至 --text-xs（混排纪律 1 的 12px 下限档，
+   2026-09-27 人为修正指定以字号体现从属，登记为统一口径 14px 的例外） */
 .qf {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-sm); /* 文案含中文（保存为队列） */
+  margin-left: calc(var(--space-1) * -1);
+  font-size: var(--text-xs); /* 文案含中文：混排纪律 1 下限档（例外登记见设计文档 §2.2） */
   color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
