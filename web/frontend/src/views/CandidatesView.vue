@@ -415,61 +415,63 @@ function onQueueClosed() {
         </div>
 
         <template v-else>
-          <table class="table">
-            <thead>
-              <tr>
-                <th class="chk-col"><input class="ck" type="checkbox" :checked="allChecked" aria-label="全选候选任务" @change="toggleAll" /></th>
-                <th class="mono">ID</th>
-                <th class="mono">文件名</th>
-                <th class="mono">标题</th>
-                <th class="mono">来源</th>
-                <th class="mono">创建</th>
-                <th class="right mono">动作</th>
-              </tr>
-            </thead>
-            <tbody class="stagger">
-              <tr
-                v-for="c in list"
-                :key="c.id"
-                :class="{ 'row--active': selected?.id === c.id }"
-                @click="select(c)"
-              >
-                <td class="chk-col" @click.stop>
-                  <input
-                    class="ck"
-                    type="checkbox"
-                    :checked="checkedIds.has(c.id)"
-                    :aria-label="`选择 ${c.filename}`"
-                    @change="toggleRow(c.id)"
-                  />
-                </td>
-                <td class="mono">{{ fmtTaskId(c.id) }}</td>
-                <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
-                <td class="title" :title="c.title ?? ''">{{ c.title ?? "—" }}</td>
-                <td>
-                  <StateChip
-                    :state="originView[c.origin]?.color ?? 'staged'"
-                    :label="originView[c.origin]?.label ?? c.origin"
-                  />
-                  <span v-if="c.failure_note" class="failure mono">
-                    {{ causeLabel[c.failure_note] ?? c.failure_note }}
-                  </span>
-                </td>
-                <td class="mono dim">{{ fmtDateTime(c.created_at) }}</td>
-                <td class="right">
-                  <button class="btn btn--ghost" type="button" @click.stop="openSubmit(c)">
-                    提交
-                  </button>
-                  <button class="btn btn--ghost" type="button" @click.stop="select(c)">
-                    预览
-                  </button>
-                  <button class="btn btn--ghost remove" type="button" @click.stop="removing = c">
-                    移除
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-scroll">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th class="chk-col"><input class="ck" type="checkbox" :checked="allChecked" aria-label="全选候选任务" @change="toggleAll" /></th>
+                  <th class="mono">ID</th>
+                  <th class="mono">文件名</th>
+                  <th class="mono">标题</th>
+                  <th class="mono">来源</th>
+                  <th class="mono">创建</th>
+                  <th class="right mono">动作</th>
+                </tr>
+              </thead>
+              <tbody class="stagger">
+                <tr
+                  v-for="c in list"
+                  :key="c.id"
+                  :class="{ 'row--active': selected?.id === c.id }"
+                  @click="select(c)"
+                >
+                  <td class="chk-col" @click.stop>
+                    <input
+                      class="ck"
+                      type="checkbox"
+                      :checked="checkedIds.has(c.id)"
+                      :aria-label="`选择 ${c.filename}`"
+                      @change="toggleRow(c.id)"
+                    />
+                  </td>
+                  <td class="mono">{{ fmtTaskId(c.id) }}</td>
+                  <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
+                  <td class="title" :title="c.title ?? ''">{{ c.title ?? "—" }}</td>
+                  <td>
+                    <StateChip
+                      :state="originView[c.origin]?.color ?? 'staged'"
+                      :label="originView[c.origin]?.label ?? c.origin"
+                    />
+                    <span v-if="c.failure_note" class="failure mono">
+                      {{ causeLabel[c.failure_note] ?? c.failure_note }}
+                    </span>
+                  </td>
+                  <td class="mono dim">{{ fmtDateTime(c.created_at) }}</td>
+                  <td class="right">
+                    <button class="btn btn--ghost" type="button" @click.stop="openSubmit(c)">
+                      提交
+                    </button>
+                    <button class="btn btn--ghost" type="button" @click.stop="select(c)">
+                      预览
+                    </button>
+                    <button class="btn btn--ghost remove" type="button" @click.stop="removing = c">
+                      移除
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <div class="scanline" aria-hidden="true" v-if="loading"></div>
         </template>
         <div class="foot mono" v-if="list.length">
@@ -689,15 +691,26 @@ function onQueueClosed() {
 .duo {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--preview-width);
+  grid-template-rows: minmax(0, 1fr);
   gap: var(--gap-card);
-  align-items: start;
+  flex: 1;
+  min-height: 0;
 }
+/* 列表卡：flex 列，表格滚动包裹层吃剩余高度、局部滚动（§3 视口纪律） */
 .list {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--bg-raised);
+}
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 .table {
   width: 100%;
@@ -772,12 +785,12 @@ tbody tr:hover {
   color: var(--danger);
   background: color-mix(in srgb, var(--danger) 10%, transparent);
 }
-/* 刷新两态：底部 1px 磷光扫描线（§4.3） */
+/* 刷新两态：底部 1px 磷光扫描线（§4.3）——处于滚动区外、列表卡底部常驻可视 */
 .scanline {
   height: 1px;
+  flex-shrink: 0;
   background: var(--accent);
   animation: scanline var(--dur-scan) var(--ease-std) infinite;
-  margin-top: -1px;
 }
 .skel {
   display: grid;
@@ -798,6 +811,7 @@ tbody tr:hover {
   animation-delay: calc(var(--stagger-step) * 3);
 }
 .foot {
+  flex-shrink: 0;
   padding: var(--space-2) var(--space-3);
   font-size: var(--text-sm);
   color: var(--text-faint);
@@ -806,14 +820,13 @@ tbody tr:hover {
 .empty-wrap {
   padding: var(--space-4);
 }
-/* ---------- 预览卡（分块卡序列由 BlockEditor 承载；右侧 380px 粘性，§5/样板） ---------- */
+/* ---------- 预览卡（分块卡序列由 BlockEditor 承载；双栏行高已锁定，
+   预览卡随之拉伸并自管内部滚动，§3 视口纪律） ---------- */
 .preview {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-raised);
-  position: sticky;
-  top: var(--space-2);
-  max-height: calc(100vh - 120px);
+  min-height: 0;
   overflow: auto;
   padding: var(--space-3) var(--space-4);
 }

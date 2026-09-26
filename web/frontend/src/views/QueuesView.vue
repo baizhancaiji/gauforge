@@ -208,7 +208,7 @@ async function confirmDelete() {
         text="暂无队列 — 在候选页勾选任务组建，或导入文件夹时勾选保存为队列"
       />
     </div>
-    <div v-else class="table">
+    <div v-else class="table-area">
       <div class="thead mono">
         <span></span>
         <span>ID</span>
@@ -303,8 +303,8 @@ async function confirmDelete() {
           </BlockEditor>
         </div>
       </template>
-      <div class="scanline" v-if="loading" aria-hidden="true"></div>
     </div>
+    <div class="scanline" v-if="loading" aria-hidden="true"></div>
 
     <!-- 队列编辑对话框（双击行；C2 组件按状态分级渲染） -->
     <QueueEditorModal
@@ -334,6 +334,9 @@ async function confirmDelete() {
 <style scoped>
 .queues {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   border: 1px solid var(--border-hair);
   border-radius: var(--r-lg);
   overflow: hidden;
@@ -341,6 +344,7 @@ async function confirmDelete() {
 }
 /* 页面级注记（重新提交 normalized 中性注记 / 错误） */
 .page-note {
+  flex-shrink: 0;
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-hair);
   font-size: var(--text-sm);
@@ -352,7 +356,15 @@ async function confirmDelete() {
 .empty-wrap {
   padding: var(--space-4);
 }
-.table {
+/* 表格滚动区：吃剩余高度、局部滚动（§3 视口纪律）；行级 min-width 触发横向滚动 */
+.table-area {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.thead,
+.row,
+.detail {
   min-width: 720px;
 }
 .thead,
@@ -514,6 +526,7 @@ async function confirmDelete() {
 }
 .scanline {
   height: 1px;
+  flex-shrink: 0;
   background: var(--accent);
   /* 引用 base.css 共用 scanline（--ease-std），不重复定义 keyframes */
   animation: scanline var(--dur-scan) var(--ease-std) infinite;

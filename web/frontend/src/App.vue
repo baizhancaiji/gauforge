@@ -218,6 +218,7 @@ onMounted(() => events.start());
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  flex-shrink: 0; /* §3 视口纪律：常驻侧栏底部，不随内容滚出 */
   padding: var(--space-3) var(--space-2) 0;
   border-top: 1px solid var(--border-hair);
   color: var(--text-faint);

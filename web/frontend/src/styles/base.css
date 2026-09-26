@@ -109,11 +109,15 @@ html {
   background: color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
-/* 全局抽屉布局：侧栏 + 主区（§3 框架） */
+/* 全局抽屉布局：侧栏 + 主区（§3 框架 + 视口与滚动纪律）
+   高度锁定 100vh、overflow hidden——body 永不出全局滚动条；行高
+   minmax(0,1fr) 使侧栏（HQ 状态行常驻底部）与主列自适应剩余高度。 */
 .app-frame {
   display: grid;
   grid-template-columns: var(--side-width) 1fr;
-  height: 100%;
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  overflow: hidden;
 }
 
 .sidebar {
@@ -121,6 +125,7 @@ html {
   border-right: 1px solid var(--border-hair);
   display: flex;
   flex-direction: column;
+  min-height: 0;
   padding: var(--space-4);
   position: relative;
   z-index: var(--z-nav);
@@ -130,10 +135,12 @@ html {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
 }
 
 .topbar {
   height: var(--topbar-height);
+  flex-shrink: 0;
   background-color: var(--bg-raised);
   border-bottom: 1px solid var(--border-hair);
   display: flex;
@@ -144,11 +151,23 @@ html {
   z-index: var(--z-nav);
 }
 
-/* §2.3 页面度量：六页统一内边距与宽度上限 */
+/* §2.3 页面度量：六页统一内边距与宽度上限（§3 视口纪律：内容区自适应
+   剩余高度，视图根占满并自管内部滚动，此处仅作兜底滚动容器） */
 .content {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: var(--page-pad);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 各页视图根：占满内容区剩余高度（min-height: 0 防内容撑破父容器），
+   页内列表的局部滚动由各视图的滚动包裹层实现 */
+.content > * {
+  flex: 1;
+  min-height: 0;
 }
 
 .content-inner {
@@ -289,6 +308,10 @@ html {
   transform: translateY(6px);
 }
 .view-leave-active {
+  /* 退场视图绝对定位离场（§3 视口纪律）：交叉淡入淡出期间新视图立即
+     占满内容区，不被同帧在流的旧视图挤压高度；inset 对齐 .content 内边距 */
+  position: absolute;
+  inset: var(--page-pad);
   transition: opacity 100ms var(--ease-std);
 }
 .view-leave-to {

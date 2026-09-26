@@ -239,34 +239,36 @@ async function confirmCleanup() {
       />
     </div>
 
-    <section v-else class="table">
-      <div class="thead mono">
-        <span>ID</span>
-        <span>任务</span>
-        <span>状态</span>
-        <span>归因</span>
-        <span>提交</span>
-        <span>结束</span>
-        <span>耗时</span>
-        <span>资源</span>
-        <span>出处</span>
-      </div>
-      <div
-        v-for="h in list"
-        :key="h.id"
-        class="row"
-        :class="{ 'row--active': activeId === h.id }"
-        @click="open(h)"
-      >
-        <span class="mono dim">{{ String(h.id).padStart(3, "0") }}</span>
-        <span class="mono file" :title="h.filename">{{ h.filename }}</span>
-        <span><StateChip :state="h.state" /></span>
-        <span class="mono dim">{{ h.cause ? causeLabel[h.cause] : "—" }}</span>
-        <span class="mono dim">{{ fmtDateTime(h.submitted_at) }}</span>
-        <span class="mono dim">{{ fmtDateTime(h.finished_at) }}</span>
-        <span class="mono">{{ fmtDuration(h.wall_time_s) }}</span>
-        <span class="mono dim">{{ fmtDeclaredRes(h.resources) }}</span>
-        <span class="mono dim">{{ h.queue_id ?? "直提" }}</span>
+    <section v-else class="table-card">
+      <div class="table-scroll">
+        <div class="thead mono">
+          <span>ID</span>
+          <span>任务</span>
+          <span>状态</span>
+          <span>归因</span>
+          <span>提交</span>
+          <span>结束</span>
+          <span>耗时</span>
+          <span>资源</span>
+          <span>出处</span>
+        </div>
+        <div
+          v-for="h in list"
+          :key="h.id"
+          class="row"
+          :class="{ 'row--active': activeId === h.id }"
+          @click="open(h)"
+        >
+          <span class="mono dim">{{ String(h.id).padStart(3, "0") }}</span>
+          <span class="mono file" :title="h.filename">{{ h.filename }}</span>
+          <span><StateChip :state="h.state" /></span>
+          <span class="mono dim">{{ h.cause ? causeLabel[h.cause] : "—" }}</span>
+          <span class="mono dim">{{ fmtDateTime(h.submitted_at) }}</span>
+          <span class="mono dim">{{ fmtDateTime(h.finished_at) }}</span>
+          <span class="mono">{{ fmtDuration(h.wall_time_s) }}</span>
+          <span class="mono dim">{{ fmtDeclaredRes(h.resources) }}</span>
+          <span class="mono dim">{{ h.queue_id ?? "直提" }}</span>
+        </div>
       </div>
       <div class="scanline" aria-hidden="true" v-if="loading"></div>
     </section>
@@ -410,12 +412,15 @@ async function confirmCleanup() {
 <style scoped>
 .history {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 .controls {
   display: flex;
   align-items: center;
   gap: var(--space-4);
+  flex-shrink: 0;
   margin-bottom: var(--space-4);
 }
 .spacer {
@@ -436,12 +441,25 @@ async function confirmCleanup() {
   font-size: var(--text-sm);
   color: var(--state-succeeded);
 }
-.table {
-  position: relative;
+/* 列表卡：flex 列，滚动包裹层吃剩余高度、局部滚动（§3 视口纪律） */
+.table-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   overflow: hidden;
   background: var(--bg-raised);
+}
+.table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+/* 行级 min-width 触发横向滚动（收窄窗口不挤压列） */
+.thead,
+.row {
   min-width: 760px;
 }
 .thead,
@@ -486,12 +504,10 @@ async function confirmCleanup() {
 .dim {
   color: var(--text-faint);
 }
+/* 刷新两态：底部 1px 磷光扫描线（§4.3）——处于滚动区外、列表卡底部常驻可视 */
 .scanline {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   height: 1px;
+  flex-shrink: 0;
   background: var(--accent);
   /* 引用 base.css 共用 scanline（--ease-std），不重复定义 keyframes */
   animation: scanline var(--dur-scan) var(--ease-std) infinite;
