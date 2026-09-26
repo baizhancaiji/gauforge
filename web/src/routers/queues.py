@@ -15,6 +15,7 @@ from starlette import status
 from ..errors import NOT_FOUND, VALIDATION_FAILED, err
 from ..mock import get_state  # 事件总线（B11：emit → 领域事件扇出）
 from ..services import pending as pending_svc
+from ..services import verify as verify_svc
 from ..store import queues as queues_store
 from ..store import tasks as tasks_store
 
@@ -128,6 +129,12 @@ def submit_queue(id: str) -> dict:
         raise NOT_FOUND("queue", id)
     if q["state"] != "unsubmitted":
         raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可提交", http=409)
+    # 提交核验逐成员统一执行（m2-plan §2.5）：任一失败整队拒绝并指明成员，
+    # 核验在提交事务内先于建席位；有变化的副本规范化写回。
+    normalized = False
+    for m in tasks_store().list_queue_members(id):
+        if verify_svc.verify_and_store(m["id"]):
+            normalized = True
     # 整条队列占一席（尾部追加、容量校验、state→submitted），引擎按执行
     # 序列展开派发（含失败分流/回退，engine/dispatcher）。
     seat_id = pending_svc.append_queue(id)
@@ -135,4 +142,4 @@ def submit_queue(id: str) -> dict:
                                       "to": "submitted"})
     get_state().emit("pending.snapshot", pending_svc.snapshot())
     first = tasks_store().list_queue_members(id)[0]
-    return {"seat_id": seat_id, "task_id": first["id"]}
+    return {"seat_id": seat_id, "task_id": first["id"], "normalized": normalized}

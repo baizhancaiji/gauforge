@@ -221,8 +221,10 @@ def test_requeue_failed_reuses_task_id(home):
     r = client.post(f"/api/v1/history/{eid}/requeue")
     assert r.status_code == 200
     body = r.json()
-    assert set(body) == {"seat_id", "task_id"}
+    # M2 起响应含提交核验规范化标记（SubmitResponse 契约增量）
+    assert set(body) == {"seat_id", "task_id", "normalized"}
     assert body["task_id"] == tid
+    assert isinstance(body["normalized"], bool)
     assert_contract_schema(spec, "POST", "/history/{id}/requeue", 200, body)
     assert seats().count() == 1  # 沿用原任务 id 建席
     assert tasks().get(tid)["form"] == "seat_task"

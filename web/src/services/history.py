@@ -21,6 +21,7 @@ from .. import config
 from ..engine import finalize as finalize_files
 from ..errors import err, not_found
 from ..services import candidates as candidates_svc
+from ..services import verify as verify_svc
 from ..store import executions, seats, settings, tasks
 from ..store.db import now_iso
 
@@ -104,6 +105,7 @@ def archive(execution_id: int) -> None:
 def requeue(execution_id: int) -> dict:
     """重新排队（原样重跑）：沿用原任务 id 建席，满员 409。
 
+    提交核验（m2-plan §2.5）在建席前统一执行，normalized 标记随响应返回。
     事件（pending.snapshot）由路由层发（#8 模式）。
     """
     row = _terminal_row(execution_id)
@@ -123,9 +125,10 @@ def requeue(execution_id: int) -> dict:
     if seats().count() >= limit:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)
+    normalized = verify_svc.verify_and_store(tid)  # 核验先于建席
     sid = seats().append(kind="task", task_id=tid)
     tasks().to_seat_task(tid)  # finished → seat_task（沿用原 id）
-    return {"seat_id": sid, "task_id": tid}
+    return {"seat_id": sid, "task_id": tid, "normalized": normalized}
 
 
 def return_candidate(execution_id: int) -> dict:

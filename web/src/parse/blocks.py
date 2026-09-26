@@ -312,3 +312,40 @@ def reassemble(text: str, section: str, lines: list[str]) -> str:
     if text.endswith(eol):
         out += eol
     return out
+
+
+def verify_and_normalize(text: str) -> dict:
+    """提交前输入核验的规范化（m2-plan §2.5 ①②）。
+
+    ① 全文件换行规范化（\\r\\n、孤立 \\r → \\n）；
+    ② 空行规约：除 link0 外每节末尾恰好一个空行（含文件末节与文件末尾），
+       link0 之后不加空行；只动节边界空行带（注释行原位保留），节内容与
+       分子节内部不动；charge_mult 与原子定义行之间不插空行（分子说明节
+       连续，终止空行在原子块之后）。
+
+    返回 {"text", "changed"}；解析校验（③④）由调用方执行。
+    """
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    logical = _split_lines(normalized)
+    spans = _scan_spans(logical)
+    keys = list(spans)
+    if not keys:
+        return {"text": normalized, "changed": normalized != text}
+    out = list(logical[:spans[keys[0]][0]])  # 前导空行/注释原样
+    for idx, key in enumerate(keys):
+        start, end = spans[key]
+        out.extend(logical[start:end])
+        last = idx + 1 == len(keys)
+        gap_end = spans[keys[idx + 1]][0] if not last else len(logical)
+        gap = logical[end:gap_end]
+        out.extend(ln for ln in gap
+                   if ln.strip() and ln.lstrip().startswith("!"))
+        # link0 之后不加空行；charge_mult 直连原子定义行（分子说明节内部）
+        if key not in ("link0", "charge_mult") and not last:
+            out.append("")
+    body = "\n".join(out)
+    if keys[-1] == "link0":  # 末节为 link0：其后不加空行，仅保留原结尾换行
+        new_text = body + ("\n" if normalized.endswith("\n") else "")
+    else:
+        new_text = body + "\n\n" if body else body  # 文件末尾恰一空行
+    return {"text": new_text, "changed": new_text != text}

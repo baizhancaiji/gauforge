@@ -14,6 +14,7 @@ from ..parse.blocks import parse_input
 from ..parse.naturalsort import natural_key
 from ..services import candidates as candidates_svc
 from ..services import pending as pending_svc
+from ..services import verify as verify_svc
 from ..store import settings as settings_store
 from ..store import tasks as tasks_store
 
@@ -121,8 +122,9 @@ def save_block(id: int, section: str, payload: dict) -> dict:
 @router.post("/candidates/{id}/submit")
 def submit_candidate(id: int, payload: dict | None = None) -> dict:
     _candidate_row(id)  # 404 语义先行（非候选形态同按不存在处理）
+    normalized = verify_svc.verify_and_store(id)  # 提交核验：先落盘后建席
     sid = pending_svc.append_task(id)
     get_state().emit("candidates.changed",
                      {"action": "moved_out", "candidate_id": id})
     get_state().emit("pending.snapshot", pending_svc.snapshot())
-    return {"seat_id": sid, "task_id": id}
+    return {"seat_id": sid, "task_id": id, "normalized": normalized}
