@@ -183,6 +183,34 @@
       "summary": "M2 验收记录落盘：D1 九条路径走查留痕（fake g16 全链路 + Playwright 黑盒）、五笔运行时缺陷修复登记、设计一致性与系统级判据核对、M2.1–M2.7 不偏离核对",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "候选页「+ 队列」按钮右缘与左列列表对齐（原被工具条 spacer 推至整页最右、落在预览区右肩，视觉归属错误；计划外人为修正）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "创建态队列编辑对话框移除「队列 ID/保存后生成」按钮样式占位注记（纯装饰不可点击、属实现注释不应上 UI；编辑/只读态真实 id 展示与后端生成逻辑不变；计划外人为修正）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "roadmap M2、m2-plan M2.2/§4.3、m0-frontend-design §4.6 回填创建态队列对话框不渲染队列 id 字段的表述（随创建态占位注记移除的人为修正同步文档）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "m0-frontend-design §5 候选页布局行与 m2-plan C2 段增补「+ 队列」按钮右缘对齐左列列表、不落预览区右肩的布局规格（补设计文档未述锚点，计划外人为修正指定）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
