@@ -71,7 +71,7 @@ def _validate_one(filename: str, data: bytes) -> dict | None:
                 "message": "多步任务（--Link1--）不支持"}
     if r["parse_errors"]:
         first = r["parse_errors"][0]
-        return {"filename": name, "reason": "PARSE_FAILED",
+        return {"filename": name, "reason": "INPUT_PARSE_FAILED",
                 "message": f"解析失败：{first['message']}（第 {first['line']} 行）",
                 "parse_errors": r["parse_errors"]}
     return None

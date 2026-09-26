@@ -7,7 +7,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from .. import config
-from ..errors import VALIDATION_FAILED
+from ..errors import VALIDATION_FAILED, err
 from ..mock import get_state
 from ..services import pending as pending_svc
 from ..store import settings as settings_store
@@ -54,9 +54,16 @@ def update_settings(payload: dict) -> dict:
         raise VALIDATION_FAILED([{"field": "values", "reason": "must_be_object"}])
 
     # 先整批校验（全有或全无，任一失败整批拒绝），再应用。
+    # 错误码形态（m2-plan §2.6 决策点 10）：任一失败项为 readonly（启动级）
+    # → 409 SETTING_READONLY；否则 → 422 SETTING_VALUE_INVALID，
+    # details.errors 保留逐项 reason（unknown_setting/readonly/range/type）。
     failures = settings_store().apply_update(values)
     if failures:
-        raise VALIDATION_FAILED(failures)
+        if any(f["reason"] == "readonly" for f in failures):
+            raise err("SETTING_READONLY", "启动级只读设置不可改（整批拒绝）",
+                      {"errors": failures}, http=409)
+        raise err("SETTING_VALUE_INVALID", "设置值越界或类型错误",
+                  {"errors": failures}, http=422)
 
     get_state().emit("settings.updated", {"keys": sorted(values.keys())})
 

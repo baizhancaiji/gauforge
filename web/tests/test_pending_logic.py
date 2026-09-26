@@ -213,7 +213,7 @@ def test_member_removal_floor_unstarted_queue():
     assert pending.remove_member(sid, m2)["moved_in"] == [m2]
     with pytest.raises(ApiError) as ei:  # 未开始队列至多移除至剩 1 个
         pending.remove_member(sid, m0)
-    assert ei.value.body()["error"]["code"] == "SEAT_MEMBER_LAST"
+    assert ei.value.body()["error"]["code"] == "QUEUE_MEMBER_FLOOR"
     assert len(tasks().list_queue_members(qid)) == 1
 
 
@@ -224,7 +224,7 @@ def test_member_executed_409_running_and_final():
     ex = _run(m0, qid)
     with pytest.raises(ApiError) as ei:
         pending.remove_member(sid, m0)
-    assert ei.value.body()["error"]["code"] == "SEAT_MEMBER_EXECUTED"
+    assert ei.value.body()["error"]["code"] == "TASK_EXECUTED_IMMUTABLE"
     executions().finalize(execution_id=ex, state="succeeded",
                           finished_at="2026-01-01T00:00:00+08:00")
     with pytest.raises(ApiError):  # 终态已执行同样不可移除

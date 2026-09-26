@@ -109,7 +109,7 @@ def test_parse_failed_rejected_atomically(ind):
         import_files([("bad.gjf", bad), ("ok.gjf", VALID)], inputs_dir=ind)
     entries = ei.value.body()["error"]["details"]["errors"]
     assert [e["filename"] for e in entries] == ["bad.gjf"]
-    assert entries[0]["reason"] == "PARSE_FAILED"
+    assert entries[0]["reason"] == "INPUT_PARSE_FAILED"
     assert "parse_errors" in entries[0]
     assert _rows() == []
     assert list(ind.iterdir()) == []

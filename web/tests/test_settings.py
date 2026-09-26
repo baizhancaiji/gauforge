@@ -39,15 +39,16 @@ def test_put_out_of_range_422_with_details():
     r = client.put("/api/v1/settings", json={"values": {"page_size": 99999}})
     assert r.status_code == 422
     body = r.json()
-    assert body["error"]["code"] == "VALIDATION_FAILED"
-    assert any(item["key"] == "page_size" for item in body["error"]["details"]["errors"])
+    assert body["error"]["code"] == "SETTING_VALUE_INVALID"
+    errors = body["error"]["details"]["errors"]
+    assert any(item["key"] == "page_size" and item["reason"] == "range"
+               for item in errors)
 
 
 def test_put_startup_readonly_409():
     r = client.put("/api/v1/settings", json={"values": {"bind_address": "0.0.0.0"}})
-    assert r.status_code == 422  # readonly 项按未知/只读拒
-    code = r.json()["error"]["code"]
-    assert code in ("VALIDATION_FAILED", "SETTING_READONLY")
+    assert r.status_code == 409  # readonly 项整批 409（§2.6 决策点 10）
+    assert r.json()["error"]["code"] == "SETTING_READONLY"
 
 
 def test_settings_response_against_schema():

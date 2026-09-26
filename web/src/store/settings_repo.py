@@ -44,18 +44,23 @@ class SettingsRepo:
     # ---------------- 校验与应用（settings 路由唯一入口） ----------------
 
     def apply_update(self, values: dict[str, object]) -> list[dict]:
-        """整批校验（unknown/readonly/range/type），全部通过才写入。"""
+        """整批校验（unknown/readonly/type/range），全部通过才写入。
+
+        reason 词表对齐契约载体（openapi.yaml 文件头词表二）：
+        unknown_setting / readonly / range / type。"""
         failures: list[dict] = []
         clean: dict[str, object] = {}
         for key, value in values.items():
             meta = config.SETTINGS_CATALOG.get(key)
-            if meta is None or not meta["editable"]:
-                # 启动级只读项与未知 key 同样按「不可写」拒绝（不入库）。
-                failures.append({"key": key,
-                                 "reason": "unknown_setting" if meta is None else "readonly"})
+            if meta is None:
+                failures.append({"key": key, "reason": "unknown_setting"})
                 continue
-            if not self._valid_value(meta, value):
-                failures.append({"key": key, "reason": "out_of_range", "value": value})
+            if not meta["editable"]:  # 启动级只读项不可写（不入库）
+                failures.append({"key": key, "reason": "readonly"})
+                continue
+            reason = self._value_error(meta, value)
+            if reason:
+                failures.append({"key": key, "reason": reason, "value": value})
                 continue
             clean[key] = value
         if failures:
@@ -65,24 +70,24 @@ class SettingsRepo:
         return []
 
     @staticmethod
-    def _valid_value(meta: dict, value: object) -> bool:
+    def _value_error(meta: dict, value: object) -> str | None:
+        """逐项校验：类型错 → "type"，越界 → "range"，通过 → None。"""
         vtype = meta.get("value_type")
+        type_ok = True
         if vtype == "integer":
-            if not isinstance(value, int) or isinstance(value, bool):
-                return False
+            type_ok = isinstance(value, int) and not isinstance(value, bool)
         elif vtype == "number":
-            if isinstance(value, bool) or not isinstance(value, (int, float)):
-                return False
+            type_ok = (not isinstance(value, bool)
+                       and isinstance(value, (int, float)))
         elif vtype == "string":
-            if not isinstance(value, str):
-                return False
+            type_ok = isinstance(value, str)
+        if not type_ok:
+            return "type"
         rng = meta.get("range")
         if rng is None:
-            return True
+            return None
         num = float(value)  # type: ignore[arg-type]
         lo, hi = rng["min"], rng["max"]
-        if lo is not None and num < lo:
-            return False
-        if hi is not None and num > hi:
-            return False
-        return True
+        if (lo is not None and num < lo) or (hi is not None and num > hi):
+            return "range"
+        return None

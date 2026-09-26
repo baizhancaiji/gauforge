@@ -8,8 +8,8 @@
 - 整席移除：单任务退候选（origin=returned_unrun，id 延续）；队列回退
   未提交（成员不变，state→unsubmitted，无回退标记）。
 - 成员移除：未执行者退候选；已执行（存在任何执行记录）409
-  SEAT_MEMBER_EXECUTED；未开始队列至多移除至剩 1 个（409
-  SEAT_MEMBER_LAST）；执行中队列可清至只剩在跑成员。
+  TASK_EXECUTED_IMMUTABLE；未开始队列至多移除至剩 1 个（409
+  QUEUE_MEMBER_FLOOR）；执行中队列可清至只剩在跑成员。
 - 上限调小挤出：自队尾、只挤窗口未触及席位、在跑不追溯（可临时超限）。
 
 事件（candidates.changed(moved_in)/pending.snapshot/queue.status）由路由层
@@ -201,13 +201,13 @@ def remove_member(seat_id: int, task_id: int) -> dict:
     if not any(m["id"] == task_id for m in members):
         raise not_found("task", task_id)
     if executions().list_by_task(task_id):
-        raise err("SEAT_MEMBER_EXECUTED", "已执行成员不可移除",
+        raise err("TASK_EXECUTED_IMMUTABLE", "已执行成员不可移除",
                   {"task_id": task_id}, http=409)
     running = _running_task_ids()
     n_running = sum(1 for m in members if m["id"] in running)
     floor = n_running if n_running else 1
     if len(members) - 1 < floor:
-        raise err("SEAT_MEMBER_LAST", "队列席位成员不可再移除",
+        raise err("QUEUE_MEMBER_FLOOR", "队列席位成员不可再移除",
                   {"seat_id": seat_id}, http=409)
     tasks().return_to_candidate(task_id, "returned_unrun")
     tasks().repack_queue(seat["queue_id"])

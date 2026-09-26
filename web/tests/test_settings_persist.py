@@ -61,9 +61,10 @@ def test_validation_unknown_and_readonly(repo):
 
 
 def test_validation_out_of_range(repo):
+    """reason 词表对齐契约载体（openapi.yaml 文件头词表二）：越界为 range。"""
     failures = repo.apply_update({"page_size": 99999, "parallel_window": 0})
     reasons = {f["key"]: f["reason"] for f in failures}
-    assert reasons == {"page_size": "out_of_range", "parallel_window": "out_of_range"}
+    assert reasons == {"page_size": "range", "parallel_window": "range"}
 
 
 def test_apply_update_all_or_nothing(repo):
@@ -81,7 +82,7 @@ def test_apply_update_valid_batch(repo):
 
 def test_type_coercion_int_and_number(repo):
     """契约 value_type：integer 项收整数、number 项收数值（bool 拒绝）。"""
-    assert repo.apply_update({"page_size": "abc"})[0]["reason"] == "out_of_range"
-    assert repo.apply_update({"page_size": True})[0]["reason"] == "out_of_range"
+    assert repo.apply_update({"page_size": "abc"})[0]["reason"] == "type"
+    assert repo.apply_update({"page_size": True})[0]["reason"] == "type"
     assert repo.apply_update({"link0_default_mem_gb": 12}) == []
     assert repo.get("link0_default_mem_gb") == 12
