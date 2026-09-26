@@ -127,14 +127,20 @@
       "summary": "队列页真实化：手势分工（单击行首箭头展开/双击行开编辑对话框）、状态分级对话框接入（unsubmitted 全量、submitted 仅成员、executing/completed 只读附待执行页引导）、重新提交（normalized 注记/满员 409）、删除二次确认（状态分级文案、executing 不渲染）、失败成员归因列表与回退队列 failed/skipped 成员的 BlockEditor 分块编辑入口",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "导入队列选项：文件夹导入「保存为队列」勾选与队列名预填（顶层目录名缺省可改），上送 queue_from_folder/folder_name，成队注记与越界回落 queue_fallback_reason 中性提示",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "C 阶段进行中：#13 (C1)、#14 (C2)、#15 (C3) 已落库，下一任务 #16 (C4) 导入对话框队列选项"
+    "note": "C 阶段完成（#13–#16 全部落库），下一任务 #17 (D1) 端到端验收走查与 GUI 走查记录"
   },
   "next_steps": [
-    "M2 提交#16 (C4) 导入对话框队列选项",
     "M2 提交#17 (D1) 端到端验收走查与 GUI 走查记录",
     "M2 收尾 chore(progress) 进度两文件终态同步与提交整理"
   ],
