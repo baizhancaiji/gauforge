@@ -51,11 +51,13 @@
 | 时点（业务动作） | 触发的事件（按序） |
 |---|---|
 | 导入文件 | `candidates.changed(created)` |
+| 导入成队（勾选保存为队列，M2；成队） | `candidates.changed(created)` ×N（导入落候选）→ `candidates.changed(moved_out)` ×N（成队转换）→ `queues.changed(created)` |
+| 导入成队（越界拒绝回落） | 仅 `candidates.changed(created)` ×N（全部生成候选，无队列创建） |
 | 行内提交成功 | `candidates.changed(moved_out)` → `pending.snapshot` |
 | 队列保存（创建） | `candidates.changed(moved_out)` ×N（成员转任务）→ `queues.changed(created)` |
 | 队列直接提交 | `queue.status(unsubmitted→submitted)` → `pending.snapshot` |
-| 队列编辑（PATCH） | `queues.changed(updated)`（+退回成员 `candidates.changed(moved_in)`） |
-| 队列删除 | `queues.changed(deleted)` → `candidates.changed(moved_in)` ×N（未执行成员；在待执行则 `pending.snapshot`） |
+| 队列编辑（PATCH） | `queues.changed(updated)`（+退回成员 `candidates.changed(moved_in)` ×N；回退编辑移除全部 failed/skipped 成员后自动成功：`queues.changed(updated)` → `queue.status(unsubmitted→completed, finish_reason=success)`，退回成员 `moved_in` 在前） |
+| 队列删除 | `candidates.changed(moved_in)` ×N（未执行成员退回候选）→ `queues.changed(deleted)`；删除在待执行队列（M2 增强）另推 `pending.snapshot`（席位撤销释放，snapshot 在 moved_in 与 deleted 之后） |
 | 提交被拒（满员） | 无事件（HTTP 409 直接返回） |
 | 派发启动任务 | （队列席位首成员派发）`queue.status(submitted→executing)` → `task.status(staged→running, execution_id)` → `pending.snapshot`（席位成员态变化） |
 | 任务正常结束 | `task.status(→succeeded)` → `history.appended(succeeded)` → 若队列席位清空 `pending.snapshot` |
