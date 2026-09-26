@@ -1,16 +1,3 @@
-<script lang="ts">
-/** 成员行视图（创建态来自候选行；编辑态经 last_failure/pending 交叉）。 */
-export interface MemberRow {
-  id: number;
-  /** 创建态来自候选行；编辑态契约 Queue 无成员明细，缺省显示 — */
-  filename?: string;
-  title?: string | null;
-  /** 失败归因交叉（Queue.last_failure.members，编辑/只读态） */
-  state?: string;
-  cause?: string | null;
-}
-</script>
-
 <script setup lang="ts">
 /**
  * QueueEditorModal — 队列编辑对话框（m2-plan §2.2/§2.4/§4.3 C2；创建/编辑共用）。
@@ -23,8 +10,6 @@ export interface MemberRow {
  * （改名/开关 409，A2 决策点 2/9——禁用并注明）；executing/completed 只读详情。
  * 「直接提交」= 保存 + submit 链式；submit 失败时队列保留 unsubmitted，展示
  * 原因引导队列页重试；提交响应 normalized=true 显「已自动规范化」中性注记。
- * （MemberRow 类型导出在上方普通 script 块——script setup 内 export 会引发
- *   模块初始化错误，走查实测。）
  */
 import { computed, ref, watch } from "vue";
 
@@ -37,6 +22,16 @@ import { fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
 type Queue = components["schemas"]["Queue"];
+
+export interface MemberRow {
+  id: number;
+  /** 创建态来自候选行；编辑态契约 Queue 无成员明细，缺省显示 — */
+  filename?: string;
+  title?: string | null;
+  /** 失败归因交叉（Queue.last_failure.members，编辑/只读态） */
+  state?: string;
+  cause?: string | null;
+}
 
 const props = defineProps<{
   open: boolean;
