@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T18:20+0800",
+  "updated": "2026-09-26T19:05+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -22,11 +22,18 @@
       "summary": "设计文档增补表单控件与编辑态规格定稿（select/checkbox/toggle/编辑态描边裁决/自动保存触发/队列对话框布局/拖拽动效/手势分工），M2 移项销号",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "M2 计划登记修订说明五（B1 字典抽取源改用 gaussian-kb MCP 结构化知识库）并回填 A1 实地核查结论（94 页甄别剔除 8 篇文章页、词条=slug+标题变体、决策点 4/5 关闭）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "A 阶段文档定稿全部完成（#1–#4）；进入 B 阶段，先做提交 #5（B1 关键词字典）"
+    "note": "B 阶段进行中：B1 关键词字典（gaussian-kb 结构化清单抽取）实施中，随后 #6(B2)/#7(B6)"
   },
   "next_steps": [
     "M2 提交#5 (B1) 关键词字典生成脚本与字典入库",
