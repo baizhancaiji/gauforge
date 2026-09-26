@@ -102,6 +102,16 @@ def _maybe_auto_success(queue_id: str, remaining: list[dict],
     action["auto_success"] = True
 
 
+def create_queue_from_candidates(name: str, member_ids: list[int]) -> str:
+    """导入成队转换（m2-plan §2.3）：候选 → queue_member（按给定顺序）+
+    建队列（skip_failed=False 默认）。返回 qid；事件由路由层发。"""
+    qid = new_queue_id()
+    queues().create(qid, name=name, skip_failed=False)
+    for pos, tid in enumerate(member_ids):
+        tasks().enqueue(tid, qid, pos)
+    return qid
+
+
 def queue_view(row: dict) -> dict:
     """契约 Queue 视图：聚合 member_ids（position 序）+ last_failure 反序列化
     （库行存 JSON 文本）+ SQLite 整数布尔还原。"""

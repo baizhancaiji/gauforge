@@ -134,6 +134,28 @@ def import_files(files: list[_File], *, mode: str = "files",
     return out
 
 
+def import_folder_as_queue(files: list[_File], *, mode: str,
+                           folder_name: str,
+                           inputs_dir: Path | None = None,
+                           ) -> tuple[list[dict], dict | None, str | None]:
+    """导入成队（m2-plan §2.3 契约增量）：复用 import_files 整批导入后按
+    受支持文件数 2–10 判定成队或回落。
+
+    返回 (files 条目, queue {queue_id,name}|None, queue_fallback_reason|None)；
+    成队 = 导入落候选 → 候选转换入队；越界 = 拒绝成队、回落全部生成候选。
+    """
+    out = import_files(files, mode=mode, inputs_dir=inputs_dir)
+    n = len(out)
+    if 2 <= n <= 10:
+        from .queues import create_queue_from_candidates  # 延迟导入防环
+        qid = create_queue_from_candidates(folder_name,
+                                           [item["id"] for item in out])
+        return out, {"queue_id": qid, "name": folder_name}, None
+    reason = (f"受支持文件 {n} 个，超出队列成员上限 10" if n > 10
+              else f"受支持文件 {n} 个，少于队列成员下限 2")
+    return out, None, reason
+
+
 def delete_candidate(task_id: int, inputs_dir: Path | None = None) -> None:
     """剔除候选：删 inputs/<id> 与记录（删除任务实体唯一入口）。
 

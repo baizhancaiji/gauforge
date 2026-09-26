@@ -54,7 +54,7 @@ export interface paths {
         put?: never;
         /**
          * 导入（multipart，M1 实施；M0 mock）
-         * @description 支持 files[]（批量）/ 文件夹导入 mode=files|folder
+         * @description 支持 files[]（批量）/ 文件夹导入 mode=files|folder。M2 增补导入成队： queue_from_folder=true 且 mode=folder 时，导入后以候选转换并创建队列 （name=folder_name，受支持文件数 2–10 方可成队；越界拒绝成队、回落为 全部生成候选并在 queue_fallback_reason 明示原因）。mode=files 时显式 queue_from_folder=true → 422。成队事件序列：candidates.changed(created) ×N → candidates.changed(moved_out) ×N → queues.changed(created)。
          */
         post: operations["importCandidates"];
         delete?: never;
@@ -524,7 +524,7 @@ export interface components {
         EffectKind: "immediate" | "immediate_retroactive" | "new_submissions" | "on_restart";
         ErrorBody: {
             error: {
-                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（见文件头/m0-plan §2.1.1） */
+                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，19 码 + 两张 reason 词表） */
                 code: string;
                 message: string;
                 /** @description 错误附加信息（如越界值、逐字段错误数组） */
@@ -807,7 +807,7 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description POST /candidates 响应（导入，M1 实施；M0 mock） */
+        /** @description POST /candidates 响应（导入，M1 实施；M0 mock）。M2 起含导入成队结果字段（queue_from_folder 时返回，见 POST /candidates） */
         CandidateCreate: {
             files: {
                 id?: number;
@@ -815,10 +815,23 @@ export interface components {
                 /** @description 与既有候选同名且内容哈希一致的提示（不阻断导入，另行建目） */
                 duplicate?: boolean;
             }[];
+            /** @description M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队）为 null */
+            queue?: {
+                queue_id?: string;
+                name?: string;
+            } | null;
+            /** @description M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」），未回落为 null */
+            queue_fallback_reason?: string | null;
         };
+        /** @description 提交响应（行内提交/队列提交/历史重新排队三端点共用）。M2 起提交前输入核验对输入副本执行换行规范化或空行规约时置 normalized=true */
         SubmitResponse: {
             seat_id: number;
             task_id: number;
+            /**
+             * @description M2；本次提交核验对输入副本执行了 CRLF→LF 或空行规约变更（queue 提交逐成员核验，任一成员规范化即 true）；前端据此展示「已自动规范化」注记，不自行实现规约检测
+             * @default false
+             */
+            normalized: boolean;
         };
     };
     responses: {
@@ -960,6 +973,13 @@ export interface operations {
                      * @enum {string}
                      */
                     mode?: "files" | "folder";
+                    /**
+                     * @description M2；导入后以文件夹名为队列名保存为队列（仅 mode=folder 有效）
+                     * @default false
+                     */
+                    queue_from_folder?: boolean;
+                    /** @description M2；队列名来源（queue_from_folder=true 时必填——浏览器 webkitdirectory 上传仅携文件基名，相对路径由前端另送） */
+                    folder_name?: string;
                 };
             };
         };

@@ -73,13 +73,45 @@ def list_candidates(origin: str | None = None, page: int = 1,
 
 @router.post("/candidates", status_code=status.HTTP_201_CREATED)
 async def import_candidates(files: list[UploadFile] = File(...),
-                            mode: str = Form("files")) -> dict:
+                            mode: str = Form("files"),
+                            queue_from_folder: bool = Form(False),
+                            folder_name: str | None = Form(None)) -> dict:
+    """导入（M2 增补队列选项，m2-plan §2.3）。
+
+    勾选保存为队列：受支持文件数 2–10 成队（queue 明示），越界拒绝成队、
+    回落全部生成候选（queue_fallback_reason 明示原因）。成队事件序列
+    （sse.md §3）：candidates.changed(created) ×N → moved_out ×N →
+    queues.changed(created)，不省略 moved_out。
+    """
+    if queue_from_folder:
+        if mode != "folder":
+            raise err("VALIDATION_FAILED", "queue_from_folder 仅在"
+                      " mode=folder 时有效",
+                      {"errors": [{"field": "queue_from_folder",
+                                   "reason": "requires_folder_mode"}]},
+                      http=422)
+        if not folder_name or not folder_name.strip():
+            raise err("VALIDATION_FAILED", "queue_from_folder=true 时"
+                      " folder_name 必填",
+                      {"errors": [{"field": "folder_name",
+                                   "reason": "required"}]}, http=422)
     payload = [(f.filename or "", await f.read()) for f in files]
-    out = candidates_svc.import_files(payload, mode=mode)
-    for item in out:
+    if queue_from_folder:
+        out, queue, fallback = candidates_svc.import_folder_as_queue(
+            payload, mode=mode, folder_name=folder_name.strip())
+    else:
+        out, queue, fallback = candidates_svc.import_files(payload,
+                                                           mode=mode), None, None
+    for item in out:  # 导入落候选
         get_state().emit("candidates.changed",
                          {"action": "created", "candidate_id": item["id"]})
-    return {"files": out}
+    if queue:  # 成队转换 + 建队列
+        for item in out:
+            get_state().emit("candidates.changed",
+                             {"action": "moved_out", "candidate_id": item["id"]})
+        get_state().emit("queues.changed",
+                         {"action": "created", "queue_id": queue["queue_id"]})
+    return {"files": out, "queue": queue, "queue_fallback_reason": fallback}
 
 
 @router.get("/candidates/{id}")
