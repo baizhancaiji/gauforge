@@ -120,16 +120,23 @@
       "summary": "候选页多选与队列组建：复选框列（全选/清空、已选计数）、「+ 队列」按钮（2–10 前置校验）、队列编辑对话框三模式组件（名称/成员移除与拖动排序/跳过开关、保存 primary + 直接提交 secondary 链式失败保留 unsubmitted、normalized 中性注记）与 useDragSort 公共拖拽组合式（待执行页同步切换）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "队列页真实化：手势分工（单击行首箭头展开/双击行开编辑对话框）、状态分级对话框接入（unsubmitted 全量、submitted 仅成员、executing/completed 只读附待执行页引导）、重新提交（normalized 注记/满员 409）、删除二次确认（状态分级文案、executing 不渲染）、失败成员归因列表与回退队列 failed/skipped 成员的 BlockEditor 分块编辑入口",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "C 阶段进行中：#13 (C1) 预览编辑态、#14 (C2) 候选页多选与队列编辑对话框已落库，下一任务 #15 (C3) 队列页真实化"
+    "note": "C 阶段进行中：#13 (C1)、#14 (C2)、#15 (C3) 已落库，下一任务 #16 (C4) 导入对话框队列选项"
   },
   "next_steps": [
-    "M2 提交#15 (C3) 队列页真实化",
     "M2 提交#16 (C4) 导入对话框队列选项",
-    "M2 提交#17 (D1) 端到端验收走查与 GUI 走查记录"
+    "M2 提交#17 (D1) 端到端验收走查与 GUI 走查记录",
+    "M2 收尾 chore(progress) 进度两文件终态同步与提交整理"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
