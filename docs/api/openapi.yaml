@@ -13,6 +13,40 @@
 #   - 分页信封 {"items":[],"page":1,"page_size":50,"total":123}，offset 式。
 #   - 错误结构统一 {"error":{"code","message","details"}}，code 为 SCREAMING_SNAKE_CASE 枚举。
 #
+# 错误码全集（19 码，SSOT 载体，M2 A4 定稿；m0-plan §2.1.1 为历史原稿不再现行）：
+#   ErrorBody.code 取值以本清单为准，实现集合 ⊆ 清单（test_error_codes.py 静态闸门）。
+#   - INVALID_REQUEST — 400：请求形态错误（路径/参数级，如 molecule 节或未知节名编辑）
+#   - NOT_FOUND — 404：资源不存在
+#   - VALIDATION_FAILED — 422：请求体校验失败（含 member_ids 成员增补/重复、
+#     导入 mode=files + queue_from_folder=true 组合、folder_name 缺失等）
+#   - INTERNAL_ERROR — 500：服务器内部错误（message 不泄露内部细节）
+#   - QUEUE_MEMBER_RANGE — 422：创建队列成员数不在 2–10（创建期专用）
+#   - QUEUE_STATE_CONFLICT — 409：队列属性/成员操作与队列状态机冲突（非
+#     unsubmitted 改名/开关、submitted/executing/completed 的成员 PATCH、
+#     executing 删除、非 unsubmitted 提交等）
+#   - PENDING_CAPACITY_FULL — 409：待执行席位已满
+#   - SEAT_WINDOW_LOCKED — 409：席位窗口锁定（窗口内成员重排/移除受限）
+#   - TASK_STATE_CONFLICT — 409：任务状态机冲突
+#   - QUEUE_MEMBER_FLOOR — 409：移除成员低于下限（队列 PATCH 清空至 0、席位内移除最后成员）
+#   - QUEUE_MEMBER_LOCKED — 409：队列成员内容锁定（未提交非回退 / 已提交 /
+#     执行中 / 已完成队列成员不可编辑内容）
+#   - TASK_EXECUTED_IMMUTABLE — 409：已执行成员不可移除（席位内）
+#   - INPUT_PARSE_FAILED — 422：输入解析失败（提交核验顶层拒绝；导入 per-file reason 同名）
+#   - INPUT_MULTISTEP_UNSUPPORTED — 422：多步任务（--Link1--）不支持（导入
+#     per-file reason 与提交核验兜底同名）
+#   - SETTING_VALUE_INVALID — 422：设置值越界/类型错（details.errors 保留逐项
+#     reason，词表见下）
+#   - SETTING_READONLY — 409：启动级只读设置不可改（任一失败项为 readonly 时整批 409）
+#   - INVALID_MEMBERS — 422：创建队列时成员不存在或不在候选列表（M1 私有码补录，保留现名）
+#   - TASK_IN_FLIGHT — 409：在途任务内容锁定（seat_task 形态编辑拒绝）
+#   - TASK_FINISHED — 409：终态条目不可变（历史形态编辑拒绝）
+#
+# 词表一：导入 per-file reason（files[].error 值域）
+#   INVALID_FILENAME / UNSUPPORTED_EXTENSION / INVALID_ENCODING /
+#   INPUT_PARSE_FAILED / INPUT_MULTISTEP_UNSUPPORTED
+# 词表二：设置域逐项 reason（details.errors[].reason 值域）
+#   unknown_setting / readonly / range / type
+#
 # 字段时机标注（roadmap §2.6）：C=创建必填、T=状态流转更新、F=终态补齐后冻结、
 # O=可空。写入各 schema 的 description。
 
@@ -94,7 +128,7 @@ components:
           properties:
             code:
               type: string
-              description: SCREAMING_SNAKE_CASE 错误码全集枚举（见文件头/m0-plan §2.1.1）
+              description: SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，19 码 + 两张 reason 词表）
             message:
               type: string
             details:
