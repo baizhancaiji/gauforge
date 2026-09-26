@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T22:20+0800",
+  "updated": "2026-09-26T23:05+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -134,11 +134,18 @@
       "summary": "导入队列选项：文件夹导入「保存为队列」勾选与队列名预填（顶层目录名缺省可改），上送 queue_from_folder/folder_name，成队注记与越界回落 queue_fallback_reason 中性提示",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "队列对话框 MemberRow 类型导出移出 script setup（setup 内 export 引发模块初始化 ReferenceError，对话框 chunk 加载即崩溃、候选页组件树中断；浏览器实测复验通过）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "C 阶段完成（#13–#16 全部落库），下一任务 #17 (D1) 端到端验收走查与 GUI 走查记录"
+    "note": "D1 端到端验收走查进行中：走查环境已就绪（/tmp/m2acc 隔离工作区 + fake g16 + 8399 引擎实例，Playwright MCP 本轮可用）；C 阶段两笔已知运行时缺陷已修复并浏览器实测（本条为第一笔）"
   },
   "next_steps": [
     "M2 提交#17 (D1) 端到端验收走查与 GUI 走查记录",
