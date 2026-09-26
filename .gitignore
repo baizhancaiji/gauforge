@@ -18,6 +18,9 @@ web/frontend/dist/
 *.db
 web/data/
 
+# ===== D1 走查现场（.m2acc/gen_samples.py 可重建样本/驱动脚本/隔离工作区） =====
+.m2acc/
+
 # ===== 二进制与平台产物 =====
 *.so
 *snap
