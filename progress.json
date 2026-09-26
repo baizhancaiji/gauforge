@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T20:20+0800",
+  "updated": "2026-09-26T20:40+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -57,16 +57,23 @@
       "summary": "队列编辑全语义：PATCH 状态分级矩阵（unsubmitted 全量/submitted 仅成员/executing、completed 409）、member_ids 子集去重下限校验与移除分流四类（退回/脱离/failed、skipped 新候选同源复制）、回退编辑移除全部 failed/skipped 自动成功终结、在跑成员移除拒绝",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "队列删除增强与 id 查重：DELETE 分级处置（submitted 席位撤销+退回、completed 成员只留历史、executing 409），队列 id 生成对照全库（含任务/执行记录历史引用）查重永不复用",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：提交 #8（B3 队列编辑全语义）已落库，开始 #9（B4 队列删除增强与 id 查重）"
+    "note": "B 阶段进行中：提交 #9（B4 队列删除增强）已落库，开始 #10（B5 导入成队）"
   },
   "next_steps": [
-    "M2 提交#9 (B4) 队列删除增强与 id 查重",
     "M2 提交#10 (B5) 导入成队",
-    "M2 提交#11 (B7) 错误码语义实现与替换"
+    "M2 提交#11 (B7) 错误码语义实现与替换",
+    "M2 提交#12 契约回归更新"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
