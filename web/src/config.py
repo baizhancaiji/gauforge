@@ -69,7 +69,7 @@ RUNTIME_SETTINGS: list[dict] = [
     {"key": "page_size", "value_type": "integer",
      "range": {"min": 1, "max": 200},
      "editable": True, "effect": "immediate", "env_var": None,
-     "description": "列表分页大小"},
+     "description": "列表分页大小（候选/队列/历史页统一）"},
     {"key": "sse_heartbeat_seconds", "value_type": "integer",
      "range": {"min": 5, "max": 300},
      "editable": True, "effect": "immediate", "env_var": None,
