@@ -382,7 +382,7 @@ function onQueueClosed() {
       <span v-if="checkedIds.size" class="note-info mono">已选 {{ checkedIds.size }}</span>
       <span v-if="queueHint" class="note-warn mono" role="status">{{ queueHint }}</span>
       <button
-        class="btn btn--secondary"
+        class="btn btn--secondary queue-btn"
         type="button"
         :disabled="queueBtnDisabled || importing"
         @click="openQueueModal"
@@ -550,6 +550,8 @@ function onQueueClosed() {
 
 <style scoped>
 .candidates {
+  /* 右栏预览列宽：.duo 双栏与工具条「+ 队列」对齐偏移共用，避免双处硬编码 */
+  --preview-col: 380px;
   display: flex;
   flex-direction: column;
   gap: var(--gap-card);
@@ -581,6 +583,10 @@ function onQueueClosed() {
 }
 .spacer {
   flex: 1;
+}
+/* 「+ 队列」右缘对齐左列候选列表（右肩属列表不属预览区）：让出预览列宽 + 双栏间距 */
+.queue-btn {
+  margin-right: calc(var(--preview-col) + var(--gap-card));
 }
 /* 复选框列（§4.6 checkbox 规格，样式类 .ck 全局定义） */
 .chk-col {
@@ -670,7 +676,7 @@ function onQueueClosed() {
 }
 .duo {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr) var(--preview-col);
   gap: var(--gap-card);
   align-items: start;
 }
