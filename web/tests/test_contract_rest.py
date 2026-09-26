@@ -10,6 +10,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from web.src import config
 from web.src.main import app
 from .conftest import assert_contract_schema, load_spec
 
@@ -113,3 +114,76 @@ def test_404_for_missing_execution_schema():
     assert r.status_code == 404
     assert_contract_schema(spec, "GET", "/executions/{id}", r.status_code,
                            r.json())
+
+
+# ---------------- M2 契约回归（#12：PUT blocks / PATCH member_ids /
+# 提交响应 normalized / 提交核验） ----------------
+
+SAMPLE = ("%mem=1GB\n%nprocshared=4\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+
+
+def _seed_candidate(tmp_path, monkeypatch) -> int:
+    from web.src.services.candidates import import_files
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    (tmp_path / "inputs").mkdir()
+    return import_files([("h2o.gjf", SAMPLE.encode("utf-8"))],
+                        inputs_dir=tmp_path / "inputs")[0]["id"]
+
+
+def test_put_blocks_response_against_schema(tmp_path, monkeypatch):
+    cid = _seed_candidate(tmp_path, monkeypatch)
+    r = client.put(f"/api/v1/candidates/{cid}/blocks/route",
+                   json={"lines": ["#p hf/sto-3g opt"]})
+    assert r.status_code == 200
+    body = r.json()
+    # InputPreview + warnings（拼写检查，非阻断）结构
+    assert_contract_schema(spec, "PUT", "/candidates/{id}/blocks/{section}",
+                           200, body)
+    assert isinstance(body["warnings"], list)
+    assert body["blocks"]["route"] == "#p hf/sto-3g opt"
+
+
+def test_patch_queue_members_response_against_schema(tmp_path, monkeypatch):
+    from web.src import config
+    from web.src.store import queues as queues_store
+    from web.src.store import tasks as tasks_store
+    cid = _seed_candidate(tmp_path, monkeypatch)
+    cid2 = cid + 1
+    tasks_store().create_candidate("b.gjf", "imported")
+    (tmp_path / "inputs" / str(cid2)).write_text(SAMPLE, encoding="utf-8")
+    qid = "QM0001"
+    queues_store().create(qid, name="q", skip_failed=False)
+    tasks_store().enqueue(cid, qid, 0)
+    tasks_store().enqueue(cid2, qid, 1)
+    r = client.patch(f"/api/v1/queues/{qid}", json={"member_ids": [cid2, cid]})
+    assert r.status_code == 200
+    assert_contract_schema(spec, "PATCH", "/queues/{id}", 200, r.json())
+    assert r.json()["member_ids"] == [cid2, cid]
+
+
+def test_inline_submit_response_carries_normalized(tmp_path, monkeypatch):
+    cid = _seed_candidate(tmp_path, monkeypatch)
+    r = client.post(f"/api/v1/candidates/{cid}/submit")
+    assert r.status_code == 200
+    body = r.json()
+    assert_contract_schema(spec, "POST", "/candidates/{id}/submit", 200, body)
+    assert isinstance(body["normalized"], bool)  # 提交核验规范化标记
+
+
+def test_queue_submit_response_carries_normalized(tmp_path, monkeypatch):
+    from web.src import config
+    from web.src.services import verify as verify_svc
+    from web.src.store import queues as queues_store
+    from web.src.store import tasks as tasks_store
+    cid = _seed_candidate(tmp_path, monkeypatch)
+    (tmp_path / "inputs" / str(cid)).write_text(
+        SAMPLE.replace("\n", "\r\n"), encoding="utf-8")
+    qid = "QS0001"
+    queues_store().create(qid, name="q", skip_failed=False)
+    tasks_store().enqueue(cid, qid, 0)
+    r = client.post(f"/api/v1/queues/{qid}/submit")
+    assert r.status_code == 200
+    body = r.json()
+    assert_contract_schema(spec, "POST", "/queues/{id}/submit", 200, body)
+    assert body["normalized"] is True  # CRLF 副本经提交核验规范化
+    assert verify_svc  # 核验入口存在（三路径接入断言之锚）
