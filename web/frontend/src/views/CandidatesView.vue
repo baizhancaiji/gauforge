@@ -54,13 +54,18 @@ function select(c: Candidate) {
 watch(() => events.dirty.candidates, load);
 load();
 
-// ---------- 导入（M1.1） ----------
+// ---------- 导入（M1.1；M2 C4 增补文件夹导入成队选项） ----------
 const importing = ref(false);
 const fileInput = ref<HTMLInputElement | null>(null);
 const dirInput = ref<HTMLInputElement | null>(null);
 const importNote = ref<string | null>(null);
 const filterNote = ref<string | null>(null);
 const importErrors = ref<{ filename: string; message: string }[]>([]);
+// C4 导入成队：勾选后文件夹导入按 queue_from_folder 上送（mode=files 不生效），
+// 队列名缺省回落顶层目录名；越界拒绝成队时后端回落全部候选并明示原因。
+const queueFromFolder = ref(false);
+const queueName = ref("");
+const fallbackNote = ref<string | null>(null);
 
 /** B3：文件夹导入仅提交受支持输入文件（.gjf/.com，不区分大小写）。
  *  整目录直传会因杂文件触发整批 422，前端先行过滤（F-03）。 */
@@ -79,15 +84,24 @@ function inHiddenDir(f: File): boolean {
   return rel.split("/").some((seg) => seg.startsWith("."));
 }
 
+/** 顶层目录名（webkitRelativePath 首段）——契约 folder_name 缺省来源。 */
+function folderTopName(files: File[]): string {
+  const rel = (files[0] as File & { webkitRelativePath?: string })
+    .webkitRelativePath;
+  return rel && rel.includes("/") ? rel.split("/")[0] : "";
+}
+
 function pickFiles() {
   importNote.value = null;
   filterNote.value = null;
+  fallbackNote.value = null;
   importErrors.value = [];
   fileInput.value?.click();
 }
 function pickFolder() {
   importNote.value = null;
   filterNote.value = null;
+  fallbackNote.value = null;
   importErrors.value = [];
   dirInput.value?.click();
 }
@@ -109,9 +123,14 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
   importing.value = true;
   importNote.value = null;
   filterNote.value = null;
+  fallbackNote.value = null;
   importErrors.value = [];
   const fd = new FormData();
   fd.append("mode", mode);
+  if (mode === "folder" && queueFromFolder.value) {
+    fd.append("queue_from_folder", "true");
+    fd.append("folder_name", queueName.value.trim() || folderTopName(files));
+  }
   for (const f of picked) fd.append("files", f, f.name);
   const { data, error } = await client.POST("/candidates", {
     body: fd as never,
@@ -130,9 +149,17 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
   if (data) {
     // duplicate 已入契约（openapi.yaml CandidateCreate.files），不再强转读取
     const dups = data.files.filter((f) => f.duplicate).map((f) => f.filename ?? "");
-    importNote.value = dups.length
+    let msg = dups.length
       ? `已导入 ${data.files.length} 份（${dups.length} 份与既有候选同名同内容，已另行建目）`
       : `已导入 ${data.files.length} 份`;
+    if (data.queue) msg += ` — 已保存为队列「${data.queue.name ?? ""}」`;
+    importNote.value = msg;
+    if (data.queue_fallback_reason) {
+      // 越界拒绝成队：回落全部生成候选（后端明示原因），中性信息注记展示
+      fallbackNote.value = `成队未满足 — ${data.queue_fallback_reason}`;
+    }
+    queueFromFolder.value = false;
+    queueName.value = "";
   }
   load();
 }
@@ -328,8 +355,25 @@ function onQueueClosed() {
         @change="onImportChange($event, 'folder')"
       />
 
+      <!-- 保存为队列（C4）：勾选后文件夹导入按 queue_from_folder 上送，
+           队列名缺省顶层目录名（可改）；对「导入文件」不生效 -->
+      <label class="qf mono">
+        <input class="ck" type="checkbox" v-model="queueFromFolder" />
+        <span>保存为队列</span>
+      </label>
+      <input
+        v-if="queueFromFolder"
+        v-model="queueName"
+        type="text"
+        class="qf-name"
+        placeholder="队列名，默认用文件夹名"
+        maxlength="64"
+      />
+
       <span v-if="importNote" class="note-ok mono">{{ importNote }}</span>
       <span v-if="filterNote" class="note-warn mono" role="status">{{ filterNote }}</span>
+      <!-- 成队回落原因（queue_fallback_reason，中性信息注记） -->
+      <span v-if="fallbackNote" class="note-info mono" role="status">{{ fallbackNote }}</span>
       <!-- 提交核验规范化注记（中性信息档，§4.6/§2.5） -->
       <span v-if="submitNote" class="note-info mono" role="status">{{ submitNote }}</span>
 
@@ -512,6 +556,23 @@ function onQueueClosed() {
 }
 .hidden-input {
   display: none;
+}
+/* 保存为队列（C4）：勾选框 + 队列名预填输入 */
+.qf {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm); /* 文案含中文（保存为队列） */
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.qf-name {
+  width: 180px;
+  height: 32px;
+  border: 1px solid var(--border-hair);
+  border-radius: var(--r-md);
+  padding: 0 var(--space-2);
 }
 .toolbar {
   display: flex;
