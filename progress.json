@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T02:45+0800",
+  "updated": "2026-09-26T16:51+0800",
   "latest_released_version": null,
   "unreleased": [
     {
@@ -646,6 +646,27 @@
       "type": "fixed",
       "scope": "web",
       "summary": "修正候选页行内提交黄警文案与设计样板（「提交时」→「执行时」按默认值补齐，与派发/物化时补齐的实现时机一致）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "按裁决修订 M2 执行计划（新增提交前输入核验与错误码治理两项任务；编辑入口收窄为候选与失败回退队列；导入成队事件序列修正；验收与风险补强）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "按 roadmap 一致性审查修复 M2 计划（依赖与提交归属补强、m0-plan 口径勘误登记、设计一致性补强；roadmap 回填错误码治理条目与 M1 托付项改期登记）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "按一致性复审修复 M2 计划（提交响应规范化标记登记为第三处契约增量、C 阶段补「已自动规范化」注记承接全覆盖三条提交路径、目标段自动保存口径对齐、设计文档琥珀清单增补拼写警告注记、e2e 测试提交归属与引用勘误）",
       "breaking": false,
       "migration": null
     }
