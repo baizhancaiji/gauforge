@@ -1,15 +1,13 @@
-"""candidates 域路由（§2.3/§2.4，M1 真实化）。
+"""candidates 域路由（§2.3/§2.4，M1 真实化；M2 分块编辑保存真实化）。
 
 数据源：store.tasks + services.candidates（inputs/<id> 输入副本）。
-事件经 mock state.emit 记入 SSE 重放窗口（B11 事件总线真实化前过渡）。
-M1 只读预览：PUT blocks/{section} 为 M2 编辑保存占位（不落盘，仅回显）。
+事件经 mock state.emit 记入 SSE 重放窗口。
 """
 from __future__ import annotations
 
 from fastapi import APIRouter, File, Form, Response, UploadFile
 from starlette import status
 
-from .. import config
 from ..errors import err, not_found
 from ..mock import get_state
 from ..parse.blocks import parse_input
@@ -23,7 +21,6 @@ router = APIRouter(tags=["candidates"])
 
 _ORIGIN_ENUM = ("imported", "returned_unrun", "returned_failed",
                 "returned_succeeded")
-_SECTIONS = ("link0", "route", "title", "charge_mult", "additional_sections")
 
 
 def _candidate_row(cid: int) -> dict:
@@ -113,12 +110,12 @@ def get_candidate_input(id: int) -> Response:
 
 @router.put("/candidates/{id}/blocks/{section}")
 def save_block(id: int, section: str, payload: dict) -> dict:
-    """M1 只读占位：编辑保存为 M2 范围（落盘 + LF 转换），此处仅回显。"""
-    if section == "molecule":
-        raise err("INVALID_REQUEST", "molecule 节不可编辑", http=400)
-    if section not in _SECTIONS:
-        raise err("INVALID_REQUEST", "未知分节", http=400)
-    return {**preview_candidate(id), "warnings": []}
+    """分块编辑保存（M2 B2）：服务层流水①–⑤，响应 InputPreview + warnings。"""
+    lines = payload.get("lines") if isinstance(payload, dict) else None
+    if not isinstance(lines, list) or any(not isinstance(x, str) for x in lines):
+        raise err("INVALID_REQUEST", "lines 须为字符串数组",
+                  {"field": "lines"}, http=400)
+    return candidates_svc.save_block(id, section, lines)
 
 
 @router.post("/candidates/{id}/submit")

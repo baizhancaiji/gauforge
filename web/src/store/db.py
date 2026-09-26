@@ -51,6 +51,15 @@ class Database:
             else:
                 self._conn.execute("COMMIT")
 
+    @contextmanager
+    def exclusive(self) -> Iterator[None]:
+        """跨仓储操作的读-改-写互斥（M2 分块保存等）。
+
+        RLock 可重入：锁内的逐条 run/tx 照常获取同一把锁。
+        """
+        with self._lock:
+            yield
+
     def run(self, sql: str, params: Params = ()) -> None:
         with self.tx() as conn:
             conn.execute(sql, params)

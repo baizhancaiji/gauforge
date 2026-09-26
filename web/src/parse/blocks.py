@@ -6,9 +6,15 @@
 """
 from __future__ import annotations
 
+import re
+
 # 附加输入节触发的 route 关键词（小写子串匹配，覆盖常见读取类节）
 _EXTRA_KEYWORDS = ("gen", "modredundant", "guess=alter", "scrf=read",
                    "pop=nbo", "prop=wrf")
+
+# 可编辑节名（契约 PUT blocks/{section}；molecule 与未知节名不可编辑）
+_FIXED_SECTIONS = ("link0", "route", "title", "charge_mult")
+_ADDITIONAL_RE = re.compile(r"additional-\d+$")
 
 _REQUIRED_BLOCKS = {"link0", "route", "title", "charge_mult", "molecule",
                     "additional_sections"}
@@ -189,3 +195,120 @@ def parse_input(text: str) -> dict:
                 {"lines": region, "terminator_blank": not ran_to_eof})
 
     return {"blocks": blocks, "parse_errors": errors, "multistep": multistep}
+
+
+# ---------------- 节定位与重组（M2 B2/B6 共用） ----------------
+
+def is_editable_section(name: str) -> bool:
+    """节名合法性（不含 molecule——坐标不可编辑）。"""
+    return name in _FIXED_SECTIONS or bool(_ADDITIONAL_RE.match(name))
+
+
+def _scan_spans(logical: list[str]) -> dict[str, tuple[int, int]]:
+    """节内容行区间（[start, end)，不含节间空行）。
+
+    与 parse_input 同一套扫描规则（同一 blank/comment 判定与节识别顺序），
+    供区间替换重组与提交前空行规约共用；molecule 相关区间
+    （molecule_atoms/variables/constants/implicit_variables）仅作边界参照。
+    """
+    n = len(logical)
+
+    def blank(k: int) -> bool:
+        return not logical[k].strip()
+
+    def comment(k: int) -> bool:
+        return logical[k].lstrip().startswith("!")
+
+    spans: dict[str, tuple[int, int]] = {}
+    i = 0
+    while i < n and (blank(i) or comment(i)):
+        i += 1
+    start = i
+    while i < n and logical[i].lstrip().startswith("%"):
+        i += 1
+    if i > start:
+        spans["link0"] = (start, i)
+    while i < n and (blank(i) or comment(i)):
+        i += 1
+    if i < n and logical[i].lstrip().startswith("#"):
+        start = i
+        while i < n and not blank(i):
+            i += 1
+        spans["route"] = (start, i)
+    while i < n and (blank(i) or comment(i)):
+        i += 1
+    start = i
+    while i < n and not blank(i):
+        i += 1
+    if i > start:
+        spans["title"] = (start, i)
+    while i < n and (blank(i) or comment(i)):
+        i += 1
+    if i < n:
+        spans["charge_mult"] = (i, i + 1)
+        i += 1
+    mol_start = i
+    while i < n and not blank(i):
+        i += 1
+    spans["molecule_atoms"] = (mol_start, i)
+
+    route = spans.get("route")
+    route_cf = "\n".join(logical[route[0]:route[1]]).casefold() if route else ""
+    wants_extra = any(kw in route_cf for kw in _EXTRA_KEYWORDS)
+    idx = 0
+    while i < n:
+        while i < n and (blank(i) or comment(i)):
+            i += 1
+        if i >= n:
+            break
+        start = i
+        while i < n and not blank(i):
+            i += 1
+        region = [logical[k].strip() for k in range(start, i)
+                  if logical[k].strip() and not logical[k].strip().startswith("!")]
+        head = region[0].rstrip(":").casefold() if region else ""
+        if head == "variables":
+            spans["variables"] = (start, i)
+        elif head == "constants":
+            spans["constants"] = (start, i)
+        elif not wants_extra and _looks_like_variables(region):
+            spans["implicit_variables"] = (start, i)
+        else:
+            spans[f"additional-{idx}"] = (start, i)
+            idx += 1
+    return spans
+
+
+def reassemble(text: str, section: str, lines: list[str]) -> str:
+    """区间替换重组（m2-plan §2.1 ②）：只替换目标节内容行，其余字节原样
+    保留（含行尾风格——不做换行转换）；目标节末尾按不变式规约恰好一个
+    空行（link0 除外：其后字节不动、不加空行）。
+
+    目标节在文中不存在（含 additional-<n> 越界）抛 KeyError。
+    """
+    eol = "\r\n" if "\r\n" in text else "\n"
+    logical = text.split(eol)
+    if logical and logical[-1] == "":  # 结尾换行符的切分产物不是内容行
+        logical.pop()
+    spans = _scan_spans(logical)
+    if section not in spans:
+        raise KeyError(section)
+    content = list(lines)
+    while content and not content[0].strip():  # 节内容不含边界空行
+        content.pop(0)
+    while content and not content[-1].strip():
+        content.pop()
+    start, end = spans[section]
+    if section in ("link0", "charge_mult"):
+        # link0 其后不加空行；charge_mult 是分子说明节首行（其后直接跟原子
+        # 定义行，节终止空行在原子块之后）——两者替换后其后字节原样保留
+        rebuilt = logical[:start] + content + logical[end:]
+    else:
+        j = end
+        while j < len(logical) and not logical[j].strip():
+            j += 1  # 原空行带规约为恰好一个空行
+        rebuilt = logical[:start] + content + [""] + logical[j:]
+    out = eol.join(rebuilt)
+    if text.endswith(eol):
+        out += eol
+    return out
