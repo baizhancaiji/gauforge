@@ -49,6 +49,8 @@ const emit = defineEmits<{ close: []; saved: [queue: Queue]; submitted: [] }>();
 const readonly = computed(() => props.mode === "readonly");
 /** submitted 态仅成员可改（改名/开关 409 前置禁用，A2 决策点 2/9）。 */
 const memberOnly = computed(() => props.queue?.state === "submitted");
+/** executing 只读详情附跨页引导（设计 §5：未执行成员移除属席位端点能力）。 */
+const executingHint = computed(() => props.queue?.state === "executing");
 
 const name = ref("");
 const skipFailed = ref(false);
@@ -111,6 +113,8 @@ const canSave = computed(
 
 function removeAt(i: number) {
   if (members.value.length <= 1) return; // 至少保留 1 个（下限前置禁用）
+  const m = members.value[i];
+  if (memberOnly.value && m?.state === "running") return; // 在跑成员移除后端 409（前置禁用）
   members.value.splice(i, 1);
 }
 
@@ -242,6 +246,9 @@ function tryClose() {
       <p v-if="memberOnly && !readonly" class="q-hint mono">
         已提交队列仅可重排与移除未执行成员（改名/开关在执行语义上不追溯）
       </p>
+      <p v-if="executingHint" class="q-hint mono">
+        队列执行中（只读）— 成员移除请前往待执行页操作
+      </p>
       <p v-if="error" class="q-error mono" role="alert">{{ error }}</p>
       <p v-if="note" class="q-note mono" role="status">{{ note }}</p>
 
@@ -271,8 +278,8 @@ function tryClose() {
             v-if="!readonly"
             class="btn btn--ghost m-remove"
             type="button"
-            :disabled="members.length <= 1 || done"
-            :title="members.length <= 1 ? '队列至少保留 1 个成员' : undefined"
+            :disabled="members.length <= 1 || done || (memberOnly && m.state === 'running')"
+            :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : undefined)"
             @click="removeAt(i)"
           >
             -
