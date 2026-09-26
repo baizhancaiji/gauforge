@@ -65,8 +65,10 @@ def _load_input(cid: int) -> str:
     """
     _readable_row(cid)
     try:
-        return (candidates_svc.default_inputs_dir() / str(cid)).read_text(
-            encoding="utf-8")
+        # 字节读入后解码：read_text 通用换行模式会吞 CRLF，破坏「原文」语义
+        # （前端 CRLF 检出依赖该端点返回原始行尾，D1 走查实测缺陷）
+        return (candidates_svc.default_inputs_dir() / str(cid)).read_bytes().decode(
+            "utf-8")
     except (OSError, UnicodeDecodeError):
         raise not_found("input", cid)
 

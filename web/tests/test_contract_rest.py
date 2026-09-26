@@ -220,6 +220,21 @@ def test_preview_and_input_readable_for_rollback_member(tmp_path, monkeypatch):
     assert "#p hf/sto-3g" in r2.text
 
 
+def test_input_endpoint_returns_raw_crlf(tmp_path, monkeypatch):
+    """GET input 返回原文行尾（CRLF 不转）：契约「供分块编辑初始化与
+    CRLF 检出」依赖原始 \\r——read_text 通用换行模式会静默吞掉（D1
+    走查实测缺陷：前端 CRLF 注记永不触发）。"""
+    from web.src.store import tasks as tasks_store
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    (tmp_path / "inputs").mkdir(exist_ok=True)
+    tid = tasks_store().create_candidate("crlf.gjf", "imported")
+    (tmp_path / "inputs" / str(tid)).write_bytes(
+        b"%chk=w.chk\r\n\r\n#p hf/sto-3g\r\n\r\nt\r\n\r\n0 1\r\nO\r\n\r\n")
+    r = client.get(f"/api/v1/candidates/{tid}/input")
+    assert r.status_code == 200
+    assert "\r\n" in r.text
+
+
 def test_preview_and_input_404_for_locked_member(tmp_path, monkeypatch):
     """新建未提交成员（非回退）不可读预览与原文——404 语义不变。"""
     tid = _mk_member(tmp_path, monkeypatch, rollback=False)
