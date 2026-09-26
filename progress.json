@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T21:00+0800",
+  "updated": "2026-09-26T21:20+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -71,14 +71,20 @@
       "summary": "导入成队：POST /candidates 增 queue_from_folder/folder_name 参数与响应 queue/queue_fallback_reason 字段，受支持文件数 2–10 成队、越界回落全部候选并明示原因，成队事件序 created ×N → moved_out ×N → queues.changed(created)，前端契约生成物再生",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "core",
+      "summary": "错误码治理落位：席位私有码替换为全集码（QUEUE_MEMBER_FLOOR/TASK_EXECUTED_IMMUTABLE）、导入 reason 对齐 INPUT_PARSE_FAILED、设置域 409 SETTING_READONLY / 422 SETTING_VALUE_INVALID 与 reason 词表对齐；test_error_codes 静态闸门（实现 ⊆ 契约 19 码、退役码零残留）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：提交 #10（B5 导入成队）已落库，开始 #11（B7 错误码语义实现与替换，晚于 B3/B5/B6 收敛）"
+    "note": "B 阶段进行中：提交 #11（B7 错误码治理）已落库，开始 #12（契约回归更新，B 收尾）"
   },
   "next_steps": [
-    "M2 提交#11 (B7) 错误码语义实现与替换",
     "M2 提交#12 契约回归更新（B 收尾）"
   ],
   "known_issues": [
