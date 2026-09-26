@@ -137,7 +137,15 @@ async function requeue() {
     setActionError(error);
     return;
   }
-  if (data) actionNote.value = { ok: true, msg: `已入待执行队列 S${data.seat_id}` };
+  if (data) {
+    // 提交核验规范化注记（§2.5 三路径之一：仅据响应 normalized 字段展示）
+    actionNote.value = {
+      ok: true,
+      msg: data.normalized
+        ? `已入待执行队列 S${data.seat_id} · 输入已自动规范化（换行/空行）`
+        : `已入待执行队列 S${data.seat_id}`,
+    };
+  }
 }
 
 async function returnCandidate() {

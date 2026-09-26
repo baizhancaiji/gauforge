@@ -5,11 +5,14 @@
  * （文件多选/文件夹 webkitdirectory、422 逐文件失败清单、重复导入提示）
  * + 剔除（二次确认）。列表由后端按导入时间倒序（同批内文件名自然序）
  * 排序后返回（openapi /candidates），前端按响应序渲染（原页内排序双实现已删）。
+ * 右侧预览卡由 BlockEditor 承载（M2 C1：只读/编辑双态、分块自动保存、
+ * 拼写警告与 CRLF 中性注记），本页仅负责行选中与提交动作。
  */
 import { computed, ref, watch } from "vue";
 
 import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
+import BlockEditor from "@/components/BlockEditor.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
@@ -18,7 +21,6 @@ import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
 type Candidate = components["schemas"]["Candidate"];
-type InputPreview = components["schemas"]["InputPreview"];
 
 const events = useEventsStore();
 
@@ -28,8 +30,6 @@ const loading = ref(false);
 /** 首载骨架行（§4.3 加载两态）：首帧渲染骨架，此后刷新仅底部扫描线。 */
 const everLoaded = ref(false);
 const selected = ref<Candidate | null>(null);
-const preview = ref<InputPreview | null>(null);
-const previewLoading = ref(false);
 
 async function load() {
   loading.value = true;
@@ -42,14 +42,8 @@ async function load() {
   }
 }
 
-async function loadPreview(c: Candidate) {
+function select(c: Candidate) {
   selected.value = c;
-  previewLoading.value = true;
-  const { data } = await client.GET("/candidates/{id}/preview", {
-    params: { path: { id: c.id } },
-  });
-  previewLoading.value = false;
-  preview.value = data ?? null;
 }
 
 // 契约 §3.5⑥：候选通知事件 → 重拉当前页。
@@ -151,12 +145,15 @@ const submitFetching = ref(false);
 const submitBusy = ref(false);
 const submitError = ref<string | null>(null);
 const submitActive = computed(() => submitting.value != null);
+/** 提交核验规范化注记（§2.5 契约增量：仅据响应 normalized 字段展示）。 */
+const submitNote = ref<string | null>(null);
 
 async function openSubmit(c: Candidate) {
   submitting.value = c;
   submitInput.value = "";
   submitMissing.value = [];
   submitError.value = null;
+  submitNote.value = null;
   submitFetching.value = true;
   const [inp, prev, set] = await Promise.all([
     // 该端点契约为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
@@ -192,7 +189,7 @@ async function confirmSubmit() {
   if (!c) return;
   submitBusy.value = true;
   submitError.value = null;
-  const { error } = await client.POST("/candidates/{id}/submit", {
+  const { data, error } = await client.POST("/candidates/{id}/submit", {
     params: { path: { id: c.id } },
   });
   submitBusy.value = false;
@@ -205,6 +202,10 @@ async function confirmSubmit() {
     return;
   }
   submitting.value = null;
+  // 提交核验规范化注记（中性档 §4.6；仅据响应 normalized 字段，不自行检测）
+  submitNote.value = data?.normalized
+    ? `已提交 ${fmtTaskId(c.id)} — 输入已自动规范化（换行/空行）`
+    : null;
   load();
 }
 
@@ -219,10 +220,7 @@ async function confirmRemove() {
   await client.DELETE("/candidates/{id}", { params: { path: { id: c.id } } });
   removeLoading.value = false;
   removing.value = null;
-  if (selected.value?.id === c.id) {
-    selected.value = null;
-    preview.value = null;
-  }
+  if (selected.value?.id === c.id) selected.value = null;
   load();
 }
 
@@ -270,6 +268,8 @@ const originView: Record<string, { color: string; label: string }> = {
 
       <span v-if="importNote" class="note-ok mono">{{ importNote }}</span>
       <span v-if="filterNote" class="note-warn mono" role="status">{{ filterNote }}</span>
+      <!-- 提交核验规范化注记（中性信息档，§4.6/§2.5） -->
+      <span v-if="submitNote" class="note-info mono" role="status">{{ submitNote }}</span>
     </div>
 
     <!-- 导入失败清单（422 details 逐文件） -->
@@ -309,7 +309,7 @@ const originView: Record<string, { color: string; label: string }> = {
                 v-for="c in list"
                 :key="c.id"
                 :class="{ 'row--active': selected?.id === c.id }"
-                @click="loadPreview(c)"
+                @click="select(c)"
               >
                 <td class="mono">{{ fmtTaskId(c.id) }}</td>
                 <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
@@ -328,7 +328,7 @@ const originView: Record<string, { color: string; label: string }> = {
                   <button class="btn btn--ghost" type="button" @click.stop="openSubmit(c)">
                     提交
                   </button>
-                  <button class="btn btn--ghost" type="button" @click.stop="loadPreview(c)">
+                  <button class="btn btn--ghost" type="button" @click.stop="select(c)">
                     预览
                   </button>
                   <button class="btn btn--ghost remove" type="button" @click.stop="removing = c">
@@ -346,92 +346,16 @@ const originView: Record<string, { color: string; label: string }> = {
       </section>
 
       <section class="preview">
-        <template v-if="previewLoading">
-          <div class="preview-blank mono">读取预览 …</div>
-        </template>
-        <template v-else-if="preview">
-          <header class="p-head">
-            <span class="p-name mono">{{ preview.filename }}</span>
+        <!-- 分块预览/编辑（M2 C1：BlockEditor 承载双态与自动保存） -->
+        <BlockEditor v-if="selected" :key="selected.id" :task-id="selected.id" :editable="true">
+          <template #head>
+            <span class="p-name mono">{{ selected.filename }}</span>
             <StateChip
-              :state="originView[selected?.origin ?? 'imported']?.color ?? 'staged'"
-              :label="`ID ${preview.candidate_id}`"
+              :state="originView[selected.origin]?.color ?? 'staged'"
+              :label="`ID ${selected.id}`"
             />
-          </header>
-
-          <!-- 解析失败节容错条（C2：预览尽力而为，逐节标注不阻断） -->
-          <div v-if="preview.parse_errors?.length" class="p-errors" role="alert">
-            <div v-for="(pe, i) in preview.parse_errors" :key="i" class="pe-row mono">
-              <span class="pe-sec">{{ pe.section }}</span>
-              <span class="pe-line">第 {{ pe.line }} 行</span>
-              <span class="pe-msg">{{ pe.message }}</span>
-            </div>
-          </div>
-
-          <div class="block">
-            <div class="lab mono">TITLE</div>
-            <div class="val mono">{{ preview.blocks.title ?? "—" }}</div>
-          </div>
-
-          <div class="block">
-            <div class="lab mono">LINK 0</div>
-            <div v-if="preview.blocks.link0.lines.length" class="val mono">
-              <span v-for="(ln, i) in preview.blocks.link0.lines" :key="i" class="l0-line">
-                <span v-if="ln.includes('=')" class="dim">{{ ln.slice(0, ln.indexOf("=") + 1) }}</span
-                >{{ ln.slice(ln.indexOf("=") + 1) }}
-              </span>
-            </div>
-            <div v-else class="val mono dim">（无声明）</div>
-            <!-- Link0 缺失琥珀注记（§5：M1 提交警告的伏笔；missing 为不带 % 的指令名） -->
-            <div v-if="preview.blocks.link0.missing.length" class="note mono">
-              ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m}`).join("、") }} 未声明 · 执行时将按默认值补齐
-            </div>
-          </div>
-
-          <div class="block">
-            <div class="lab mono">ROUTE</div>
-            <div class="val mono">{{ preview.blocks.route || "—" }}</div>
-          </div>
-
-          <div class="block">
-            <div class="lab mono">CHARGE · MULT</div>
-            <div class="val mono">{{ preview.blocks.charge_mult || "—" }}</div>
-          </div>
-
-          <div class="block">
-            <div class="lab mono">MOLECULE</div>
-            <div class="readout">
-              <div class="r">
-                <div class="n mono">{{ preview.blocks.molecule.atom_count }}</div>
-                <div class="l mono">ATOMS</div>
-              </div>
-              <div class="r">
-                <div class="n mono">{{ preview.blocks.molecule.formula }}</div>
-                <div class="l mono">FORMULA</div>
-              </div>
-              <div class="r">
-                <div class="n mono">{{ preview.blocks.molecule.variables_present ? "有" : "—" }}</div>
-                <div class="l mono">VARS</div>
-              </div>
-              <div class="r">
-                <div class="n mono">{{ preview.blocks.molecule.constants_present ? "有" : "—" }}</div>
-                <div class="l mono">CONSTS</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="block">
-            <div class="lab mono">ADDITIONAL · {{ preview.blocks.additional_sections.length }}</div>
-            <div v-if="!preview.blocks.additional_sections.length" class="val mono dim">
-              无附加输入节
-            </div>
-            <div v-else class="addi">
-              <div v-for="(sec, i) in preview.blocks.additional_sections" :key="i" class="addi-item">
-                <span class="sec-idx mono">{{ i + 1 }}</span>
-                <pre class="code mono">{{ sec.lines.join("\n") }}</pre>
-              </div>
-            </div>
-          </div>
-        </template>
+          </template>
+        </BlockEditor>
         <template v-else>
           <div class="p-empty">
             <span class="pe-glyph mono" aria-hidden="true">◱</span>
@@ -506,6 +430,11 @@ const originView: Record<string, { color: string; label: string }> = {
 .note-warn {
   font-size: var(--text-sm);
   color: var(--warn);
+}
+/* 信息注记（中性档，§4.6：信息性提示非「需要行动」） */
+.note-info {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 .import-errors {
   border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
@@ -695,7 +624,7 @@ tbody tr:hover {
 .empty-wrap {
   padding: var(--space-4);
 }
-/* ---------- 预览卡（C2：分块卡，右侧 380px 粘性，§5/样板） ---------- */
+/* ---------- 预览卡（分块卡序列由 BlockEditor 承载；右侧 380px 粘性，§5/样板） ---------- */
 .preview {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
@@ -704,14 +633,15 @@ tbody tr:hover {
   top: var(--space-2);
   max-height: calc(100vh - 120px);
   overflow: auto;
+  padding: var(--space-3) var(--space-4);
 }
 .p-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-hair);
+  flex: 1;
+  min-width: 0;
 }
 .p-name {
   font-size: var(--text-sm);
@@ -720,108 +650,6 @@ tbody tr:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-/* 解析失败节容错条（--danger：异常信号；预览尽力而为不阻断） */
-.p-errors {
-  padding: var(--space-2) var(--space-4);
-  border-bottom: 1px solid var(--border-hair);
-  display: grid;
-  gap: 2px;
-}
-.pe-row {
-  display: flex;
-  gap: var(--space-3);
-  font-size: var(--text-sm);
-  color: var(--danger);
-}
-.pe-sec {
-  min-width: 64px;
-  color: var(--text-primary);
-}
-.pe-line {
-  min-width: 64px;
-}
-.pe-msg {
-  color: var(--danger);
-}
-.block {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--border-hair);
-}
-.block:last-child {
-  border-bottom: none;
-}
-.lab {
-  font-size: var(--text-2xs);
-  letter-spacing: var(--ls-wide);
-  text-transform: uppercase;
-  color: var(--text-faint);
-  margin-bottom: var(--space-1);
-}
-.val {
-  font-size: var(--text-sm);
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.val .dim,
-.dim {
-  color: var(--text-secondary);
-}
-/* Link0 逐行：指令名弱化（样板语义 %Chk= dim + 值亮） */
-.l0-line {
-  display: block;
-}
-.note {
-  margin-top: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--warn);
-}
-/* 分子四格读数（样板 readout：ATOMS/FORMULA/VARS/CONSTS） */
-.readout {
-  display: flex;
-  gap: var(--space-6);
-}
-.readout .r .n {
-  font-size: var(--text-lg);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-primary);
-}
-.readout .r .l {
-  font-size: var(--text-2xs);
-  letter-spacing: var(--ls-wide);
-  color: var(--text-faint);
-}
-.addi {
-  display: grid;
-  gap: var(--space-2);
-}
-.addi-item {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: var(--space-2);
-  align-items: start;
-}
-.sec-idx {
-  color: var(--text-faint);
-  font-size: var(--text-xs);
-}
-.code {
-  font-size: var(--text-xs);
-  color: var(--text-primary);
-  background: var(--bg-inset);
-  border: 1px solid var(--border-hair);
-  border-radius: var(--r-md);
-  padding: var(--space-2) var(--space-3);
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-.preview-blank {
-  padding: var(--space-5);
-  color: var(--text-faint);
-  font-size: var(--text-sm);
 }
 /* §4.6 空态：居中发丝虚线框 + 刻度符号 + mono 短句 */
 .p-empty {
