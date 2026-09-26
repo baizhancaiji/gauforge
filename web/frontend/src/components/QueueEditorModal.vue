@@ -109,12 +109,14 @@ const qidLabel = computed(() =>
   props.mode === "create" ? "保存后生成" : (props.queue?.id ?? "—"),
 );
 
-const canSave = computed(
-  () =>
-    name.value.trim().length > 0 &&
-    members.value.length >= 2 &&
-    members.value.length <= 10,
-);
+const canSave = computed(() => {
+  if (!name.value.trim().length) return false;
+  const n = members.value.length;
+  // 成员数 2–10 仅创建时校验；编辑态只减不增、下限 1（§2.2——后端
+  // PATCH 仅拒 0，canSave 误用创建期下限会禁存合法的剩 1 编辑，
+  // D1 走查实测缺陷）
+  return props.mode === "create" ? n >= 2 && n <= 10 : n >= 1;
+});
 
 function removeAt(i: number) {
   if (members.value.length <= 1) return; // 至少保留 1 个（下限前置禁用）
