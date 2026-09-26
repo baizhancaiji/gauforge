@@ -405,7 +405,7 @@ function tryClose() {
   border-radius: var(--r-md);
   background: var(--bg-raised);
   font-size: var(--text-sm);
-  transition: transform 120ms var(--ease-std), border-color 120ms var(--ease-std);
+  transition: transform var(--dur-fast) var(--ease-std), border-color var(--dur-fast) var(--ease-std);
 }
 .q-mem--dragging {
   opacity: 0.5;
@@ -443,8 +443,8 @@ function tryClose() {
   color: var(--warn);
 }
 .m-remove {
-  height: 24px;
-  padding: 0 8px;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
 }
 .q-toggle-row {
   display: flex;
@@ -477,7 +477,7 @@ function tryClose() {
   height: 16px;
   border-radius: 50%;
   background: var(--text-faint);
-  transition: left 120ms var(--ease-std), background-color 120ms var(--ease-std);
+  transition: left var(--dur-fast) var(--ease-std), background-color var(--dur-fast) var(--ease-std);
 }
 .tgl--on {
   background: var(--accent);

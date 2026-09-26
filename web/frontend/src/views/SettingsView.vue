@@ -327,7 +327,7 @@ async function doSave() {
 .eff {
   align-self: flex-start;
   font-size: var(--text-sm); /* 生效语义含中文 */
-  padding: 1px 8px;
+  padding: 1px var(--space-2);
   border-radius: var(--r-sm);
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--text-secondary) 10%, transparent);

@@ -158,7 +158,7 @@ html {
 /* §4.3 数据表格：行高 40px，保证 hover 命中与触达目标。 */
 .content table th,
 .content table td {
-  height: 40px;
+  height: var(--row-height);
 }
 
 /* ---------- 共享按钮系统（§4.2，状态矩阵全类一致） ---------- */
@@ -167,7 +167,7 @@ html {
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  height: 32px;
+  height: var(--control-height);
   padding: 0 var(--space-4);
   border-radius: var(--r-md);
   font-family: var(--font-mono);
@@ -226,7 +226,7 @@ html {
   bottom: 0;
   height: 1px;
   background: var(--accent);
-  animation: scanline 1.2s var(--ease-std) infinite;
+  animation: scanline var(--dur-scan) var(--ease-std) infinite;
 }
 
 /* ---------- checkbox（§4.6 A3 定稿：16×16 方形，描边 --border-strong，
@@ -238,15 +238,15 @@ html {
   height: 16px;
   margin: 0;
   border: 1px solid var(--border-strong);
-  border-radius: 3px;
+  border-radius: var(--r-sm);
   background: var(--bg-inset);
   cursor: pointer;
   display: inline-grid;
   place-content: center;
   vertical-align: middle;
   transition:
-    background-color 120ms var(--ease-std),
-    border-color 120ms var(--ease-std);
+    background-color var(--dur-fast) var(--ease-std),
+    border-color var(--dur-fast) var(--ease-std);
 }
 .ck::before {
   content: "";
@@ -255,7 +255,7 @@ html {
   background: var(--accent-ink);
   clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
   transform: scale(0);
-  transition: transform 120ms var(--ease-std);
+  transition: transform var(--dur-fast) var(--ease-std);
 }
 .ck:checked {
   background: var(--accent);
@@ -281,8 +281,8 @@ html {
    淡出；不启用 mode="out-in"，避免异步路由组件下 enter 偶发不触发的残留）。 */
 .view-enter-active {
   transition:
-    opacity 160ms var(--ease-std),
-    transform 160ms var(--ease-std);
+    opacity var(--dur-view) var(--ease-std),
+    transform var(--dur-view) var(--ease-std);
 }
 .view-enter-from {
   opacity: 0;
@@ -298,28 +298,28 @@ html {
 /* 列表入场：行/卡 stagger 每行 delay 18ms（>8 行截断统一入场），220ms；
    容器加 .stagger，直接子元素即为行（全站仅此一处 stagger）。 */
 .stagger > * {
-  animation: row-in 220ms var(--ease-std) both;
+  animation: row-in var(--dur-enter) var(--ease-std) both;
 }
 .stagger > *:nth-child(2) {
-  animation-delay: 18ms;
+  animation-delay: var(--stagger-step);
 }
 .stagger > *:nth-child(3) {
-  animation-delay: 36ms;
+  animation-delay: calc(var(--stagger-step) * 2);
 }
 .stagger > *:nth-child(4) {
-  animation-delay: 54ms;
+  animation-delay: calc(var(--stagger-step) * 3);
 }
 .stagger > *:nth-child(5) {
-  animation-delay: 72ms;
+  animation-delay: calc(var(--stagger-step) * 4);
 }
 .stagger > *:nth-child(6) {
-  animation-delay: 90ms;
+  animation-delay: calc(var(--stagger-step) * 5);
 }
 .stagger > *:nth-child(7) {
-  animation-delay: 108ms;
+  animation-delay: calc(var(--stagger-step) * 6);
 }
 .stagger > *:nth-child(n + 8) {
-  animation-delay: 126ms;
+  animation-delay: calc(var(--stagger-step) * 7);
 }
 @keyframes row-in {
   from {

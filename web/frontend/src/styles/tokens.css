@@ -54,12 +54,32 @@
   --content-max: 1280px;
   --gap-card: 16px;
   --channel-card-width: 340px;
+  --preview-width: 380px; /* 双栏页右列预览卡（§5 候选页；工具条按钮对齐偏移同源） */
+  --drawer-width: 380px; /* 详情抽屉（§6；与预览列现同值，语义分立） */
+  --modal-width: 560px; /* 模态宽（§4.6） */
+  --modal-max-height: 640px; /* 模态限高（§4.6） */
+  --row-height: 40px; /* 数据表行高（§4.3，hover 命中与触达目标） */
+  --control-height: 32px; /* 常规控件高：按钮/输入（§4.2） */
+  --control-height-sm: 24px; /* 行内小控件高（成员移除/行内动作按钮） */
+  --dot-size: 6px; /* 状态点直径（§4.1 安静档点/顶栏/通道卡共用） */
+  --peek-max-height: 300px; /* 限高滚动 mono 文本区（完整输入 M1.3/输出预览 C6 共用） */
 
-  /* ---- 缓动与字距（§2.4，全站仅这两档缓动、两档字距）---- */
+  /* ---- 缓动与字距（§2.4，全站仅这两档缓动、两档字距 + 复位档）---- */
   --ease-std: cubic-bezier(0.2, 0.8, 0.3, 1); /* 全站标准出场 */
   --ease-glide: cubic-bezier(0.16, 0.84, 0.3, 1); /* 仅 Toast */
   --ls-micro: 0.08em; /* 全大写拉丁微标签：表头、徽标 */
   --ls-wide: 0.14em; /* 刻度标签：区块 lab、CH、页码、导航英文小字 */
+  --ls-none: 0; /* 中文混排复位字距（混排纪律 1） */
+
+  /* ---- 动效时长（§2.4/§6，登记全部复用时长；一次性时长不入档）---- */
+  --dur-fast: 120ms; /* 微交互：hover/位移/勾选（§4.2/§4.6） */
+  --dur-view: 160ms; /* 视图切换入场/行展开 */
+  --dur-slide: 200ms; /* 抽屉滑入（§6）、toast 退场 */
+  --dur-toast: 240ms; /* toast 入场（--ease-glide 唯一使用处，§4.6） */
+  --dur-enter: 220ms; /* 行/卡入场 row-in（§4.3） */
+  --dur-scan: 1.2s; /* 扫描线/电源灯脉冲（§4.3/§6） */
+  --dur-breathe: 2.4s; /* running 呼吸（ease-in-out，§6） */
+  --stagger-step: 18ms; /* 列表入场步长，delay = calc(n × 步长)，>8 行截断 */
 
   /* ---- 暗色主题（默认，长时间监控主场景）§2.1 ---- */
   /* 基底 */

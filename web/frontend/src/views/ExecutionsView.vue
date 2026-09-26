@@ -275,7 +275,7 @@ async function confirmStop() {
 /* running 态卡描边磷光呼吸（§4.4；reduced-motion 全局关闭） */
 .card--running {
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
-  animation: cardpulse 2.4s ease-in-out infinite;
+  animation: cardpulse var(--dur-breathe) ease-in-out infinite;
 }
 @keyframes cardpulse {
   0%,
@@ -314,7 +314,7 @@ async function confirmStop() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3) var(--space-5);
-  transition: opacity 160ms var(--ease-std);
+  transition: opacity var(--dur-view) var(--ease-std);
 }
 /* 断连窗口读数降档（陈值不误读为实时；重连 open 后恢复） */
 .readouts--stale {
@@ -362,8 +362,8 @@ async function confirmStop() {
   align-items: center;
 }
 .stall-dot {
-  width: 6px;
-  height: 6px;
+  width: var(--dot-size);
+  height: var(--dot-size);
   border-radius: 50%;
   background: var(--warn);
   animation: stallbreathe 1.6s ease-in-out infinite;

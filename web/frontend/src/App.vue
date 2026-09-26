@@ -148,7 +148,7 @@ onMounted(() => events.start());
 .brand-dot[data-conn="closed"] {
   background: var(--danger);
   box-shadow: none;
-  animation: pulse 1.2s ease-in-out infinite;
+  animation: pulse var(--dur-scan) ease-in-out infinite;
 }
 @keyframes pulse {
   0%,
@@ -223,8 +223,8 @@ onMounted(() => events.start());
   color: var(--text-faint);
 }
 .hq-led {
-  width: 6px;
-  height: 6px;
+  width: var(--dot-size);
+  height: var(--dot-size);
   border-radius: 50%;
   background: var(--state-idle);
 }
@@ -236,7 +236,7 @@ onMounted(() => events.start());
 }
 .hq-led[data-state="down"] {
   background: var(--danger);
-  animation: pulse 1.2s ease-in-out infinite;
+  animation: pulse var(--dur-scan) ease-in-out infinite;
 }
 .hq-text {
   font-size: var(--text-sm); /* 文案含中文（已连接/未连接/未启用） */
@@ -273,7 +273,7 @@ onMounted(() => events.start());
   gap: var(--space-2);
   font-size: var(--text-sm);
   color: var(--text-secondary);
-  transition: opacity 120ms var(--ease-std);
+  transition: opacity var(--dur-fast) var(--ease-std);
 }
 .lamp-dot {
   width: 7px;
@@ -283,7 +283,7 @@ onMounted(() => events.start());
 .lamp--running .lamp-dot {
   background: var(--state-running);
   box-shadow: 0 0 8px color-mix(in srgb, var(--state-running) 70%, transparent);
-  animation: breathe 2.4s ease-in-out infinite;
+  animation: breathe var(--dur-breathe) ease-in-out infinite;
 }
 .lamp--queued .lamp-dot {
   background: var(--state-staged);
@@ -349,13 +349,13 @@ onMounted(() => events.start());
 }
 .toast-enter-active {
   transition:
-    transform 240ms var(--ease-glide),
-    opacity 240ms var(--ease-glide);
+    transform var(--dur-toast) var(--ease-glide),
+    opacity var(--dur-toast) var(--ease-glide);
 }
 .toast-leave-active {
   transition:
-    transform 200ms var(--ease-std),
-    opacity 200ms var(--ease-std);
+    transform var(--dur-slide) var(--ease-std),
+    opacity var(--dur-slide) var(--ease-std);
 }
 .toast-enter-from,
 .toast-leave-to {

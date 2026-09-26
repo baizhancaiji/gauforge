@@ -550,8 +550,6 @@ function onQueueClosed() {
 
 <style scoped>
 .candidates {
-  /* 右栏预览列宽：.duo 双栏与工具条「+ 队列」对齐偏移共用，避免双处硬编码 */
-  --preview-col: 380px;
   display: flex;
   flex-direction: column;
   gap: var(--gap-card);
@@ -571,7 +569,7 @@ function onQueueClosed() {
 }
 .qf-name {
   width: 180px;
-  height: 32px;
+  height: var(--control-height);
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   padding: 0 var(--space-2);
@@ -586,7 +584,7 @@ function onQueueClosed() {
 }
 /* 「+ 队列」右缘对齐左列候选列表（右肩属列表不属预览区）：让出预览列宽 + 双栏间距 */
 .queue-btn {
-  margin-right: calc(var(--preview-col) + var(--gap-card));
+  margin-right: calc(var(--preview-width) + var(--gap-card));
 }
 /* 复选框列（§4.6 checkbox 规格，样式类 .ck 全局定义） */
 .chk-col {
@@ -663,7 +661,7 @@ function onQueueClosed() {
 /* 完整输入限高滚动（M1.3：纯文本完整预览，含坐标） */
 .input-text {
   margin: 0;
-  max-height: 300px;
+  max-height: var(--peek-max-height);
   overflow: auto;
   background: var(--bg-inset);
   border: 1px solid var(--border-hair);
@@ -715,7 +713,7 @@ tbody tr:last-child td {
   border-bottom: none;
 }
 tbody tr {
-  transition: background-color 120ms var(--ease-std);
+  transition: background-color var(--dur-fast) var(--ease-std);
 }
 tbody tr:hover {
   background: var(--row-hover);
@@ -764,26 +762,26 @@ tbody tr:hover {
 .scanline {
   height: 1px;
   background: var(--accent);
-  animation: scanline 1.2s var(--ease-std) infinite;
+  animation: scanline var(--dur-scan) var(--ease-std) infinite;
   margin-top: -1px;
 }
 .skel {
   display: grid;
 }
 .sk-row {
-  height: 40px;
+  height: var(--row-height);
   border-bottom: 1px solid var(--border-hair);
   background: var(--bg-inset);
-  animation: row-in 220ms var(--ease-std) both;
+  animation: row-in var(--dur-enter) var(--ease-std) both;
 }
 .skel .sk-row:nth-child(2) {
-  animation-delay: 18ms;
+  animation-delay: var(--stagger-step);
 }
 .skel .sk-row:nth-child(3) {
-  animation-delay: 36ms;
+  animation-delay: calc(var(--stagger-step) * 2);
 }
 .skel .sk-row:nth-child(4) {
-  animation-delay: 54ms;
+  animation-delay: calc(var(--stagger-step) * 3);
 }
 .foot {
   padding: var(--space-2) var(--space-3);

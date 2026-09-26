@@ -466,8 +466,8 @@ async function confirmCleanup() {
 .row {
   border-bottom: 1px solid var(--border-hair);
   cursor: pointer;
-  min-height: 40px; /* §4.3 行高 40px */
-  transition: background-color 120ms var(--ease-std);
+  min-height: var(--row-height); /* §4.3 行高 40px */
+  transition: background-color var(--dur-fast) var(--ease-std);
 }
 .row:last-child {
   border-bottom: none;
@@ -494,7 +494,7 @@ async function confirmCleanup() {
   height: 1px;
   background: var(--accent);
   /* 引用 base.css 共用 scanline（--ease-std），不重复定义 keyframes */
-  animation: scanline 1.2s var(--ease-std) infinite;
+  animation: scanline var(--dur-scan) var(--ease-std) infinite;
 }
 .skel {
   border: 1px solid var(--border-hair);
@@ -503,19 +503,19 @@ async function confirmCleanup() {
   background: var(--bg-raised);
 }
 .sk-row {
-  height: 40px;
+  height: var(--row-height);
   border-bottom: 1px solid var(--border-hair);
   background: var(--bg-inset);
-  animation: row-in 220ms var(--ease-std) both;
+  animation: row-in var(--dur-enter) var(--ease-std) both;
 }
 .sk-row:nth-child(2) {
-  animation-delay: 18ms;
+  animation-delay: var(--stagger-step);
 }
 .sk-row:nth-child(3) {
-  animation-delay: 36ms;
+  animation-delay: calc(var(--stagger-step) * 2);
 }
 .sk-row:nth-child(4) {
-  animation-delay: 54ms;
+  animation-delay: calc(var(--stagger-step) * 3);
 }
 .empty-wrap {
   margin-top: var(--space-4);
@@ -530,7 +530,7 @@ async function confirmCleanup() {
   justify-content: flex-end;
 }
 .drawer {
-  width: 380px;
+  width: var(--drawer-width);
   height: 100%;
   background: var(--bg-overlay);
   border-left: 1px solid var(--border-hair);
@@ -539,7 +539,7 @@ async function confirmCleanup() {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  animation: slide 200ms var(--ease-std);
+  animation: slide var(--dur-slide) var(--ease-std);
 }
 @keyframes slide {
   from {
@@ -620,7 +620,7 @@ async function confirmCleanup() {
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: 300px;
+  max-height: var(--peek-max-height);
   overflow: auto;
 }
 .confirm-line {

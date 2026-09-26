@@ -41,7 +41,7 @@ const zh = computed(() => CJK.test(props.label ?? ""));
   align-items: center;
   gap: 6px;
   height: 20px;
-  padding: 0 8px;
+  padding: 0 var(--space-2);
   border-radius: var(--r-sm);
   font-size: var(--text-xs);
   letter-spacing: var(--ls-micro);
@@ -49,15 +49,15 @@ const zh = computed(() => CJK.test(props.label ?? ""));
 }
 .chip--zh {
   font-size: var(--text-sm);
-  letter-spacing: 0;
+  letter-spacing: var(--ls-none);
 }
 .chip--loud {
   font-weight: 500;
   background: color-mix(in srgb, currentColor var(--chip-bg-alpha), transparent);
 }
 .dot {
-  width: 6px;
-  height: 6px;
+  width: var(--dot-size);
+  height: var(--dot-size);
   border-radius: 50%;
   background: currentColor;
   flex: none;
@@ -74,6 +74,6 @@ const zh = computed(() => CJK.test(props.label ?? ""));
 
 /* running 状态点呼吸（§6；reduced-motion 由 base.css 全局关闭） */
 .dot.breathe {
-  animation: breathe 2.4s ease-in-out infinite;
+  animation: breathe var(--dur-breathe) ease-in-out infinite;
 }
 </style>

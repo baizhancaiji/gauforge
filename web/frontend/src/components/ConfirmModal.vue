@@ -96,8 +96,8 @@ function trapFocus(e: KeyboardEvent) {
   justify-content: center;
 }
 .modal {
-  width: min(560px, calc(100vw - 48px));
-  max-height: min(640px, calc(100vh - 96px));
+  width: min(var(--modal-width), calc(100vw - 48px));
+  max-height: min(var(--modal-max-height), calc(100vh - 96px));
   display: flex;
   flex-direction: column;
   background: var(--bg-overlay);

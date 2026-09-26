@@ -389,7 +389,7 @@ async function confirmRemove() {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-raised);
-  transition: border-color 120ms var(--ease-std);
+  transition: border-color var(--dur-fast) var(--ease-std);
 }
 .seat:hover {
   border-color: var(--border-strong);
@@ -423,7 +423,7 @@ async function confirmRemove() {
   letter-spacing: var(--ls-micro);
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--text-secondary) 10%, transparent);
-  padding: 1px 8px;
+  padding: 1px var(--space-2);
   border-radius: var(--r-sm);
 }
 .seat-name {
@@ -462,7 +462,7 @@ async function confirmRemove() {
 .expand {
   font-size: var(--text-xs);
   color: var(--text-faint);
-  transition: transform 160ms var(--ease-std);
+  transition: transform var(--dur-view) var(--ease-std);
 }
 .expand.open {
   transform: rotate(90deg);
@@ -521,7 +521,7 @@ async function confirmRemove() {
   white-space: nowrap;
 }
 .m-remove {
-  height: 24px;
+  height: var(--control-height-sm);
   font-size: var(--text-sm); /* 文案含中文（移除） */
 }
 .confirm-line {

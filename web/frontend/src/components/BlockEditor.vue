@@ -126,6 +126,9 @@ function exitEditLocal() {
 const isEd = (section: string) => editing.value && edits.has(section);
 const editOf = (section: string) => edits.get(section);
 
+/** 自动保存停顿防抖（A3 定稿：失焦或停顿时长二者取先）。 */
+const AUTOSAVE_DEBOUNCE_MS = 800;
+
 function onInput(section: string, e: Event) {
   const st = edits.get(section);
   if (!st) return;
@@ -133,7 +136,6 @@ function onInput(section: string, e: Event) {
   st.dirty = true;
   st.saved = false;
   st.error = null;
-  // 停顿 800ms 防抖（失焦取先）
   const t = timers.get(section);
   if (t) window.clearTimeout(t);
   timers.set(
@@ -141,7 +143,7 @@ function onInput(section: string, e: Event) {
     window.setTimeout(() => {
       timers.delete(section);
       void saveSectionDelayed(section);
-    }, 800),
+    }, AUTOSAVE_DEBOUNCE_MS),
   );
 }
 
@@ -476,7 +478,7 @@ async function saveSectionDelayed(section: string) {
   padding: var(--space-2);
   resize: vertical;
   line-height: 1.5;
-  transition: border-color 120ms var(--ease-std);
+  transition: border-color var(--dur-fast) var(--ease-std);
 }
 .be-ta--error {
   border-color: var(--danger);

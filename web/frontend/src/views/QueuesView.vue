@@ -377,7 +377,7 @@ async function confirmDelete() {
   border-bottom: 1px solid var(--border-hair);
   font-size: var(--text-sm);
   cursor: default;
-  min-height: 40px; /* §4.3 行高 40px */
+  min-height: var(--row-height); /* §4.3 行高 40px */
 }
 .row:hover,
 .row--open {
@@ -391,7 +391,7 @@ async function confirmDelete() {
   font-size: var(--text-xs);
   color: var(--text-faint);
   cursor: pointer;
-  transition: transform 160ms var(--ease-std);
+  transition: transform var(--dur-view) var(--ease-std);
   user-select: none;
 }
 .expand.open {
@@ -494,7 +494,7 @@ async function confirmDelete() {
   color: var(--warn);
 }
 .m-edit {
-  height: 24px;
+  height: var(--control-height-sm);
   margin-left: auto;
   font-size: var(--text-sm); /* 文案含中文（编辑内容） */
 }
@@ -516,6 +516,6 @@ async function confirmDelete() {
   height: 1px;
   background: var(--accent);
   /* 引用 base.css 共用 scanline（--ease-std），不重复定义 keyframes */
-  animation: scanline 1.2s var(--ease-std) infinite;
+  animation: scanline var(--dur-scan) var(--ease-std) infinite;
 }
 </style>
