@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T23:48+0800",
+  "updated": "2026-09-27T00:20+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -169,15 +169,29 @@
       "summary": "队列编辑对话框保存校验按模式区分成员数下限（编辑态误用创建期 2–10 校验致剩 1 成员的合法编辑被禁存，D1 走查 GUI 实测暴露）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "roadmap M2 编辑条目字典抽取源随修订说明五回填（D1 一致性对照核验发现旧离线 HTML 路径残留，先改文档）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "M2 验收记录落盘：D1 九条路径走查留痕（fake g16 全链路 + Playwright 黑盒）、五笔运行时缺陷修复登记、设计一致性与系统级判据核对、M2.1–M2.7 不偏离核对",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "D1 端到端验收走查进行中：§7.1 路径 1-6、9 已通过留痕；累计实测暴露并修复三笔缺陷（原文端点吞 CRLF 77b474769、toast 滞留遮挡 118366966、编辑态保存校验误用创建期下限 58353cc64）；路径 7 队列管理进行中（移除退回候选已验）"
+    "task": "M2 发布流程（changelog-spec §1.6：冻结 unreleased → 追加新行 → progress 清空 → 打 tag g16-v0.2.0）",
+    "note": "M2 全部工作项（M2.1–M2.7）完成，D1 走查九条路径通过留痕（docs/plans/m2-acceptance.md），D2 提交序列与 §6 核对一致；双闸门（349 passed + validate_progress）与前端闸门（npm build/check_tokens/check_contrast）全绿。发布冻结待用户确认执行"
   },
   "next_steps": [
-    "M2 提交#17 (D1) 端到端验收走查与 GUI 走查记录",
-    "M2 收尾 chore(progress) 进度两文件终态同步与提交整理"
+    "M2 发布：确认 CHANGELOG unreleased 完整后冻结 0.2.0（date 带时区偏移、semver=minor）、追加空 unreleased 行、清空 progress unreleased、本地打 tag g16-v0.2.0",
+    "发布后按 roadmap §3 进入 M3（cclib 结果解析与可视化）开工准备"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
