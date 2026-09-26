@@ -16,6 +16,7 @@
 | 确认框 Link0 黄色警告 | preview 响应 `blocks.link0.missing` | — |
 | 行内「提交」动作 | POST /api/v1/candidates/{id}/submit | `pending.snapshot` |
 | 「编辑」分块保存（M2） | PUT /api/v1/candidates/{id}/blocks/{section} | —（保存响应即新态） |
+| 「编辑」初始化与 CRLF 检出（M2） | GET preview / GET input（id 跨形态延续：候选与失败回退队列成员可读，守卫与 PUT blocks 一致） | — |
 | 「-」剔除 | DELETE /api/v1/candidates/{id} | `candidates.changed` |
 
 ## 02 队列

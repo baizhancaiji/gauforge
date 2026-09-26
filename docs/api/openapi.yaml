@@ -908,6 +908,10 @@ paths:
       tags: [candidates]
       operationId: previewCandidate
       summary: 分块预览
+      description: >-
+        id 跨形态延续（M2）：候选与失败回退队列成员（unsubmitted 且
+        rollback_flag=true，与 PUT blocks 守卫一致）可读；
+        其余形态（新建未提交成员/已提交/在途/终态）404。
       parameters:
         - $ref: '#/components/parameters/CandidateId'
       responses:
@@ -925,6 +929,9 @@ paths:
       tags: [candidates]
       operationId: getCandidateInput
       summary: 完整输入纯文本（提交确认框用）
+      description: >-
+        id 跨形态延续（M2）：候选与失败回退队列成员（守卫与 PUT blocks 一致）
+        可读，供分块编辑初始化与 CRLF 检出；其余形态 404。
       parameters:
         - $ref: '#/components/parameters/CandidateId'
       responses:
