@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T23:05+0800",
+  "updated": "2026-09-26T23:10+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -141,11 +141,18 @@
       "summary": "队列对话框 MemberRow 类型导出移出 script setup（setup 内 export 引发模块初始化 ReferenceError，对话框 chunk 加载即崩溃、候选页组件树中断；浏览器实测复验通过）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "预览编辑器 taskId 的 immediate watch 移至编辑态声明之后（原声明序在 loadPreview→exitEditLocal 同步回调中触达未初始化 ref 抛 TDZ，预览卡恒卡「读取预览」；浏览器实测复验通过）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "D1 端到端验收走查进行中：走查环境已就绪（/tmp/m2acc 隔离工作区 + fake g16 + 8399 引擎实例，Playwright MCP 本轮可用）；C 阶段两笔已知运行时缺陷已修复并浏览器实测（本条为第一笔）"
+    "note": "D1 端到端验收走查进行中：走查环境就绪（/tmp/m2acc 隔离工作区 + fake g16 + 8399 引擎实例，Playwright MCP 驱动）；C 阶段两笔已知运行时缺陷均已修复并浏览器实测落库，开始 §7.1 九条路径走查"
   },
   "next_steps": [
     "M2 提交#17 (D1) 端到端验收走查与 GUI 走查记录",
