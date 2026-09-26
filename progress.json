@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T20:40+0800",
+  "updated": "2026-09-26T21:00+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -64,16 +64,22 @@
       "summary": "队列删除增强与 id 查重：DELETE 分级处置（submitted 席位撤销+退回、completed 成员只留历史、executing 409），队列 id 生成对照全库（含任务/执行记录历史引用）查重永不复用",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "导入成队：POST /candidates 增 queue_from_folder/folder_name 参数与响应 queue/queue_fallback_reason 字段，受支持文件数 2–10 成队、越界回落全部候选并明示原因，成队事件序 created ×N → moved_out ×N → queues.changed(created)，前端契约生成物再生",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：提交 #9（B4 队列删除增强）已落库，开始 #10（B5 导入成队）"
+    "note": "B 阶段进行中：提交 #10（B5 导入成队）已落库，开始 #11（B7 错误码语义实现与替换，晚于 B3/B5/B6 收敛）"
   },
   "next_steps": [
-    "M2 提交#10 (B5) 导入成队",
     "M2 提交#11 (B7) 错误码语义实现与替换",
-    "M2 提交#12 契约回归更新"
+    "M2 提交#12 契约回归更新（B 收尾）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
