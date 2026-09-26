@@ -42,6 +42,11 @@ class ExecutionsRepo:
             " WHERE queue_id IS NOT NULL")
         return {r["qid"] for r in rows}
 
+    def max_id(self) -> int:
+        """当前最大执行 id（周期水位基准用）。"""
+        row = self._db.one("SELECT COALESCE(MAX(id), 0) AS m FROM executions")
+        return int(row["m"]) if row else 0
+
     def create(self, *, task_id: int, filename: str, resources: dict,
                queue_id: str | None = None, input_hash: str | None = None,
                hq_job_id: int | None = None,

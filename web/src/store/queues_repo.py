@@ -34,12 +34,21 @@ class QueuesRepo:
     def delete(self, queue_id: str) -> None:
         self._db.run("DELETE FROM queues WHERE id = ?", (queue_id,))
 
-    def set_state(self, queue_id: str, state: str) -> None:
-        self._db.run(
-            "UPDATE queues SET state = ?, updated_at = ? WHERE id = ?",
-            (state, now_iso(), queue_id))
+    def set_state(self, queue_id: str, state: str,
+                  *, bump_updated: bool = True) -> None:
+        """状态流转。bump_updated=False 用于失败回退：updated_at 兼作
+        引擎执行周期基准（进入 submitted/executing 的时点），回退不得重basis
+        （否则周期内已建记录可能落在基准之前，席位结算 undone 不收敛）。"""
+        if bump_updated:
+            self._db.run(
+                "UPDATE queues SET state = ?, updated_at = ? WHERE id = ?",
+                (state, now_iso(), queue_id))
+        else:
+            self._db.run("UPDATE queues SET state = ? WHERE id = ?",
+                         (state, queue_id))
 
-    def update(self, queue_id: str, **fields: object) -> None:
+    def update(self, queue_id: str, *, bump_updated: bool = True,
+               **fields: object) -> None:
         """白名单字段更新（name/skip_failed/rollback_flag/rollback_count/
         last_failure/finish_reason）。"""
         allowed = {"name", "skip_failed", "rollback_flag", "rollback_count",
@@ -57,6 +66,8 @@ class QueuesRepo:
                 v = int(v)
             sets.append(f"{k} = ?")
             params.append(v)
-        sets.append("updated_at = ?")
-        params.extend([now_iso(), queue_id])
+        if bump_updated:
+            sets.append("updated_at = ?")
+            params.append(now_iso())
+        params.append(queue_id)
         self._db.run(f"UPDATE queues SET {', '.join(sets)} WHERE id = ?", tuple(params))

@@ -92,6 +92,9 @@ class Dispatcher:
         # （首 tick 定初值）；workers_online 为探测到的在线 worker 数。
         self.hq_state: str | None = None
         self.hq_workers_online = 0
+        # 队列执行周期水位：qid → (基准 updated_at, 周期起点最大执行 id)，
+        # 供 _executed_this_cycle 以 id 判定周期归属（秒级时间戳同秒竞态规避）
+        self._cycle_watermark: dict[str, tuple[str, int]] = {}
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
 
@@ -163,6 +166,7 @@ class Dispatcher:
                 # （completed）后席位残余成员不再派发（席位待在跑收尾释放）
                 if q is None or q["state"] not in ("submitted", "executing"):
                     continue
+                self._refresh_cycle_watermark(q)
                 # 本周期已有执行记录者不重复派发（failed/succeeded 终态成员）
                 if self._executed_this_cycle(task["id"], q):
                     continue
@@ -199,11 +203,39 @@ class Dispatcher:
                    for e in executions().list_by_task(task_id))
 
     def _executed_this_cycle(self, task_id: int, queue: dict) -> bool:
-        """本 executing 周期内是否已有执行记录（队列二次提交后旧记录不算，
-        以队列进入 executing 的 updated_at 为基准——set_state 即更新）。"""
+        """本执行周期内是否已有执行记录。
+
+        周期归属以「执行 id 水位」判定（advance 观察 submitted 态时以当下
+        最大执行 id 为周期起点，见 _refresh_cycle_watermark）：时间戳为
+        秒级 ISO，同秒内跨周期时 `>=` 比较会把上一周期记录误判为本周期
+        （m2-plan §5 e2e 实测：周期 1 全部执行与周期 2 提交同秒 → 周期 2
+        永不派发）。无水位（未观察到 submitted）时回退时间基准。"""
+        mark = self._cycle_watermark.get(queue["id"])
+        if mark is not None:
+            return any(e["id"] > mark[1]
+                       for e in executions().list_by_task(task_id))
         base = queue.get("updated_at") or ""
         return any((e.get("submitted_at") or "") >= base
                    for e in executions().list_by_task(task_id))
+
+    def _refresh_cycle_watermark(self, queue: dict) -> None:
+        """观察 submitted 态且基准变化（新一次提交）时重置周期水位。
+
+        回退不重basis updated_at（见 _queue_rollback），故 updated_at 变化
+        即新周期提交。"""
+        qid = queue["id"]
+        mark = self._cycle_watermark.get(qid)
+        if queue["state"] == "submitted" \
+                and (mark is None or mark[0] != queue["updated_at"]):
+            self._cycle_watermark[qid] = (queue["updated_at"],
+                                          executions().max_id())
+
+    def _member_has_result(self, task_id: int) -> bool:
+        """成员最近执行终态为 succeeded（哈希跳过沿用既有结果，视为已结算：
+        §7.1 #5「无新执行记录、状态保持 succeeded」，失败分流不再改标
+        skipped，席位结算不再视为未启动）。"""
+        exs = executions().list_by_task(task_id)
+        return bool(exs) and exs[-1]["state"] == "succeeded"
 
     def _inputs_path(self, task_id: int) -> Path:
         from ..services.candidates import default_inputs_dir
@@ -381,8 +413,7 @@ class Dispatcher:
             # + 整队回退；在跑成员已被一并 stop，其终态事件到达时队列已
             # unsubmitted，本分支天然幂等不再分流
             for m in members:
-                if m["id"] in running_ids \
-                        or self._executed_this_cycle(m["id"], q):
+                if self._member_settled(m, running_ids, q):
                     continue
                 self._mark_skipped(m, qid, "queue_manually_stopped")
             self._queue_rollback(q, "manually_stopped",
@@ -390,13 +421,20 @@ class Dispatcher:
             return
         if not q["skip_failed"]:
             for m in members:
-                if m["id"] in running_ids \
-                        or self._executed_this_cycle(m["id"], q):
-                    continue  # 在跑任其跑完；本周期已执行者不动
+                if self._member_settled(m, running_ids, q):
+                    continue  # 在跑任其跑完；本周期已执行者/既有成功者不动
                 self._mark_skipped(m, qid, "predecessor_failed")
             self._queue_rollback(q, "abort_on_failure",
                                  [(execution["task_id"], "failed", cause)])
         # 勾选跳过：继续取未启动成员（advance 补位自然完成）
+
+    def _member_settled(self, member: dict, running_ids: set[int],
+                        queue: dict) -> bool:
+        """失败分流中「不动」的成员：在跑、本周期已执行、或既有成功结果
+        （哈希跳过沿用——不误标 skipped，m2-plan §7.1 第 5 条）。"""
+        return (member["id"] in running_ids
+                or self._executed_this_cycle(member["id"], queue)
+                or self._member_has_result(member["id"]))
 
     def _mark_skipped(self, member: dict, queue_id: str, cause: str) -> None:
         """未启动成员即时 skipped：终态行直接落库（无执行过程）。"""
@@ -418,23 +456,29 @@ class Dispatcher:
 
     def _queue_rollback(self, queue: dict, reason: str,
                         failures: list[tuple[int, str, str | None]]) -> None:
-        """队列失败回退：记 finish_reason/last_failure/回退标记 → unsubmitted。"""
+        """队列失败回退：记 finish_reason/last_failure/回退标记 → unsubmitted。
+
+        不重basis updated_at（周期基准=进入 submitted/executing 时点）：
+        本周期已建 skipped/failed 记录须仍被 _executed_this_cycle 判为
+        「本周期已执行」，席位结算 undone 判定才收敛。"""
         qid = queue["id"]
         count = int(queue.get("rollback_count") or 0) + 1
-        queues().update(qid, finish_reason=reason, rollback_flag=True,
-                        rollback_count=count,
+        queues().update(qid, bump_updated=False, finish_reason=reason,
+                        rollback_flag=True, rollback_count=count,
                         last_failure={"finish_reason": reason,
                                       "failure_positions": [f[0] for f in failures],
                                       "members": [{"task_id": f[0],
                                                    "state": f[1],
                                                    "cause": f[2]}
                                                   for f in failures]})
-        queues().set_state(qid, "unsubmitted")
+        queues().set_state(qid, "unsubmitted", bump_updated=False)
         self._emit("queue.status",
                    {"queue_id": qid, "from": "executing", "to": "unsubmitted",
                     "finish_reason": reason,
                     "failure_positions": [f[0] for f in failures],
                     "rollback_count": count, "ts": now_iso()})
+        # sse.md §3「任务失败」行：回退伴随 queues.changed（updated）
+        self._emit("queues.changed", {"action": "updated", "queue_id": qid})
 
     # ---- 席位释放 ----
 
@@ -458,7 +502,8 @@ class Dispatcher:
         seat = next((s for s in seats().list_by_position()
                      if s["kind"] == "queue" and s["queue_id"] == queue_id), None)
         undone = [m for m in members
-                  if not self._executed_this_cycle(m["id"], q)]
+                  if not (self._executed_this_cycle(m["id"], q)
+                          or self._member_has_result(m["id"]))]
         if undone:
             return  # 尚有本周期未启动成员：skip_failed 继续派发中
         states = {m["id"]: executions().list_by_task(m["id"])[-1]["state"]
