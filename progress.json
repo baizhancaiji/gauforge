@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-26T19:05+0800",
+  "updated": "2026-09-26T19:15+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -29,16 +29,23 @@
       "summary": "M2 计划登记修订说明五（B1 字典抽取源改用 gaussian-kb MCP 结构化知识库）并回填 A1 实地核查结论（94 页甄别剔除 8 篇文章页、词条=slug+标题变体、决策点 4/5 关闭）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "core",
+      "summary": "新增关键词字典生成链（extract_keywords.py 读 gaussian-kb 结构化知识库产出 97 词条入库、parse.keywords 加载器缺失降级零警告），支撑 route 关键词拼写检查",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "B 阶段进行中：B1 关键词字典（gaussian-kb 结构化清单抽取）实施中，随后 #6(B2)/#7(B6)"
+    "note": "B 阶段进行中：提交 #5（B1 关键词字典）已落库，开始 #6（B2 分块保存服务与 PUT blocks）"
   },
   "next_steps": [
-    "M2 提交#5 (B1) 关键词字典生成脚本与字典入库",
     "M2 提交#6 (B2) 分块保存服务与 PUT blocks",
-    "M2 提交#7 (B6) 提交前输入核验"
+    "M2 提交#7 (B6) 提交前输入核验",
+    "M2 提交#8 (B3) 队列编辑全语义"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
