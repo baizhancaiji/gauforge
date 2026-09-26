@@ -106,16 +106,23 @@
       "summary": "预览与原文端点对失败回退队列成员放行（读取守卫与 PUT blocks 一致，其余形态 404），补路由级断言回退成员 200、非回退成员 404",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "预览编辑态真实化：BlockEditor 分块编辑器（link0/route/title/charge_mult/additional 双态、自动保存失焦或 800ms 防抖、422 错误描边注记不落盘、拼写警告琥珀注记、CRLF 中性注记、molecule 恒只读），行内提交与历史重新排队按响应 normalized 字段展示规范化注记",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 输入工程实施（按 docs/plans/m2-plan.md 提交序列推进）",
-    "note": "C 阶段进行中：C1 开工前修复跨形态守卫缺口（契约口径已先行落盘，后端放行与前端组件随 C1 落库）"
+    "note": "C 阶段进行中：#13 (C1) 预览编辑态已落库（含跨形态守卫缺口 fix 与契约口径先行），下一任务 #14 (C2) 候选页多选与队列编辑对话框"
   },
   "next_steps": [
-    "M2 提交#13 (C1) 预览编辑态",
     "M2 提交#14 (C2) 候选页多选与队列编辑对话框",
-    "M2 提交#15 (C3) 队列页真实化"
+    "M2 提交#15 (C3) 队列页真实化",
+    "M2 提交#16 (C4) 导入对话框队列选项"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
