@@ -47,7 +47,10 @@ onMounted(() => events.start());
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-dot" :data-conn="events.connection" aria-hidden="true"></span>
-        <span class="brand-name mono">g16web</span>
+        <span class="brand-name">
+          <span class="brand-line mono">Gaussian 16</span>
+          <span class="brand-line mono">管理工作台</span>
+        </span>
       </div>
 
       <nav class="nav">
@@ -131,7 +134,7 @@ onMounted(() => events.start());
 <style scoped>
 .brand {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-2) var(--space-6);
 }
@@ -139,6 +142,7 @@ onMounted(() => events.start());
 .brand-dot {
   width: 8px;
   height: 8px;
+  margin-top: 6px; /* 与首行「Gaussian 16」视觉居中对齐 */
   border-radius: 2px;
   background: var(--accent);
   box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 80%, transparent);
@@ -162,6 +166,9 @@ onMounted(() => events.start());
   }
 }
 .brand-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
   font-weight: 600;
   color: var(--text-primary);
 }
