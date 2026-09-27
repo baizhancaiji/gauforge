@@ -20,7 +20,8 @@ export interface MemberRow {
  * 输入（创建默认 yyyymmddhhmmss 时间戳可改；创建态不渲染队列 id 字段——id
  * 保存后由后端生成，编辑/只读态只读展示真实 id，2026-09-27 计划外人为修正
  * 去除「保存后生成」占位注记）；中部成员列表（任务 id/文件名/title，「-」
- * 移除剩 1 禁用、拖动排序 120ms --ease-std）；「自动跳过失败任务」toggle
+ * 移除剩 1 禁用、拖动排序走 usePointerSort 指针跟手动效 --dur-drag）；「自动
+ * 跳过失败任务」toggle
  * 开关；底部「取消」/「保存」（primary，每视图至多一个）/「直接提交」
  * （secondary）。
  * 状态分级（m2-plan §2.2 矩阵）：unsubmitted 全量可编辑；submitted 仅成员
@@ -28,13 +29,13 @@ export interface MemberRow {
  * 「直接提交」= 保存 + submit 链式；submit 失败时队列保留 unsubmitted，展示
  * 原因引导队列页重试；提交响应 normalized=true 显「已自动规范化」中性注记。
  */
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import StateChip from "@/components/StateChip.vue";
-import { useDragSort } from "@/composables/useDragSort";
+import { usePointerSort } from "@/composables/usePointerSort";
 import { fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
@@ -68,13 +69,28 @@ const error = ref<string | null>(null);
 const note = ref<string | null>(null);
 const done = ref(false);
 
-const drag = useDragSort();
 const canSort = computed(() => !readonly.value && !done.value);
+
+// ---------- 拖拽排序（指针跟手画布式 usePointerSort，§4.6；只读/完成态不可拖） ----------
+const listEl = ref<HTMLElement | null>(null);
+const canvasEl = ref<HTMLElement | null>(null);
+const sort = usePointerSort({
+  count: () => members.value.length,
+  enabled: () => canSort.value,
+  canvas: canvasEl,
+  scroller: listEl,
+  /** 归位动画结束后提交重排（视觉已就位，按位重排无跳变） */
+  commit: (from, to) => {
+    const [moved] = members.value.splice(from, 1);
+    if (moved) members.value.splice(to, 0, moved);
+  },
+});
 
 watch(
   () => props.open,
-  (v) => {
+  async (v) => {
     if (!v) return;
+    sort.reset(); // 丢弃上次遗留的拖拽状态（关闭即取消整次编辑）
     error.value = null;
     note.value = null;
     done.value = false;
@@ -98,6 +114,16 @@ watch(
         ...(lf.get(id) ?? {}),
       }));
     }
+    await nextTick(); // 行渲染完成后量测行高/行距（画布高度与步距）
+    sort.measure();
+  },
+);
+
+// 成员增删后行数变化，画布总高随之重算
+watch(
+  () => members.value.length,
+  () => {
+    void nextTick(() => sort.measure());
   },
 );
 
@@ -124,26 +150,6 @@ function removeAt(i: number) {
   const m = members.value[i];
   if (memberOnly.value && m?.state === "running") return; // 在跑成员移除后端 409（前置禁用）
   members.value.splice(i, 1);
-}
-
-// ---------- 拖拽排序（公共组合式；锁定/边界判定：只读态不可拖） ----------
-function onDragStart(m: MemberRow, e: DragEvent) {
-  if (!canSort.value) return;
-  drag.start(m.id, e);
-}
-function onDragOver(m: MemberRow, e: DragEvent) {
-  drag.over(m.id, e, canSort.value);
-}
-function onDrop(m: MemberRow) {
-  const from = drag.dragId.value;
-  const to = m.id;
-  drag.end();
-  if (from == null || from === to) return;
-  const ids: (string | number)[] = members.value.map((x) => x.id);
-  const next = drag.move(ids, from, to);
-  if (!next) return;
-  const byId = new Map(members.value.map((x) => [x.id, x]));
-  members.value = next.map((id) => byId.get(id as number)!);
 }
 
 // ---------- 保存 / 直接提交 ----------
@@ -262,37 +268,37 @@ function tryClose() {
       <p v-if="note" class="q-note mono" role="status">{{ note }}</p>
 
       <p class="q-label mono">成员（{{ members.length }}）— 顺序即执行序列</p>
-      <div class="q-members">
-        <div
-          v-for="(m, i) in members"
-          :key="m.id"
-          class="q-mem"
-          :class="{
-            'q-mem--dragging': drag.dragId.value === m.id,
-            'q-mem--over': drag.overId.value === m.id && drag.dragId.value !== m.id,
-          }"
-          :draggable="canSort"
-          @dragstart="onDragStart(m, $event)"
-          @dragover.prevent="onDragOver(m, $event)"
-          @dragleave="drag.leave(m.id)"
-          @drop.prevent="onDrop(m)"
-        >
-          <span v-if="canSort" class="m-drag mono" aria-hidden="true">⋮⋮</span>
-          <span class="m-id mono">{{ fmtTaskId(m.id) }}</span>
-          <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
-          <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
-          <StateChip v-if="m.state" :state="m.state" />
-          <span v-if="m.cause" class="m-cause mono">{{ causeLabel[m.cause] ?? m.cause }}</span>
-          <button
-            v-if="!readonly"
-            class="btn btn--ghost m-remove"
-            type="button"
-            :disabled="members.length <= 1 || done || (memberOnly && m.state === 'running')"
-            :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : undefined)"
-            @click="removeAt(i)"
+      <!-- 滚动容器只管滚动与内边距；行定位交给画布（无内边距，坐标量测基准） -->
+      <div ref="listEl" class="q-members">
+        <div ref="canvasEl" class="q-canvas" :class="{ 'q-canvas--live': canSort }" :style="sort.canvasStyle.value">
+          <div
+            v-for="(m, i) in members"
+            :key="m.id"
+            class="q-mem"
+            :class="{ 'q-mem--dragging': sort.dragIndex.value === i }"
+            :style="sort.styleFor(i)"
+            @pointerdown="sort.onDown($event, i)"
+            @pointermove="sort.onMove($event)"
+            @pointerup="sort.onUp"
+            @pointercancel="sort.onUp"
           >
-            -
-          </button>
+            <span v-if="canSort" class="m-drag mono" aria-hidden="true">⋮⋮</span>
+            <span class="m-id mono">{{ fmtTaskId(m.id) }}</span>
+            <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
+            <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
+            <StateChip v-if="m.state" :state="m.state" />
+            <span v-if="m.cause" class="m-cause mono">{{ causeLabel[m.cause] ?? m.cause }}</span>
+            <button
+              v-if="!readonly"
+              class="btn btn--ghost m-remove"
+              type="button"
+              :disabled="members.length <= 1 || done || (memberOnly && m.state === 'running')"
+              :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : undefined)"
+              @click="removeAt(i)"
+            >
+              -
+            </button>
+          </div>
         </div>
       </div>
 
@@ -386,9 +392,8 @@ function tryClose() {
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
+/* 滚动容器：仅滚动与内边距；行定位/间距由画布与步距量测接管（§4.6 拖拽排序） */
 .q-members {
-  display: grid;
-  gap: var(--space-1);
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-inset);
@@ -396,7 +401,15 @@ function tryClose() {
   max-height: 260px;
   overflow: auto;
 }
+/* 定位画布：position:relative 且无内边距，行 absolute + translateY 定位 */
+.q-canvas {
+  position: relative;
+}
 .q-mem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: var(--space-3);
@@ -405,13 +418,24 @@ function tryClose() {
   border-radius: var(--r-md);
   background: var(--bg-raised);
   font-size: var(--text-sm);
-  transition: transform var(--dur-fast) var(--ease-std), border-color var(--dur-fast) var(--ease-std);
+  user-select: none;
+  touch-action: none; /* 指针拖拽期间阻止触屏滚动误触 */
+  transition:
+    transform var(--dur-drag) var(--ease-std),
+    border-color var(--dur-fast) var(--ease-std);
+  will-change: transform;
 }
+.q-canvas--live .q-mem {
+  cursor: grab;
+}
+/* 拿起态：accent 描边 + 浮起投影（令牌组合，不另设色值） */
 .q-mem--dragging {
-  opacity: 0.5;
+  z-index: 1;
+  border-color: var(--accent);
+  box-shadow: var(--shadow-pop);
 }
-.q-mem--over {
-  border-color: var(--border-strong);
+.q-canvas--live .q-mem--dragging {
+  cursor: grabbing;
 }
 .m-drag {
   color: var(--text-faint);

@@ -54,7 +54,9 @@ function toggle(seatId: number) {
 
 // ---------- 拖拽重排（PUT /pending/order 全量原子；锁定席位不可作拖源/落点，
 // 等待区可拖；提交 order 保证锁定席位下标不变，越界本地拒绝并提示。
-// 拖拽状态管理与移动计算走公共组合式 useDragSort——与队列编辑对话框共用） ----------
+// 拖拽状态管理与移动计算走公共组合式 useDragSort——队列编辑对话框已于
+// 2026-09-27 改走 usePointerSort 指针跟手动效（§4.6），本页席位行高可变
+// （子表展开），保留 HTML5 DnD） ----------
 const drag = useDragSort();
 const orderError = ref<string | null>(null);
 
