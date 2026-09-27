@@ -65,9 +65,23 @@ function goPage(p: number) {
   load();
 }
 
-/** 行点击：预览选中 + 锚点/焦点同步（不改变勾选，衔接键盘 Shift 扩展） */
-function select(c: Candidate, index: number) {
+/** 行点击（修饰交互全在行上，参照资源管理器范式）：预览选中 + 锚点/焦点同步；
+ *  Shift+行点击——从锚点行到目标行范围勾选（普通 Shift 替换式、Ctrl+Shift
+ *  追加式，锚点不动可反复调整）；Ctrl/Cmd+行点击——切换单项勾选并重置锚点
+ *  （示例范式：Ctrl 点击会重置锚点）。 */
+function select(c: Candidate, index: number, e?: MouseEvent) {
   selected.value = c;
+  if (e?.shiftKey && anchorIndex.value !== -1) {
+    selectRange(anchorIndex.value, index, e.ctrlKey || e.metaKey);
+    focusedIndex.value = index;
+    return;
+  }
+  if (e && (e.ctrlKey || e.metaKey)) {
+    toggleId(c.id);
+    anchorIndex.value = index;
+    focusedIndex.value = index;
+    return;
+  }
   pointAt(index);
 }
 
@@ -292,11 +306,14 @@ const originView: Record<string, { color: string; label: string }> = {
 const tableScroll = ref<HTMLElement | null>(null);
 const {
   checkedIds,
+  anchorIndex,
   focusedIndex,
   clearAll,
   resetIndices,
   click: checkAt,
   pointAt,
+  toggle: toggleId,
+  selectRange,
   selectAll,
   onKeydown: onListKeydown,
 } = useMultiSelect({
@@ -494,9 +511,10 @@ function onQueueClosed() {
                   :key="c.id"
                   :class="{
                     'row--active': selected?.id === c.id,
+                    'row--checked': checkedIds.has(c.id),
                     'row--focused': focusedIndex === i,
                   }"
-                  @click="select(c, i)"
+                  @click="select(c, i, $event)"
                 >
                   <td class="chk-col" @click.stop>
                     <input
@@ -820,6 +838,12 @@ tbody tr {
 }
 tbody tr:hover {
   background: var(--row-hover);
+}
+/* 勾选行（useMultiSelect 勾选集合）：与预览选中同源 accent 背景——范围内
+   每一行都呈选中态颜色变化，不只鼠标点到的行；hover 轻微加深保留反馈 */
+tbody tr.row--checked,
+tbody tr.row--checked:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
 }
 /* 选中行：inset 2px accent 条（§4.3 样板） */
 .row--active {
