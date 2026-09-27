@@ -83,7 +83,7 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 
 - 不改写已发布版本的历史记录。
 - 不在变更记录中写 commit hash（细节以 git 历史为准）。
-- 不手工维护 Markdown 版 CHANGELOG（与机器可读版本必然漂移），本项目变更一律记入 `CHANGELOG.jsonl`。
+- 不手工维护 Markdown 版 CHANGELOG（与机器可读版本必然漂移），本项目变更一律记入 `CHANGELOG.jsonl`；人类可读的 `CHANGELOG.md` 只能由 `scripts/gen_changelog_md.py` 从 `CHANGELOG.jsonl` 生成（`--check` 校验一致），不得手工编辑。
 - 不让 `progress.json` 无限增长（它是快照，不是流水账）。
 - 不提交疑似含密钥的文件（`.env`、凭据文件）；如确需提交，先明确告知风险。
 - 不使用 `git add -A` / `git add .` 批量暂存，逐文件按名添加，避免误入敏感文件与大数据。
@@ -123,7 +123,8 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 脚本失败即退出码非零，纳入提交前检查。（本仓库当前闸门：
 `scripts/validate_progress.py`、`uv run pytest`、`scripts/check_tokens.py`——
 设计令牌逐变量一致性、`scripts/check_contrast.py`——WCAG 对比度全组合
-≥ 4.5:1；涉及前端视觉或派发链路的改动另见 §6.1 第 4 条 hq 产物检查。）
+≥ 4.5:1、`scripts/gen_changelog_md.py --check`——CHANGELOG.md 与 jsonl
+一致性；涉及前端视觉或派发链路的改动另见 §6.1 第 4 条 hq 产物检查。）
 
 ## 七、长程脚本规范
 
