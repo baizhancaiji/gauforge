@@ -50,7 +50,7 @@ cargo build --release
 - [docs/references/changelog-spec.md](docs/references/changelog-spec.md) — 进度管理规范
 - `progress.json` — 当前状态快照（开发前必读）
 
-## 内核来源与许可
+## 内核来源
 
 `crates/` 改自上游 [It4innovations/hyperqueue](https://github.com/It4innovations/hyperqueue)
 主干（v0.26.2 之后的未发版提交，fork 点 `21f2d2e8b`，含其调度器改进），
@@ -58,5 +58,19 @@ cargo build --release
 若你在研究中使用 HyperQueue，请考虑
 [引用其论文](https://github.com/It4innovations/hyperqueue#publications)。
 
-许可双轨：根 [LICENSE](LICENSE) 适用于 GauForge 自有代码（`web/`、`frontend/`、`docs/` 等）；
-[`crates/LICENSE`](crates/LICENSE) 保留上游 MIT 原文与版权行，随内核源码一并提供。
+## AI 使用声明
+
+本项目由 keepoux 主导开发，过程中大量使用 AI 编码代理（ZCode CLI，GLM 系列模型）
+协作完成代码与文档的编写、测试与走查；需求定义、方案决策与验收把关由人类完成。
+
+## 许可
+
+分层许可（详见 [LICENSE](LICENSE)）：
+
+- **自有代码**（除 `crates/` 外的全部内容）：PolyForm Noncommercial License 1.0.0——
+  可自由使用、修改与再分发，但仅限非商业目的；商业使用需另行获得授权。
+- **内核 `crates/`**：上游 HyperQueue 的 MIT 许可完整保留
+  ([`crates/LICENSE`](crates/LICENSE))，不受上述限制。
+- 其余第三方依赖各依其原始许可证。
+
+v1.0.0（含）之前的发布版本按 MIT 授权存续。
