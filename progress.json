@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T19:28+0800",
+  "updated": "2026-09-27T22:43+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -335,6 +335,34 @@
       "type": "changed",
       "scope": "docs",
       "summary": "roadmap M1 候选序表述与 M2 队列页段、m0-frontend-design §4.1 历史页措辞与 §5 候选/队列页布局行、m2-plan §4.3 C2 保存后行为，同步回填上述规格（2026-09-27 验收修正）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "候选页多选交互修复：复选框点击不再 preventDefault——Chromium 的 checkbox 取消激活回滚发生在 Vue 渲染写入之后、覆盖 :checked 同步（实测计数已更新而复选框不亮、Shift 锚点范围选择视觉不生效），改为放行原生翻转并按 checkedIds 语义同步修正被点击项 DOM（该行 vnode 值未变时 Vue 跳过写 DOM 需自补）；Playwright 隔离实例实测锚点范围选择/范围调整/Ctrl+Shift 追加/Ctrl 切换/方向键导航/Shift+方向键扩展/Esc 清空全路径通过",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "候选页行点击接入 Shift 范围勾选（参照资源管理器范式补齐点行入口）：Shift+行点击从锚点行到目标行范围勾选（普通 Shift 替换式、Ctrl+Shift 追加式，锚点不动可反复调整）、预览选中目标行；普通行点击保持预览选中并同步锚点/焦点衔接键盘扩展，Shift 按下 mousedown 防文本选区",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "候选页多选视觉补全：勾选行统一呈 accent 选中背景态（row--checked，与预览选中同源 7% 背景、hover 保持不回落灰调）——Shift 范围勾选后范围内每一行都有选中态颜色变化，不再只有鼠标点到的预览行变色；预览行左条/焦点行描边叠加以区分，明暗双主题经令牌自动适配",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "候选页行点击修饰交互补全（修饰交互全在行上）：Ctrl/Cmd+行点击切换单项勾选并重置锚点（示例范式：Ctrl 点击重置锚点），与 Shift+行点击范围选择、Ctrl+Shift 追加范围、方向键导航构成完整行内多选；行点击入口不再依赖复选框",
       "breaking": false,
       "migration": null
     }
