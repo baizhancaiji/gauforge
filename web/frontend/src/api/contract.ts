@@ -48,7 +48,7 @@ export interface paths {
         };
         /**
          * 分页列表（含实时 title）
-         * @description items 先按导入时间倒序（created_at，新批在上）对全量排序后再分页， 同一秒导入的同批文件批内按文件名自然序（不区分大小写、字母先于数字， 与 web/src/parse/naturalsort 同规则），跨页全局有序。
+         * @description items 排序：回退候选（origin=returned_*）置顶、导入候选在后，两组内 均按 created_at 倒序（最新在上），让回退条目一眼可见；同一秒导入的 批内按 id 逆序（后导入在前）。排序唯一实现在取数端，切片前全量排序， 跨页全局有序。
          */
         get: operations["listCandidates"];
         put?: never;
@@ -88,7 +88,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 分块预览 */
+        /**
+         * 分块预览
+         * @description id 跨形态延续（M2）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true，与 PUT blocks 守卫一致）可读； 其余形态（新建未提交成员/已提交/在途/终态）404。
+         */
         get: operations["previewCandidate"];
         put?: never;
         post?: never;
@@ -105,7 +108,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 完整输入纯文本（提交确认框用） */
+        /**
+         * 完整输入纯文本（提交确认框用）
+         * @description id 跨形态延续（M2）：候选与失败回退队列成员（守卫与 PUT blocks 一致） 可读，供分块编辑初始化与 CRLF 检出；其余形态 404。
+         */
         get: operations["getCandidateInput"];
         put?: never;
         post?: never;
@@ -503,7 +509,7 @@ export interface components {
          */
         CandidateOrigin: "imported" | "returned_unrun" | "returned_failed" | "returned_succeeded";
         /**
-         * @description 历史列表排序：submitted_desc 提交时间倒序（默认，id 逆序实现）； finished_desc / finished_asc 按完成时间（finished_at，终态统一存在）； filename_asc / filename_desc 按文件名自然序（不区分大小写、字母先于 数字，与候选列表批内同规则）。各排序并列时保持提交倒序（稳定排序）， 全量排序后分页，跨页全局有序。
+         * @description 历史列表排序：submitted_desc 提交时间倒序（默认，id 逆序实现）； finished_desc / finished_asc 按完成时间（finished_at，终态统一存在）； filename_asc / filename_desc 按文件名自然序（不区分大小写、字母先于 数字）。各排序并列时保持提交倒序（稳定排序）， 全量排序后分页，跨页全局有序。
          * @enum {string}
          */
         HistorySort: "submitted_desc" | "finished_desc" | "finished_asc" | "filename_asc" | "filename_desc";
