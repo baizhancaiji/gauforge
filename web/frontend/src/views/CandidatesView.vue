@@ -19,6 +19,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import QueueEditorModal, { type MemberRow } from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
+import { useMultiSelect } from "@/composables/useMultiSelect";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
@@ -65,8 +66,10 @@ function goPage(p: number) {
   load();
 }
 
-function select(c: Candidate) {
+/** 行点击：预览选中 + 锚点/焦点同步（不改变勾选，衔接键盘 Shift 扩展） */
+function select(c: Candidate, index: number) {
   selected.value = c;
+  pointAt(index);
 }
 
 // 契约 §3.5⑥：候选通知事件 → 重拉当前页。
@@ -282,8 +285,31 @@ const originView: Record<string, { color: string; label: string }> = {
   returned_succeeded: { color: "succeeded", label: "成功退回" },
 };
 
-// ---------- 多选 + 队列组建（M2 C2，m2-plan §4.3 C2/§2.4） ----------
-const checkedIds = ref<Set<number>>(new Set());
+// ---------- 多选 + 队列组建（M2 C2，m2-plan §4.3 C2/§2.4；交互套件
+// useMultiSelect：锚点+焦点驱动 Shift 范围选择 / Ctrl+Shift 追加范围 /
+// 方向键导航。普通点击保持复选框 toggle 语义，修饰键增量在 Ctrl+Shift） ----------
+/** 滚动容器 ref：键盘事件宿主（tabindex=0）与行元素序来源（与列表响应序
+ *  对齐，供导航滚动定位）。 */
+const tableScroll = ref<HTMLElement | null>(null);
+const {
+  checkedIds,
+  focusedIndex,
+  clearAll,
+  resetIndices,
+  click: checkAt,
+  pointAt,
+  selectAll,
+  onKeydown: onListKeydown,
+} = useMultiSelect({
+  ids: () => list.value.map((c) => c.id),
+  rows: () =>
+    tableScroll.value
+      ? Array.from(tableScroll.value.querySelectorAll<HTMLElement>("tbody tr"))
+      : null,
+});
+// 列表整体重载（翻页/重取）→ 页内索引失效：重置锚点/焦点（勾选跨页保留）
+watch(list, resetIndices);
+
 const QUEUE_MIN = 2;
 const QUEUE_MAX = 10;
 
@@ -302,15 +328,19 @@ const queueHint = computed(() => {
   return null;
 });
 
-function toggleRow(id: number) {
-  const next = new Set(checkedIds.value);
-  if (!next.delete(id)) next.add(id);
-  checkedIds.value = next;
-}
+/** 表头全选/清空 */
 function toggleAll() {
-  checkedIds.value = allChecked.value
-    ? new Set()
-    : new Set(list.value.map((c) => c.id));
+  if (allChecked.value) clearAll();
+  else selectAll();
+}
+
+/** 行复选框点击（统一接 Shift/Ctrl 修饰；preventDefault 屏蔽原生翻转——
+ *  状态全由 checkedIds 渲染驱动，原生翻转遇「渲染前后值相同」会被 Vue
+ *  跳过写 DOM 造成不一致）后容器聚焦承接键盘导航。 */
+function onRowCheck(index: number, e: MouseEvent) {
+  e.preventDefault();
+  checkAt(index, e);
+  tableScroll.value?.focus();
 }
 
 // 「+队列」对话框（创建态；成员行带候选完整信息）
@@ -327,13 +357,13 @@ function openQueueModal() {
 /** 保存（不提交）：关闭对话框并跳转队列页（m2-plan C2：关闭并跳转/刷新） */
 function onQueueSaved(_q: Queue) {
   queueModalOpen.value = false;
-  checkedIds.value = new Set();
+  clearAll();
   router.push("/queues");
 }
 
 /** 直接提交：注记在对话框内展示，关闭后留候选页（列表经 SSE 自动刷新） */
 function onQueueSubmitted() {
-  checkedIds.value = new Set();
+  clearAll();
 }
 
 function onQueueClosed() {
@@ -434,7 +464,15 @@ function onQueueClosed() {
         </div>
 
         <template v-else>
-          <div class="table-scroll">
+          <!-- 多选交互宿主容器：tabindex 承接键盘导航（Ctrl+A/Esc/方向键），
+               Shift 按下的 mousedown 阻止默认行为防范围点击拖出文本选区 -->
+          <div
+            ref="tableScroll"
+            class="table-scroll"
+            tabindex="0"
+            @keydown="onListKeydown"
+            @mousedown.shift.prevent
+          >
             <table class="table">
               <thead>
                 <tr>
@@ -449,10 +487,13 @@ function onQueueClosed() {
               </thead>
               <tbody class="stagger">
                 <tr
-                  v-for="c in list"
+                  v-for="(c, i) in list"
                   :key="c.id"
-                  :class="{ 'row--active': selected?.id === c.id }"
-                  @click="select(c)"
+                  :class="{
+                    'row--active': selected?.id === c.id,
+                    'row--focused': focusedIndex === i,
+                  }"
+                  @click="select(c, i)"
                 >
                   <td class="chk-col" @click.stop>
                     <input
@@ -460,7 +501,7 @@ function onQueueClosed() {
                       type="checkbox"
                       :checked="checkedIds.has(c.id)"
                       :aria-label="`选择 ${c.filename}`"
-                      @change="toggleRow(c.id)"
+                      @click="onRowCheck(i, $event)"
                     />
                   </td>
                   <td class="mono">{{ fmtTaskId(c.id) }}</td>
@@ -480,7 +521,7 @@ function onQueueClosed() {
                     <button class="btn btn--ghost" type="button" @click.stop="openSubmit(c)">
                       提交
                     </button>
-                    <button class="btn btn--ghost" type="button" @click.stop="select(c)">
+                    <button class="btn btn--ghost" type="button" @click.stop="select(c, i)">
                       预览
                     </button>
                     <button class="btn btn--ghost remove" type="button" @click.stop="removing = c">
@@ -781,6 +822,14 @@ tbody tr:hover {
 .row--active {
   background: color-mix(in srgb, var(--accent) 7%, transparent);
   box-shadow: inset 2px 0 0 var(--accent);
+}
+/* 键盘导航焦点行（useMultiSelect）：inset 发丝描边区别于预览选中的左条；
+   与预览选中叠加时两形态并存（描边 + 左条合成双阴影） */
+.row--focused {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.row--active.row--focused {
+  box-shadow: inset 2px 0 0 var(--accent), inset 0 0 0 1px var(--accent);
 }
 .filename {
   color: var(--text-primary);
