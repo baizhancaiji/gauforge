@@ -11,7 +11,6 @@ from starlette import status
 from ..errors import err, not_found
 from ..mock import get_state
 from ..parse.blocks import parse_input
-from ..parse.naturalsort import natural_key
 from ..services import candidates as candidates_svc
 from ..services import pending as pending_svc
 from ..services import verify as verify_svc
@@ -82,12 +81,14 @@ def list_candidates(origin: str | None = None, page: int = 1,
              for r in tasks_store().list_by_form("candidate")]
     if origin:
         items = [c for c in items if c["origin"] == origin]
-    # 切片前全量排序（openapi /candidates）：导入时间倒序为主序（新批在上），
-    # 同秒导入的批内按自然序（先自然序、再 created_at 倒序，两趟稳定排序）；
-    # created_at 为恒定时区 UTC ISO，字典序即时序。排序唯一实现在取数端，
-    # 跨页全局有序
-    items.sort(key=lambda c: natural_key(c["filename"]))
-    items.sort(key=lambda c: c["created_at"], reverse=True)
+    # 切片前全量排序（openapi /candidates）：回退候选（returned_*）置顶、
+    # 导入候选在后，两组内均按 created_at 倒序（最新在上，让出错条目一眼可见）；
+    # created_at 为恒定时区 UTC ISO，字典序即时序。同秒导入的批内按 id 逆序
+    # （后导入在前）——两趟稳定排序（先 id、再组别+时间）。排序唯一实现在
+    # 取数端，跨页全局有序
+    items.sort(key=lambda c: c["id"], reverse=True)
+    items.sort(key=lambda c: (c["origin"] != "imported", c["created_at"]),
+               reverse=True)
     total = len(items)
     size = (page_size if page_size is not None
             else int(settings_store().get("page_size")))
