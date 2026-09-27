@@ -3,8 +3,9 @@
  * 02 队列（m0-frontend-design §5 · 表格型，行可展开成员概览；m2-plan C3 真实化）。
  * 手势分工（A3 定稿）：单击行首箭头切换展开；双击行打开编辑对话框
  * （unsubmitted 全量编辑 / submitted 仅成员 / executing、completed 只读详情）。
- * 行内动作：重新提交（unsubmitted；响应 normalized=true 显「已自动规范化」
- * 中性注记）、删除（二次确认；executing 不渲染——后端 409）。
+ * 行内动作：提交/重新提交（unsubmitted；按回退标记分级文案——失败回退队列
+ * 「重新提交」、新鲜队列「提交」，roadmap §2.1 明确区分；响应 normalized=true
+ * 显「已自动规范化」中性注记）、删除（二次确认；executing 不渲染——后端 409）。
  * 回退标记与次数显著标识；失败成员与各自归因列表（last_failure.members 驱动，
  * submitted 队列从待执行席位交叉文件名/标题）；失败回退队列（unsubmitted 且
  * rollback_flag）的 failed/skipped 成员行提供「编辑内容」入口——展开 C1 同一套
@@ -158,6 +159,14 @@ function editingMemberIn(q: Queue): boolean {
 const pageNote = ref<{ ok: boolean; msg: string } | null>(null);
 const submittingId = ref<string | null>(null);
 
+/** 提交动作文案（roadmap §2.1：回退队列与新鲜队列明确区分）——
+ *  携带回退标记（失败回退）为「重新提交」，新鲜未提交队列为「提交」。
+ *  整席移除回退按后端设计无回退标记（pending 服务文档注释），视同新鲜。 */
+function submitLabel(q: Queue): string {
+  if (submittingId.value === q.id) return "提交中 …";
+  return q.rollback_flag || !!q.rollback_count ? "重新提交" : "提交";
+}
+
 async function resubmit(q: Queue) {
   pageNote.value = null;
   submittingId.value = q.id;
@@ -278,7 +287,7 @@ async function confirmDelete() {
               :disabled="submittingId === q.id"
               @click.stop="resubmit(q)"
             >
-              {{ submittingId === q.id ? "提交中 …" : "重新提交" }}
+              {{ submitLabel(q) }}
             </button>
             <button
               v-if="q.state !== 'executing'"
