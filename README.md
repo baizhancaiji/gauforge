@@ -48,6 +48,7 @@ cargo build --release
 - [docs/adr/](docs/adr/) — 架构决策记录
 - [docs/references/conventional_commits.md](docs/references/conventional_commits.md) — 提交规范
 - [docs/references/changelog-spec.md](docs/references/changelog-spec.md) — 进度管理规范
+- [docs/references/deployment.md](docs/references/deployment.md) — 部署与升级（干净发行包，含国内代理说明）
 - `progress.json` — 当前状态快照（开发前必读）
 
 ## 内核来源
