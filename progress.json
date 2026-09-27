@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T17:01+0800",
+  "updated": "2026-09-27T19:28+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -295,11 +295,53 @@
       "summary": "修复分子说明以原子序数书写时化学式空缺（序数映射元素符号计入 Hill 式），预览卡 FORMULA 空值改显 — 占位防标签上浮错位",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "候选页多选交互套件化：新增 useMultiSelect 公共组合式（锚点+焦点双状态驱动），复选框接 Shift 范围选择（Ctrl+Shift 追加、锚点不随 Shift 改动可反复调整）、上下方向键导航联动勾选与滚动定位、Ctrl+A 全选与 Esc 清空、翻页重置页内索引（勾选跨页保留），行点击预览与勾选锚点衔接；焦点行发丝描边与 Shift 按下防文本选区",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "候选页组建队列保存后留在候选页（原跳转队列页），对话框关闭、勾选清空、列表经 SSE 自动刷新（2026-09-27 验收修正）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "core",
+      "summary": "候选列表默认排序改为回退候选置顶+创建时间倒序（同秒批内 id 逆序，后导入在前），批内文件名自然序退役；契约 /candidates 描述与两侧生成物再生，排序测试改反例构造（导入序与时间序相反锁定排序键，并经纯 id 序退化验证失败）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "队列页顶部控制行（与历史页同款）：状态筛选（全部/未提交/已提交/执行中/已完成中文措辞）与排序（默认=回退置顶·创建时间新→旧；名称 A→Z/Z→A 走 zh localeCompare），/queues 全量返回前端过滤切片，筛选/排序变更回第 1 页并区分筛选空态文案",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "历史页状态列/详情抽屉状态徽标/状态筛选下拉改中文显示（taskStateLabel 单一来源，与队列页同纪律；筛选下拉文案 全部/成功/失败/跳过），原英文枚举保留为内部信号",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "roadmap M1 候选序表述与 M2 队列页段、m0-frontend-design §4.1 历史页措辞与 §5 候选/队列页布局行、m2-plan §4.3 C2 保存后行为，同步回填上述规格（2026-09-27 验收修正）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M2 发布流程（changelog-spec §1.6：冻结 unreleased → 追加新行 → progress 清空 → 打 tag g16-v0.2.0）",
-    "note": "M2 全部工作项完成，发布冻结待用户确认执行；期间按人为验收修正完成视口固定布局与标准表格底部套件（已登记 unreleased，双闸门与浏览器冒烟通过）"
+    "note": "列表逻辑修正四项已完成（文档→测试→实现→浏览器自动化全流程，双闸门+Playwright 黑盒通过），发布冻结待用户确认执行"
   },
   "next_steps": [
     "M2 发布：确认 CHANGELOG unreleased 完整后冻结 0.2.0（date 带时区偏移、semver=minor）、追加空 unreleased 行、清空 progress unreleased、本地打 tag g16-v0.2.0",
