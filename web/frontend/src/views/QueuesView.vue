@@ -23,7 +23,7 @@ import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
-import { causeLabel } from "@/utils/labels";
+import { causeLabel, finishReasonLabel, queueStateLabel, taskStateLabel } from "@/utils/labels";
 
 type Queue = components["schemas"]["Queue"];
 
@@ -83,13 +83,6 @@ loadPageSize();
 function toggle(id: string) {
   expanded.value[id] = !expanded.value[id];
 }
-
-const reasonLabel: Record<string, string> = {
-  success: "SUCCESS",
-  abort_on_failure: "ABORT ON FAILURE",
-  finished_with_failures: "WITH FAILURES",
-  manually_stopped: "MANUAL STOP",
-};
 
 /** 成员概览：member_ids 为主序，last_failure.members 交叉状态/归因，
  *  submitted 队列再从待执行席位交叉文件名/标题（契约内数据全用尽）。 */
@@ -272,12 +265,18 @@ async function confirmDelete() {
           <span class="mono brand" :title="q.id">{{ q.id }}</span>
           <span class="name" :title="q.name">{{ q.name }}</span>
           <span class="mono count">{{ q.member_ids.length }} 个任务</span>
-          <span><StateChip :state="q.state" /></span>
+          <span>
+            <StateChip :state="q.state" :label="queueStateLabel[q.state] ?? q.state" />
+          </span>
           <span class="mono">
             <span v-if="q.rollback_count" class="rollback">已回退 ×{{ q.rollback_count }}</span>
             <span v-else class="dim">—</span>
           </span>
-          <span class="mono dim">{{ q.finish_reason ? reasonLabel[q.finish_reason] : "—" }}</span>
+          <!-- 中文显示；原枚举保留在 data-finish-reason 作内部信号（§4.1） -->
+          <span
+            class="mono dim"
+            :data-finish-reason="q.finish_reason ?? undefined"
+          >{{ q.finish_reason ? finishReasonLabel[q.finish_reason] ?? q.finish_reason : "—" }}</span>
           <span class="mono dim right">{{ fmtDateTime(q.updated_at ?? q.created_at) }}</span>
           <span class="right actions">
             <button
@@ -316,7 +315,11 @@ async function confirmDelete() {
               <span class="mono m-idx">{{ m.position + 1 }}</span>
               <span class="mono m-id">{{ fmtTaskId(m.id) }}</span>
               <span class="mono m-file" :title="m.filename">{{ m.filename ?? "—" }}</span>
-              <StateChip v-if="m.state" :state="m.state" />
+              <StateChip
+                v-if="m.state"
+                :state="m.state"
+                :label="taskStateLabel[m.state] ?? m.state"
+              />
               <span v-if="m.cause" class="mono m-cause">{{ causeLabel[m.cause] ?? m.cause }}</span>
               <button
                 v-if="isRollbackEditable(q, m)"
@@ -444,9 +447,16 @@ async function confirmDelete() {
 .row:last-child {
   border-bottom: none;
 }
-/* 行首展开箭头（手势分工 A3：单击箭头切换展开，双击行开编辑对话框） */
+/* 行首展开箭头（手势分工 A3：单击箭头切换展开，双击行开编辑对话框）。
+ * 弹性居中让字形绕自身中心原地旋转（块级 baseline 排版会绕盒中心公转）；
+ * 拉通行高扩大命中区（2026-09-27 人为指定放大 + 原地旋转） */
 .expand {
-  font-size: var(--text-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  font-size: var(--text-lg);
+  line-height: 1;
   color: var(--text-faint);
   cursor: pointer;
   transition: transform var(--dur-view) var(--ease-std);

@@ -461,8 +461,13 @@ async function confirmRemove() {
   border-left: 2px solid var(--accent);
   border-top: 2px solid var(--accent);
 }
+/* 展开箭头与队列页同款：弹性居中保证绕字形中心原地旋转（§5 02 队列页修复） */
 .expand {
-  font-size: var(--text-xs);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-lg);
+  line-height: 1;
   color: var(--text-faint);
   transition: transform var(--dur-view) var(--ease-std);
 }

@@ -58,8 +58,10 @@ onMounted(() => events.start());
           class="nav-item"
           active-class="nav-item--active"
         >
-          <span class="nav-page mono">{{ item.page }}</span>
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-main">
+            <span class="nav-page mono">{{ item.page }}</span>
+            <span class="nav-label">{{ item.label }}</span>
+          </span>
           <span class="nav-en">{{ item.en }}</span>
         </RouterLink>
       </nav>
@@ -170,11 +172,14 @@ onMounted(() => events.start());
   gap: 2px;
   flex: 1;
 }
+/* 导航项（§3，2026-09-27 人为指定调整）：中英上下两行，命中区 --nav-item-height */
 .nav-item {
   display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-2);
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--nav-item-height);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--r-md);
   color: var(--text-secondary);
   position: relative;
@@ -205,8 +210,17 @@ onMounted(() => events.start());
   color: var(--text-faint);
   font-size: var(--text-xs);
 }
+.nav-main {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  min-width: 0;
+}
 .nav-label {
-  font-size: var(--text-sm);
+  font-size: var(--text-lg); /* 14px → 18px（2026-09-27 人为指定）：主导航可读性 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .nav-en {
   font-size: var(--text-2xs);

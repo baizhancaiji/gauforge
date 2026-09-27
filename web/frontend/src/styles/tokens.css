@@ -50,6 +50,7 @@
   /* ---- 页面度量（§2.3，六页统一）---- */
   --side-width: 216px;
   --topbar-height: 56px;
+  --nav-item-height: 48px; /* 侧栏导航项命中高（§3，中英分行两行布局） */
   --page-pad: 24px;
   --content-max: 1280px;
   --gap-card: 16px;
