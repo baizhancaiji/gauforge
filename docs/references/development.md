@@ -84,7 +84,6 @@ ps -eo pid,cmd | grep 'uv run python -m web.src.main' | grep -v grep
 ```bash
 uv run pytest                                  # 本项目测试（默认发现 web/tests）
 uv run python scripts/validate_progress.py     # 进度两文件校验
-uv run pytest tests/                           # 上游 HQ 集成测试（需 pbs/slurm，显式运行）
 ```
 
 注意：涉及派发/端到端链路的改动，确认 `target/release/hq` 存在，否则

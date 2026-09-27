@@ -20,18 +20,17 @@
 crates/               Rust 源码：HyperQueue 队列核心（上游代码为主）
 web/                  Python 子系统：G16 Web 工作台
 ├── src/              业务模块（配置集中在 config.py）
+├── frontend/         前端（Vite + Vue3 + 3Dmol.js）
 └── tests/            与被测模块同名对应的测试
 docs/
 ├── specs/            方向与需求文档（roadmap.md）
 ├── adr/              架构决策记录
-├── plans/            专项实施计划
+├── plans/            专项实施计划（含设计样板 assets/）
+├── api/              契约 SSOT（openapi.yaml / sse.md）
 └── references/       规范单一事实来源（提交规范、进度管理规范）
-scripts/              构建、运维、校验脚本（含上游脚本与本项目 validate_progress.py）
-tests/                上游 HQ Python 集成测试（pbs/slurm，需显式运行）
-benchmarks/           上游基准
+scripts/              构建、运维、校验脚本（本项目闸门与冒烟）
 CHANGELOG.jsonl       冷数据：本项目完整发布历史（append-only）
 progress.json         热数据：当前状态快照（覆盖写）
-CHANGELOG.md          上游 HyperQueue 的变更历史（只读，不属于本项目进度体系）
 ```
 
 ## 三、技术栈
@@ -51,7 +50,6 @@ CHANGELOG.md          上游 HyperQueue 的变更历史（只读，不属于本�
 uv venv && uv pip install -r requirements.txt    # 初始化 Python 环境（仓库根 .venv/）
 uv run pytest                                     # 本项目测试（默认发现 web/tests）
 uv run python scripts/validate_progress.py        # 进度管理两文件校验（提交前闸门）
-uv run pytest tests/                              # 上游 HQ 集成测试（需 pbs/slurm 环境）
 cargo build --release                             # 构建 hq（Rust 核心）
 ```
 
@@ -85,7 +83,7 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 
 - 不改写已发布版本的历史记录。
 - 不在变更记录中写 commit hash（细节以 git 历史为准）。
-- 不手工维护 Markdown 版 CHANGELOG（与机器可读版本必然漂移）。`CHANGELOG.md` 属上游历史，本项目变更一律记入 `CHANGELOG.jsonl`。
+- 不手工维护 Markdown 版 CHANGELOG（与机器可读版本必然漂移），本项目变更一律记入 `CHANGELOG.jsonl`。
 - 不让 `progress.json` 无限增长（它是快照，不是流水账）。
 - 不提交疑似含密钥的文件（`.env`、凭据文件）；如确需提交，先明确告知风险。
 - 不使用 `git add -A` / `git add .` 批量暂存，逐文件按名添加，避免误入敏感文件与大数据。
