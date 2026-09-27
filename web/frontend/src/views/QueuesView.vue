@@ -6,6 +6,9 @@
  * 行内动作：提交/重新提交（unsubmitted；按回退标记分级文案——失败回退队列
  * 「重新提交」、新鲜队列「提交」，roadmap §2.1 明确区分；响应 normalized=true
  * 显「已自动规范化」中性注记）、删除（二次确认；executing 不渲染——后端 409）。
+ * 顶部控制行（2026-09-27 验收修正）：状态筛选（四态+全部，中文措辞）与排序
+ * （默认=回退置顶·创建时间新→旧；名称 A→Z/Z→A），/queues 全量返回 → 前端
+ * 过滤/排序/切片。
  * 回退标记与次数显著标识；失败成员与各自归因列表（last_failure.members 驱动，
  * submitted 队列从待执行席位交叉文件名/标题）；失败回退队列（unsubmitted 且
  * rollback_flag）的 failed/skipped 成员行提供「编辑内容」入口——展开 C1 同一套
@@ -43,6 +46,40 @@ const list = ref<Queue[]>([]);
 const loading = ref(false);
 const expanded = ref(<Record<string, boolean>>{});
 
+// ---------- 状态筛选与排序（2026-09-27 验收修正：与历史页 controls 同款；
+// /queues 全量返回 → 纯前端过滤/排序，默认序=回退置顶·创建时间倒序） ----------
+type QueueStateFilter = "all" | "unsubmitted" | "submitted" | "executing" | "completed";
+type QueueSortKey = "default" | "name_asc" | "name_desc";
+
+const stateFilter = ref<QueueStateFilter>("all");
+const sortKey = ref<QueueSortKey>("default");
+
+/** 回退队列判定（与提交动作文案 submitLabel 同口径：标记或次数任一）。 */
+function isRolledBack(q: Queue): boolean {
+  return q.rollback_flag || (q.rollback_count ?? 0) > 0;
+}
+
+const filtered = computed(() => {
+  const rows =
+    stateFilter.value === "all"
+      ? list.value
+      : list.value.filter((q) => q.state === stateFilter.value);
+  const sorted = [...rows];
+  if (sortKey.value === "name_asc") {
+    sorted.sort((a, b) => a.name.localeCompare(b.name, "zh-Hans-CN"));
+  } else if (sortKey.value === "name_desc") {
+    sorted.sort((a, b) => b.name.localeCompare(a.name, "zh-Hans-CN"));
+  } else {
+    // 默认（openapi /candidates 同规则映射到队列）：回退置顶，组内创建时间
+    // 倒序（created_at 恒定时区 ISO，字典序即时序），出错队列一眼可见
+    sorted.sort((a, b) => {
+      const g = Number(isRolledBack(b)) - Number(isRolledBack(a));
+      return g !== 0 ? g : b.created_at.localeCompare(a.created_at);
+    });
+  }
+  return sorted;
+});
+
 // 分页（m0-frontend-design §4.3 列表底栏）：/queues 全量返回 → 前端切片；
 // 分页大小取设置项 page_size（全局统一，即时生效），settings.updated 跟随。
 const page = ref(1);
@@ -50,13 +87,19 @@ const pageSize = ref(50);
 const paged = computed(() => {
   const size = Math.max(1, pageSize.value);
   const start = (page.value - 1) * size;
-  return list.value.slice(start, start + size);
+  return filtered.value.slice(start, start + size);
 });
 
-/** 页码越界（删除/新增后总页数收缩）→ 钳到末页。 */
+/** 页码越界（删除/筛选后总页数收缩）→ 钳到末页。 */
 function clampPage() {
-  const tp = Math.max(1, Math.ceil(list.value.length / Math.max(1, pageSize.value)));
+  const tp = Math.max(1, Math.ceil(filtered.value.length / Math.max(1, pageSize.value)));
   if (page.value > tp) page.value = tp;
+}
+
+/** 筛选/排序变更：回到第 1 页（数据全量在前端，无须重取）。 */
+function resetPage() {
+  page.value = 1;
+  clampPage();
 }
 
 async function loadPageSize() {
@@ -233,11 +276,36 @@ async function confirmDelete() {
       {{ pageNote.msg }}
     </p>
 
+    <!-- 顶部控制行（2026-09-27 验收修正，与历史页 controls 同款） -->
+    <div class="controls">
+      <label class="mono filter">
+        <span>状态筛选</span>
+        <select v-model="stateFilter" @change="resetPage">
+          <option value="all">全部</option>
+          <option value="unsubmitted">未提交</option>
+          <option value="submitted">已提交</option>
+          <option value="executing">执行中</option>
+          <option value="completed">已完成</option>
+        </select>
+      </label>
+      <label class="mono filter">
+        <span>排序</span>
+        <select v-model="sortKey" @change="resetPage">
+          <option value="default">默认 · 回退置顶·创建时间新→旧</option>
+          <option value="name_asc">名称 · A→Z</option>
+          <option value="name_desc">名称 · Z→A</option>
+        </select>
+      </label>
+    </div>
+
     <div v-if="!list.length && !loading" class="empty-wrap">
       <EmptyState
         glyph="▮"
         text="暂无队列 — 在候选页勾选任务组建，或导入文件夹时勾选保存为队列"
       />
+    </div>
+    <div v-else-if="!filtered.length && !loading" class="empty-wrap">
+      <EmptyState glyph="▮" text="当前筛选下暂无队列 — 切换状态或恢复全部" />
     </div>
     <div v-else class="table-area">
       <div class="thead mono">
@@ -348,8 +416,8 @@ async function confirmDelete() {
     <div class="scanline" v-if="loading" aria-hidden="true"></div>
     <!-- 列表底栏（§4.3 标准套件）：计数右对齐 + 分页控件居中（单页时控件隐藏） -->
     <TablePager
-      v-if="list.length"
-      :total="list.length"
+      v-if="filtered.length"
+      :total="filtered.length"
       :page="page"
       :page-size="pageSize"
       @change="(p) => (page = p)"
@@ -401,6 +469,23 @@ async function confirmDelete() {
 }
 .page-note--err {
   color: var(--danger);
+}
+/* 顶部控制行（2026-09-27 验收修正，与历史页 .controls/.filter 同款）：
+   卡片内顶部工具行，发丝线与表格区分隔 */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border-hair);
+}
+.filter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
 }
 .empty-wrap {
   padding: var(--space-4);
