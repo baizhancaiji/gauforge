@@ -333,12 +333,16 @@ function toggleAll() {
   else selectAll();
 }
 
-/** 行复选框点击（统一接 Shift/Ctrl 修饰；preventDefault 屏蔽原生翻转——
- *  状态全由 checkedIds 渲染驱动，原生翻转遇「渲染前后值相同」会被 Vue
- *  跳过写 DOM 造成不一致）后容器聚焦承接键盘导航。 */
+/** 行复选框点击（统一接 Shift/Ctrl 修饰）。不 preventDefault——Chromium 的
+ *  checkbox 取消激活回滚发生在 Vue 渲染写入之后，会覆盖 :checked 的同步
+ *  （实测 counter 已更新而复选框不亮）；放行原生翻转后按 checkedIds 语义
+ *  同步修正被点击项 DOM（该行 vnode 值未变时 Vue 跳过写，必须自补），随后
+ *  容器聚焦承接键盘导航。 */
 function onRowCheck(index: number, e: MouseEvent) {
-  e.preventDefault();
   checkAt(index, e);
+  const box = e.target as HTMLInputElement;
+  const id = list.value[index]?.id;
+  if (box && id != null) box.checked = checkedIds.value.has(id);
   tableScroll.value?.focus();
 }
 
