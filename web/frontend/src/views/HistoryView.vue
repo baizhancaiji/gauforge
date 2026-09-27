@@ -2,6 +2,8 @@
 /**
  * 05 历史 / 归档（m0-frontend-design §5 · 表格型全宽；m1-plan C6 真实化）
  * 全宽表格（id/任务/状态徽标/归因/提交/结束/耗时/资源/队列归属）+ 顶部状态筛选；
+ * 状态徽标与筛选下拉中文显示（taskStateLabel 单一来源，与队列页同纪律，
+ * 2026-09-27 验收修正）；
  * 行点击 → 详情抽屉：终态冻结全字段 + 输入查看 / 输出预览（限高滚动）与
  * ?download=true 导出 + 归档 + failed/skipped 重新排队与退回候选（409 提示）
  * + 清理入口（统计回显）。归档管理视图承载 archived=true（独立路由 /archive，
@@ -18,7 +20,7 @@ import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtDeclaredRes, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
-import { causeLabel } from "@/utils/labels";
+import { causeLabel, taskStateLabel } from "@/utils/labels";
 
 type HistoryEntry = components["schemas"]["HistoryEntry"];
 
@@ -221,9 +223,9 @@ async function confirmCleanup() {
         <span>状态筛选</span>
         <select v-model="filter" @change="resetPage">
           <option value="all">全部</option>
-          <option value="succeeded">SUCCEEDED</option>
-          <option value="failed">FAILED</option>
-          <option value="skipped">SKIPPED</option>
+          <option value="succeeded">成功</option>
+          <option value="failed">失败</option>
+          <option value="skipped">跳过</option>
         </select>
       </label>
       <label class="mono filter">
@@ -284,7 +286,10 @@ async function confirmCleanup() {
         >
           <span class="mono dim">{{ String(h.id).padStart(3, "0") }}</span>
           <span class="mono file" :title="h.filename">{{ h.filename }}</span>
-          <span><StateChip :state="h.state" /></span>
+          <!-- 状态列中文显示（taskStateLabel 单一来源，与队列页同纪律，2026-09-27） -->
+          <span>
+            <StateChip :state="h.state" :label="taskStateLabel[h.state] ?? h.state" />
+          </span>
           <span class="mono dim">{{ h.cause ? causeLabel[h.cause] : "—" }}</span>
           <span class="mono dim">{{ fmtDateTime(h.submitted_at) }}</span>
           <span class="mono dim">{{ fmtDateTime(h.finished_at) }}</span>
@@ -311,7 +316,7 @@ async function confirmCleanup() {
           <span class="d-title mono">
             {{ String(selected.id).padStart(3, "0") }} — {{ selected.filename }}
           </span>
-          <StateChip :state="selected.state" />
+          <StateChip :state="selected.state" :label="taskStateLabel[selected.state] ?? selected.state" />
         </header>
 
         <dl class="cell">
