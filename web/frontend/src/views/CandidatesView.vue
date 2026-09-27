@@ -738,7 +738,11 @@ function onQueueClosed() {
 }
 .table {
   width: 100%;
-  border-collapse: collapse;
+  /* 边框模型必须 separate（间距 0）：collapse 的单元格绘制由表层级合并处理，
+     粘性表头滚动时行内容会穿透（2026-09-27 列表局部滚动改造后显形，人为验收
+     指定修复）。发丝线已全在单元格 border-bottom 上，separate 下视觉不变。 */
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--text-sm);
 }
 th {
@@ -752,6 +756,10 @@ th {
   background: var(--bg-raised);
   position: sticky;
   top: 0;
+  /* z-index 建自身层叠上下文（表格单元格绘制被 Chromium 特判，仅 sticky
+     不提升绘制序，行内容会画在表头背景之上——与 separate 边框模型配套的
+     第二半修复）；局部层 1 远低于全局层级档（--z-nav: 100），不入 z 令牌 */
+  z-index: 1;
   border-bottom: 1px solid var(--border-hair);
 }
 td {
