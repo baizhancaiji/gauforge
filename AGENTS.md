@@ -1,7 +1,8 @@
 # AGENTS.md — 仓库协作与工程约定
 
-> 本仓库是**基于 HyperQueue 的 G16 计算化学工作台**：Rust 核心（`crates/`，上游
-> HyperQueue 队列引擎，按需修改）+ Python 子系统（`web/`，Web 工作台）。
+> 本仓库是 **GauForge**——以 HyperQueue 为执行内核的 G16 计算化学工作台：
+> Rust 核心（`crates/`，上游 HyperQueue 队列引擎，按需修改）+ Python 子系统
+> （`web/`，Web 工作台）。
 > 项目根 = 仓库根。方向与里程碑见 [docs/specs/roadmap.md](docs/specs/roadmap.md)。
 
 ## 一、项目定位
@@ -10,7 +11,8 @@
   分析及以后为功能更新；队列只是执行器。
 - `web/` 为从零实现的 Python 子系统；原 `g16web/` 下的一次性原型（含 `prototype/`）已整体删除，
   仅其踩坑记录作为设计输入待补。
-- 上游 HyperQueue 代码已视为本项目组成部分，可按需修改（ADR 0001）；吸纳上游更新时 merge/rebase 处理冲突。
+- 上游 HyperQueue 代码已视为本项目组成部分，可按需修改（ADR 0001）；git 历史已与上游
+  切割、项目自立更名 GauForge（ADR 0002），吸纳上游更新改为按需手动移植，不再 merge/rebase。
 
 ## 二、目录结构
 

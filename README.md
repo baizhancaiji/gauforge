@@ -1,8 +1,9 @@
-# HQ · G16 计算化学工作台
+# GauForge · Gaussian 16 管理工作台
 
-基于 [HyperQueue](https://github.com/It4innovations/hyperqueue) 队列引擎的 Gaussian 16
-计算化学工作台，为 WSL2 单机工作流打造，以「输入 → 计算」为完整闭环
-（M0–M2 即构成完整产品），分析及以后各里程碑为功能更新。
+GauForge 是以 [HyperQueue](https://github.com/It4innovations/hyperqueue)
+为执行内核的 Gaussian 16 计算化学工作台，为 WSL2 单机工作流打造，
+以「输入 → 计算」为完整闭环（M0–M2 即构成完整产品），
+分析及以后各里程碑为功能更新。
 工作分支：`g16-webui`。
 
 ```
@@ -10,12 +11,12 @@
    │ REST + SSE
 服务层 (FastAPI，契约先行 OpenAPI)
 领域层 (候选/队列/执行状态机 + SQLite 持久化)
-   ├── 执行层：HyperQueue 深度融合（hq --output-mode json 起步，按需改 crates/ 源码）
+   ├── 执行层：HyperQueue 内核深度融合（hq --output-mode json 起步，按需改 crates/ 源码）
    ├── 解析层：cclib（结果）+ 自写增量解析（运行中进度）
    └── 化学层：cubegen/fchk（轨道/静电势）；ASE/OpenBabel 暂缓
 ```
 
-- **队列核心**：`crates/` 为 HyperQueue（Rust），作为执行引擎按需修改，`cargo build --release` 构建。
+- **队列核心**：`crates/` 为 HyperQueue 内核（Rust），作为执行引擎按需修改，`cargo build --release` 构建。
 - **Web 子系统**：`web/`（Python 3.10+，uv 管理环境），从零实现；原 `g16web/` 原型已整体删除。
 
 ## 快速开始
@@ -54,10 +55,15 @@ M0–M2 合起来构成完整产品，M3 及以后为其上的功能更新；详
 - [docs/references/changelog-spec.md](docs/references/changelog-spec.md) — 进度管理规范
 - `progress.json` — 当前状态快照（开发前必读）
 
-## 上游 HyperQueue
+## 内核来源与许可
 
-本仓库 fork 自 [It4innovations/hyperqueue](https://github.com/It4innovations/hyperqueue)。
+`crates/` 改自上游 [It4innovations/hyperqueue](https://github.com/It4innovations/hyperqueue)
+主干（v0.26.2 之后的未发版提交，fork 点 `21f2d2e8b`，含其调度器改进），
+本项目历史已自立，上游更新改为按需手动移植（见 ADR 0002）。
 HQ 自身的文档见 [上游文档站](https://it4innovations.github.io/hyperqueue/) 与仓库内
 `docs/`（含 [examples](docs/examples)）；上游变更历史见 `CHANGELOG.md`（只读）。
 若你在研究中使用 HyperQueue，请考虑
 [引用其论文](https://github.com/It4innovations/hyperqueue#publications)。
+
+许可双轨：根 [LICENSE](LICENSE) 适用于 GauForge 自有代码（`web/`、`frontend/`、`docs/` 等）；
+[`crates/LICENSE`](crates/LICENSE) 保留上游 MIT 原文与版权行，随内核源码一并提供。
