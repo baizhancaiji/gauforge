@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T03:41+0800",
+  "updated": "2026-09-27T14:36+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -258,6 +258,13 @@
       "type": "added",
       "scope": "web",
       "summary": "标准表格底部套件 TablePager 落地候选/队列/历史三页：「共 n 项」计数右对齐统一口径（删除「n 项 — 共 n」双口径与历史页顶部重复计数）、分页控件绝对居中（首页/上一页/下一页/尾页线性 SVG 图标按钮）、页码输入框自然数过滤回车跳转 0 落首页超上限落尾页、总数小于分页大小时控件整体隐藏不占位；候选/历史接入真实页码取数修复超过分页大小直接截断且无分页样式的缺陷（筛选/排序回第 1 页、页码越界钳末页重取），队列前端切片分页，设置项 page_size 三页全局统一并随 settings.updated 即时跟随",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "候选页粘性表头透明穿透修复：表格边框模型 collapse 改 separate（spacing 0）并给表头建自身层叠上下文，列表局部滚动后行内容不再画在表头背景上，明暗两主题实测穿透消失；发丝线全在单元格 border-bottom 上视觉不变",
       "breaking": false,
       "migration": null
     }
