@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T14:36+0800",
+  "updated": "2026-09-27T15:05+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -265,6 +265,13 @@
       "type": "fixed",
       "scope": "web",
       "summary": "候选页粘性表头透明穿透修复：表格边框模型 collapse 改 separate（spacing 0）并给表头建自身层叠上下文，列表局部滚动后行内容不再画在表头背景上，明暗两主题实测穿透消失；发丝线全在单元格 border-bottom 上视觉不变",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "队列页提交动作文案按回退标记分级：携带回退标记/回退次数的未提交队列（失败回退）显「重新提交」，新鲜未提交队列显「提交」，修复新鲜队列被误标重新提交的问题；整席移除回退按后端设计无回退标记视同新鲜，设计文档 §5 队列页规格同步回填",
       "breaking": false,
       "migration": null
     }
