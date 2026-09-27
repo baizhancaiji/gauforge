@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T15:05+0800",
+  "updated": "2026-09-27T15:18+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -272,6 +272,13 @@
       "type": "fixed",
       "scope": "web",
       "summary": "队列页提交动作文案按回退标记分级：携带回退标记/回退次数的未提交队列（失败回退）显「重新提交」，新鲜未提交队列显「提交」，修复新鲜队列被误标重新提交的问题；整席移除回退按后端设计无回退标记视同新鲜，设计文档 §5 队列页规格同步回填",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "队列编辑对话框拖拽排序动效重做：HTML5 DnD 改指针跟手画布式（usePointerSort 组合式），拿起项 transform 跟手、其余项迟滞换位让位/归位（--dur-drag 200ms 新令牌，行高/行距量测自 DOM 与令牌不硬编码），松手先滑入目标槽位、归位动画结束后才提交重排全程无跳变，成员超出限高触边自动滚屏，行内移除按钮不再被拖拽劫持；待执行页保留 HTML5 DnD，设计文档 §2.4/§4.6/§6 规格同步回填",
       "breaking": false,
       "migration": null
     }
