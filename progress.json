@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T15:18+0800",
+  "updated": "2026-09-27T16:46+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -279,6 +279,13 @@
       "type": "fixed",
       "scope": "web",
       "summary": "队列编辑对话框拖拽排序动效重做：HTML5 DnD 改指针跟手画布式（usePointerSort 组合式），拿起项 transform 跟手、其余项迟滞换位让位/归位（--dur-drag 200ms 新令牌，行高/行距量测自 DOM 与令牌不硬编码），松手先滑入目标槽位、归位动画结束后才提交重排全程无跳变，成员超出限高触边自动滚屏，行内移除按钮不再被拖拽劫持；待执行页保留 HTML5 DnD，设计文档 §2.4/§4.6/§6 规格同步回填",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "视觉修复三处：侧栏导航项中英上下分行、中文名 14px 升 18px 并扩命中区至 48px（新增 --nav-item-height 令牌）；展开/收起三角放大至 18px 并以弹性居中修正旋转基准，原地旋转不再绕点公转（队列页与待执行页同款）；队列页状态列/成员状态徽标/结束原因列改中文显示（queueStateLabel/taskStateLabel/finishReasonLabel 单一来源），原英文枚举保留为内部信号（chip 类名与 data-finish-reason 属性）",
       "breaking": false,
       "migration": null
     }
