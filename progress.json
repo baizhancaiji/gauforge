@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T22:43+0800",
+  "updated": "2026-09-28T00:13+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -363,6 +363,13 @@
       "type": "added",
       "scope": "web",
       "summary": "候选页行点击修饰交互补全（修饰交互全在行上）：Ctrl/Cmd+行点击切换单项勾选并重置锚点（示例范式：Ctrl 点击重置锚点），与 Shift+行点击范围选择、Ctrl+Shift 追加范围、方向键导航构成完整行内多选；行点击入口不再依赖复选框",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "品牌更名「Gaussian 16 管理工作台」：侧边栏品牌区改两行排布（首行 Gaussian 16、次行 管理工作台，电源指示灯改对齐首行），浏览器标签页标题同步同名",
       "breaking": false,
       "migration": null
     }
