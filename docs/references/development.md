@@ -8,13 +8,48 @@
 > 本文所有命令默认在**仓库根**执行；服务指 FastAPI 后端
 > （`web/src/main.py`，托管 `web/frontend/dist` 静态前端）。
 
-## 1. 环境初始化
+## 1. 环境初始化（新机器开发式部署）
+
+### 1.1 前置工具链（一次性）
+
+| 工具 | 用途 | 安装 |
+|---|---|---|
+| uv | Python 环境与依赖 | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| Rust（stable） | 编译内核 hq | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
+| Node.js ≥ 20 | 前端构建（`dist/` 不入库，必须本地构建） | nvm 或发行版包管理器 |
+
+仓库 clone 路径随意（项目与仓库路径零耦合，工作区根默认 `~/g16web`）：
 
 ```bash
-uv venv && uv pip install -r requirements.txt        # 后端（仓库根 .venv/）
-cd web/frontend && npm install                        # 前端依赖
-cargo build --release                                 # hq 可执行（派发链路需要，产物 target/release/hq）
+git clone https://github.com/baizhancaiji/gauforge.git && cd gauforge
 ```
+
+私有仓库需在 GitHub 配置 SSH key 或 PAT；拉取可走 gh-proxy 加速（全局
+`insteadOf` 规则）。
+
+### 1.2 Python 环境与内核编译
+
+```bash
+uv venv && uv pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+uv pip install cmake libclang -i https://pypi.tuna.tsinghua.edu.cn/simple  # ⚠️ highs-sys 构建工具链，requirements.txt 暂未登记（2026-09-28）
+source .envrc            # LIBCLANG_PATH/PATH 指向 .venv 内工具链；direnv 环境用 direnv allow
+cargo build --release    # 产物 target/release/hq
+```
+
+注意：cclib 为 M3 规划依赖，当前代码未使用，无需安装。
+
+### 1.3 前端构建
+
+```bash
+cd web/frontend && npm install && npm run build && cd ../..   # 产出 web/frontend/dist
+```
+
+### 1.4 G16 与冒烟
+
+- Gaussian 16 装好后，在工作台设置页把运行级参数 `g16_root` 指到实际发行目录
+  （默认 `~/g16`，g16root 布局；仅对其后新任务生效）。
+- 冒烟：`uv run pytest`（当前基准 350 passed），再按 §2 启动服务、从 UI 导入
+  一个 `.gjf` 走通提交与实时进度。
 
 ## 2. 启动服务
 
