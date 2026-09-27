@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-27T16:46+0800",
+  "updated": "2026-09-27T17:01+0800",
   "latest_released_version": "0.1.0",
   "unreleased": [
     {
@@ -286,6 +286,13 @@
       "type": "fixed",
       "scope": "web",
       "summary": "视觉修复三处：侧栏导航项中英上下分行、中文名 14px 升 18px 并扩命中区至 48px（新增 --nav-item-height 令牌）；展开/收起三角放大至 18px 并以弹性居中修正旋转基准，原地旋转不再绕点公转（队列页与待执行页同款）；队列页状态列/成员状态徽标/结束原因列改中文显示（queueStateLabel/taskStateLabel/finishReasonLabel 单一来源），原英文枚举保留为内部信号（chip 类名与 data-finish-reason 属性）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复分子说明以原子序数书写时化学式空缺（序数映射元素符号计入 Hill 式），预览卡 FORMULA 空值改显 — 占位防标签上浮错位",
       "breaking": false,
       "migration": null
     }
