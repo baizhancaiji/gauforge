@@ -33,6 +33,18 @@ const loading = ref(false);
 const parseErrors = computed(() => preview.value?.parse_errors ?? []);
 const warnings = ref<SaveWarning[]>([]);
 
+// 化学式读数拆分（Hill 式）：元素符号主色、计数数字弱色小字提高区分度；
+// 仅当整串可完整切分才走分色渲染，否则原样显示（防御异常输入被静默丢弃）
+const formulaParts = computed(() => {
+  const f = preview.value?.blocks?.molecule.formula ?? "";
+  const parts = [...f.matchAll(/([A-Z][a-z]?)(\d*)/g)].map((m) => ({
+    sym: m[1],
+    num: m[2],
+  }));
+  const joined = parts.map((p) => p.sym + p.num).join("");
+  return joined === f && parts.length > 0 ? parts : [];
+});
+
 // ---------- 编辑态 ----------
 // 注意：编辑态状态必须先于 loadPreview 的 immediate watch 声明——
 // immediate 回调同步执行 exitEditLocal（触达未初始化 ref 即 TDZ 崩溃，
@@ -327,7 +339,10 @@ async function saveSectionDelayed(section: string) {
             <div class="l mono">ATOMS</div>
           </div>
           <div class="r">
-            <div class="n mono">{{ preview.blocks.molecule.formula }}</div>
+            <div v-if="formulaParts.length" class="n mono formula"><template v-for="(p, idx) in formulaParts" :key="idx"><span class="f-el">{{ p.sym }}</span><span v-if="p.num" class="f-num">{{ p.num }}</span></template></div>
+            <!-- 空值显示 "—" 占位：空串值 div 高度为 0 会令标签上浮错位
+                 （2026-09-27 序数坐标文件回归实测） -->
+            <div v-else class="n mono">{{ preview.blocks.molecule.formula || "—" }}</div>
             <div class="l mono">FORMULA</div>
           </div>
           <div class="r">
@@ -507,6 +522,11 @@ async function saveSectionDelayed(section: string) {
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);
+}
+/* 化学式读数：计数数字较元素符号弱一档色、小一档字（区分度）；符号沿用 .n */
+.formula .f-num {
+  color: var(--text-secondary);
+  font-size: var(--text-md);
 }
 .readout .r .l {
   font-size: var(--text-2xs);
