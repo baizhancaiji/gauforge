@@ -1,6 +1,6 @@
 {
-  "updated": "2026-09-28T01:03+08:00",
-  "latest_released_version": "1.0.0",
+  "updated": "2026-09-28T02:06+08:00",
+  "latest_released_version": "2.0.0",
   "unreleased": [],
   "in_progress": {
     "task": "M2 发布流程（changelog-spec §1.6：冻结 unreleased → 追加新行 → progress 清空 → 打 tag g16-v0.2.0）",
