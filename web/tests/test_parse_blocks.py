@@ -109,6 +109,25 @@ def test_hill_formula_rules():
     assert parse_input(cl2)["blocks"]["molecule"]["formula"] == "Cl2"
 
 
+def test_atomic_number_atom_specs():
+    """分子说明以原子序数书写（Gaussian 允许）：计入化学式，不空缺。
+
+    回归：cat_BC1_amino_TZVP.gjf 全序数坐标（7=N/6=C/1=H）解析后
+    atom_count 正常而 formula 空串，预览卡 FORMULA 列错位。"""
+    text = "%chk=/tmp/x.chk\n\n#p opt freq\n\nt\n\n1 1\n" \
+        "7 0 0 0\n6 1.4 0 0\n1 2.0 1.0 0\n"
+    m = parse_input(text)["blocks"]["molecule"]
+    assert m["atom_count"] == 3
+    assert m["formula"] == "C1H1N1"
+    # Z-matrix 序数形式同样计入
+    zm = "#p hf/sto-3g\n\nt\n\n0 1\n8\n1 1 0.96\n1 1 0.96 2 104.5\n"
+    assert parse_input(zm)["blocks"]["molecule"]["formula"] == "H2O1"
+    # 超界序数容错：不识别不抛异常，原子行数照常统计
+    bad = parse_input("#p hf/sto-3g\n\nt\n\n0 1\n999 0 0 0\n")
+    assert bad["blocks"]["molecule"]["atom_count"] == 1
+    assert bad["blocks"]["molecule"]["formula"] == ""
+
+
 def test_geometric_allcheck_missing_sections_allowed():
     r = parse_input("#p hf/sto-3g geom=allcheck\n\n")
     assert r["blocks"]["title"] is None

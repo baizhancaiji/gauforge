@@ -29,6 +29,37 @@ def _hill_formula(counts: dict[str, int]) -> str:
     return "".join(f"{e}{counts[e]}" for e in order)
 
 
+# 元素符号表（按原子序数排列；Gaussian 分子说明允许以序数指定元素，
+# 如 melamine 类生成文件全用序数书写坐标）
+_ELEMENTS = (
+    "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne",
+    "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca",
+    "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn",
+    "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr",
+    "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn",
+    "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd",
+    "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb",
+    "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg",
+    "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
+    "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",
+    "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds",
+    "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
+)
+
+
+def _atom_symbol(tok: str) -> str | None:
+    """原子行首 token → 规范元素符号；无法识别返回 None。
+
+    元素符号（可带尾部数字标签，如 C1）归一为首字母大写；纯数字按
+    原子序数映射，超界序数不识别（容错不抛异常）。"""
+    name = tok.rstrip("0123456789")
+    if name.isalpha():
+        return name.capitalize()
+    if tok.isdigit() and 1 <= int(tok) <= len(_ELEMENTS):
+        return _ELEMENTS[int(tok) - 1]
+    return None
+
+
 def _split_lines(text: str) -> list[str]:
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     if lines and lines[-1] == "":  # 末尾换行符的切分产物不是空行
@@ -162,10 +193,9 @@ def parse_input(text: str) -> dict:
         i += 1
     counts: dict[str, int] = {}
     for ln in atoms:
-        name = ln.split()[0].rstrip("0123456789")
-        if name.isalpha():
-            key = name.capitalize()
-            counts[key] = counts.get(key, 0) + 1
+        sym = _atom_symbol(ln.split()[0])
+        if sym:
+            counts[sym] = counts.get(sym, 0) + 1
     blocks["molecule"]["atom_count"] = len(atoms)
     blocks["molecule"]["formula"] = _hill_formula(counts)
 
