@@ -3,13 +3,13 @@
  * 01 候选任务（m0-frontend-design §5 · 表格型双栏；m1-plan C1 真实化）
  * 左列列表（id/文件名/title/来源徽标——失败退回附琥珀归因注记）+ 导入交互
  * （文件多选/文件夹 webkitdirectory、422 逐文件失败清单、重复导入提示）
- * + 剔除（二次确认）。列表由后端按导入时间倒序（同批内文件名自然序）
- * 排序后返回（openapi /candidates），前端按响应序渲染（原页内排序双实现已删）。
+ * + 剔除（二次确认）。列表由后端按「回退候选置顶 + 创建时间倒序（批内 id
+ * 逆序）」排序后返回（openapi /candidates），前端按响应序渲染（原页内排序
+ * 双实现已删）。
  * 右侧预览卡由 BlockEditor 承载（M2 C1：只读/编辑双态、分块自动保存、
  * 拼写警告与 CRLF 中性注记），本页仅负责行选中与提交动作。
  */
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router";
 
 import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
@@ -28,7 +28,6 @@ type Candidate = components["schemas"]["Candidate"];
 type Queue = components["schemas"]["Queue"];
 
 const events = useEventsStore();
-const router = useRouter();
 
 const list = ref<Candidate[]>([]);
 const total = ref(0);
@@ -354,11 +353,11 @@ function openQueueModal() {
   queueModalOpen.value = true;
 }
 
-/** 保存（不提交）：关闭对话框并跳转队列页（m2-plan C2：关闭并跳转/刷新） */
+/** 保存（不提交）：关闭对话框并留在候选页（列表经 SSE 自动刷新；
+ *  2026-09-27 验收修正——不再跳转队列页） */
 function onQueueSaved(_q: Queue) {
   queueModalOpen.value = false;
   clearAll();
-  router.push("/queues");
 }
 
 /** 直接提交：注记在对话框内展示，关闭后留候选页（列表经 SSE 自动刷新） */
