@@ -1,0 +1,340 @@
+use crate::WorkerId;
+use crate::internal::common::resources::map::ResourceRqMap;
+use crate::internal::server::task::{Task, TaskRuntimeState};
+use crate::internal::server::worker::Worker;
+use crate::internal::server::workergroup::WorkerGroup;
+use crate::resources::{NumOfNodes, ResourceAmount, ResourceIdMap};
+use serde::{Deserialize, Serialize};
+use std::time::Duration;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskExplanation {
+    pub n_task_deps: u32,
+    pub n_waiting_deps: u32,
+    pub workers: Vec<TaskExplanationForWorker>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskExplanationForWorker {
+    pub worker_id: WorkerId,
+    pub variants: Vec<Vec<TaskExplainItem>>,
+}
+
+impl TaskExplanationForWorker {
+    pub fn n_enabled_variants(&self) -> u32 {
+        self.variants
+            .iter()
+            .map(|v| {
+                if v.iter().any(|item| item.is_blocking()) {
+                    0
+                } else {
+                    1
+                }
+            })
+            .sum()
+    }
+
+    pub fn n_variants(&self) -> u32 {
+        self.variants.len() as u32
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.n_enabled_variants() > 0
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum TaskExplainItem {
+    Time {
+        min_time: Duration,
+        remaining_time: Option<Duration>,
+    },
+    Resources {
+        resource: String,
+        request_amount: ResourceAmount,
+        worker_amount: ResourceAmount,
+    },
+    WorkerGroup {
+        n_nodes: NumOfNodes,
+        group_size: NumOfNodes,
+    },
+}
+
+impl TaskExplainItem {
+    pub fn is_blocking(&self) -> bool {
+        match self {
+            TaskExplainItem::Time {
+                min_time,
+                remaining_time: Some(remaining_time),
+            } => min_time > remaining_time,
+            TaskExplainItem::Time {
+                min_time: _,
+                remaining_time: None,
+            } => false,
+            TaskExplainItem::Resources {
+                resource: _,
+                request_amount,
+                worker_amount,
+            } => request_amount > worker_amount,
+            TaskExplainItem::WorkerGroup {
+                n_nodes,
+                group_size,
+            } => n_nodes > group_size,
+        }
+    }
+}
+
+pub fn task_explain_init(task: &Task) -> TaskExplanation {
+    TaskExplanation {
+        n_task_deps: task.task_deps.len() as u32,
+        n_waiting_deps: match &task.state {
+            TaskRuntimeState::Waiting { unfinished_deps } => *unfinished_deps,
+            _ => 0,
+        },
+        workers: Vec::new(),
+    }
+}
+
+pub fn task_explain_for_worker(
+    resource_map: &ResourceIdMap,
+    resource_rq_map: &ResourceRqMap,
+    task: &Task,
+    worker: &Worker,
+    worker_group: &WorkerGroup,
+    now: std::time::Instant,
+) -> TaskExplanationForWorker {
+    let rqv = resource_rq_map.get(task.resource_rq_id);
+    TaskExplanationForWorker {
+        worker_id: worker.id,
+        variants: rqv
+            .requests()
+            .iter()
+            .map(|rq| {
+                let mut result = Vec::new();
+                if !rq.min_time().is_zero() {
+                    result.push(TaskExplainItem::Time {
+                        min_time: rq.min_time(),
+                        remaining_time: worker.remaining_time(now),
+                    });
+                }
+                if rq.is_multi_node() {
+                    result.push(TaskExplainItem::WorkerGroup {
+                        n_nodes: rq.n_nodes(),
+                        group_size: worker_group.size() as NumOfNodes,
+                    })
+                } else {
+                    for entry in rq.entries() {
+                        let request_amount = entry.request.min_amount();
+                        let worker_amount = worker.resources.get(entry.resource_id);
+                        result.push(TaskExplainItem::Resources {
+                            resource: resource_map
+                                .get_name(entry.resource_id)
+                                .unwrap()
+                                .to_string(),
+                            request_amount,
+                            worker_amount,
+                        })
+                    }
+                }
+                result
+            })
+            .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::internal::server::explain::{TaskExplainItem, task_explain_for_worker};
+
+    use crate::internal::server::workergroup::WorkerGroup;
+    use crate::internal::tests::utils::task::TaskBuilder;
+
+    use crate::internal::server::core::CoreSplitMut;
+    use crate::resources::ResourceAmount;
+    use crate::tests::utils::env::TestEnv;
+    use crate::tests::utils::worker::WorkerBuilder;
+    use crate::{Set, TaskId, WorkerId};
+    use std::time::{Duration, Instant};
+
+    #[test]
+    fn explain_single_node() {
+        let mut rt = TestEnv::new();
+        rt.new_named_resource("gpus");
+        let w1 = rt.new_worker(&WorkerBuilder::new(4));
+        let w2 = rt.new_worker(
+            &WorkerBuilder::empty()
+                .res_range("cpus", 1, 10)
+                .res_range("gpus", 1, 4)
+                .time_limit(Duration::from_secs(40_000)),
+        );
+        let resource_map = rt.core().create_resource_map();
+        let explain = |rt: &mut TestEnv, task: TaskId, worker: WorkerId, now| {
+            let group = WorkerGroup::new(Set::new());
+            let CoreSplitMut {
+                task_map,
+                worker_map,
+                request_map,
+                ..
+            } = rt.core().split_mut();
+            task_explain_for_worker(
+                &resource_map,
+                request_map,
+                task_map.get_task(task),
+                worker_map.get_worker(worker),
+                &group,
+                now,
+            )
+        };
+
+        let _rqs = rt.core().resource_map_mut();
+        let now = Instant::now();
+        let t1 = rt.new_task(&TaskBuilder::new());
+        let r = explain(&mut rt, t1, w1, now);
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 1);
+        assert_eq!(r.n_enabled_variants(), 1);
+
+        let t2 = rt.new_task(&TaskBuilder::new().time_request(20_000));
+        let r = explain(&mut rt, t2, w1, now);
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 2);
+        assert_eq!(r.n_enabled_variants(), 1);
+
+        let r = explain(&mut rt, t2, w2, now);
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 2);
+        assert_eq!(r.n_enabled_variants(), 1);
+
+        let now2 = now + Duration::from_secs(21_000);
+        let r = explain(&mut rt, t2, w1, now2);
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 2);
+        assert_eq!(r.n_enabled_variants(), 1);
+
+        let r = explain(&mut rt, t2, w2, now2);
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 2);
+        assert!(matches!(
+            r.variants[0][0],
+            TaskExplainItem::Time {
+                min_time,
+                remaining_time,
+            } if min_time == Duration::from_secs(20_000) && (remaining_time.unwrap().as_secs().abs_diff(19_000) < 3)
+        ));
+        assert_eq!(r.n_enabled_variants(), 0);
+
+        let t3 = rt.new_task(
+            &TaskBuilder::new()
+                .time_request(20_000)
+                .cpus(30)
+                .add_resource(1, 3),
+        );
+        let r = explain(&mut rt, t3, w2, now);
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 3);
+        assert!(matches!(
+            &r.variants[0][1],
+            TaskExplainItem::Resources {
+                resource, request_amount, worker_amount
+            } if resource == "cpus" && *request_amount == ResourceAmount::new_units(30) && *worker_amount == ResourceAmount::new_units(10)
+        ));
+        assert_eq!(r.n_enabled_variants(), 0);
+
+        let t4 = rt.new_task(
+            &TaskBuilder::new()
+                .time_request(30_000)
+                .cpus(15)
+                .add_resource(1, 8)
+                .next_variant()
+                .cpus(2)
+                .add_resource(1, 32),
+        );
+        let r = explain(&mut rt, t4, w2, now2);
+        assert_eq!(r.variants.len(), 2);
+        assert_eq!(r.variants[0].len(), 3);
+        assert_eq!(r.variants[1].len(), 2);
+
+        assert!(matches!(
+            r.variants[0][0],
+            TaskExplainItem::Time {
+                min_time,
+                remaining_time,
+            } if min_time == Duration::from_secs(30_000) &&  (remaining_time.unwrap().as_secs().abs_diff(19_000) < 3)));
+        assert!(matches!(
+            &r.variants[0][1],
+            TaskExplainItem::Resources {
+                resource, request_amount, worker_amount
+            } if resource == "cpus" && *request_amount == ResourceAmount::new_units(15) && *worker_amount == ResourceAmount::new_units(10)
+        ));
+        assert!(matches!(
+            &r.variants[0][2],
+            TaskExplainItem::Resources {
+                resource, request_amount, worker_amount
+            } if resource == "gpus" && *request_amount == ResourceAmount::new_units(8) && *worker_amount == ResourceAmount::new_units(4)
+        ));
+        assert!(matches!(
+            &r.variants[1][1],
+            TaskExplainItem::Resources {
+                resource, request_amount, worker_amount
+            } if resource == "gpus" && *request_amount == ResourceAmount::new_units(32) && *worker_amount == ResourceAmount::new_units(4)
+        ));
+    }
+
+    #[test]
+    fn explain_multi_node() {
+        let now = Instant::now();
+        let mut rt = TestEnv::new();
+
+        let w1 = rt.new_worker(&WorkerBuilder::new(4));
+        let t1 = rt.new_task(&TaskBuilder::new().n_nodes(4));
+
+        let mut wset = Set::new();
+        wset.insert(w1);
+        wset.insert(WorkerId::new(1002));
+        wset.insert(WorkerId::new(1003));
+        wset.insert(WorkerId::new(1004));
+        let group = WorkerGroup::new(wset);
+        let resource_map = rt.core().create_resource_map();
+        let CoreSplitMut {
+            task_map,
+            worker_map,
+            request_map,
+            ..
+        } = rt.core().split_mut();
+        let r = task_explain_for_worker(
+            &resource_map,
+            request_map,
+            task_map.get_task(t1),
+            worker_map.get_worker(w1),
+            &group,
+            now,
+        );
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 1);
+        assert_eq!(r.n_enabled_variants(), 1);
+
+        let mut wset = Set::new();
+        wset.insert(w1);
+        wset.insert(WorkerId::new(1032));
+        let group = WorkerGroup::new(wset);
+        let r = task_explain_for_worker(
+            &resource_map,
+            request_map,
+            task_map.get_task(t1),
+            worker_map.get_worker(w1),
+            &group,
+            now,
+        );
+        assert_eq!(r.variants.len(), 1);
+        assert_eq!(r.variants[0].len(), 1);
+        assert!(matches!(
+            &r.variants[0][0],
+            TaskExplainItem::WorkerGroup {
+                n_nodes: 4,
+                group_size: 2
+            }
+        ));
+        assert_eq!(r.n_enabled_variants(), 0);
+    }
+}

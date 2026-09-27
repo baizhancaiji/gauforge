@@ -1,0 +1,54 @@
+[package]
+name = "tako"
+version = "0.1.0"
+authors.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[features]
+# The default feature is set for convenience, so that tako can be compiled without specifying
+# any features. It also helps with IDE integration.
+default = ["highs"]
+highs = ["dep:highs"]
+microlp = ["dep:microlp"]
+coin_cbc = ["dep:coin_cbc"]
+
+[dependencies]
+anyhow = { workspace = true }
+derive_builder = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+tokio-util = { workspace = true, features = ["codec"] }
+bytes = { workspace = true }
+smallvec = { workspace = true, features = ["serde"] }
+serde = { workspace = true, features = ["derive", "rc"] }
+serde_bytes = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+orion = { workspace = true }
+bincode = { workspace = true }
+log = { workspace = true }
+rand = { workspace = true }
+tracing = { workspace = true }
+nix = { workspace = true }
+bstr = { workspace = true }
+sysinfo = { workspace = true }
+thin-vec = { workspace = true }
+bitflags = { workspace = true }
+tempfile = { workspace = true }
+itertools = { workspace = true }
+
+highs = { version = "2.1", optional = true }
+microlp = { version = "0.4", optional = true }
+coin_cbc = { version = "0.1", optional = true }
+
+hashbrown = { version = "0.17", features = ["serde", "inline-more"], default-features = false }
+fxhash = "0.2"
+derive_more = { version = "2", features = ["add", "add_assign", "sum"] }
+
+[dev-dependencies]
+env_logger = { workspace = true }
+criterion = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,322 @@
+use crate::internal::messages::worker::{TaskIdsMsg, ToWorkerMessage};
+use crate::internal::scheduler::solver::SchedulingSolution;
+use crate::internal::server::comm::Comm;
+use crate::internal::server::core::{Core, CoreSplitMut};
+use crate::internal::server::task::{ComputeTasksBuilder, TaskRuntimeState};
+use crate::{Map, ResourceVariantId, TaskId, WorkerId};
+use std::cmp::Reverse;
+
+#[derive(Debug, Default)]
+#[cfg_attr(test, derive(Clone, PartialEq, PartialOrd, Eq, Ord))]
+pub(crate) struct WorkerTaskUpdate {
+    pub(crate) assigned: Vec<(TaskId, ResourceVariantId)>,
+    pub(crate) prefills: Vec<TaskId>,
+    pub(crate) retracts: Vec<TaskId>,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct WorkerTaskMapping {
+    pub(crate) workers: Map<WorkerId, WorkerTaskUpdate>,
+    pub(crate) mn_tasks_to_workers: Vec<TaskId>,
+}
+
+pub(crate) fn create_task_mapping(
+    core: &mut Core,
+    solution: SchedulingSolution,
+) -> WorkerTaskMapping {
+    let CoreSplitMut {
+        task_map,
+        worker_map,
+        task_queues,
+        request_map,
+        scheduler_state,
+        ..
+    } = core.split_mut();
+    let mut mapping = WorkerTaskMapping::default();
+    for ((resource_rq_id, v_id), mut counts) in solution.sn_counts.into_iter() {
+        let rq = request_map.get(resource_rq_id).get(v_id);
+        let sum = counts.iter().map(|(_, c)| c).sum::<u32>();
+        let tasks = task_queues.get_mut(resource_rq_id).take_tasks(sum);
+        let mut task_idx = 0;
+        if !tasks.is_empty() {
+            'outer: loop {
+                for (w_id, c) in counts.iter_mut() {
+                    if *c > 0 {
+                        *c -= 1;
+                        let task_id = tasks[task_idx];
+                        worker_map.get_worker_mut(*w_id).insert_sn_task(task_id, rq);
+                        let task = task_map.get_task_mut(task_id);
+                        log::debug!(
+                            "Task={task_id} ({:?}) assigned to worker={w_id}",
+                            task.state
+                        );
+                        let new_state = match &task.state {
+                            TaskRuntimeState::Waiting { .. } => {
+                                mapping
+                                    .workers
+                                    .entry(*w_id)
+                                    .or_default()
+                                    .assigned
+                                    .push((task_id, v_id));
+                                TaskRuntimeState::Assigned {
+                                    worker_id: *w_id,
+                                    rv_id: v_id,
+                                }
+                            }
+                            TaskRuntimeState::Retracting {
+                                worker_id: old_worker_id,
+                            } => {
+                                if old_worker_id != w_id
+                                    && let Some((old_target, v_id)) =
+                                        scheduler_state.redirects.insert(task_id, (*w_id, v_id))
+                                {
+                                    let rq = request_map.get(task.resource_rq_id).get(v_id);
+                                    worker_map
+                                        .get_worker_mut(old_target)
+                                        .remove_sn_task(task_id, rq);
+                                }
+                                TaskRuntimeState::Retracting {
+                                    worker_id: *old_worker_id,
+                                }
+                            }
+                            TaskRuntimeState::Prefilled {
+                                worker_id: old_worker_id,
+                            } => {
+                                worker_map
+                                    .get_mut(old_worker_id)
+                                    .unwrap()
+                                    .remove_prefill_task(task_id);
+                                mapping
+                                    .workers
+                                    .entry(*old_worker_id)
+                                    .or_default()
+                                    .retracts
+                                    .push(task_id);
+                                assert!(
+                                    scheduler_state
+                                        .redirects
+                                        .insert(task_id, (*w_id, v_id))
+                                        .is_none()
+                                );
+                                TaskRuntimeState::Retracting {
+                                    worker_id: *old_worker_id,
+                                }
+                            }
+                            TaskRuntimeState::Assigned {
+                                worker_id: _,
+                                rv_id: _,
+                            } => {
+                                unreachable!()
+                            }
+                            TaskRuntimeState::Running { .. }
+                            | TaskRuntimeState::RunningMultiNode(_)
+                            | TaskRuntimeState::Finished => {
+                                unreachable!()
+                            }
+                        };
+                        task.state = new_state;
+                        task_idx += 1;
+                        if task_idx >= tasks.len() {
+                            break 'outer;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    mapping.workers.iter_mut().for_each(|(_, up)| {
+        up.assigned
+            .sort_by_key(|(task, _)| Reverse(task_map.get_task(*task).priority()));
+    });
+
+    for ((resource_rq_id, _), worker_sets) in solution.mn_workers {
+        for workers in worker_sets {
+            let task_id = task_queues.get_mut(resource_rq_id).take_one().unwrap();
+            log::debug!(
+                "Multi-node task={} assigned to workers={:?}",
+                task_id,
+                workers
+            );
+            for (w_idx, w_id) in workers.iter().enumerate() {
+                let worker = worker_map.get_worker_mut(*w_id);
+                worker.set_mn_task(task_id, w_idx == 0);
+            }
+            let task = task_map.get_task_mut(task_id);
+            mapping.mn_tasks_to_workers.push(task_id);
+            let old_state =
+                std::mem::replace(&mut task.state, TaskRuntimeState::RunningMultiNode(workers));
+            assert!(matches!(
+                old_state,
+                TaskRuntimeState::Waiting { unfinished_deps: 0 }
+            ));
+        }
+    }
+    process_proactive_filling(core, &mut mapping);
+    mapping
+}
+
+fn process_proactive_filling(core: &mut Core, mapping: &mut WorkerTaskMapping) {
+    let CoreSplitMut {
+        task_map,
+        worker_map,
+        task_queues,
+        request_map,
+        scheduler_state,
+        ..
+    } = core.split_mut();
+    let max_prefill = scheduler_state.config.proactive_filling_max as u64;
+    if max_prefill == 0 {
+        // Prefill explicitly disabled.
+        return;
+    }
+    let top_priority = task_queues.top_priority();
+    for queue in task_queues.iter_mut() {
+        if queue.top_priority() != Some(top_priority) {
+            continue;
+        };
+        let size = queue
+            .top_size_no_prefill()
+            .saturating_sub(scheduler_state.config.proactive_filling_reserve);
+        if size == 0 {
+            continue;
+        }
+        let rqv = request_map.get(queue.resource_rq_id);
+        let max_capacity = worker_map
+            .get_workers()
+            .map(|w| w.resources.task_max_count(rqv))
+            .max()
+            .unwrap_or(1)
+            .max(1) as u64;
+        let workers: Vec<_> = worker_map
+            .values_mut()
+            .filter(|worker| {
+                let Some(sn) = worker.sn_assignment() else {
+                    return false;
+                };
+                if !mapping
+                    .workers
+                    .get(&worker.id)
+                    .map(|up| {
+                        up.assigned.iter().any(|(t, _)| {
+                            task_map.get_task(*t).resource_rq_id == queue.resource_rq_id
+                        })
+                    })
+                    .unwrap_or(false)
+                {
+                    return false;
+                }
+                if sn
+                    .prefilled_tasks
+                    .iter()
+                    .any(|t| task_map.get_task(*t).resource_rq_id == queue.resource_rq_id)
+                {
+                    return false;
+                }
+                true
+            })
+            .collect();
+        if workers.is_empty() {
+            continue;
+        }
+        let capacities: Vec<u64> = workers
+            .iter()
+            .map(|w| w.resources.task_max_count(rqv).max(1) as u64)
+            .collect();
+        let total_capacity: u64 = capacities.iter().sum();
+        let mut return_back = Vec::new();
+        for (worker, capacity) in workers.into_iter().zip(capacities) {
+            // The shares sum to at most `size`, so the queue entry we are drawing from is
+            // never exhausted before the last worker.
+            let share = size as u64 * capacity / total_capacity;
+            let depth = (max_prefill * capacity / max_capacity).max(1);
+            let prefill_size = share.min(depth);
+            if prefill_size == 0 {
+                continue;
+            }
+            let prefills = &mut mapping.workers.entry(worker.id).or_default().prefills;
+            for _ in 0..prefill_size {
+                let task_id = queue.take_one().unwrap();
+                log::debug!("Prefiling task={task_id} to worker={}", worker.id);
+                let task = task_map.get_task_mut(task_id);
+                if task.is_waiting() {
+                    task.state = TaskRuntimeState::Prefilled {
+                        worker_id: worker.id,
+                    };
+                    worker.insert_prefill_task(task_id);
+                    queue.insert_prefill(task_id, top_priority, prefill_size as usize);
+                    prefills.push(task_id);
+                } else {
+                    // This can happen when task is in retracting, and it should be queite rare
+                    log::debug!(
+                        "Task is not in waiting state ({:?}) back to the queue.",
+                        task.state
+                    );
+                    return_back.push(task_id);
+                }
+            }
+        }
+        for task_id in return_back {
+            queue.return_back(task_id, top_priority);
+        }
+    }
+}
+
+impl WorkerTaskMapping {
+    #[allow(dead_code)] // Function used for debugging
+    pub fn dump(&self) {
+        println!("====== MAPPING =================");
+        for (w, up) in &self.workers {
+            print!("w{w}:");
+            for (task_id, v) in &up.assigned {
+                if v.is_first() {
+                    print!(" {}", task_id)
+                } else {
+                    print!(" {}/{}", task_id, v)
+                }
+            }
+            if !up.prefills.is_empty() {
+                print!(" pf({})", up.prefills.len())
+            }
+            if !up.retracts.is_empty() {
+                print!(" ret({})", up.retracts.len())
+            }
+            println!();
+        }
+    }
+
+    pub fn send_messages(self, core: &mut Core, comm: &mut impl Comm) {
+        for (worker_id, up) in self.workers {
+            if !up.retracts.is_empty() {
+                comm.send_worker_message(
+                    worker_id,
+                    &ToWorkerMessage::RetractTasks(TaskIdsMsg { ids: up.retracts }),
+                );
+            }
+            let mut task_msg_builder = ComputeTasksBuilder::default();
+            for task_id in &up.prefills {
+                let task = core.get_task_mut(*task_id);
+                if let Some(msg) = task_msg_builder.add_task(task, None, Vec::new()) {
+                    comm.send_worker_message(worker_id, &msg);
+                }
+            }
+            for (task_id, variant) in &up.assigned {
+                let task = core.get_task_mut(*task_id);
+                if let Some(msg) = task_msg_builder.add_task(task, Some(*variant), Vec::new()) {
+                    comm.send_worker_message(worker_id, &msg);
+                }
+            }
+            if let Some(msg) = task_msg_builder.into_last_message() {
+                comm.send_worker_message(worker_id, &msg);
+            }
+        }
+        for task_id in &self.mn_tasks_to_workers {
+            let task = core.get_task(*task_id);
+            let worker_ids = task.mn_placement().unwrap().to_vec();
+            comm.send_worker_message(
+                worker_ids[0],
+                &ComputeTasksBuilder::single_task(task, 0.into(), worker_ids.to_vec()),
+            );
+        }
+    }
+}

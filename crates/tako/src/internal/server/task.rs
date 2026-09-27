@@ -1,0 +1,504 @@
+use serde_json::json;
+use std::fmt;
+use std::rc::Rc;
+use std::time::Duration;
+use thin_vec::ThinVec;
+
+use crate::internal::common::Set;
+use crate::internal::common::stablemap::ExtractKey;
+use crate::{MAX_FRAME_SIZE, Map, ResourceVariantId, UserPriority, WorkerId};
+
+use crate::gateway::{CrashLimit, EntryType};
+
+use crate::internal::common::resources::ResourceRqId;
+use crate::internal::messages::worker::{
+    ComputeTaskSeparateData, ComputeTaskSharedData, ComputeTasksMsg, ToWorkerMessage,
+};
+use crate::internal::server::taskmap::TaskMap;
+use crate::{InstanceId, Priority};
+use crate::{TaskId, static_assert_size};
+
+#[cfg_attr(test, derive(Eq, PartialEq, Clone))]
+pub enum TaskRuntimeState {
+    Waiting {
+        unfinished_deps: u32,
+    },
+    Assigned {
+        worker_id: WorkerId,
+        rv_id: ResourceVariantId,
+    },
+    Prefilled {
+        worker_id: WorkerId,
+    },
+    Retracting {
+        worker_id: WorkerId,
+    },
+    Running {
+        worker_id: WorkerId,
+        rv_id: ResourceVariantId,
+    },
+    // The first worker is the root node where the command is executed, others are reserved
+    RunningMultiNode(ThinVec<WorkerId>),
+    Finished,
+}
+
+impl fmt::Debug for TaskRuntimeState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Waiting { unfinished_deps } => write!(f, "W({})", unfinished_deps),
+            Self::Assigned { worker_id, rv_id } => write!(f, "A({worker_id}, {rv_id})"),
+            Self::Prefilled { worker_id } => write!(f, "P({worker_id})"),
+            Self::Retracting { worker_id } => write!(f, "S({worker_id})"),
+            Self::Running { worker_id, rv_id } => write!(f, "R({worker_id}, {rv_id})"),
+            Self::RunningMultiNode(ws) => write!(f, "M({ws:?})"),
+            Self::Finished => write!(f, "F"),
+        }
+    }
+}
+
+impl TaskRuntimeState {
+    fn dump(&self) -> serde_json::Value {
+        match self {
+            Self::Waiting { unfinished_deps } => json!({
+                "state": "Waiting",
+                "unfinished_deps": unfinished_deps,
+            }),
+            Self::Assigned { worker_id, rv_id } => json!({
+                "state": "Assigned",
+                "worker_id": worker_id,
+                "rv_id": rv_id,
+            }),
+            Self::Retracting { worker_id } => json!({
+                "state": "Retracting",
+                "worker_id": worker_id,
+            }),
+            Self::Prefilled { worker_id } => json!({
+                "state": "Prefilled",
+                "worker_id": worker_id,
+            }),
+            Self::Running { worker_id, .. } => json!({
+                "state": "Running",
+                "worker_id": worker_id,
+            }),
+            Self::RunningMultiNode(ws) => json!({
+                "state": "RunningMultiNode",
+                "worker_ids": ws,
+            }),
+            Self::Finished => json!({
+                "state": "Finished",
+            }),
+        }
+    }
+}
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub struct TaskConfiguration {
+    // Use Rc to avoid cloning the data when we serialize them
+    pub body: Rc<[u8]>,
+    pub user_priority: UserPriority,
+    pub time_limit: Option<Duration>,
+    pub crash_limit: CrashLimit,
+}
+
+impl TaskConfiguration {
+    pub fn dump(&self) -> serde_json::Value {
+        json!({
+            "user_priority": self.user_priority,
+            "time_limit": self.time_limit,
+            "crash_limit": self.crash_limit,
+            "body_len": self.body.len(),
+        })
+    }
+}
+
+#[cfg_attr(test, derive(Eq, PartialEq))]
+pub struct Task {
+    pub id: TaskId,
+    pub state: TaskRuntimeState,
+    consumers: Set<TaskId>,
+    pub task_deps: ThinVec<TaskId>,
+    pub resource_rq_id: ResourceRqId,
+    pub configuration: Rc<TaskConfiguration>,
+    pub instance_id: InstanceId,
+    pub crash_counter: u32,
+    pub entry: Option<EntryType>,
+}
+
+// Task is a critical data structure, so we should keep its size in check
+static_assert_size!(Task, 96);
+
+impl fmt::Debug for Task {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Task")
+            .field("id", &self.id)
+            .field("state", &self.state)
+            .finish()
+    }
+}
+
+impl Task {
+    pub fn dump(&self) -> serde_json::Value {
+        json!({
+            "id": self.id.to_string(),
+            "state": self.state.dump(),
+            "consumers": self.consumers,
+            "task_deps": self.task_deps,
+            "instance_id": self.instance_id,
+            "crash_counter": self.crash_counter,
+            "configuration": self.configuration.dump(),
+        })
+    }
+
+    pub fn new(
+        id: TaskId,
+        resource_rq_id: ResourceRqId,
+        task_deps: ThinVec<TaskId>,
+        entry: Option<EntryType>,
+        configuration: Rc<TaskConfiguration>,
+    ) -> Self {
+        log::debug!("New task rs={} {:?} {:?}", id, resource_rq_id, task_deps,);
+
+        Self {
+            id,
+            task_deps,
+            resource_rq_id,
+            configuration,
+            entry,
+            state: TaskRuntimeState::Waiting { unfinished_deps: 0 },
+            consumers: Default::default(),
+            instance_id: InstanceId::new(0),
+            crash_counter: 0,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn priority(&self) -> Priority {
+        Priority::from_user_priority(self.configuration.user_priority)
+    }
+
+    #[inline]
+    pub(crate) fn is_ready(&self) -> bool {
+        matches!(
+            self.state,
+            TaskRuntimeState::Waiting {
+                unfinished_deps: 0,
+                ..
+            }
+        )
+    }
+
+    #[inline]
+    pub(crate) fn is_retracting(&self) -> bool {
+        matches!(self.state, TaskRuntimeState::Retracting { .. })
+    }
+
+    #[inline]
+    pub(crate) fn is_sn_running(&self) -> bool {
+        matches!(self.state, TaskRuntimeState::Running { .. })
+    }
+
+    #[inline]
+    #[cfg(test)]
+    pub(crate) fn is_mn_running(&self) -> bool {
+        matches!(self.state, TaskRuntimeState::RunningMultiNode { .. })
+    }
+
+    #[inline]
+    pub(crate) fn decrease_unfinished_deps(&mut self) -> bool {
+        match &mut self.state {
+            TaskRuntimeState::Waiting { unfinished_deps } if *unfinished_deps > 0 => {
+                *unfinished_deps -= 1;
+                *unfinished_deps == 0
+            }
+            _ => panic!("Invalid state"),
+        }
+    }
+
+    #[inline]
+    pub fn id(&self) -> TaskId {
+        self.id
+    }
+
+    #[inline]
+    pub(crate) fn add_consumer(&mut self, consumer: TaskId) -> bool {
+        self.consumers.insert(consumer)
+    }
+    #[inline]
+    pub(crate) fn remove_consumer(&mut self, consumer: TaskId) -> bool {
+        self.consumers.remove(&consumer)
+    }
+    #[inline]
+    pub(crate) fn get_consumers(&self) -> &Set<TaskId> {
+        &self.consumers
+    }
+
+    pub(crate) fn collect_recursive_consumers(&self, taskmap: &TaskMap, out: &mut Set<TaskId>) {
+        for consumer in &self.consumers {
+            out.insert(*consumer);
+        }
+        let mut stack: Vec<_> = self.consumers.iter().copied().collect();
+        while let Some(task_id) = stack.pop() {
+            let task = taskmap.get_task(task_id);
+            for &consumer_id in &task.consumers {
+                if out.insert(consumer_id) {
+                    stack.push(consumer_id);
+                }
+            }
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn rv_id(&self) -> Option<ResourceVariantId> {
+        match self.state {
+            TaskRuntimeState::Running { rv_id, .. } | TaskRuntimeState::Assigned { rv_id, .. } => {
+                Some(rv_id)
+            }
+            _ => None,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn assigned_placement(
+        &self,
+        redirects: &Map<TaskId, (WorkerId, ResourceVariantId)>,
+    ) -> Option<(WorkerId, ResourceVariantId)> {
+        match self.state {
+            TaskRuntimeState::Assigned { worker_id, rv_id }
+            | TaskRuntimeState::Running { worker_id, rv_id } => Some((worker_id, rv_id)),
+            TaskRuntimeState::Retracting { .. } => redirects.get(&self.id).copied(),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn increment_instance_id(&mut self) {
+        self.instance_id = InstanceId::new(self.instance_id.as_num() + 1);
+    }
+
+    pub(crate) fn increment_crash_counter(&mut self) -> bool {
+        self.crash_counter += 1;
+        match self.configuration.crash_limit {
+            CrashLimit::NeverRestart => true,
+            CrashLimit::MaxCrashes(count) => self.crash_counter >= count as u32,
+            CrashLimit::Unlimited => false,
+        }
+    }
+
+    pub(crate) fn mn_placement(&self) -> Option<&[WorkerId]> {
+        match &self.state {
+            TaskRuntimeState::RunningMultiNode(ws) => Some(ws),
+            _ => None,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn is_waiting(&self) -> bool {
+        matches!(&self.state, TaskRuntimeState::Waiting { .. })
+    }
+
+    #[inline]
+    #[cfg(test)]
+    pub(crate) fn is_assigned(&self) -> bool {
+        matches!(&self.state, TaskRuntimeState::Assigned { .. })
+    }
+
+    #[inline]
+    #[cfg(test)]
+    pub(crate) fn is_prefilled(&self) -> bool {
+        matches!(&self.state, TaskRuntimeState::Prefilled { .. })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn mn_root_worker(&self) -> Option<WorkerId> {
+        self.mn_placement().map(|ws| ws[0])
+    }
+
+    #[inline]
+    pub(crate) fn is_finished(&self) -> bool {
+        matches!(&self.state, TaskRuntimeState::Finished)
+    }
+}
+
+impl ExtractKey<TaskId> for Task {
+    #[inline]
+    fn extract_key(&self) -> TaskId {
+        self.id
+    }
+}
+
+/// Maximum size of data that we are willing to put into a single packet.
+const MAX_TASK_MSG_SIZE: usize = MAX_FRAME_SIZE / 4;
+
+/// Builder for [ToWorkerMessage::ComputeTasks], which tries to shared common data between
+/// task instances to reduce network bandwidth.
+///
+/// The builder also handles fragmentation, if it receives too much data for a single packet
+#[derive(Default)]
+pub struct ComputeTasksBuilder {
+    tasks: Vec<ComputeTaskSeparateData>,
+    // TODO: if we could ensure that we intern all known task configurations in memory, and they
+    // have a unique allocation, we could compare the configs here based on just pointer address,
+    // not the contents of `TaskConfiguration`.
+    configuration_index: Map<Rc<TaskConfiguration>, usize>,
+    shared_data: Vec<ComputeTaskSharedData>,
+    estimated_size: usize,
+}
+
+impl ComputeTasksBuilder {
+    pub fn single_task(
+        task: &Task,
+        variant: ResourceVariantId,
+        node_list: Vec<WorkerId>,
+    ) -> ToWorkerMessage {
+        // TODO: optimize this
+        let mut builder = Self::default();
+        if let Some(msg) = builder.add_task(task, Some(variant), node_list) {
+            msg
+        } else {
+            builder.into_last_message().unwrap()
+        }
+    }
+
+    /// Adds a task to the builder, and optionally generate a message if it has reached size limits.
+    #[must_use]
+    pub fn add_task(
+        &mut self,
+        task: &Task,
+        variant: Option<ResourceVariantId>, // If None then task is prefill
+        node_list: Vec<WorkerId>,
+    ) -> Option<ToWorkerMessage> {
+        let conf = &task.configuration;
+        let shared_index = *self
+            .configuration_index
+            .entry(conf.clone())
+            .or_insert_with(|| {
+                let shared = ComputeTaskSharedData {
+                    time_limit: conf.time_limit,
+                    body: conf.body.clone(),
+                };
+                let index = self.shared_data.len();
+                self.estimated_size += estimate_shared_data_size(&shared);
+                self.shared_data.push(shared);
+                index
+            });
+
+        let task_data = ComputeTaskSeparateData {
+            shared_index,
+            id: task.id,
+            resource_rq_id: task.resource_rq_id,
+            resource_rq_variant: variant,
+            instance_id: task.instance_id,
+            priority: task.priority(),
+            node_list,
+            entry: task.entry.clone(),
+        };
+        self.estimated_size += estimate_task_data_size(&task_data);
+        self.tasks.push(task_data);
+
+        self.create_message_on_overflow()
+    }
+
+    /// If there are any pending task data, materialize them into a new ComputeTasks message
+    /// and push it into `self.messages`. Also resets any internal auxiliary data.
+    fn create_message_on_overflow(&mut self) -> Option<ToWorkerMessage> {
+        if self.estimated_size > MAX_TASK_MSG_SIZE {
+            let msg = ComputeTasksMsg {
+                tasks: std::mem::take(&mut self.tasks),
+                shared_data: std::mem::take(&mut self.shared_data),
+            };
+            self.configuration_index.clear();
+            self.estimated_size = 0;
+            Some(ToWorkerMessage::ComputeTasks(msg))
+        } else {
+            None
+        }
+    }
+
+    /// If there are any tasks in this builder, generate a message
+    pub fn into_last_message(self) -> Option<ToWorkerMessage> {
+        if !self.tasks.is_empty() {
+            let msg = ComputeTasksMsg {
+                tasks: self.tasks,
+                shared_data: self.shared_data,
+            };
+            Some(ToWorkerMessage::ComputeTasks(msg))
+        } else {
+            None
+        }
+    }
+}
+
+/// Estimate how much data it will take to serialize this task data
+fn estimate_task_data_size(data: &ComputeTaskSeparateData) -> usize {
+    let ComputeTaskSeparateData {
+        shared_index,
+        id,
+        resource_rq_id,
+        resource_rq_variant,
+        instance_id,
+        priority,
+        node_list,
+        entry,
+    } = data;
+
+    // We cound each field separately, because if we just used size_of on the whole struct, it would
+    // count internal field of Vecs, which are not serialized.
+    size_of_val(shared_index)
+        + size_of_val(id)
+        + size_of_val(resource_rq_id)
+        + size_of_val(resource_rq_variant)
+        + size_of_val(instance_id)
+        + size_of_val(priority)
+        + size_of_val(node_list.as_slice())
+        + entry.as_ref().map(|e| e.len()).unwrap_or_default()
+}
+
+/// Estimate how much data it will take to serialize this shared task data
+fn estimate_shared_data_size(data: &ComputeTaskSharedData) -> usize {
+    let ComputeTaskSharedData { time_limit, body } = data;
+    size_of_val(time_limit) + body.len()
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::internal::server::task::{Task, TaskRuntimeState};
+
+    use crate::tests::utils::env::TestEnv;
+    use crate::tests::utils::task::TaskBuilder;
+    use std::default::Default;
+
+    impl Task {
+        pub fn get_unfinished_deps(&self) -> u32 {
+            match &self.state {
+                TaskRuntimeState::Waiting { unfinished_deps } => *unfinished_deps,
+                _ => panic!("Invalid state"),
+            }
+        }
+    }
+
+    #[test]
+    fn task_consumers_empty() {
+        let mut rt = TestEnv::new();
+        let a = rt.new_task_default();
+        let mut s = crate::Set::new();
+        rt.task(a)
+            .collect_recursive_consumers(&Default::default(), &mut s);
+        assert!(s.is_empty());
+    }
+
+    #[test]
+    fn task_recursive_consumers() {
+        let mut rt = TestEnv::new();
+        let a = rt.new_task_default();
+        let b = rt.new_task(&TaskBuilder::new().task_deps(&[a]));
+        let c = rt.new_task(&TaskBuilder::new().task_deps(&[b]));
+        let d = rt.new_task(&TaskBuilder::new().task_deps(&[b]));
+        let e = rt.new_task(&TaskBuilder::new().task_deps(&[c, d]));
+
+        let expected_ids = vec![b, c, d, e];
+        let mut s = crate::Set::new();
+        let tasks = rt.task_map();
+        rt.task(a).collect_recursive_consumers(tasks, &mut s);
+        assert_eq!(s, expected_ids.into_iter().collect());
+    }
+}
