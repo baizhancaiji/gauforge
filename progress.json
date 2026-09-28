@@ -1,19 +1,55 @@
 {
-  "updated": "2026-09-28T02:06+08:00",
+  "updated": "2026-09-28T19:29+08:00",
   "latest_released_version": "2.0.0",
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "新增版本标识与更新功能需求文档（version-update-spec.md）：侧栏动态版本行、设置页顶部更新卡（手动检查/立即更新/下载进度/运行守卫）、每日每周每月凌晨1:00自动检查与异常如实反馈规格，含依赖核查、REST/SSE 契约草案、改动面清单与七项决策点",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "版本更新需求文档评审修订（18 项口径对齐）：代理通道定稿上设置页（D4，更新卡内切换、读写 .update-proxy 不进 SQLite）、检查周期四档含从不（never）、update.phase 枚举增 available 并与显示状态机逐行对齐、新增部署目录 update-state 落盘标记写入/恢复/清理规则、self_update.sh 重启编排定稿（后端自退、脚本等待端口释放不杀进程）、登记第四处版本硬编码（openapi.yaml info.version）、package_release.sh 入包清单需追加 self_update.sh、SSE 断开时点/版本号形态/文案全角标点/错误码 19→24 等表述统一",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "版本更新需求文档补口径：版本行本身可点击、点击（热区含小圆点）跳转至设置页更新卡，hover 微反馈不占导航项形态，联动 §3.1/§6.2/§7.1",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "新增版本更新实施计划（docs/plans/version-update-impl-plan.md）：需求分析（五功能/边界/十项技术约束/八条验收判据）、任务拆解（A–G 七批次 17 提交，每任务含产出与完成判据）、依赖图与关键路径（A1→D1→D2→E1→G1）及 11 项风险登记、四层测试方案（单测 4 新 5 扩/进程内集成/闸门回归/手动冒烟 9 项/本地 release 模拟演练）、发布流程（含固定名附件自举边界说明）与分层回滚策略；实施侧定稿：G16WEB_UPDATE_BASE 演练通道、枚举校验失败归 type 不扩词表、openapi info.version 动态覆盖防再漂移、自动检查 30s 轮询式调度、.update-check 伴生文件跨重启恢复",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "版本更新实施计划与需求文档按全面审查报告逐项修正：闸门级两项（test_error_codes 错误码全集 19→24 同步、openapi ssot 豁免改「剔除 info.version 严格比对+独立断言」防 pytest 必红）、契约补全（status 字段全集增 supported/proxy、SettingItem.range 增 enum 结构、apply 同步预检 502 回登需求）、验收补全（.update-check 伴生文件与「服务重启超时」文案回登需求、F2 按钮可用性矩阵、F3 强刷三分支与圆点全相映射、mapping 端点对照 33→37）、实现细化（下载重试策略与 httpx read 30s、update-state JSON 仅改 phase、self_update env 继承与端口判据、默认代理落盘无尾换行、1080p 预算含新增参数行）、偏差登记与一致性（30s 生效口径/根脚本自更新行为差异/版本来源措辞/测试先行差异登记、提交数 13→17、R5 下拉四选、需求 §3.7 引用与 §6.4 补登）",
+      "breaking": false,
+      "migration": null
+    }
+  ],
   "in_progress": {
-    "task": "M2 发布流程（changelog-spec §1.6：冻结 unreleased → 追加新行 → progress 清空 → 打 tag g16-v0.2.0）",
-    "note": "列表逻辑修正四项已完成（文档→测试→实现→浏览器自动化全流程，双闸门+Playwright 黑盒通过），发布冻结待用户确认执行"
+    "task": "版本标识与更新功能（v2.1 功能更新）：实施计划与需求文档已按全面审查报告逐项修正（闸门级/契约/验收/实现细化/一致性），下一步按批次 A（openapi.yaml/sse.md 契约 diff）开工",
+    "note": "M2 发布冻结仍待用户确认执行（0.2.0 → 已发布 2.0.0，见 latest_released_version）；本功能更新与发布流程互不阻塞"
   },
   "next_steps": [
-    "M2 发布：确认 CHANGELOG unreleased 完整后冻结 0.2.0（date 带时区偏移、semver=minor）、追加空 unreleased 行、清空 progress unreleased、本地打 tag g16-v0.2.0",
-    "发布后按 roadmap §3 进入 M3（cclib 结果解析与可视化）开工准备"
+    "按 version-update-impl-plan.md §9 顺序实施（契约 diff 先行，D1–D7 已全部定稿）",
+    "M2 后续：M3（cclib 结果解析与可视化）开工准备与本功能更新的排期先后待用户定"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
-    "本项目 git tag 带前缀（g16-v<version>），上游 HyperQueue 已占用 v<version> 命名空间（规范已登记 changelog-spec §1.6）"
+    "运行级设置校验仅支持 integer/number 的 min/max，枚举型 string 参数（update_check_interval）需补校验机制（version-update-spec.md §2.3 / version-update-impl-plan.md C1）"
   ],
-  "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。"
+  "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。2026-09-28 落盘版本标识与更新功能需求文档并完成评审修订（18 项口径对齐）：版本号现状四处硬编码（main.py/_VERSION、system.py health、openapi.yaml info.version、前端无展示）为第一块待拆基石，更新通道复用 package_release.sh 固定名附件与 update.sh 代理约定，httpx/packaging 已在依赖清单零新增。2026-09-28 19:29 实施计划与需求文档按全面审查报告逐项修正（闸门级 2 项：test_error_codes 错误码全集同步与 openapi ssot 豁免口径；契约/验收/实现细化/偏差登记/一致性共 20 余处），计划落盘待批次 A 开工。"
 }
