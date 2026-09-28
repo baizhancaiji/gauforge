@@ -74,7 +74,8 @@
 2. **冻结**：将该行 `status` 改为 `released`，补齐 `version`（按 1.7 判定）、`date`（ISO 8601 精确到分钟并带时区偏移）、`semver`。
 3. 在文件末尾**追加新的空 unreleased 行**：`{"version":null,"status":"unreleased","changes":[]}`。
 4. 更新 `progress.json`：清空 `unreleased`，更新 `latest_released_version`。
-5. 本地打 git tag：`git tag v<version>`（项目历史已与上游 HyperQueue 切割并更名
+5. 更新 `README.md` 开头的当前版本表述，与 `latest_released_version` 保持一致。
+6. 本地打 git tag：`git tag v<version>`（项目历史已与上游 HyperQueue 切割并更名
    GauForge（ADR 0002），上游 `v<version>` 标签不复占用命名空间，标签一律用裸
    `v<version>` 前缀），并提示协作者执行。
 
