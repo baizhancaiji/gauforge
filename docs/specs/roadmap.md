@@ -211,6 +211,11 @@ run/<执行id>/  执行工作区：输入、输出、日志、scratch（chk/rwf 
   缺失补齐默认值、g16 执行环境（见下条）等——**由 WebUI 设置面板确定，不经
   环境变量**；写入 SQLite（元数据唯一事实来源），代码默认值集中在
   `web/src/config.py`。
+- **视图偏好（不进设置面板，2026-09-29 起）**：列表排序规则等前端视图态经
+  `GET/PUT /ui-preferences` 持久化于工作区 SQLite `ui_prefs` 表（键白名单：
+  `queues.sort`/`history.sort`/`archive.sort`，值域见契约），跨重启、更新、
+  断联不回默认值；更新卡代理通道存工作区 `.update-proxy`（与 `update.sh`
+  共用），同受工作区持久化保护。
 - **g16 执行环境（2026-09-22 实测）**：发行目录 `~/g16`（`g16root=$HOME` 的
   `$g16root/g16` 布局），主程序 `~/g16/g16`、`formchk` 同目录；完整环境等价于
   source `~/g16/bsd/g16.profile`（设置 `GAUSS_EXEDIR`/`GAUSS_BSDDIR`/

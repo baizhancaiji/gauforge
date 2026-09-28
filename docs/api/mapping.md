@@ -24,6 +24,7 @@
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
 | 队列列表（id/名称/成员数/状态/回退标记） | GET /api/v1/queues | `queues.changed` → 重拉 |
+| 列表排序下拉（默认序/名称升降序，选择经 ui-preferences 跨会话记忆） | GET·PUT /api/v1/ui-preferences（键 `queues.sort`） | — |
 | 行展开成员概览（任务/分子式/状态/失败归因） | GET /api/v1/queues/{id} | — |
 | 「创建队列」（M2） | POST /api/v1/queues | `queues.changed(created)` |
 | 「编辑队列」（改名/重排/移除成员，M2） | PATCH /api/v1/queues/{id} | `queues.changed(updated)` |
@@ -55,7 +56,7 @@
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
 | 历史表格（终态/归因/耗时/资源/队列归属） | GET /api/v1/history | `history.appended` → 重拉当前页 |
-| 排序切换（提交时间/完成时间/文件名，升降；`sort` 参数） | GET /api/v1/history?sort=… | 同上（重拉当前页） |
+| 排序切换（提交时间/完成时间/文件名，升降；`sort` 参数；选择经 ui-preferences 跨会话记忆，历史页与归档页键分立） | GET /api/v1/history?sort=…；GET·PUT /api/v1/ui-preferences（键 `history.sort`/`archive.sort`） | 同上（重拉当前页） |
 | 行点击 → 详情抽屉（全字段 + input_hash/监控摘要/chk 快照/result_ref） | GET /api/v1/history/{id} | — |
 | 查看输入原文 | GET /api/v1/history/{id}/input | — |
 | 输出预览 / 导出 | GET /api/v1/history/{id}/output | — |
@@ -74,7 +75,8 @@
 | 更新卡状态显示与页面恢复（八态状态机、不渲染卡片标题，v2.1.0） | GET /api/v1/update/status | `update.phase`/`update.progress` |
 | 更新卡「检查更新」（v2.1.0） | POST /api/v1/update/check | `update.phase` |
 | 更新卡「立即更新」（三守卫置灰：running/进行中/源码形态，v2.1.0） | POST /api/v1/update/apply | `update.phase`/`update.progress` |
-| 更新卡代理通道切换（直连/默认代理/自定义 URL，读写 .update-proxy，v2.1.0） | PUT /api/v1/update/proxy | — |
+| 更新卡代理通道切换（直连/默认代理/自定义 URL，读写工作区 .update-proxy，v2.1.0） | PUT /api/v1/update/proxy | — |
+| 队列/历史/归档页排序规则持久化（跨重启/更新/断联不回默认，键 `queues.sort`/`history.sort`/`archive.sort`） | GET·PUT /api/v1/ui-preferences | — |
 
 ## 系统级（跨页）
 
@@ -88,7 +90,8 @@
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 37 个操作均已在上表被至少一个界面元素引用：
+全部 39 个操作均已在上表被至少一个界面元素引用：
 candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(8) ·
-settings(2) · system/events(3) · update(4)。—— 由 A5 walkthrough 逐条核对
-（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施计划 D3）。
+settings(2) · system/events(3) · update(4) · ui-prefs(2)。—— 由 A5
+walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
+计划 D3；ui-prefs(2) 为视图偏好持久化域）。

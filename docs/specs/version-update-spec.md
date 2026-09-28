@@ -52,9 +52,9 @@
   经 `https://github.com/baizhancaiji/gauforge/releases/latest/download/<附件>`
   直取最新 release，**不含版本号、免 GitHub API**。
 - `update.sh` 已实现：代理选择（`--proxy` 走 `https://v4.gh-proxy.org/` /
-  `--no-proxy` 直连，持久化到部署目录 `.update-proxy`）→ 下载 → sha256 校验
-  → 解压覆盖（不触碰 `.venv`/`.update-proxy`）→ `uv pip` 差量刷依赖 →
-  **提示手动重启**（最后一步未自动化，正是本需求补齐的缺口）。
+  `--no-proxy` 直连，持久化到工作区 `.update-proxy`）→ 下载 → sha256 校验
+  → 解压覆盖（不触碰 `.venv`；工作区配置与数据不受影响）→ `uv pip` 差量刷
+  依赖 → **提示手动重启**（最后一步未自动化，正是本需求补齐的缺口）。
 - `update.sh --check` 即"探测最新版本"的现成口径（拉 `VERSION` 附件比对）。
 
 ### 2.3 其他依赖事实
@@ -104,7 +104,7 @@
 
 - 与下方设置卡同宽（880px 容器内等宽），高度自适应；
 - 左侧为内容显示区，右侧按钮区右对齐，「检查更新」「立即更新」两按钮同行；
-- 卡内含代理通道切换（直连 / 默认代理 / 自定义 URL），读写部署目录
+- 卡内含代理通道切换（直连 / 默认代理 / 自定义 URL），读写工作区
   `.update-proxy`（与 `update.sh` 同一份配置），保存即时生效（见 §3.4）；
 - 下载中显示条形进度条：进度条**左侧显示新版本号、右侧显示实时下载速度**；
 - 下载完成后校验/替换/重启阶段**静默进行**，不展示中间步骤细节，
@@ -199,7 +199,7 @@ sha256 校验（失败即中止并如实报错，现有版本分毫未动）
 - **清理**：不清理（常驻最近检查快照），与 `update-state` 的消费后删除
   规则不同。
 
-**代理通道**：检查与下载走部署目录 `.update-proxy` 的通道选择（与
+**代理通道**：检查与下载走工作区 `.update-proxy` 的通道选择（与
 `update.sh` 同一份配置）；设置页更新卡内提供通道切换（直连 / 默认代理 /
 自定义 URL），保存即写回 `.update-proxy`、即时生效（D4 决策：上设置页）。
 自定义值须为合法 URL，非法按既有 `INVALID_REQUEST`（400）拒绝，不新增
@@ -260,7 +260,7 @@ sha256 校验（失败即中止并如实报错，现有版本分毫未动）
 | `GET /update/status` | 最近一次检查结果 + 当前更新流程状态（页面恢复用；跨服务重启经 `update-state` / `.update-check` 标记恢复，见 §3.4） | `{current_version, latest_version?, last_checked_at?, phase, message?, proxy, supported}`；`supported`=当前形态是否支持 WebUI 更新（源码形态 false，前端按钮置灰依据），`proxy` 读自 `.update-proxy` |
 | `POST /update/check` | 触发一次检查（同步返回） | 200 状态对象；网络失败 502 `UPDATE_CHECK_FAILED`（上游不可达语义），文案按 §3.5 |
 | `POST /update/apply` | 触发更新（异步） | 202 受理；409 `UPDATE_BLOCKED_RUNNING`（任务运行中）/ 409 `UPDATE_IN_PROGRESS`（重复触发）/ 409 `UPDATE_UNSUPPORTED`（源码形态）；已最新返回 200 + `phase=up_to_date`（幂等，见 §5 D3）；同步预检失败 502 `UPDATE_CHECK_FAILED`（探测不到远端）/ `UPDATE_DOWNLOAD_FAILED`（拉 `.sha256` 验下载通道失败），预检失败不进异步 |
-| `PUT /update/proxy` | 设置代理通道（D4：写部署目录 `.update-proxy`，即时生效；`{proxy: string \| null}`，null=直连） | 200 状态对象；自定义值非法 400 `INVALID_REQUEST`（既有码） |
+| `PUT /update/proxy` | 设置代理通道（D4：写工作区 `.update-proxy`，即时生效；`{proxy: string \| null}`，null=直连） | 200 状态对象；自定义值非法 400 `INVALID_REQUEST`（既有码） |
 
 新增错误码（登记 openapi.yaml 文件头错误码全集，19 码 → 24 码，SSOT
 登记机制不变）：
@@ -270,8 +270,9 @@ sha256 校验（失败即中止并如实报错，现有版本分毫未动）
 `SettingsResponse` 运行级参数表扩一项（`update_check_interval`，
 string 四值枚举 `daily/weekly/monthly/never`），`config.RUNTIME_SETTINGS`
 与契约逐项对齐的既有纪律不变（`RUNTIME_DEFAULTS` 同步补默认值）。
-代理通道不进运行级参数表：经 `PUT /update/proxy` 走部署目录
-`.update-proxy` 文件，与 `update.sh` 共用配置（D4）。
+代理通道不进运行级参数表：经 `PUT /update/proxy` 走工作区
+`.update-proxy` 文件（`G16WEB_HOME` 下，更新/重装部署目录不丢），与
+`update.sh` 共用配置（D4）。
 
 ### 4.2 SSE（事件全集 13 类 → 15 类）
 
@@ -290,7 +291,7 @@ string 四值枚举 `daily/weekly/monthly/never`），`config.RUNTIME_SETTINGS`
 | D1 | `update_check_interval` 默认值；需求仅列三档，是否需要"从不"档 | 默认 `weekly`；加"从不"档|
 | D2 | 探测通道：VERSION 附件 vs GitHub API `releases/latest` | **VERSION 附件**（免 API 限流、gh-proxy 可代理、与 update.sh 同源；代价是拿不到 notes 正文——需求只要求链接，可拼接） |
 | D3 | `apply` 时已是最新：200 幂等返回 vs 409 错误码 | **200 + `phase=up_to_date`**（"无更新"不是错误） |
-| D4 | 代理通道是否上设置页 | **上**（更新卡内切换，读写部署目录 `.update-proxy` 与 `update.sh` 共用，不进 SQLite 运行级参数） |
+| D4 | 代理通道是否上设置页 | **上**（更新卡内切换，读写工作区 `.update-proxy` 与 `update.sh` 共用，不进 SQLite 运行级参数） |
 | D5 | 发现新版本时设置页之外的全局提示（如侧栏版本号旁小圆点） | 版本行旁 accent 小点（低成本、可后续裁撤）|
 | D6 | 替换+重启执行体：**入库脚本** `scripts/deploy/self_update.sh`（由后端 detached 调用，固化原启动命令/环境/端口） vs 后端内嵌逻辑 | **入库脚本**（符合"脚本纳入版本管理"纪律；后端只做下载/校验/状态机） |
 | D7 | 运行中判定口径：仅 running（staged 不拦） vs running+staged 全拦 | **仅 running**（按需求字面"没有任何任务执行"；staged 随重启对账恢复，roadmap §5） |

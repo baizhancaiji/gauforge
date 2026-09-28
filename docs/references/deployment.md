@@ -67,8 +67,8 @@ nohup uv run python -m web.src.main >>/tmp/g16web-8300.log 2>&1 &
 ./update.sh --check    # 只查询远端最新版本，不下载
 ```
 
-- 代理选择会持久化到部署目录的 `.update-proxy`，之后不带参数沿用上次选择；环境变量 `GAUFORGE_PROXY` 等效于 `--proxy <值>`。
-- 升级只覆盖代码、前端产物与内核二进制，`.venv` 与 `.update-proxy` 不受影响；依赖有变化时脚本会用同一 PyPI 镜像差量重装，完成后**重启服务生效**（先按 development.md §3 停旧进程）。
+- 代理选择会持久化到工作区的 `.update-proxy`（`G16WEB_HOME`，默认 `~/g16web`；WebUI 更新卡与 CLI 共用同一份，服务启动时自动把部署目录旧位置的遗留文件搬迁过来），之后不带参数沿用上次选择；环境变量 `GAUFORGE_PROXY` 等效于 `--proxy <值>`。
+- 升级只覆盖代码、前端产物与内核二进制，`.venv` 不受影响；代理配置存工作区，更新/重装部署目录不丢。依赖有变化时脚本会用同一 PyPI 镜像差量重装，完成后**重启服务生效**（先按 development.md §3 停旧进程）。
 - 数据安全：升级不触碰工作区 `G16WEB_HOME`；大版本升级前建议整体备份该目录。
 
 ### 4.1 更新伴生文件与排障（v2.1.0 起）
