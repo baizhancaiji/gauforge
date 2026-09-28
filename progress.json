@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-28T20:37+08:00",
+  "updated": "2026-09-28T22:30+08:00",
   "latest_released_version": "2.0.0",
   "unreleased": [
     {
@@ -71,20 +71,54 @@
       "summary": "health 与 openapi 元数据改用版本单一事实来源：main.py/system.py 版本硬编码退役，/openapi.json info.version 运行时动态覆盖防再漂移（ssot 测试改剔除字段严格比对+独立断言）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "支持运行级参数枚举值域校验：update_check_interval 四档周期可正常保存，非法值按类型错误随整批拒绝并回显枚举载体",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增更新检查能力：语义化版本严格比较、远端 release 探测与连接超时/无法连接/远端异常的逐字反馈、代理通道与最近检查结果伴生文件落盘恢复",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增更新执行流程：任务运行中/重复触发/源码形态三守卫与同步预检、带实时速度的流式下载进度、sha256 校验中止、中断重试与跨重启状态恢复、下载校验完成后自动接管重启",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增更新域四端点：状态查询/手动检查/触发更新/代理通道设置，部署形态判定驱动前端置灰、非法代理地址拒绝，受理后经 SSE 推送进度与阶段",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增自动检查更新：每日/每周/每月/从不四档凌晨 1:00 锚定调度、错过窗口启动后短时补查、只发现不安装、设置保存即时生效",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "版本标识与更新功能（v2.1 功能更新）：批次 A（契约文档 diff）与批次 B（版本单一事实来源）已落库，下一批批次 C/D 后端 update 域（枚举校验 C1 → 检查服务 D1 → apply D2 → 四端点 D3 → 调度 D4 → SSE 登记 D5）",
+    "task": "版本标识与更新功能（v2.1 功能更新）：批次 C/D 后端 update 域六提交已落库（C1 枚举校验 bfd08243 → D1 检查服务 9105d563 → D2 apply 流程 eac83f07 → D3 四端点 da58a63a → D4 自动检查调度 b7af0f2d → D5 SSE 登记 75fb6647），下一批批次 E 发行链脚本（self_update.sh 与入包清单）",
     "note": "M2 发布冻结仍待用户确认执行（0.2.0 → 已发布 2.0.0，见 latest_released_version）；本功能更新与发布流程互不阻塞"
   },
   "next_steps": [
-    "按 version-update-impl-plan.md 批次 C/D 实施后端 update 域（C1 枚举校验 → D1 检查服务 → D2 apply 流程 → D3 四端点 → D4 自动检查调度 → D5 SSE 事件登记，测试随实现同提交）",
+    "按 version-update-impl-plan.md 批次 E 实施发行链脚本（E1 self_update.sh 自更新接管 → E2 package_release.sh 入包清单），随后批次 F 前端（版本行/更新卡/强刷）",
     "M2 后续：M3（cclib 结果解析与可视化）开工准备与本功能更新的排期先后待用户定"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
-    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
-    "运行级设置校验仅支持 integer/number 的 min/max，枚举型 string 参数（update_check_interval）需补校验机制（version-update-spec.md §2.3 / version-update-impl-plan.md C1）"
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
   "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。2026-09-28 落盘版本标识与更新功能需求文档并完成评审修订（18 项口径对齐）：版本号现状四处硬编码（main.py/_VERSION、system.py health、openapi.yaml info.version、前端无展示）为第一块待拆基石，更新通道复用 package_release.sh 固定名附件与 update.sh 代理约定，httpx/packaging 已在依赖清单零新增。 2026-09-28 批次 A（契约文档 diff）落库：openapi.yaml 预告更新域四端点五错误码与 SettingItem.range 枚举结构（info.version 2.1.0），sse.md 增 update.progress/update.phase（事件全集 15 类、进度 500ms 合并窗口），mapping/roadmap/deployment 对齐更新卡映射、两参数登记与升级链 WebUI 主/CLI 兜底口径；两侧契约生成物（models.py/contract.ts）随契约再生，批次收口闸门通过。 2026-09-28 批次 B 落库：config.APP_VERSION 三级解析链与 bare_version 剥 v 单点、G16WEB_UPDATE_BASE/附件名/超时/默认代理等更新默认值、运行级 update_check_interval（枚举校验待 C1）；health 与 openapi info.version 改单一事实来源并动态覆盖（ssot 豁免定稿：剔除 info.version 严格比对+独立断言）；批次 B 收口全量 363 通过、gen:types 零 diff。"
 }
