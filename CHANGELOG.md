@@ -20,6 +20,9 @@
 - 【web】侧栏新增动态版本行与更新可用圆点：health 单一事实来源下发带 v 形态直接渲染、断线重连重拉校对，版本行可点击（热区含圆点）跳转设置页更新卡，发现新版本时点亮 accent 圆点
 - 【web】设置页新增置顶更新卡：八态显示状态机随 SSE 相翻转、立即更新按任务运行中/源码形态/流程进行中置灰并附逐字文案、下载进度条（左版本号/右实时速度换档）、代理通道三选一切换即时生效与非法 URL 即时校验；设置页同步调整为启动级两项水平两列、运行级枚举参数四选下拉、1080p 一屏预算收敛实测零滚动
 - 【web】前端更新事件消费与服务重启强刷：感知服务重启中后断线转健康检查轮询（500ms、上限 120s），恢复后按版本变化强制刷新、更新失败如实展示原因、重启超时如实提示手动处置；多标签页各自轮询自然跟随
+- 【api】契约增 UI 偏好域 /ui-preferences 两端点与 QueueSortKey/UiPreferences/UiPreferencesUpdate schema（GET 读全量、PUT 合并 upsert 整批校验、不发 SSE 事件），代理通道三处口径改工作区 .update-proxy，contract.ts 与 models.py 生成物再生
+- 【web】UI 偏好域落地：迁移 v2 增 ui_prefs 键值表（工作区 SQLite 持久化、跨重启/更新不回默认）、UiPrefsRepo 与 store 访问器、GET/PUT /ui-preferences 路由（键白名单与值域 all-or-nothing 校验、未知键/越域值 400 INVALID_REQUEST）、config.UI_PREF_KEYS 单一来源
+- 【web】前端列表排序规则持久化：新增 useSortPref 组合式（挂载拉取回填、变更即时单键写回、失败静默降级下次重拉校对、回填期间屏蔽写回），队列页 queues.sort 与历史/归档页 history.sort/archive.sort 分立接入，同组件跨路由复用实例时键切换重拉
 
 ### 变更
 
@@ -28,6 +31,9 @@
 - 【docs】版本更新实施计划与需求文档按全面审查报告逐项修正：闸门级两项（test_error_codes 错误码全集 19→24 同步、openapi ssot 豁免改「剔除 info.version 严格比对+独立断言」防 pytest 必红）、契约补全（status 字段全集增 supported/proxy、SettingItem.range 增 enum 结构、apply 同步预检 502 回登需求）、验收补全（.update-check 伴生文件与「服务重启超时」文案回登需求、F2 按钮可用性矩阵、F3 强刷三分支与圆点全相映射、mapping 端点对照 33→37）、实现细化（下载重试策略与 httpx read 30s、update-state JSON 仅改 phase、self_update env 继承与端口判据、默认代理落盘无尾换行、1080p 预算含新增参数行）、偏差登记与一致性（30s 生效口径/根脚本自更新行为差异/版本来源措辞/测试先行差异登记、提交数 13→17、R5 下拉四选、需求 §3.7 引用与 §6.4 补登）
 - 【docs】更新功能文档链补齐：mapping 增更新卡四行与侧栏版本行映射（端点对照 33→37）、roadmap 登记update_check_interval 与 G16WEB_UPDATE_BASE 及功能更新定位、deployment 升级章节改 WebUI 主/CLI 兜底并补伴生文件排障
 - 【build】install.sh 安装链路镜像化：uv 自动安装器与托管 Python 解释器下载源改经 v4.gh-proxy.org 代理（GitHub 直连不再依赖），代理前缀可用 GAUFORGE_GH_PROXY 覆盖；两链路经本地实测验证
+- 【docs】视图偏好域与代理通道工作区口径文档同步：mapping 端点对照 37→39（队列/历史/归档排序挂 ui-preferences）、version-update-spec 六处 .update-proxy 改工作区、deployment 升级章节注明部署目录旧位置自动搬迁、roadmap §2.5 增视图偏好条目
+- 【web】更新代理配置迁工作区：proxy_path 改 G16WEB_HOME/.update-proxy（更新/重装部署目录不丢）、启动时一次性搬迁部署目录旧位置遗留（幂等、工作区已有则以工作区为准）、write_proxy 补目录创建；迁移三分支测试与既有 proxy 用例随改
+- 【build】update.sh 代理配置改读工作区 ${G16WEB_HOME:-$HOME/g16web}/.update-proxy 与 WebUI 更新卡共用同一份（落盘前 mkdir -p，默认值与后端一致），覆盖范围注释同步
 
 ## v2.0.0（2026-09-28T02:06+08:00 发布，major）
 
