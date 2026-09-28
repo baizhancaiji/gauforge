@@ -32,3 +32,10 @@ web/data/
 .playwright-mcp/
 # codegraph
 .codegraph/
+
+# ===== 更新域伴生文件（部署目录运行时产物，源码形态误跑防污染，v2.1） =====
+.update-check
+.update-proxy
+.update-payload.tar.gz
+update-state
+update.log
