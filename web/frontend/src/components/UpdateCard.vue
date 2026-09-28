@@ -48,9 +48,12 @@ const applyDisabled = computed(
 );
 
 // 显示状态机（§3.2 表逐行）：installing/restarting 静默等待同一文案
-// （后端这两相不携带 message，显示态由前端固定）。
+// （后端这两相不携带 message，显示态由前端固定）；轮询 120s 超时如实提示
+// （§3.4 回登文案，交还用户手动处置）。
 const MSG_RESTARTING = "服务重启中 …";
+const MSG_RESTART_TIMEOUT = "服务重启超时，请手动重启后刷新";
 const head = computed(() => {
+  if (events.updateTimeout) return MSG_RESTART_TIMEOUT;
   if (phase.value === "installing" || phase.value === "restarting")
     return MSG_RESTARTING;
   return localMessage.value ?? events.updateMessage ?? "";

@@ -90,6 +90,55 @@ export const useEventsStore = defineStore("events", () => {
     if (s.latest_version != null) updateVersion.value = s.latest_version;
   }
 
+  // ---- 强制刷新机制（§3.4，v2.1 更新域）----
+  // 仅在已感知 restarting（update.phase(restarting) 翻转）后才具备轮询资格：
+  // SSE 断开转入轮询 /system/health（常规断线走既有重连，避免误刷，R6）。
+  const updateRestartSeen = ref(false);
+  // 轮询超时（120s）如实提示标志（更新卡渲染「服务重启超时」文案）。
+  const updateTimeout = ref(false);
+  // 页面已知服务版本基线（App.vue 经 /system/health 拉取写入），供
+  // 轮询分支判定 version 是否已变化。
+  const appVersion = ref("");
+
+  function markAppVersion(v: string) {
+    appVersion.value = v;
+  }
+
+  const RESTART_POLL_MS = 500;
+  const RESTART_POLL_MAX_MS = 120_000;
+
+  /** restarting 后 SSE 断开的接续：轮询 health 直至服务恢复（上限 120s），
+   * 恢复后查 GET /update/status 三分支——version 已变化 → location.reload()
+   * 强刷加载新前端；phase=failed → 如实展示失败原因、不误报超时；
+   * 两者均非 → 继续轮询至超时。多标签页各自轮询自然跟随。 */
+  async function pollUntilRestarted() {
+    connection.value = "reconnecting";
+    const deadline = Date.now() + RESTART_POLL_MAX_MS;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, RESTART_POLL_MS));
+      try {
+        const { data: health } = await client.GET("/system/health");
+        if (!health) continue;
+        if (appVersion.value && health.version !== appVersion.value) {
+          location.reload(); // 服务恢复且版本已变化：强制刷新
+          return;
+        }
+        const { data: st } = await client.GET("/update/status");
+        if (st?.phase === "failed") {
+          applyUpdateSnapshot(st); // 如实展示失败原因（更新卡渲染）
+          updateRestartSeen.value = false;
+          void connect(); // 服务已恢复：恢复 SSE 常规流
+          return;
+        }
+      } catch {
+        /* 服务未恢复：继续轮询至超时 */
+      }
+    }
+    updateTimeout.value = true; // 超时如实提示（更新卡），交还用户手动处置
+    updateRestartSeen.value = false;
+    void connect();
+  }
+
   // Toast 队列（右上滑入、自动消）。
   const toasts = ref<Toast[]>([]);
 
@@ -261,6 +310,7 @@ export const useEventsStore = defineStore("events", () => {
         updatePhase.value = String(d.phase ?? "idle");
         updateMessage.value = (d.message as string) ?? null;
         if (d.version != null) updateVersion.value = String(d.version);
+        if (d.phase === "restarting") updateRestartSeen.value = true; // 轮询资格（R6）
         break;
       case "update.progress":
         updateProgress.value = {
@@ -353,7 +403,12 @@ export const useEventsStore = defineStore("events", () => {
     } catch {
       /* 断线/中止 */
     } finally {
-      if (!closedByUs && controller?.signal && !controller.signal.aborted) {
+      if (closedByUs || !controller?.signal || controller.signal.aborted) {
+        /* 主动关闭：不重连 */
+      } else if (updateRestartSeen.value && !updateTimeout.value) {
+        // 更新重启上下文中的断线：转轮询等待服务恢复（§3.4 强刷机制）
+        void pollUntilRestarted();
+      } else {
         connection.value = "reconnecting";
         const delay = BACKOFF[Math.min(attempt, BACKOFF.length - 1)];
         attempt++;
@@ -385,7 +440,9 @@ export const useEventsStore = defineStore("events", () => {
     updateMessage,
     updateVersion,
     updateProgress,
+    updateTimeout,
     applyUpdateSnapshot,
+    markAppVersion,
     toasts,
     dirty,
     stalled,

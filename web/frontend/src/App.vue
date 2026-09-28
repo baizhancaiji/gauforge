@@ -46,7 +46,10 @@ const hqText = computed(() => {
 const version = ref("");
 async function pullVersion() {
   const { data } = await client.GET("/system/health");
-  if (data) version.value = data.version;
+  if (data) {
+    version.value = data.version;
+    events.markAppVersion(data.version); // 版本基线（强刷轮询判定 version 变化）
+  }
 }
 watch(
   () => events.connection,
@@ -77,7 +80,12 @@ onMounted(() => {
 
       <!-- 版本行（§3.1）：品牌两行下方，点击（热区含圆点）跳设置页更新卡；
            无导航项形态，hover/focus 微反馈为唯一交互暗示 -->
-      <button class="version-row" type="button" @click="router.push('/settings')">
+      <button
+        class="version-row"
+        type="button"
+        :title="version"
+        @click="router.push('/settings')"
+      >
         <span class="update-dot" :class="{ 'update-dot--on': updateDotOn }" aria-hidden="true"></span>
         <span class="version-text mono">{{ version }}</span>
       </button>
@@ -229,6 +237,9 @@ onMounted(() => {
 }
 .version-text {
   font-size: var(--text-xs); /* 版本号纯拉丁（v 前缀形态），微标签档 */
+  overflow: hidden; /* 源码形态 git describe 长串单行截断，title 补全 */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* D5 accent 圆点：available 点亮、熄灭为中性灰；--dot-size 圆形与
    brand-dot（8px 方形）以位置尺寸区分，不新增颜色语义 */
