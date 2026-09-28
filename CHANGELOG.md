@@ -27,6 +27,7 @@
 - 【docs】版本更新需求文档补口径：版本行本身可点击、点击（热区含小圆点）跳转至设置页更新卡，hover 微反馈不占导航项形态，联动 §3.1/§6.2/§7.1
 - 【docs】版本更新实施计划与需求文档按全面审查报告逐项修正：闸门级两项（test_error_codes 错误码全集 19→24 同步、openapi ssot 豁免改「剔除 info.version 严格比对+独立断言」防 pytest 必红）、契约补全（status 字段全集增 supported/proxy、SettingItem.range 增 enum 结构、apply 同步预检 502 回登需求）、验收补全（.update-check 伴生文件与「服务重启超时」文案回登需求、F2 按钮可用性矩阵、F3 强刷三分支与圆点全相映射、mapping 端点对照 33→37）、实现细化（下载重试策略与 httpx read 30s、update-state JSON 仅改 phase、self_update env 继承与端口判据、默认代理落盘无尾换行、1080p 预算含新增参数行）、偏差登记与一致性（30s 生效口径/根脚本自更新行为差异/版本来源措辞/测试先行差异登记、提交数 13→17、R5 下拉四选、需求 §3.7 引用与 §6.4 补登）
 - 【docs】更新功能文档链补齐：mapping 增更新卡四行与侧栏版本行映射（端点对照 33→37）、roadmap 登记update_check_interval 与 G16WEB_UPDATE_BASE 及功能更新定位、deployment 升级章节改 WebUI 主/CLI 兜底并补伴生文件排障
+- 【build】install.sh 安装链路镜像化：uv 自动安装器与托管 Python 解释器下载源改经 v4.gh-proxy.org 代理（GitHub 直连不再依赖），代理前缀可用 GAUFORGE_GH_PROXY 覆盖；两链路经本地实测验证
 
 ## v2.0.0（2026-09-28T02:06+08:00 发布，major）
 
