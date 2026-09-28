@@ -108,10 +108,34 @@ export interface paths {
         };
         get?: never;
         /**
-         * 设置代理通道（写部署目录 .update-proxy，即时生效）
-         * @description 与 update.sh 共用同一份 .update-proxy 配置（URL 原文落盘且无尾换行）； null=直连。自定义值非法 400 INVALID_REQUEST（既有码，不新增错误码）。
+         * 设置代理通道（写工作区 .update-proxy，即时生效）
+         * @description 与 update.sh 共用同一份工作区 .update-proxy 配置（URL 原文落盘且无尾 换行；启动时自动从部署目录旧位置一次性搬迁）；null=直连。自定义值非法 400 INVALID_REQUEST（既有码，不新增错误码）。
          */
         put: operations["setUpdateProxy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ui-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取前端视图偏好（列表排序规则等）
+         * @description 返回已持久化的全部偏好键值（工作区 SQLite ui_prefs 表，跨重启/更新/ 断联不丢）；无记录键不在响应中，前端各自回落默认值。
+         */
+        get: operations["getUiPreferences"];
+        /**
+         * 写入前端视图偏好（合并 upsert，整批校验）
+         * @description 只更新请求体中出现的键（合并语义），返回合并后全量。键白名单与值域 （queues.sort/history.sort/archive.sort）整批校验：任一未知键或越域值 整批拒绝 400 INVALID_REQUEST（既有码，不新增错误码）。不发 SSE 事件 （视图偏好为单浏览器态，不做跨标签页同步）。
+         */
+        put: operations["updateUiPreferences"];
         post?: never;
         delete?: never;
         options?: never;
@@ -594,6 +618,25 @@ export interface components {
          */
         HistorySort: "submitted_desc" | "finished_desc" | "finished_asc" | "filename_asc" | "filename_desc";
         /**
+         * @description 队列页排序：default 默认序（回退置顶、组内创建时间倒序）； name_asc / name_desc 队列名称 zh-Hans-CN 字典序升/降序。
+         * @enum {string}
+         */
+        QueueSortKey: "default" | "name_asc" | "name_desc";
+        /** @description 前端视图偏好（工作区 SQLite ui_prefs 表；键白名单与值域见 UiPreferencesUpdate） */
+        UiPreferences: {
+            /** @description 偏好键值（仅含已持久化键；值为所选排序枚举串） */
+            prefs: {
+                [key: string]: string;
+            };
+        };
+        /** @description PUT /ui-preferences 请求体（合并 upsert：只更新出现的键） */
+        UiPreferencesUpdate: {
+            /** @description 键白名单与值域：queues.sort ∈ QueueSortKey；history.sort 与 archive.sort ∈ HistorySort（归档页与历史页同组件、键分立各自记忆）。 未知键或越域值整批 400 INVALID_REQUEST。 */
+            prefs: {
+                [key: string]: string;
+            };
+        };
+        /**
          * @description 执行终态归因；succeeded 为 null
          * @enum {string}
          */
@@ -914,7 +957,7 @@ export interface components {
             phase: components["schemas"]["UpdatePhase"];
             /** @description 供前端逐字展示的当前状态/异常文案（§3.2/§3.5 文案表，全角标点） */
             message?: string | null;
-            /** @description 代理通道（读自部署目录 .update-proxy，与 update.sh 共用配置；null=直连；默认代理为 URL 串 https://v4.gh-proxy.org） */
+            /** @description 代理通道（读自工作区 .update-proxy，与 update.sh 共用配置；null=直连；默认代理为 URL 串 https://v4.gh-proxy.org） */
             proxy: string | null;
             /** @description 当前形态是否支持 WebUI 更新（部署目录存在 VERSION + bin/hq 布局；源码形态 false，前端「立即更新」置灰依据） */
             supported: boolean;
@@ -1166,6 +1209,59 @@ export interface operations {
                 };
             };
             /** @description 自定义代理 URL 非法 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    getUiPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 偏好键值全量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UiPreferences"];
+                };
+            };
+        };
+    };
+    updateUiPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UiPreferencesUpdate"];
+            };
+        };
+        responses: {
+            /** @description 合并后偏好键值全量 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UiPreferences"];
+                };
+            };
+            /** @description 未知键或值越域（details.errors 逐项 key/reason） */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -83,6 +83,7 @@ tags:
   - name: executions
   - name: history
   - name: update
+  - name: ui-prefs
 
 components:
   securitySchemes: {}
@@ -114,6 +115,35 @@ components:
         filename_asc / filename_desc 按文件名自然序（不区分大小写、字母先于
         数字）。各排序并列时保持提交倒序（稳定排序），
         全量排序后分页，跨页全局有序。
+    QueueSortKey:
+      type: string
+      enum: [default, name_asc, name_desc]
+      description: >-
+        队列页排序：default 默认序（回退置顶、组内创建时间倒序）；
+        name_asc / name_desc 队列名称 zh-Hans-CN 字典序升/降序。
+    UiPreferences:
+      type: object
+      description: 前端视图偏好（工作区 SQLite ui_prefs 表；键白名单与值域见 UiPreferencesUpdate）
+      required: [prefs]
+      properties:
+        prefs:
+          type: object
+          additionalProperties:
+            type: string
+          description: 偏好键值（仅含已持久化键；值为所选排序枚举串）
+    UiPreferencesUpdate:
+      type: object
+      description: PUT /ui-preferences 请求体（合并 upsert：只更新出现的键）
+      required: [prefs]
+      properties:
+        prefs:
+          type: object
+          additionalProperties:
+            type: string
+          description: >-
+            键白名单与值域：queues.sort ∈ QueueSortKey；history.sort 与
+            archive.sort ∈ HistorySort（归档页与历史页同组件、键分立各自记忆）。
+            未知键或越域值整批 400 INVALID_REQUEST。
     FailureCause:
       type: string
       enum: [manually_stopped, program_error, external_interrupt, predecessor_failed, queue_manually_stopped]
@@ -698,7 +728,7 @@ components:
         proxy:
           type: string
           nullable: true
-          description: 代理通道（读自部署目录 .update-proxy，与 update.sh 共用配置；null=直连；默认代理为 URL 串 https://v4.gh-proxy.org）
+          description: 代理通道（读自工作区 .update-proxy，与 update.sh 共用配置；null=直连；默认代理为 URL 串 https://v4.gh-proxy.org）
         supported:
           type: boolean
           description: 当前形态是否支持 WebUI 更新（部署目录存在 VERSION + bin/hq 布局；源码形态 false，前端「立即更新」置灰依据）
@@ -947,10 +977,11 @@ paths:
     put:
       tags: [update]
       operationId: setUpdateProxy
-      summary: 设置代理通道（写部署目录 .update-proxy，即时生效）
+      summary: 设置代理通道（写工作区 .update-proxy，即时生效）
       description: >-
-        与 update.sh 共用同一份 .update-proxy 配置（URL 原文落盘且无尾换行）；
-        null=直连。自定义值非法 400 INVALID_REQUEST（既有码，不新增错误码）。
+        与 update.sh 共用同一份工作区 .update-proxy 配置（URL 原文落盘且无尾
+        换行；启动时自动从部署目录旧位置一次性搬迁）；null=直连。自定义值非法
+        400 INVALID_REQUEST（既有码，不新增错误码）。
       requestBody:
         required: true
         content:
@@ -966,6 +997,50 @@ paths:
                 $ref: '#/components/schemas/UpdateStatus'
         '400':
           description: 自定义代理 URL 非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  /ui-preferences:
+    get:
+      tags: [ui-prefs]
+      operationId: getUiPreferences
+      summary: 读取前端视图偏好（列表排序规则等）
+      description: >-
+        返回已持久化的全部偏好键值（工作区 SQLite ui_prefs 表，跨重启/更新/
+        断联不丢）；无记录键不在响应中，前端各自回落默认值。
+      responses:
+        '200':
+          description: 偏好键值全量
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiPreferences'
+    put:
+      tags: [ui-prefs]
+      operationId: updateUiPreferences
+      summary: 写入前端视图偏好（合并 upsert，整批校验）
+      description: >-
+        只更新请求体中出现的键（合并语义），返回合并后全量。键白名单与值域
+        （queues.sort/history.sort/archive.sort）整批校验：任一未知键或越域值
+        整批拒绝 400 INVALID_REQUEST（既有码，不新增错误码）。不发 SSE 事件
+        （视图偏好为单浏览器态，不做跨标签页同步）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UiPreferencesUpdate'
+      responses:
+        '200':
+          description: 合并后偏好键值全量
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UiPreferences'
+        '400':
+          description: 未知键或值越域（details.errors 逐项 key/reason）
           content:
             application/json:
               schema:
