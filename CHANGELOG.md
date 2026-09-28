@@ -10,6 +10,8 @@
 - 【docs】新增版本更新实施计划（docs/plans/version-update-impl-plan.md）：需求分析（五功能/边界/十项技术约束/八条验收判据）、任务拆解（A–G 七批次 17 提交，每任务含产出与完成判据）、依赖图与关键路径（A1→D1→D2→E1→G1）及 11 项风险登记、四层测试方案（单测 4 新 5 扩/进程内集成/闸门回归/手动冒烟 9 项/本地 release 模拟演练）、发布流程（含固定名附件自举边界说明）与分层回滚策略；实施侧定稿：G16WEB_UPDATE_BASE 演练通道、枚举校验失败归 type 不扩词表、openapi info.version 动态覆盖防再漂移、自动检查 30s 轮询式调度、.update-check 伴生文件跨重启恢复
 - 【api】契约预告更新域四端点与五错误码（status/check/apply/proxy 与 UPDATE_* 全集 19→24，SettingItem.range 增枚举结构，info.version 同步 2.1.0），前后端契约生成物再生
 - 【api】SSE 契约新增 update.progress 与 update.phase 两事件（事件全集 15 类；下载进度 ~500ms 合并窗口取最新、阶段翻转即推），推送时机表与事件命名域清单同步
+- 【web】版本单一事实来源解析链落地 config（部署目录 VERSION → git describe → CHANGELOG 最新 released 兜底，bare_version 剥 v 单点、失败兜底不炸启动），并登记更新通道默认值与运行级 update_check_interval 四档参数
+- 【web】health 与 openapi 元数据改用版本单一事实来源：main.py/system.py 版本硬编码退役，/openapi.json info.version 运行时动态覆盖防再漂移（ssot 测试改剔除字段严格比对+独立断言）
 
 ### 变更
 
