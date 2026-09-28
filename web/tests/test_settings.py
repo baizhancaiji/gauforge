@@ -93,3 +93,51 @@ def test_put_unrelated_key_skips_pending_snapshot():
     r = client.put("/api/v1/settings", json={"values": {"page_size": 80}})
     assert r.status_code == 200
     assert _events("pending.snapshot") == []
+
+
+# ---------------- 枚举值域校验（C1，update_check_interval 四档） ----------------
+
+def test_put_enum_valid_accepted():
+    """合法枚举值（daily）→ 200 且值反映（含 range.enum 结构回显）。"""
+    r = client.put("/api/v1/settings",
+                   json={"values": {"update_check_interval": "daily"}})
+    assert r.status_code == 200
+    runtime = {m["key"]: m["value"] for m in r.json()["runtime"]}
+    assert runtime["update_check_interval"] == "daily"
+    item = next(m for m in r.json()["runtime"]
+                if m["key"] == "update_check_interval")
+    assert item["range"] == {"enum": ["daily", "weekly", "monthly", "never"]}
+    assert_contract_schema(spec, "PUT", "/settings", 200, r.json())
+
+
+def test_put_enum_miss_classified_as_type():
+    """字符串不落枚举值域（hourly）→ 422 且 reason=type（不扩词表二）。"""
+    r = client.put("/api/v1/settings",
+                   json={"values": {"update_check_interval": "hourly"}})
+    assert r.status_code == 422
+    body = r.json()
+    assert body["error"]["code"] == "SETTING_VALUE_INVALID"
+    errors = body["error"]["details"]["errors"]
+    assert any(item["key"] == "update_check_interval" and item["reason"] == "type"
+               for item in errors)
+
+
+def test_put_enum_wrong_value_type_rejected():
+    """非 string 值（integer）→ 422 且 reason=type（类型检查先于值域）。"""
+    r = client.put("/api/v1/settings",
+                   json={"values": {"update_check_interval": 1}})
+    assert r.status_code == 422
+    errors = r.json()["error"]["details"]["errors"]
+    assert any(item["key"] == "update_check_interval" and item["reason"] == "type"
+               for item in errors)
+
+
+def test_runtime_defaults_include_update_check_interval():
+    """运行级参数表含 update_check_interval 且默认 weekly（B1 落点回归）。"""
+    r = client.get("/api/v1/settings")
+    assert r.status_code == 200
+    item = next(m for m in r.json()["runtime"]
+                if m["key"] == "update_check_interval")
+    assert item["value"] == "weekly"
+    assert item["value_type"] == "string"
+    assert item["effect"] == "immediate"

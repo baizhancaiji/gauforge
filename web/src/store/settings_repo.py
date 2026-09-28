@@ -71,7 +71,11 @@ class SettingsRepo:
 
     @staticmethod
     def _value_error(meta: dict, value: object) -> str | None:
-        """逐项校验：类型错 → "type"，越界 → "range"，通过 → None。"""
+        """逐项校验：类型错 → "type"，越界 → "range"，通过 → None。
+
+        枚举值域（range.enum，string 型参数载体，如 update_check_interval）
+        先于 min/max 判断——string 值不得落入 float() 转换；不命中归 "type"
+        （值域不符语义归类型错，不扩 reason 词表二）。"""
         vtype = meta.get("value_type")
         type_ok = True
         if vtype == "integer":
@@ -86,6 +90,9 @@ class SettingsRepo:
         rng = meta.get("range")
         if rng is None:
             return None
+        enum = rng.get("enum")
+        if enum is not None:
+            return None if value in enum else "type"
         num = float(value)  # type: ignore[arg-type]
         lo, hi = rng["min"], rng["max"]
         if (lo is not None and num < lo) or (hi is not None and num > hi):
