@@ -11,6 +11,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
+import UpdateCard from "@/components/UpdateCard.vue";
 import { useEventsStore } from "@/stores/events";
 
 type SettingsResponse = components["schemas"]["SettingsResponse"];
@@ -58,9 +59,15 @@ const seatLimitItem = computed(() =>
 
 function rangeText(s: SettingItem): string {
   if (!s.range) return "";
+  if (s.range.enum?.length) return s.range.enum.join(" / ");
   const min = s.range.min ?? "—";
   const max = s.range.max ?? "—";
   return `${min}–${max}`;
+}
+
+/** 枚举值域（string 型参数载体，如 update_check_interval 四档）→ 下拉渲染。 */
+function enumOf(s: SettingItem): string[] {
+  return s.range?.enum ?? [];
 }
 
 function initForm(items: SettingItem[]) {
@@ -153,7 +160,10 @@ async function doSave() {
 <template>
   <div class="settings">
     <div v-if="settings" class="s-wrap">
-      <!-- 启动级只读（锁定 + 值 mono + 环境变量） -->
+      <!-- 更新卡（§3.2）：置顶，无标题，左内容右按钮 -->
+      <UpdateCard />
+
+      <!-- 启动级只读（锁定 + 值 mono + 环境变量；§3.7 两项水平一行两列） -->
       <section class="group">
         <h2 class="group-title mono">启动级参数</h2>
         <div class="reads">
@@ -176,7 +186,15 @@ async function doSave() {
         <div class="form-grid">
           <div v-for="s in runtime" :key="s.key" class="field" :class="{ 'has-err': errors[s.key] }">
             <label :for="s.key">{{ s.description }}</label>
+            <select
+              v-if="enumOf(s).length"
+              :id="s.key"
+              v-model="form[s.key]"
+            >
+              <option v-for="opt in enumOf(s)" :key="opt" :value="opt">{{ opt }}</option>
+            </select>
             <input
+              v-else
               :id="s.key"
               :type="s.value_type === 'integer' || s.value_type === 'number' ? 'number' : 'text'"
               v-model="form[s.key]"
@@ -184,10 +202,10 @@ async function doSave() {
             />
             <p class="hint">
               <span class="key mono">{{ s.key }}</span>
-              <span v-if="rangeText(s)" class="range">范围 {{ rangeText(s) }}</span>
+              <span v-if="rangeText(s)" class="range">{{ enumOf(s).length ? "取值" : "范围" }} {{ rangeText(s) }}</span>
+              <!-- 生效语义：中性 plain 徽标（§4.6）并入 hint 行（1080p 一屏预算） -->
+              <span class="eff mono">{{ effectLabel[s.effect] }}</span>
             </p>
-            <!-- 生效语义：中性 plain 徽标（§4.6） -->
-            <span class="eff mono">{{ effectLabel[s.effect] }}</span>
             <p v-if="errors[s.key]" class="err mono">值越界或非法：{{ errors[s.key] }}</p>
           </div>
         </div>
@@ -245,22 +263,24 @@ async function doSave() {
 .s-wrap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-3); /* 1080p 一屏预算（§3.7）：更新卡 + 两卡 + 保存条收敛 */
 }
 .group {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-raised);
-  padding: var(--space-5);
+  padding: var(--space-4);
 }
 .group-title {
   font-size: var(--text-sm);
   font-weight: 500; /* 文案含中文，不加字距 */
   color: var(--text-faint);
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-2);
 }
+/* 启动级只读：两项水平一行两列（§3.7） */
 .reads {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
 }
 .read dt {
@@ -294,7 +314,7 @@ async function doSave() {
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-5);
+  gap: var(--space-3);
 }
 .field {
   display: flex;
@@ -305,11 +325,13 @@ async function doSave() {
   font-size: var(--text-sm);
   color: var(--text-primary);
 }
-.field input {
-  height: 34px;
+.field input,
+.field select {
+  height: var(--control-height);
 }
 .hint {
   font-size: var(--text-sm);
+  line-height: 1.25; /* 1080p 一屏预算：11 项两列 hint 行高收敛 */
   color: var(--text-secondary);
   display: flex;
   align-items: baseline;
@@ -323,11 +345,10 @@ async function doSave() {
 .hint .range {
   color: var(--text-faint);
 }
-/* 生效语义徽标：中性 plain 档（§4.6，不使用状态色） */
+/* 生效语义徽标：中性 plain 档（§4.6，不使用状态色）；hint 行内联（省高） */
 .eff {
-  align-self: flex-start;
   font-size: var(--text-sm); /* 生效语义含中文 */
-  padding: 1px var(--space-2);
+  padding: 0 var(--space-2);
   border-radius: var(--r-sm);
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--text-secondary) 10%, transparent);

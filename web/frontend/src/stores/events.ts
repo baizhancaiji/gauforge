@@ -67,8 +67,28 @@ export const useEventsStore = defineStore("events", () => {
   });
 
   // 更新流程相（update.phase 载荷，v2.1 更新域）：侧栏圆点与设置页
-  // 更新卡的联动状态源；载荷的 message/version 由更新卡按需消费。
+  // 更新卡的联动状态源；message/version 随翻转载荷更新（available 的
+  // 目标版本、failed 的异常文案）。
   const updatePhase = ref<string>("idle");
+  const updateMessage = ref<string | null>(null);
+  const updateVersion = ref<string | null>(null);
+  // 下载实时进度（update.progress，~500ms 合并窗口取最新）。
+  const updateProgress = ref<{
+    version: string;
+    percent: number;
+    speed_bps: number;
+  } | null>(null);
+
+  /** GET /update/status 快照灌入（设置页挂载时恢复现场，不触发重查）。 */
+  function applyUpdateSnapshot(s: {
+    phase: string;
+    message?: string | null;
+    latest_version?: string | null;
+  }) {
+    updatePhase.value = s.phase;
+    updateMessage.value = s.message ?? null;
+    if (s.latest_version != null) updateVersion.value = s.latest_version;
+  }
 
   // Toast 队列（右上滑入、自动消）。
   const toasts = ref<Toast[]>([]);
@@ -239,6 +259,15 @@ export const useEventsStore = defineStore("events", () => {
         break;
       case "update.phase":
         updatePhase.value = String(d.phase ?? "idle");
+        updateMessage.value = (d.message as string) ?? null;
+        if (d.version != null) updateVersion.value = String(d.version);
+        break;
+      case "update.progress":
+        updateProgress.value = {
+          version: String(d.version ?? ""),
+          percent: Number(d.percent ?? 0),
+          speed_bps: Number(d.speed_bps ?? 0),
+        };
         break;
       case "settings.updated":
         // 设置变更通知（多标签页同步，sse.md §2）：设置页 watch 后重拉。
@@ -353,6 +382,10 @@ export const useEventsStore = defineStore("events", () => {
     pending,
     hq,
     updatePhase,
+    updateMessage,
+    updateVersion,
+    updateProgress,
+    applyUpdateSnapshot,
     toasts,
     dirty,
     stalled,
