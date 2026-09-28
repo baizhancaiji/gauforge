@@ -69,8 +69,12 @@
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
 | 启动级只读区（锁定图标 + 值） | GET /api/v1/settings | — |
-| 运行级分组表单（生效语义徽标） | GET /api/v1/settings | — |
+| 运行级分组表单（生效语义徽标；自动检查更新周期 update_check_interval 四选，v2.1.0） | GET /api/v1/settings | — |
 | 「保存」 | PUT /api/v1/settings | `settings.updated` |
+| 更新卡状态显示与页面恢复（八态状态机、不渲染卡片标题，v2.1.0） | GET /api/v1/update/status | `update.phase`/`update.progress` |
+| 更新卡「检查更新」（v2.1.0） | POST /api/v1/update/check | `update.phase` |
+| 更新卡「立即更新」（三守卫置灰：running/进行中/源码形态，v2.1.0） | POST /api/v1/update/apply | `update.phase`/`update.progress` |
+| 更新卡代理通道切换（直连/默认代理/自定义 URL，读写 .update-proxy，v2.1.0） | PUT /api/v1/update/proxy | — |
 
 ## 系统级（跨页）
 
@@ -80,9 +84,11 @@
 | SSE 实时事件订阅 | GET /api/v1/events | 全事件 |
 | 侧栏电源灯（服务在线态） | — | `system.heartbeat` / `system.snapshot` |
 | 侧栏 HQ 连接状态行（LED + 已连接/未连接/未启用） | — | `hq.status` / `system.snapshot`（`hq` 字段） |
+| 侧栏品牌区版本行（含更新可用 accent 小圆点，点击跳设置页更新卡；v2.1.0） | GET /api/v1/system/health（版本号）；GET /api/v1/update/status（圆点明灭恢复） | `update.phase` |
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 33 个操作均已在上表被至少一个界面元素引用：
+全部 37 个操作均已在上表被至少一个界面元素引用：
 candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(8) ·
-settings(2) · system/events(3)。—— 由 A5 walkthrough 逐条核对。
+settings(2) · system/events(3) · update(4)。—— 由 A5 walkthrough 逐条核对
+（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施计划 D3）。

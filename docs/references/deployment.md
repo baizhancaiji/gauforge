@@ -55,6 +55,8 @@ nohup uv run python -m web.src.main >>/tmp/g16web-8300.log 2>&1 &
 
 ## 4. 升级
 
+**WebUI 更新为主路径**（v2.1.0 起）：登录工作台 → 设置页顶部更新卡 → 「检查更新」/「立即更新」，下载进度实时显示，替换后服务自动重启、前端自动强刷，全程无需碰终端；代理通道（直连/默认代理/自定义 URL）也在卡内切换，与 CLI 共用同一份 `.update-proxy`。以下 CLI 脚本为**兜底路径**（WebUI 更新不可用、更新中断恢复或需人工介入时使用）：
+
 ```bash
 ./update.sh            # 直连 GitHub 拉最新包
 ./update.sh --proxy    # 走默认镜像代理 https://v4.gh-proxy.org/
@@ -66,6 +68,16 @@ nohup uv run python -m web.src.main >>/tmp/g16web-8300.log 2>&1 &
 - 代理选择会持久化到部署目录的 `.update-proxy`，之后不带参数沿用上次选择；环境变量 `GAUFORGE_PROXY` 等效于 `--proxy <值>`。
 - 升级只覆盖代码、前端产物与内核二进制，`.venv` 与 `.update-proxy` 不受影响；依赖有变化时脚本会用同一 PyPI 镜像差量重装，完成后**重启服务生效**（先按 development.md §3 停旧进程）。
 - 数据安全：升级不触碰工作区 `G16WEB_HOME`；大版本升级前建议整体备份该目录。
+
+### 4.1 更新伴生文件与排障（v2.1.0 起）
+
+WebUI 更新在部署目录留下三份伴生文件，排障先看它们：
+
+- `update.log`：更新执行日志（下载/校验/替换/重启全过程追加写入），更新失败先查此文件；
+- `update-state`：更新流程标记（JSON：`target_version`/`phase`/`started_at`）——更新中断后服务启动会如实提示失败，恢复路径即用上方 CLI `update.sh` 重跑；`done`/`failed` 恢复态被状态接口消费后自动删除；
+- `.update-check`：最近一次检查结果快照（常驻不清理），供更新卡跨服务重启恢复与自动检查补查判定。
+
+**行为差异注明**：三个根脚本（`install.sh`/`update.sh`/`self_update.sh`）的部署副本自更新**仅 WebUI 更新路径**（`self_update.sh` 接管重启前刷新）会执行；CLI `update.sh` 只更新代码与产物、不更新脚本自身（含其自身），脚本修复随 WebUI 更新或重新安装触达。
 
 ## 5. 回退
 
