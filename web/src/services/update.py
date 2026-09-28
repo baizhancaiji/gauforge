@@ -181,6 +181,10 @@ def record_check(*, success: bool, latest_version: str | None = None,
                                   encoding="utf-8")
 
 
+# 更新载荷伴生文件：校验通过后由流水线移交部署目录，self_update.sh
+# 解压覆盖后清理（不进契约；deployment.md 伴生文件族补充）。
+PAYLOAD_NAME = ".update-payload.tar.gz"
+
 # ---------------- update-state（apply 流程标记，§3.4 落盘规则） ----------------
 
 def state_path() -> Path:
@@ -467,7 +471,10 @@ class UpdateService:
 
     def _pipeline(self, target: str, client: httpx.Client | None,
                   proxy: str | None, chunk_size: int = 65536) -> None:
-        """下载（mktemp，不落部署目录）→ sha256 校验 → 拉起脚本 + 自退。"""
+        """下载（mktemp，不落部署目录）→ sha256 校验 → 拉起脚本 + 自退。
+
+        校验通过后 tar 移交部署目录伴生文件 ``.update-payload.tar.gz``
+        （self_update.sh 解压覆盖后清理）；下载临时目录在移交后清空。"""
         tmp_dir = Path(tempfile.mkdtemp(prefix="g16web-update-"))
         try:
             sha_bytes = fetch_asset_bytes(
@@ -475,6 +482,9 @@ class UpdateService:
             tar_path = self._download_with_retry(target, proxy, client,
                                                  tmp_dir, chunk_size)
             self._verify_sha256(sha_bytes, tar_path)
+            # 校验通过：载荷移交部署目录伴生文件（在 finally 清临时目录前）
+            shutil.move(str(tar_path),
+                        str(config.PROJECT_ROOT / PAYLOAD_NAME))
         except CheckFailed as exc:
             self.transition("failed", message=exc.message)
             return
@@ -578,7 +588,7 @@ class UpdateService:
           重定向部署目录 update.log，env 经继承沿用原进程环境；
         - 不杀进程：脚本自行等待父进程退出与端口释放后接管。"""
         self.transition("restarting")
-        script = config.PROJECT_ROOT / "scripts" / "deploy" / "self_update.sh"
+        script = config.PROJECT_ROOT / "self_update.sh"
         log_path = config.PROJECT_ROOT / "update.log"
         with log_path.open("ab") as log:
             self._popen(["bash", str(script)], cwd=str(config.PROJECT_ROOT),

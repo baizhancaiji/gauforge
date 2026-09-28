@@ -244,13 +244,14 @@ def test_apply_accepted_full_pipeline(deploy_root, no_launch):
     assert all("speed_bps" in p and "ts" in p for p in progress)
     # detached 拉起参数：列表参数、部署目录 cwd、脱离进程组、日志重定向
     popen = no_launch["popen"]
-    assert popen["args"] == ["bash", str(deploy_root / "scripts" / "deploy"
-                                         / "self_update.sh")]
+    assert popen["args"] == ["bash", str(deploy_root / "self_update.sh")]
     assert popen["kwargs"]["cwd"] == str(deploy_root)
     assert popen["kwargs"]["start_new_session"] is True
     assert popen["kwargs"]["stdin"] == subprocess.DEVNULL
     assert popen["kwargs"]["stdout"] is not None
     assert no_launch["terminate"] == 1
+    # 校验通过的载荷已移交部署目录伴生文件（脚本解压覆盖后清理）
+    assert (deploy_root / upd.PAYLOAD_NAME).read_bytes() == b"PAYLOAD"
     # 流水线结束后 update-state 翻至 restarting（done 由脚本收尾置写）
     state = json.loads(
         (deploy_root / "update-state").read_text(encoding="utf-8"))
