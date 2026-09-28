@@ -16,10 +16,11 @@ from .seats_repo import SeatsRepo
 from .settings_repo import SettingsRepo
 from .sse_repo import SseSeqRepo
 from .tasks_repo import TasksRepo
+from .ui_prefs_repo import UiPrefsRepo
 
 __all__ = ["Database", "run_migrations", "get_db", "set_db", "reset_db",
            "SettingsRepo", "TasksRepo", "QueuesRepo", "SeatsRepo",
-           "ExecutionsRepo", "SseSeqRepo"]
+           "ExecutionsRepo", "SseSeqRepo", "UiPrefsRepo"]
 
 _db: Database | None = None
 _lock = threading.Lock()
@@ -74,3 +75,7 @@ def executions() -> ExecutionsRepo:
 
 def sse_seq() -> SseSeqRepo:
     return SseSeqRepo(get_db())
+
+
+def ui_prefs() -> UiPrefsRepo:
+    return UiPrefsRepo(get_db())

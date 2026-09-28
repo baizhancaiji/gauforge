@@ -30,6 +30,7 @@ from .routers import (
     queues,
     settings,
     system,
+    ui_prefs,
     update,
 )
 
@@ -41,7 +42,7 @@ def build_app() -> FastAPI:
                   openapi_url="/openapi.json")
 
     for r in (system, settings, candidates, queues, pending, executions,
-              history, update, events):
+              history, update, ui_prefs, events):
         app.include_router(r.router, prefix="/api/v1")
 
     # ---------- 契约 SSOT：/openapi.json 回读落盘 yaml ----------

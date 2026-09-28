@@ -41,12 +41,12 @@ def repos(db):
 
 def test_migration_sets_version(db):
     row = db.one("SELECT version FROM schema_version")
-    assert row is not None and row["version"] == 1
+    assert row is not None and row["version"] == 2  # v2: ui_prefs 表
 
 
 def test_migration_idempotent(db):
     run_migrations(db)  # 重复执行不报错、版本不变
-    assert db.one("SELECT version FROM schema_version")["version"] == 1
+    assert db.one("SELECT version FROM schema_version")["version"] == 2
 
 
 def test_wal_mode_file_db(db):

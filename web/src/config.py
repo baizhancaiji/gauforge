@@ -110,6 +110,17 @@ SETTINGS_CATALOG: dict[str, dict] = {
     m["key"]: m for m in [*STARTUP_SETTINGS, *RUNTIME_SETTINGS]
 }
 
+# ---------- UI 偏好（前端视图态持久化键值域；工作区 SQLite ui_prefs 表） ----------
+# 键白名单 + 值域单一来源（GET/PUT /ui-preferences 整批校验用），与契约
+# UiPreferencesUpdate 描述对齐；未知键/越域值整批拒绝（INVALID_REQUEST）。
+_HISTORY_SORTS = frozenset({"submitted_desc", "finished_desc", "finished_asc",
+                            "filename_asc", "filename_desc"})
+UI_PREF_KEYS: dict[str, frozenset[str]] = {
+    "queues.sort": frozenset({"default", "name_asc", "name_desc"}),
+    "history.sort": _HISTORY_SORTS,
+    "archive.sort": _HISTORY_SORTS,  # 归档页与历史页同组件、键分立各自记忆
+}
+
 # 仓库根（部署形态=部署目录；伴生文件/形态判定/hq 定位的基准）。
 # 注意三层 parent：CONTRACT_PATH=<仓库根>/docs/api/openapi.yaml。
 PROJECT_ROOT = CONTRACT_PATH.parent.parent.parent

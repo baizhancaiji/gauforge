@@ -92,6 +92,16 @@ INSERT INTO sse_seq (counter) SELECT 0 WHERE NOT EXISTS
 
 MIGRATIONS: dict[int, str] = {1: SCHEMA_V1}
 
+# v2（2026-09-29）：ui_prefs 表——前端视图偏好键值（列表排序规则等，
+# GET/PUT /ui-preferences），工作区持久化、跨重启/更新不回默认值。
+SCHEMA_V2 = """
+CREATE TABLE IF NOT EXISTS ui_prefs (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+"""
+MIGRATIONS[2] = SCHEMA_V2
+
 
 def run_migrations(db: Database) -> None:
     with db.tx() as conn:
