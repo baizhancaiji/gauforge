@@ -13,7 +13,8 @@
 #   - 分页信封 {"items":[],"page":1,"page_size":50,"total":123}，offset 式。
 #   - 错误结构统一 {"error":{"code","message","details"}}，code 为 SCREAMING_SNAKE_CASE 枚举。
 #
-# 错误码全集（19 码，SSOT 载体，M2 A4 定稿；m0-plan §2.1.1 为历史原稿不再现行）：
+# 错误码全集（24 码，SSOT 载体；M2 A4 定稿 19 码 + 版本更新功能 v2.1.0 增补 5 码。
+# m0-plan §2.1.1 为历史原稿不再现行）：
 #   ErrorBody.code 取值以本清单为准，实现集合 ⊆ 清单（test_error_codes.py 静态闸门）。
 #   - INVALID_REQUEST — 400：请求形态错误（路径/参数级，如 molecule 节或未知节名编辑）
 #   - NOT_FOUND — 404：资源不存在
@@ -40,6 +41,14 @@
 #   - INVALID_MEMBERS — 422：创建队列时成员不存在或不在候选列表（M1 私有码补录，保留现名）
 #   - TASK_IN_FLIGHT — 409：在途任务内容锁定（seat_task 形态编辑拒绝）
 #   - TASK_FINISHED — 409：终态条目不可变（历史形态编辑拒绝）
+#   - UPDATE_BLOCKED_RUNNING — 409：任务运行中禁止更新（仅 running 拦截；staged
+#     随重启对账自然恢复，不拦截）
+#   - UPDATE_IN_PROGRESS — 409：更新流程进行中重复触发
+#   - UPDATE_UNSUPPORTED — 409：源码运行形态不支持 WebUI 更新（提示走 git 更新）
+#   - UPDATE_CHECK_FAILED — 502：探测远端最新版本失败（连接超时/DNS·连接失败/
+#     HTTP 非 200，上游不可达语义；检查端点与 apply 同步预检共用）
+#   - UPDATE_DOWNLOAD_FAILED — 502：apply 同步预检拉 .sha256 验下载通道失败
+#     （不进异步；下载中段失败走 phase=failed 如实反馈，不经此码）
 #
 # 词表一：导入 per-file reason（files[].error 值域）
 #   INVALID_FILENAME / UNSUPPORTED_EXTENSION / INVALID_ENCODING /
@@ -53,7 +62,7 @@
 openapi: 3.0.3
 info:
   title: G16 Web 工作台 API
-  version: 0.1.0
+  version: 2.1.0
   description: |
     面向 WSL2 单机的 Gaussian 计算化学工作台 REST API。
     覆盖六类页面：候选任务 / 队列 / 待执行 / 执行中 / 历史 / 设置。
@@ -73,6 +82,7 @@ tags:
   - name: pending
   - name: executions
   - name: history
+  - name: update
 
 components:
   securitySchemes: {}
@@ -128,7 +138,7 @@ components:
           properties:
             code:
               type: string
-              description: SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，19 码 + 两张 reason 词表）
+              description: SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，24 码 + 两张 reason 词表）
             message:
               type: string
             details:
@@ -612,6 +622,14 @@ components:
             max:
               type: number
               nullable: true
+            enum:
+              type: array
+              nullable: true
+              items:
+                type: string
+              description: 枚举值域（string 型参数载体，如 update_check_interval 的
+                daily/weekly/monthly/never 四档）；非枚举参数缺省。校验不命中归
+                type 类错误（不扩 reason 词表）
         editable:
           type: boolean
           description: false=启动级只读
@@ -626,7 +644,9 @@ components:
 
     SettingsResponse:
       type: object
-      description: GET/PUT /settings 响应（两级分组）
+      description: GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期
+        update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认
+        weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装）
       required: [startup, runtime]
       properties:
         startup:
@@ -646,6 +666,51 @@ components:
         values:
           type: object
           additionalProperties: true
+
+    # ---------------- 更新域（v2.1.0 功能更新） ----------------
+    UpdatePhase:
+      type: string
+      enum: [idle, checking, available, up_to_date, downloading, installing, restarting, done, failed]
+      description: 更新流程九相（与设置页更新卡显示状态机一一对应；available 即「发现新版本」）
+    UpdateStatus:
+      type: object
+      description: 更新域状态对象（GET /update/status 与 check/apply/proxy 响应共用）
+      required: [current_version, phase, proxy, supported]
+      properties:
+        current_version:
+          type: string
+          description: 当前版本（带 v 前缀形态，如 v2.1.0；与 /system/health version 同源）
+        latest_version:
+          type: string
+          nullable: true
+          description: 最近一次检查发现的远端版本（带 v 前缀）；从未检查成功过为 null
+        last_checked_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 最近一次检查结束时刻（含失败；跨服务重启经部署目录 .update-check 恢复）
+        phase:
+          $ref: '#/components/schemas/UpdatePhase'
+        message:
+          type: string
+          nullable: true
+          description: 供前端逐字展示的当前状态/异常文案（§3.2/§3.5 文案表，全角标点）
+        proxy:
+          type: string
+          nullable: true
+          description: 代理通道（读自部署目录 .update-proxy，与 update.sh 共用配置；null=直连；默认代理为 URL 串 https://v4.gh-proxy.org）
+        supported:
+          type: boolean
+          description: 当前形态是否支持 WebUI 更新（部署目录存在 VERSION + bin/hq 布局；源码形态 false，前端「立即更新」置灰依据）
+    UpdateProxyRequest:
+      type: object
+      description: PUT /update/proxy 请求体
+      required: [proxy]
+      properties:
+        proxy:
+          type: string
+          nullable: true
+          description: 代理 URL（null=直连；自定义值须为合法 URL，非法 400 INVALID_REQUEST）
 
     CandidateCreate:
       type: object
@@ -796,6 +861,115 @@ paths:
           $ref: '#/components/responses/Error'
         '422':
           $ref: '#/components/responses/Error'
+
+  /update/status:
+    get:
+      tags: [update]
+      operationId: getUpdateStatus
+      summary: 最近检查结果与更新流程状态（页面恢复用）
+      description: >-
+        更新卡进入/刷新页面时拉取恢复，不触发重查。跨服务重启经部署目录两份伴生
+        文件恢复：update-state（apply 流程标记；done/failed 恢复态被本端点消费后
+        删除，下次成功检查兜底清理）与 .update-check（最近检查结果
+        latest_version/last_checked_at，常驻不清理）。
+      responses:
+        '200':
+          description: 状态对象
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStatus'
+
+  /update/check:
+    post:
+      tags: [update]
+      operationId: checkUpdate
+      summary: 触发一次检查（同步返回）
+      description: >-
+        探测远端 releases/latest/download/VERSION 附件（与 update.sh --check 同源，
+        免 GitHub API 限流），语义化版本逐段比较（剥 v 前缀，仅严格更大算有更新）。
+        自动检查（凌晨 1:00 锚定档期，运行级参数 update_check_interval）与本端点
+        共用实现，只发现不安装。
+      responses:
+        '200':
+          description: 检查结果状态对象
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStatus'
+        '502':
+          description: 探测失败（连接超时/无法连接/远端返回异常，UPDATE_CHECK_FAILED）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  /update/apply:
+    post:
+      tags: [update]
+      operationId: applyUpdate
+      summary: 触发更新（异步执行；三守卫 + 同步预检）
+      description: >-
+        守卫：存在 running 执行时 409 UPDATE_BLOCKED_RUNNING（仅 running 拦截，
+        staged 随重启对账恢复）；流程进行中 409 UPDATE_IN_PROGRESS；源码形态
+        409 UPDATE_UNSUPPORTED。已最新 200 幂等返回 phase=up_to_date（无更新不是
+        错误）。有更新先同步预检：探测远端 VERSION 失败 → 502 UPDATE_CHECK_FAILED；
+        拉 .sha256 验下载通道失败 → 502 UPDATE_DOWNLOAD_FAILED（预检失败均不进
+        异步、不动任何文件）。预检通过 202 受理，下载/校验/替换/重启转后台执行，
+        进度经 SSE update.progress/update.phase 推送。
+      responses:
+        '200':
+          description: 已最新（幂等，phase=up_to_date）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStatus'
+        '202':
+          description: 已受理（更新流程后台执行）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStatus'
+        '409':
+          description: 守卫拒绝（UPDATE_BLOCKED_RUNNING / UPDATE_IN_PROGRESS / UPDATE_UNSUPPORTED）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+        '502':
+          description: 同步预检失败（UPDATE_CHECK_FAILED / UPDATE_DOWNLOAD_FAILED）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
+
+  /update/proxy:
+    put:
+      tags: [update]
+      operationId: setUpdateProxy
+      summary: 设置代理通道（写部署目录 .update-proxy，即时生效）
+      description: >-
+        与 update.sh 共用同一份 .update-proxy 配置（URL 原文落盘且无尾换行）；
+        null=直连。自定义值非法 400 INVALID_REQUEST（既有码，不新增错误码）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProxyRequest'
+      responses:
+        '200':
+          description: 设置后状态对象
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateStatus'
+        '400':
+          description: 自定义代理 URL 非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorBody'
 
   /candidates:
     get:

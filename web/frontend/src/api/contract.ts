@@ -39,6 +39,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/update/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 最近检查结果与更新流程状态（页面恢复用）
+         * @description 更新卡进入/刷新页面时拉取恢复，不触发重查。跨服务重启经部署目录两份伴生 文件恢复：update-state（apply 流程标记；done/failed 恢复态被本端点消费后 删除，下次成功检查兜底清理）与 .update-check（最近检查结果 latest_version/last_checked_at，常驻不清理）。
+         */
+        get: operations["getUpdateStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/update/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 触发一次检查（同步返回）
+         * @description 探测远端 releases/latest/download/VERSION 附件（与 update.sh --check 同源， 免 GitHub API 限流），语义化版本逐段比较（剥 v 前缀，仅严格更大算有更新）。 自动检查（凌晨 1:00 锚定档期，运行级参数 update_check_interval）与本端点 共用实现，只发现不安装。
+         */
+        post: operations["checkUpdate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/update/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 触发更新（异步执行；三守卫 + 同步预检）
+         * @description 守卫：存在 running 执行时 409 UPDATE_BLOCKED_RUNNING（仅 running 拦截， staged 随重启对账恢复）；流程进行中 409 UPDATE_IN_PROGRESS；源码形态 409 UPDATE_UNSUPPORTED。已最新 200 幂等返回 phase=up_to_date（无更新不是 错误）。有更新先同步预检：探测远端 VERSION 失败 → 502 UPDATE_CHECK_FAILED； 拉 .sha256 验下载通道失败 → 502 UPDATE_DOWNLOAD_FAILED（预检失败均不进 异步、不动任何文件）。预检通过 202 受理，下载/校验/替换/重启转后台执行， 进度经 SSE update.progress/update.phase 推送。
+         */
+        post: operations["applyUpdate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/update/proxy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 设置代理通道（写部署目录 .update-proxy，即时生效）
+         * @description 与 update.sh 共用同一份 .update-proxy 配置（URL 原文落盘且无尾换行）； null=直连。自定义值非法 400 INVALID_REQUEST（既有码，不新增错误码）。
+         */
+        put: operations["setUpdateProxy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/candidates": {
         parameters: {
             query?: never;
@@ -530,7 +610,7 @@ export interface components {
         EffectKind: "immediate" | "immediate_retroactive" | "new_submissions" | "on_restart";
         ErrorBody: {
             error: {
-                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，19 码 + 两张 reason 词表） */
+                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，24 码 + 两张 reason 词表） */
                 code: string;
                 message: string;
                 /** @description 错误附加信息（如越界值、逐字段错误数组） */
@@ -794,6 +874,8 @@ export interface components {
             range?: {
                 min?: number | null;
                 max?: number | null;
+                /** @description 枚举值域（string 型参数载体，如 update_check_interval 的 daily/weekly/monthly/never 四档）；非枚举参数缺省。校验不命中归 type 类错误（不扩 reason 词表） */
+                enum?: string[] | null;
             } | null;
             /** @description false=启动级只读 */
             editable: boolean;
@@ -802,7 +884,7 @@ export interface components {
             env_var?: string | null;
             description?: string;
         };
-        /** @description GET/PUT /settings 响应（两级分组） */
+        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） */
         SettingsResponse: {
             startup: components["schemas"]["SettingItem"][];
             runtime: components["schemas"]["SettingItem"][];
@@ -812,6 +894,35 @@ export interface components {
             values: {
                 [key: string]: unknown;
             };
+        };
+        /**
+         * @description 更新流程九相（与设置页更新卡显示状态机一一对应；available 即「发现新版本」）
+         * @enum {string}
+         */
+        UpdatePhase: "idle" | "checking" | "available" | "up_to_date" | "downloading" | "installing" | "restarting" | "done" | "failed";
+        /** @description 更新域状态对象（GET /update/status 与 check/apply/proxy 响应共用） */
+        UpdateStatus: {
+            /** @description 当前版本（带 v 前缀形态，如 v2.1.0；与 /system/health version 同源） */
+            current_version: string;
+            /** @description 最近一次检查发现的远端版本（带 v 前缀）；从未检查成功过为 null */
+            latest_version?: string | null;
+            /**
+             * Format: date-time
+             * @description 最近一次检查结束时刻（含失败；跨服务重启经部署目录 .update-check 恢复）
+             */
+            last_checked_at?: string | null;
+            phase: components["schemas"]["UpdatePhase"];
+            /** @description 供前端逐字展示的当前状态/异常文案（§3.2/§3.5 文案表，全角标点） */
+            message?: string | null;
+            /** @description 代理通道（读自部署目录 .update-proxy，与 update.sh 共用配置；null=直连；默认代理为 URL 串 https://v4.gh-proxy.org） */
+            proxy: string | null;
+            /** @description 当前形态是否支持 WebUI 更新（部署目录存在 VERSION + bin/hq 布局；源码形态 false，前端「立即更新」置灰依据） */
+            supported: boolean;
+        };
+        /** @description PUT /update/proxy 请求体 */
+        UpdateProxyRequest: {
+            /** @description 代理 URL（null=直连；自定义值须为合法 URL，非法 400 INVALID_REQUEST） */
+            proxy: string | null;
         };
         /** @description POST /candidates 响应（导入，M1 实施；M0 mock）。M2 起含导入成队结果字段（queue_from_folder 时返回，见 POST /candidates） */
         CandidateCreate: {
@@ -934,6 +1045,135 @@ export interface operations {
             };
             409: components["responses"]["Error"];
             422: components["responses"]["Error"];
+        };
+    };
+    getUpdateStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 状态对象 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+        };
+    };
+    checkUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 检查结果状态对象 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            /** @description 探测失败（连接超时/无法连接/远端返回异常，UPDATE_CHECK_FAILED） */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    applyUpdate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已最新（幂等，phase=up_to_date） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            /** @description 已受理（更新流程后台执行） */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            /** @description 守卫拒绝（UPDATE_BLOCKED_RUNNING / UPDATE_IN_PROGRESS / UPDATE_UNSUPPORTED） */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 同步预检失败（UPDATE_CHECK_FAILED / UPDATE_DOWNLOAD_FAILED） */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    setUpdateProxy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProxyRequest"];
+            };
+        };
+        responses: {
+            /** @description 设置后状态对象 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateStatus"];
+                };
+            };
+            /** @description 自定义代理 URL 非法 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     listCandidates: {
