@@ -252,12 +252,16 @@ from web.src.services import update as update_svc
 
 @pytest.fixture()
 def update_env(tmp_path, monkeypatch):
-    """更新域隔离：独立部署目录（VERSION+bin/hq）、服务单例复位、
-    拉起/自退替换（不真 Popen、不真 SIGTERM）、不触真实网络。"""
+    """更新域隔离：独立部署目录（VERSION+bin/hq）、工作区（.update-proxy
+    新位置）、服务单例复位、拉起/自退替换（不真 Popen、不真 SIGTERM）、
+    不触真实网络。"""
     monkeypatch.setattr(config, "PROJECT_ROOT", tmp_path)
     (tmp_path / "VERSION").write_text("v2.0.0", encoding="utf-8")
     (tmp_path / "bin").mkdir()
     (tmp_path / "bin" / "hq").write_bytes(b"\x7fELF")
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    monkeypatch.setattr(config, "HOME_DIR", workspace)
     update_svc.reset_service()
     get_state().event_history.clear()
     monkeypatch.setattr(update_svc.UpdateService, "_popen",
@@ -397,14 +401,14 @@ def test_update_proxy_set_and_direct(update_env):
     r = client.put("/api/v1/update/proxy", json={"proxy": None})
     assert r.status_code == 200
     assert r.json()["proxy"] is None
-    assert (update_env / ".update-proxy").read_bytes() == b""  # 直连=空文件
+    assert (update_env / "workspace" / ".update-proxy").read_bytes() == b""  # 直连=空文件
     assert_contract_schema(spec, "PUT", "/update/proxy", 200, r.json())
 
     r = client.put("/api/v1/update/proxy",
                    json={"proxy": "https://v4.gh-proxy.org"})
     assert r.status_code == 200
     assert r.json()["proxy"] == "https://v4.gh-proxy.org"
-    assert (update_env / ".update-proxy").read_bytes() == \
+    assert (update_env / "workspace" / ".update-proxy").read_bytes() == \
         b"https://v4.gh-proxy.org"  # URL 原文、无尾换行
     assert_contract_schema(spec, "PUT", "/update/proxy", 200, r.json())
 

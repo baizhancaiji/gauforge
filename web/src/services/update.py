@@ -4,7 +4,9 @@
 - 探测：GET {base}/releases/latest/download/VERSION（与 update.sh --check 同源），
   超时 connect 15s / read 30s；异常按 §3.5 分类映射文案常量（单一来源，
   测试逐字引用同一常量防漂移）。
-- 伴生文件（部署目录 config.PROJECT_ROOT，与 update.sh 同目录）：
+- 伴生文件：.update-check/update-state 在部署目录 config.PROJECT_ROOT
+  （与 update.sh 同目录）；.update-proxy 自 2026-09-29 起在工作区
+  config.HOME_DIR（更新/重装部署目录不丢，启动时自动从部署目录旧位置搬迁）：
   - .update-proxy：与 update.sh 共用同一份配置；null=直连 ↔ 空内容文件，
     URL 原文落盘且无尾换行（update.sh printf '%s' 实测格式互认）；
   - .update-check：最近检查结果 {latest_version, checked_at, had_update}，
@@ -128,10 +130,29 @@ def deployment_supported() -> bool:
     return (root / "VERSION").is_file() and (root / "bin" / "hq").is_file()
 
 
-# ---------------- .update-proxy（与 update.sh 共用配置） ----------------
+# ---------------- .update-proxy（与 update.sh 共用配置；工作区持久化） ----------------
 
 def proxy_path() -> Path:
-    return config.PROJECT_ROOT / ".update-proxy"
+    """代理配置路径：工作区 G16WEB_HOME/.update-proxy（更新/重装部署目录
+    不丢；update.sh 经 G16WEB_HOME 同路径读取，v2.1.0 前在部署目录）。"""
+    return config.HOME_DIR / ".update-proxy"
+
+
+def migrate_proxy_to_workspace() -> None:
+    """部署目录旧位置一次性搬迁（幂等；lifespan 启动时调用）。
+
+    - 工作区已有 → 以工作区为准，仅清理部署目录遗留；
+    - 工作区未有 → 部署目录原文迁移到工作区（保留 v2.1.0 前的选择）；
+    - 部署目录无遗留 → 不动作。
+    """
+    legacy = config.PROJECT_ROOT / ".update-proxy"
+    if not legacy.is_file():
+        return
+    if not proxy_path().exists():
+        proxy_path().parent.mkdir(parents=True, exist_ok=True)
+        proxy_path().write_text(legacy.read_text(encoding="utf-8"),
+                                encoding="utf-8")
+    legacy.unlink()
 
 
 def read_proxy() -> str | None:
@@ -145,6 +166,7 @@ def read_proxy() -> str | None:
 
 def write_proxy(proxy: str | None) -> None:
     """写代理通道：null → 空内容文件；URL 原文落盘且无尾换行（printf '%s' 互认）。"""
+    proxy_path().parent.mkdir(parents=True, exist_ok=True)
     proxy_path().write_text("" if proxy is None else proxy, encoding="utf-8")
 
 

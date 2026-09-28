@@ -22,8 +22,12 @@ from web.src.services import update as upd
 
 @pytest.fixture(autouse=True)
 def deploy_root(tmp_path, monkeypatch):
-    """伴生文件（.update-proxy/.update-check）与形态判定指向临时部署目录。"""
+    """伴生文件与形态判定指向临时部署目录；工作区（.update-proxy 新位置）
+    指向独立的临时目录，两侧互不污染。"""
     monkeypatch.setattr(config, "PROJECT_ROOT", tmp_path)
+    home = tmp_path / "workspace"
+    home.mkdir()
+    monkeypatch.setattr(config, "HOME_DIR", home)
     yield tmp_path
 
 
@@ -123,32 +127,64 @@ def test_fetch_remote_version_unparsable_body():
     assert ei.value.message == "更新服务器返回异常（HTTP 200）"
 
 
-# ---------------- .update-proxy（与 update.sh 互认） ----------------
+# ---------------- .update-proxy（与 update.sh 互认；工作区持久化） ----------------
 
 def test_proxy_write_no_trailing_newline():
     upd.write_proxy("https://v4.gh-proxy.org")
-    raw = (config.PROJECT_ROOT / ".update-proxy").read_bytes()
+    raw = (config.HOME_DIR / ".update-proxy").read_bytes()
     assert raw == b"https://v4.gh-proxy.org"  # URL 原文、无尾换行
     assert upd.read_proxy() == "https://v4.gh-proxy.org"
 
 
 def test_proxy_null_writes_empty_file_direct():
     upd.write_proxy(None)
-    assert (config.PROJECT_ROOT / ".update-proxy").read_bytes() == b""
+    assert (config.HOME_DIR / ".update-proxy").read_bytes() == b""
     assert upd.read_proxy() is None  # 空内容文件 ↔ 直连
 
 
 def test_proxy_reads_update_sh_format():
     """update.sh 侧写入（printf '%s'）后本侧读取互认。"""
-    (config.PROJECT_ROOT / ".update-proxy").write_bytes(b"")
+    (config.HOME_DIR / ".update-proxy").write_bytes(b"")
     assert upd.read_proxy() is None
-    (config.PROJECT_ROOT / ".update-proxy").write_bytes(
+    (config.HOME_DIR / ".update-proxy").write_bytes(
         b"https://v4.gh-proxy.org")
     assert upd.read_proxy() == "https://v4.gh-proxy.org"
 
 
 def test_proxy_missing_file_is_direct():
     assert upd.read_proxy() is None
+
+
+# ---------------- 部署目录旧位置一次性搬迁（工作区为 SSOT） ----------------
+
+def test_migrate_legacy_moves_to_workspace():
+    """部署目录遗留 + 工作区未有 → 原文迁移、遗留清理。"""
+    legacy = config.PROJECT_ROOT / ".update-proxy"
+    legacy.write_bytes(b"https://v4.gh-proxy.org")
+    upd.migrate_proxy_to_workspace()
+    assert (config.HOME_DIR / ".update-proxy").read_bytes() == \
+        b"https://v4.gh-proxy.org"
+    assert not legacy.exists()  # 部署目录不残留，避免双源歧义
+    assert upd.read_proxy() == "https://v4.gh-proxy.org"
+
+
+def test_migrate_legacy_yields_to_workspace_value():
+    """工作区已有 → 以工作区为准，仅清理遗留（幂等可重跑）。"""
+    upd.write_proxy("")
+    legacy = config.PROJECT_ROOT / ".update-proxy"
+    legacy.write_bytes(b"https://custom.example/proxy")
+    upd.migrate_proxy_to_workspace()
+    assert (config.HOME_DIR / ".update-proxy").read_bytes() == b""  # 直连保留
+    assert not legacy.exists()
+    upd.migrate_proxy_to_workspace()  # 二次调用 no-op
+    assert (config.HOME_DIR / ".update-proxy").read_bytes() == b""
+
+
+def test_migrate_no_legacy_noop():
+    upd.write_proxy("https://keep.example/p")
+    upd.migrate_proxy_to_workspace()
+    assert (config.HOME_DIR / ".update-proxy").read_bytes() == \
+        b"https://keep.example/p"  # 工作区值不受影响
 
 
 # ---------------- .update-check（最近检查结果） ----------------
