@@ -342,6 +342,78 @@ test_e2e_fake_g16 / test_e2e_queue_lifecycle（hq 产物在位前提下真跑，
   → 脚本（E）→ 前端（F）→ 进度（G）；逐文件 `git add` 具名，不用 `-A`。
 - 本计划自身的落地与后续修订记录于 progress.json，不另开流水。
 
-## 附录（G1 演练留痕，实施时回填）
+## 附录（G1 演练留痕，2026-09-29 回填）
 
-（待回填：演练环境、步骤输出、截图索引、A1–A6 勾验表、反例四项结果。）
+### 环境与布置
+
+- 仓库 HEAD `v2.0.0-35-g23f937f0`（含批次 F 前端）打验证包
+  `gauforge-deploy-v2.0.0-35-g23f937f0-linux-x64.tar.gz`（无 tag 验证包不入库）。
+- 部署目录 A `/tmp/g16web-drill/deploy-a`：解包验证包、`VERSION` 改 `v2.0.9`、
+  `install.sh` 建 .venv；工作区 `G16WEB_HOME=/tmp/g16web-drill/home-a`；
+  SQLite `listen_port=8401`（首启内联 uvicorn 写入后按标准命令正式启动）；
+  `G16WEB_UPDATE_BASE=http://127.0.0.1:8402`。
+- 伪装 release：`python -m http.server 8402`，目录
+  `release-root/releases/latest/download/{VERSION, gauforge-deploy-linux-x64.tar.gz(+.sha256)}`，
+  内容为验证包改版本 v2.1.1 重打包（**顶层目录须为 `gauforge/`，与
+  package_release.sh 布局一致**——首演因布置成 `./` 顶层被 self_update.sh
+  结构校验拦截，属演练布置错误、脚本行为正确，见反例 d 项）。
+
+### 主流程（v2.0.9 → v2.1.1，全程 WebUI 操作）
+
+1. 侧栏版本行 `v2.0.9` === health `version` === 部署 VERSION 文件；
+   从候选页点击版本行（热区含圆点）跳转设置页（语义化 button 键盘可达）。
+2. 「检查更新」→ 逐字文案 `发现新版本 v2.1.1！查看更新说明`，链接
+   `https://github.com/baizhancaiji/gauforge/releases/tag/v2.1.1` 新标签页
+   （截图 `drill-1-available.png`，圆点随 available 点亮）。
+3. 「立即更新」→ 202 受理 → downloading（本地回环 18MB 瞬时，进度条
+   500ms 窗口一闪即过）→ `服务重启中 …`（installing/restarting 显示态、
+   双按钮置灰，截图 `drill-2-downloading.png`）→ 后端 SIGTERM 自退。
+4. detached `self_update.sh` 编排（update.log 留痕）：接管（SQLite 端口
+   8401）→ 等父退出 0s → 端口释放确认 0s → 解压覆盖 v2.1.1 → 差量刷依赖
+   → update-state 置 done → 按原上下文重启 → 接管完成。
+5. 前端感知 restarting 后 SSE 断开转轮询 health（500ms），服务恢复后
+   version 变化 → `location.reload()` 强刷（新进程 access log 实证：
+   `GET /` + assets 重载 + events 重连 + update/status 恢复，全程无人干预）。
+6. 强刷后：侧栏 `v2.1.1`、更新卡 `v2.1.1 更新完成`、`update-state` 已清理
+   （截图 `drill-3-done.png`）。
+
+### 反例四项
+
+| # | 场景 | 结果 |
+|---|---|---|
+| a | running 在场触发（fake_g16.py 置 g16_root、输入内嵌 `! FAKE: sleep=30`、行内提交至 running） | HTTP 409 `UPDATE_BLOCKED_RUNNING`，逐字文案「为保证运行稳定性，任务执行期间禁止更新」 |
+| b | sha256 篡改（远端 v2.1.2 + 全零 hash） | 202 受理（预检只验通道）→ 下载后校验失败 → phase=failed 逐字「更新包校验失败，已中止（现有版本未受影响）」，部署 VERSION 仍 v2.1.1 分毫未动 |
+| c | 更新中关浏览器（v2.1.2 正常包 WebUI 触发后关闭页面） | detached 脚本独立完成全编排（update.log：接管→解压 v2.1.2→刷依赖→置 done→重启→接管完成），服务恢复 v2.1.2 |
+| d | 断电等效（脚本中止后服务死亡 → 重启） | update-state 停 installing → 恢复 phase=failed 逐字「更新流程曾中断（目标版本 v2.1.1 未达成），请重新执行更新或通过 CLI update.sh 恢复」，标记被 GET /update/status 消费后删除，旧版未损 |
+
+### 自动检查与代理通道观察
+
+- 启动补查：首启（weekly 窗口未查过）≤5min 补查触发，`.update-check` 落
+  `latest_version=v2.1.1`，只发现不安装（phase 不进 downloading）；重启后
+  窗口已查过不再重复请求远端（phase 保持 idle、latest_version 经伴生文件恢复）。
+- 代理通道：自定义 URL 落盘 `.update-proxy` 无尾换行；检查请求经本地迷你
+  透传代理（8403）实证拼接规则 `{proxy}/{base}/…`（access log：
+  `GET /http://127.0.0.1:8402/releases/latest/download/VERSION`）；null=直连
+  ↔ 空内容文件与 update.sh 互认。默认代理（真实 gh-proxy）无法代理本地
+  base 属外网代理语义（拼接逻辑由单测覆盖）。
+- up_to_date 分支：部署 v2.1.2 vs 远端 v2.1.2 → 逐字「当前版本已最新！」。
+- 失败文案：源码实例探测不可达远端 → 逐字「连接超时，请检查网络」。
+
+### A1–A6 勾验
+
+| 判据 | 结果 |
+|---|---|
+| A1 侧栏=health=VERSION、点击跳设置页 | ✓（主流程 1） |
+| A2 检查三分支逐字文案与链接 | ✓（available/up_to_date/failed 超时三分支均实证） |
+| A3 三守卫矩阵 | ✓（running 409 反例 a、源码形态置灰 8399 走查、单测覆盖守卫矩阵与幂等/502 分支） |
+| A4 全流程强刷与清理 | ✓（主流程 3–6） |
+| A5 自动检查 | ✓（补查窗口双分支与只发现不安装实证；四档到点触发/30s 生效由单测时钟注入覆盖） |
+| A6 1080p 一屏布局 | ✓（F2 收口实测：内容区零滚动、savebar 底 1041/1080；更新卡无标题、与设置卡等宽 880px） |
+
+### 演练产物索引
+
+- 截图：`docs/plans/assets/version-update-drill/drill-1-available.png`、
+  `drill-2-downloading.png`、`drill-3-done.png`。
+- 日志：部署 A `update.log`（self_update 编排逐行）、伪装服务 access log
+  （代理拼接与强刷请求序列）。
+- 演练环境（/tmp/g16web-drill）为一次性目录，演练后整体清理不入库。
