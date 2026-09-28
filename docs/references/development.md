@@ -14,7 +14,7 @@
 
 | 工具 | 用途 | 安装 |
 |---|---|---|
-| uv | Python 环境与依赖 | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
+| uv | Python 环境与依赖 | `curl -LsSf https://astral.sh/uv/install.sh \| UV_INSTALLER_GITHUB_BASE_URL='https://v4.gh-proxy.org/https://github.com' sh`（二进制下载经 gh-proxy 镜像） |
 | Rust（stable） | 编译内核 hq | `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \| sh` |
 | Node.js ≥ 20 | 前端构建（`dist/` 不入库，必须本地构建） | nvm 或发行版包管理器 |
 

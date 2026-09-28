@@ -16,7 +16,9 @@ tar xzf gauforge-deploy-linux-x64.tar.gz && cd gauforge
 ./install.sh
 ```
 
-`install.sh` 做四件事：装 uv（未检测到时自动安装）→ 建 `.venv`（优先用系统Python 3.10+，缺失时由 uv 自动获取）→ 安装依赖（默认走清华 PyPI 镜像，可用环境变量 `GAUFORGE_PIP_INDEX` 覆盖）→ 把预编译 `bin/hq` 就位到 `.venv/bin/`。
+`install.sh` 做四件事：装 uv（未检测到时自动安装，下载源经 gh-proxy 镜像）→ 建 `.venv`（优先用系统Python 3.10+，缺失时由 uv 获取托管解释器，下载源同样经 gh-proxy 镜像）→ 安装依赖（默认走清华 PyPI 镜像，可用环境变量 `GAUFORGE_PIP_INDEX` 覆盖）→ 把预编译 `bin/hq` 就位到 `.venv/bin/`。
+
+GitHub 下载统一经 `https://v4.gh-proxy.org` 代理（uv 安装器与托管 Python 解释器均走该镜像链路，经 gh-proxy 的 URL 前缀改写约定下载 GitHub Releases 资产）；代理前缀可用环境变量 `GAUFORGE_GH_PROXY` 覆盖（须兼容 gh-proxy 的改写约定，如 `https://v4.gh-proxy.org/https://github.com`）。
 
 ## 2. 启动
 
