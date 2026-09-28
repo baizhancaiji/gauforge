@@ -51,12 +51,15 @@ def test_impl_codes_subset_of_contract():
 
 
 def test_retired_private_codes_absent():
-    """退役私有码在实现/测试/前端零残留。"""
+    """退役私有码在实现/测试/前端零残留（闸门文件自身豁免：需引用字面量）。"""
+    self_name = Path(__file__).name
     roots = [config.PROJECT_ROOT / "web" / "src",
              config.PROJECT_ROOT / "web" / "tests",
              config.PROJECT_ROOT / "web" / "frontend" / "src"]
     for root in roots:
         for path in root.rglob("*"):
+            if path.name == self_name:
+                continue
             if path.suffix not in (".py", ".ts", ".vue"):
                 continue
             text = path.read_text(encoding="utf-8", errors="replace")
@@ -153,8 +156,14 @@ def test_import_parse_reason_aligned():
     assert entries[0]["reason"] == "INPUT_PARSE_FAILED"
 
 
+# 前端按错误码分支的允许集（其余码走 error.message 逐字透传）：
+# - PENDING_CAPACITY_FULL：提交满员的定制引导（m0 实测口径）
+# - SEAT_WINDOW_LOCKED：席位窗口内移除的定制提示（M1 待执行页）
+FRONTEND_CODE_BRANCHES = {"PENDING_CAPACITY_FULL", "SEAT_WINDOW_LOCKED"}
+
+
 def test_frontend_branches_only_on_capacity_full():
-    """前端仅 PENDING_CAPACITY_FULL 按码分支（§9 风险 12 实测口径）。"""
+    """前端按码分支 ⊆ 允许集（新增分支须在此登记，防文案双写漂移）。"""
     fe = config.PROJECT_ROOT / "web" / "frontend" / "src"
     branch_re = re.compile(r'["\']([A-Z][A-Z0-9_]+)["\']')
     hits: set[str] = set()
@@ -165,7 +174,7 @@ def test_frontend_branches_only_on_capacity_full():
         for m in re.finditer(r"(?:code|===|!==)\s*[^\n]*", text):
             hits |= {c for c in branch_re.findall(m.group(0))
                      if c in CONTRACT_CODES}
-    assert hits <= {"PENDING_CAPACITY_FULL"}
+    assert hits <= FRONTEND_CODE_BRANCHES, sorted(hits)
 
 
 def test_spec_loads_without_error():
