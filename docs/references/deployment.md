@@ -30,10 +30,41 @@ nohup uv run python -m web.src.main >>/tmp/g16web-8300.log 2>&1 &
 转发直接可用）。首次启动自动拉起 HQ server/worker；数据（SQLite、journal、
 任务产物）都在工作区 `~/g16web`，与部署目录分离。
 
-## 3. G16 接入
+## 3. 工作区与 G16 接入
 
-工作台设置页把运行级参数 `g16_root` 指向实际发行目录（默认 `~/g16`，
-g16root 布局；仅对其后新任务生效）。
+### 3.1 工作区目录结构
+
+所有数据都在工作区（`G16WEB_HOME`，默认 `~/g16web`），与部署目录完全分离：
+
+```text
+~/g16web/
+├── g16web.db          # SQLite：候选/队列/执行记录/运行级设置
+├── hq/                # 内核 HQ 的 server-dir：server.journal 与进程日志
+├── inputs/            # 导入的候选 .gjf 原件
+└── run/<执行id>/      # 每次执行的运行目录：物化+Link0 补齐后的 input.gjf、
+                       #   input.log 及 chk/scratch 等全部执行产物
+```
+
+升级/重装部署目录不触碰该目录；`chk/rwf 保留天数` 运行级参数只对其后
+新任务生效，用于清理 `run/` 下的对应产物。
+
+### 3.2 G16 安装位置
+
+不做自动探测：运行级设置 `g16_root`（默认 `~/g16`）即 G16 发行目录，
+要求 **g16root 布局**——`<g16_root>/g16` 为主程序，同目录树含 `bsd/`、
+`basis/`、`arch/`、`lexus/` 等。设置页修改仅对其后新任务生效。
+
+执行时不 source `g16.profile`：由 Python 侧按等价方式构造 `GAUSS_*`
+环境全集（GAUSS_EXEDIR/GAUSS_BSDDIR、G16BASIS、GAUSS_ARCHDIR/GAUSS_LEXEDIR
+与 PATH/LD_LIBRARY_PATH 前置），实现见 `web/src/engine/workspace.py`
+（roadmap §2.5 实测口径）。
+
+### 3.3 scratch 接管
+
+每次执行**强制** `GAUSS_SCRDIR=run/<执行id>/`——scratch 即该执行的运行
+目录本身：临时读写与 `.log`/`.chk` 产物天然同目录、互不串扰，随执行目录
+统一归档；系统级 Gaussian scratch 配置对本项目无效，也无需预先创建任何
+全局 scratch 目录。
 
 ## 4. 升级
 
