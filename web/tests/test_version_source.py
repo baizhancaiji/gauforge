@@ -79,6 +79,17 @@ def test_bare_version_defaults_to_app_version():
     assert config.bare_version() == config.APP_VERSION[1:]
 
 
+def test_health_reports_app_version():
+    """/system/health 下发真实版本（带 v 形态；B2 硬编码退役后断言）。"""
+    from fastapi.testclient import TestClient
+
+    from web.src.main import app
+    r = TestClient(app).get("/api/v1/system/health")
+    assert r.status_code == 200
+    assert r.json()["version"] == config.APP_VERSION
+    assert r.json()["version"].startswith("v")
+
+
 # ---------------- 更新通道默认值与检查周期参数 ----------------
 
 

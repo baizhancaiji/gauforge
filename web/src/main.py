@@ -32,12 +32,10 @@ from .routers import (
     system,
 )
 
-_VERSION = "0.1.0"
-
 
 def build_app() -> FastAPI:
     app = FastAPI(title="G16 Web 工作台",
-                  version=_VERSION,
+                  version=config.APP_VERSION,
                   docs_url="/docs",
                   openapi_url="/openapi.json")
 
@@ -47,7 +45,14 @@ def build_app() -> FastAPI:
 
     # ---------- 契约 SSOT：/openapi.json 回读落盘 yaml ----------
     def _openapi_override() -> dict:
-        return _load_contract()
+        doc = _load_contract()
+        # info.version 动态覆盖（防再漂移，version-update-impl-plan §1.2-2）：
+        # yaml 静态值保留为离线参考，运行时以版本单一事实来源为准
+        # （APP_VERSION 剥 v 裸版本）。
+        info = doc.get("info")
+        if isinstance(info, dict):
+            info["version"] = config.bare_version()
+        return doc
 
     app.openapi = _openapi_override  # type: ignore[assignment]
 
@@ -101,7 +106,8 @@ def _load_contract() -> dict:
 
 def _fallback_info() -> dict:  # pragma: no cover
     return {"openapi": "3.0.3", "info": {"title": "G16 Web 工作台",
-                                         "version": _VERSION}, "paths": {}}
+                                         "version": config.bare_version()},
+            "paths": {}}
 
 
 app = build_app()

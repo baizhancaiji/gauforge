@@ -1,11 +1,15 @@
 """契约生成链 SSOT 测试（m0-plan §4.3 test_openapi_ssot.py）。
 
-- /openapi.json 与落盘 docs/api/openapi.yaml 等价（后端对外暴露契约原文）。
+- /openapi.json 与落盘 docs/api/openapi.yaml 等价（后端对外暴露契约原文）；
+  info.version 除外——运行时经版本单一事实来源动态覆盖（防再漂移，
+  version-update-impl-plan §1.2-2），剔除该字段后其余字段严格比对（零豁免），
+  其一致性由独立断言守护。
 - models/ 生成产物与 yaml 重生成无 diff（防手改漂移）。生成器输出含
   时间戳注释，比较时剥离，只比对模型代码实质。
 """
 from __future__ import annotations
 
+import copy
 import re
 import subprocess
 import sys
@@ -27,11 +31,27 @@ def _norm(data: bytes) -> bytes:
     return _TS_RE.sub(b"", data)
 
 
+def _strip_info_version(doc: dict) -> dict:
+    out = copy.deepcopy(doc)
+    if isinstance(out.get("info"), dict):
+        out["info"].pop("version", None)
+    return out
+
+
 def test_openapi_json_equals_contract_yaml():
     served = client.get("/openapi.json").json()
     with config.CONTRACT_PATH.open(encoding="utf-8") as fh:
         disk = yaml.safe_load(fh)
-    assert served == disk, "/openapi.json 应回读落盘契约，不得与契约漂移"
+    # 不得整文档直比：源码形态 git describe 带 -N-g<hash> 后缀，与 yaml 静态
+    # info.version 必然不等（两侧剥 v 比对亦不可——R7 定稿口径）。
+    assert _strip_info_version(served) == _strip_info_version(disk), \
+        "/openapi.json 应回读落盘契约，不得与契约漂移（info.version 除外）"
+
+
+def test_openapi_info_version_tracks_app_version():
+    """独立断言：/openapi.json 的 info.version == APP_VERSION 剥 v 裸版本。"""
+    served = client.get("/openapi.json").json()
+    assert served["info"]["version"] == config.bare_version()
 
 
 def test_models_regenerate_no_diff(tmp_path):
