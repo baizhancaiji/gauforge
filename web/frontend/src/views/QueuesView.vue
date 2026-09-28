@@ -24,6 +24,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import QueueEditorModal from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
+import { useSortPref } from "@/composables/useSortPref";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { causeLabel, finishReasonLabel, queueStateLabel, taskStateLabel } from "@/utils/labels";
@@ -52,7 +53,9 @@ type QueueStateFilter = "all" | "unsubmitted" | "submitted" | "executing" | "com
 type QueueSortKey = "default" | "name_asc" | "name_desc";
 
 const stateFilter = ref<QueueStateFilter>("all");
-const sortKey = ref<QueueSortKey>("default");
+// 排序规则经视图偏好域持久化（键 queues.sort），重启/更新/断联后不回默认
+const sortKey = useSortPref<QueueSortKey>(
+  "queues.sort", "default", ["default", "name_asc", "name_desc"]);
 
 /** 回退队列判定（与提交动作文案 submitLabel 同口径：标记或次数任一）。 */
 function isRolledBack(q: Queue): boolean {

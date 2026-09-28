@@ -18,6 +18,7 @@ import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
+import { useSortPref } from "@/composables/useSortPref";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtDeclaredRes, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
 import { causeLabel, taskStateLabel } from "@/utils/labels";
@@ -39,8 +40,13 @@ const pageSize = ref(0);
 const loading = ref(false);
 const everLoaded = ref(false);
 const filter = ref<"all" | "succeeded" | "failed" | "skipped">("all");
-/** 排序（openapi HistorySort）：默认提交倒序（上线前行为）。 */
-const sort = ref<components["schemas"]["HistorySort"]>("submitted_desc");
+/** 排序（openapi HistorySort）：默认提交倒序（上线前行为）。选择经视图
+ *  偏好域持久化（历史页键 history.sort / 归档页键 archive.sort 分立各自
+ *  记忆；同组件跨路由复用实例，键切换时重拉），重启/更新/断联不回默认。 */
+const sortPrefKey = computed(() => (archived.value ? "archive.sort" : "history.sort"));
+const sort = useSortPref(
+  sortPrefKey, "submitted_desc",
+  ["submitted_desc", "finished_desc", "finished_asc", "filename_asc", "filename_desc"]);
 const selected = ref<HistoryEntry | null>(null);
 const textView = ref<{ kind: "input" | "output"; content: string; error: string | null } | null>(null);
 const actionNote = ref<{ ok: boolean; msg: string } | null>(null);
