@@ -8,12 +8,15 @@
 
 - 【docs】新增版本标识与更新功能需求文档（version-update-spec.md）：侧栏动态版本行、设置页顶部更新卡（手动检查/立即更新/下载进度/运行守卫）、每日每周每月凌晨1:00自动检查与异常如实反馈规格，含依赖核查、REST/SSE 契约草案、改动面清单与七项决策点
 - 【docs】新增版本更新实施计划（docs/plans/version-update-impl-plan.md）：需求分析（五功能/边界/十项技术约束/八条验收判据）、任务拆解（A–G 七批次 17 提交，每任务含产出与完成判据）、依赖图与关键路径（A1→D1→D2→E1→G1）及 11 项风险登记、四层测试方案（单测 4 新 5 扩/进程内集成/闸门回归/手动冒烟 9 项/本地 release 模拟演练）、发布流程（含固定名附件自举边界说明）与分层回滚策略；实施侧定稿：G16WEB_UPDATE_BASE 演练通道、枚举校验失败归 type 不扩词表、openapi info.version 动态覆盖防再漂移、自动检查 30s 轮询式调度、.update-check 伴生文件跨重启恢复
+- 【api】契约预告更新域四端点与五错误码（status/check/apply/proxy 与 UPDATE_* 全集 19→24，SettingItem.range 增枚举结构，info.version 同步 2.1.0），前后端契约生成物再生
+- 【api】SSE 契约新增 update.progress 与 update.phase 两事件（事件全集 15 类；下载进度 ~500ms 合并窗口取最新、阶段翻转即推），推送时机表与事件命名域清单同步
 
 ### 变更
 
 - 【docs】版本更新需求文档评审修订（18 项口径对齐）：代理通道定稿上设置页（D4，更新卡内切换、读写 .update-proxy 不进 SQLite）、检查周期四档含从不（never）、update.phase 枚举增 available 并与显示状态机逐行对齐、新增部署目录 update-state 落盘标记写入/恢复/清理规则、self_update.sh 重启编排定稿（后端自退、脚本等待端口释放不杀进程）、登记第四处版本硬编码（openapi.yaml info.version）、package_release.sh 入包清单需追加 self_update.sh、SSE 断开时点/版本号形态/文案全角标点/错误码 19→24 等表述统一
 - 【docs】版本更新需求文档补口径：版本行本身可点击、点击（热区含小圆点）跳转至设置页更新卡，hover 微反馈不占导航项形态，联动 §3.1/§6.2/§7.1
 - 【docs】版本更新实施计划与需求文档按全面审查报告逐项修正：闸门级两项（test_error_codes 错误码全集 19→24 同步、openapi ssot 豁免改「剔除 info.version 严格比对+独立断言」防 pytest 必红）、契约补全（status 字段全集增 supported/proxy、SettingItem.range 增 enum 结构、apply 同步预检 502 回登需求）、验收补全（.update-check 伴生文件与「服务重启超时」文案回登需求、F2 按钮可用性矩阵、F3 强刷三分支与圆点全相映射、mapping 端点对照 33→37）、实现细化（下载重试策略与 httpx read 30s、update-state JSON 仅改 phase、self_update env 继承与端口判据、默认代理落盘无尾换行、1080p 预算含新增参数行）、偏差登记与一致性（30s 生效口径/根脚本自更新行为差异/版本来源措辞/测试先行差异登记、提交数 13→17、R5 下拉四选、需求 §3.7 引用与 §6.4 补登）
+- 【docs】更新功能文档链补齐：mapping 增更新卡四行与侧栏版本行映射（端点对照 33→37）、roadmap 登记update_check_interval 与 G16WEB_UPDATE_BASE 及功能更新定位、deployment 升级章节改 WebUI 主/CLI 兜底并补伴生文件排障
 
 ## v2.0.0（2026-09-28T02:06+08:00 发布，major）
 
