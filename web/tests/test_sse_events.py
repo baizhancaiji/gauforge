@@ -1,7 +1,8 @@
 """SSE 事件总线真实化测试（m1-plan B11；§5 测试表 test_sse_events 逐条）。
 
-- 13 类事件全部由真实动作触发（REST 端点 + 引擎 FakeGateway 流；M0 mock
-  推流剧本已退役），并经 emit→重放窗口→fanout→broker 交付为帧；
+- 15 类事件全部由真实动作触发（REST 端点 + 引擎 FakeGateway 流；M0 mock
+  推流剧本已退役；update 两事件由检查/apply 真实动作触发，D5），并经
+  emit→重放窗口→fanout→broker 交付为帧；
 - seq 全局单调递增；服务重启后延续（sse_seq 持久化，重连不误判、超窗仍走
   快照）；
 - Last-Event-ID 窗口内按序重放；
@@ -13,11 +14,13 @@ sleep；事件序断言仅限同 execution 内。
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import subprocess
 import sys
 import time
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -25,18 +28,24 @@ from web.src import config
 from web.src.engine import Dispatcher, FakeGateway
 from web.src.main import app
 from web.src.mock import get_state
+from web.src.services import update as update_svc
 from web.src.sse import _replay_or_snapshot, broker, event_stream
 from web.src.store import executions, queues, seats, settings, tasks
 from web.src.store.db import now_iso
 
 SIMPLE = "%chk=w.chk\n\n#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\n"
 
-# 领域事件全集（13 类除去 system.heartbeat/system.snapshot，后两者见专测）
+# 领域事件全集（15 类除去 system.heartbeat/system.snapshot，后两者见专测）
 DOMAIN_EVENTS = {
     "candidates.changed", "queues.changed", "queue.status",
     "pending.snapshot", "task.status", "execution.progress",
     "execution.monitor", "execution.stalled", "history.appended",
-    "settings.updated", "hq.status",
+    "settings.updated", "hq.status", "update.progress", "update.phase",
+}
+
+# 契约 sse.md §2 事件全集（15 类，零漂移载体）
+CONTRACT_EVENT_FULL_SET = {
+    "system.heartbeat", "system.snapshot", *DOMAIN_EVENTS,
 }
 
 
@@ -66,6 +75,37 @@ def clean_event_bus():
 @pytest.fixture()
 def gw() -> FakeGateway:
     return FakeGateway(cpus=8)
+
+
+@pytest.fixture()
+def update_channel(tmp_path, monkeypatch):
+    """更新域测试通道：部署形态布局 + 本地伪装 release（v2.1.1）+
+    拉起/自退替换桩（不真 Popen、不真 SIGTERM、不触真实网络）。"""
+    (tmp_path / "VERSION").write_text("v2.0.0", encoding="utf-8")
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "hq").write_bytes(b"\x7fELF")
+    monkeypatch.setattr(config, "PROJECT_ROOT", tmp_path)
+    tar = b"GAUFORGE-FAKE-TAR"
+    sha = (f"{hashlib.sha256(tar).hexdigest()}  "
+           f"{config.UPDATE_ASSET}\n").encode()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if url.endswith("/VERSION"):
+            return httpx.Response(200, content=b"v2.1.1")
+        if url.endswith(".sha256"):
+            return httpx.Response(200, content=sha)
+        return httpx.Response(200, content=tar,
+                              headers={"content-length": str(len(tar))})
+
+    monkeypatch.setattr(
+        update_svc, "_client",
+        lambda: httpx.Client(transport=httpx.MockTransport(handler)))
+    monkeypatch.setattr(update_svc.UpdateService, "_popen",
+                        staticmethod(lambda *a, **k: None))
+    monkeypatch.setattr(update_svc.UpdateService, "_self_terminate",
+                        staticmethod(lambda: None))
+    return tmp_path
 
 
 def make_disp(gw) -> Dispatcher:
@@ -110,8 +150,9 @@ def drain_queue(q) -> list:
 
 # ---------------- 13 类事件：真实动作触发 + 管道端到端交付 ----------------
 
-def test_domain_events_from_real_actions(gw):
+def test_domain_events_from_real_actions(gw, update_channel):
     settings().set("stall_threshold_minutes", 0.01)  # 停滞翻转秒级可观测
+    settings().set("update_check_interval", "never")  # 调度协程空转，事件确定性归本用例动作
     disp = make_disp(gw)
     disp.tick()  # HQ 连通性探测 → hq.status(up)（首个 tick 定初值）
 
@@ -178,14 +219,31 @@ def test_domain_events_from_real_actions(gw):
                 # ⑩ 设置保存 → settings.updated
                 assert client.put("/api/v1/settings", json={
                     "values": {"listen_port": 8301}}).status_code == 200
+                # 收尾 ⑧ 派发的席位任务：清空 running（更新守卫放行）
+                seat_row = executions().list_by_state("running")[0]
+                gw.set_state(str(seat_row["hq_job_id"]), "finished")
+                disp.tick()
+                # ⑪ 检查更新 → update.phase(checking→available；只发现不安装)
+                assert client.post("/api/v1/update/check").status_code == 200
+                # ⑫ 立即更新（受理 202）→ update.progress（下载）+
+                #    update.phase(downloading→installing→restarting)，
+                #    后台流水线在 portal loop 运行、脚本由替换桩接管
+                assert client.post("/api/v1/update/apply").status_code == 202
 
                 frames: list = []
                 got = wait_until(lambda: (
                     frames.extend(drain_queue(q)),
                     {f.event for f in frames} >= DOMAIN_EVENTS)[1])
                 assert got, (
-                    "13 类领域事件应由真实动作触发并经 broker 交付",
+                    "15 类领域事件应由真实动作触发并经 broker 交付",
                     sorted({f.event for f in frames}))
+                # update.phase 流转终态：后台流水线跑至 restarting
+                phase_names = lambda: [json.loads(f.data)["phase"]
+                                       for f in frames + drain_queue(q)
+                                       if f.event == "update.phase"]
+                assert wait_until(lambda: "restarting" in phase_names())
+                assert wait_until(lambda: any(
+                    f.event == "update.progress" for f in frames))
             finally:
                 proc.terminate()
                 proc.wait()
@@ -322,3 +380,15 @@ def test_heartbeat_interval():
     frames = asyncio.run(asyncio.wait_for(collect(), 8.0))
     assert frames[0].event == "system.snapshot"  # 首帧快照基线
     assert frames[1].event == "system.heartbeat"  # ≈1s 空闲后保活帧
+
+
+# ---------------- 契约零漂移：sse.md §2 事件全集（15 类） ----------------
+
+def test_sse_md_event_full_set():
+    """sse.md §2 事件全集与本地全集一致（15 类，零漂移载体）。"""
+    import re
+    text = (config.CONTRACT_PATH.parent / "sse.md").read_text(
+        encoding="utf-8")
+    section = text.split("## 2. 事件全集枚举")[1].split("## 3.")[0]
+    events = set(re.findall(r"\| `([a-z]+\.[a-z]+)` \|", section))
+    assert events == CONTRACT_EVENT_FULL_SET, sorted(events)
