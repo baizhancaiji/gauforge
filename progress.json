@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-28T22:30+08:00",
+  "updated": "2026-09-28T22:53+08:00",
   "latest_released_version": "2.0.0",
   "unreleased": [
     {
@@ -109,16 +109,16 @@
     }
   ],
   "in_progress": {
-    "task": "版本标识与更新功能（v2.1 功能更新）：批次 C/D 后端 update 域六提交已落库（C1 枚举校验 bfd08243 → D1 检查服务 9105d563 → D2 apply 流程 eac83f07 → D3 四端点 da58a63a → D4 自动检查调度 b7af0f2d → D5 SSE 登记 75fb6647），下一批批次 E 发行链脚本（self_update.sh 与入包清单）",
-    "note": "M2 发布冻结仍待用户确认执行（0.2.0 → 已发布 2.0.0，见 latest_released_version）；本功能更新与发布流程互不阻塞"
+    "task": "版本标识与更新功能（v2.1 功能更新）：批次 C/D 后端 update 域与批次 E 发行链脚本已全部落库（C1 枚举校验 → D1 检查服务 → D2 apply 流程 → D3 四端点 → D4 自动检查调度 → D5 SSE 登记 → E1 self_update.sh → E2 入包清单，另有闸门登记与 PROJECT_ROOT 修正两枚），下一批批次 F 前端（F1 侧栏版本行 → F2 更新卡 → F3 事件消费与强刷）",
+    "note": "M2 发布冻结仍待用户确认执行（0.2.0 → 已发布 2.0.0，见 latest_released_version）；本功能更新与发布流程互不阻塞；批次 E 演练验证包已打出（无 tag 验证包不入库，target/deploy gitignored）"
   },
   "next_steps": [
-    "按 version-update-impl-plan.md 批次 E 实施发行链脚本（E1 self_update.sh 自更新接管 → E2 package_release.sh 入包清单），随后批次 F 前端（版本行/更新卡/强刷）",
+    "按 version-update-impl-plan.md 批次 F 实施前端（F1 侧栏版本行与更新圆点 → F2 设置页更新卡与布局 → F3 事件消费与服务重启强制刷新），随后批次 G 冒烟演练与发布",
     "M2 后续：M3（cclib 结果解析与可视化）开工准备与本功能更新的排期先后待用户定"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
-  "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。2026-09-28 落盘版本标识与更新功能需求文档并完成评审修订（18 项口径对齐）：版本号现状四处硬编码（main.py/_VERSION、system.py health、openapi.yaml info.version、前端无展示）为第一块待拆基石，更新通道复用 package_release.sh 固定名附件与 update.sh 代理约定，httpx/packaging 已在依赖清单零新增。 2026-09-28 批次 A（契约文档 diff）落库：openapi.yaml 预告更新域四端点五错误码与 SettingItem.range 枚举结构（info.version 2.1.0），sse.md 增 update.progress/update.phase（事件全集 15 类、进度 500ms 合并窗口），mapping/roadmap/deployment 对齐更新卡映射、两参数登记与升级链 WebUI 主/CLI 兜底口径；两侧契约生成物（models.py/contract.ts）随契约再生，批次收口闸门通过。 2026-09-28 批次 B 落库：config.APP_VERSION 三级解析链与 bare_version 剥 v 单点、G16WEB_UPDATE_BASE/附件名/超时/默认代理等更新默认值、运行级 update_check_interval（枚举校验待 C1）；health 与 openapi info.version 改单一事实来源并动态覆盖（ssot 豁免定稿：剔除 info.version 严格比对+独立断言）；批次 B 收口全量 363 通过、gen:types 零 diff。"
+  "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。2026-09-28 落盘版本标识与更新功能需求文档并完成评审修订（18 项口径对齐）：版本号现状四处硬编码（main.py/_VERSION、system.py health、openapi.yaml info.version、前端无展示）为第一块待拆基石，更新通道复用 package_release.sh 固定名附件与 update.sh 代理约定，httpx/packaging 已在依赖清单零新增。 2026-09-28 批次 A（契约文档 diff）落库：openapi.yaml 预告更新域四端点五错误码与 SettingItem.range 枚举结构（info.version 2.1.0），sse.md 增 update.progress/update.phase（事件全集 15 类、进度 500ms 合并窗口），mapping/roadmap/deployment 对齐更新卡映射、两参数登记与升级链 WebUI 主/CLI 兜底口径；两侧契约生成物（models.py/contract.ts）随契约再生，批次收口闸门通过。 2026-09-28 批次 B 落库：config.APP_VERSION 三级解析链与 bare_version 剥 v 单点、G16WEB_UPDATE_BASE/附件名/超时/默认代理等更新默认值、运行级 update_check_interval（枚举校验待 C1）；health 与 openapi info.version 改单一事实来源并动态覆盖（ssot 豁免定稿：剔除 info.version 严格比对+独立断言）；批次 B 收口全量 363 通过、gen:types 零 diff。 2026-09-28 批次 C/D 后端 update 域落库：C1 运行级枚举值域校验（range.enum 先于 min/max、不命中归 type 不扩词表）；D1 services/update.py 检查通道（packaging 严格更大比较含源码形态 git describe 后缀按基线 tag、探测四分支文案常量单一来源、.update-proxy 与 update.sh printf '%s' 互认、.update-check 失败保留上一份成功值）；D2 apply 流程（三守卫/同步预检两 502/流式下载 500ms 合并窗口/重试三次指数退避/sha256 中止/载荷移交 .update-payload.tar.gz/detached 拉起与 SIGTERM 自退/update-state 落盘与恢复三分支）；D3 四端点接入（apply 动态 202/200）；D4 自动检查调度（30s 轮询读最新设置、01:00 锚定窗口起点、到点与启动补查同口径、never 空转）；D5 SSE 事件登记 15 类全集断言。批次 E 落库：self_update.sh 接管脚本（等父退出与端口释放、解压覆盖、刷依赖、仅改 phase 置 done、根脚本 *.new 原子自更新、nohup 原上下文重启、--dry-run）与入包清单，验证包解包确认三脚本齐且与仓库源一致。实施中发现并修复 B1 埋下的 PROJECT_ROOT 错指 docs 目录（错误码静态闸门此前空转、hq 产物定位错位、伴生文件曾污染 docs/），测试环境以预置 never 隔离调度协程防长用例真实触网；闸门自匹配豁免与前端按码分支允许集（补登记 SEAT_WINDOW_LOCKED）同步修正。"
 }
