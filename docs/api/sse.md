@@ -23,9 +23,9 @@
   必含，并行执行下多任务同屏，roadmap M0 工作项 4）；所有载荷含 `ts`；
   `event`/`id` 走帧头，data 内不重复。
 - 事件命名规范：`<域>.<对象>.<动作|性质>`，小写点分，域 ∈
-  {system, candidates, queues, queue, pending, task, execution, history, settings, hq}。
+  {system, candidates, queues, queue, pending, task, execution, history, settings, hq, update}。
 
-## 2. 事件全集枚举（13 类）
+## 2. 事件全集枚举（15 类）
 
 分三类语义：**数据事件**（载荷即最新状态，可直接渲染）、**通知事件**
 （触发客户端重拉 REST）、**保活/恢复事件**。
@@ -45,6 +45,8 @@
 | `history.appended` | 数据 | 执行到达终态、历史条目落库 | `execution_id`、`task_id`、`queue_id?`、`state`、`cause?`、`ts` | 变更即推 |
 | `settings.updated` | 通知 | PUT /settings 成功 | `keys: []`、`ts` | 变更即推（多标签页同步） |
 | `hq.status` | 数据 | HQ server 可达性或 worker 在线数变化（引擎 tick 以 workers 列表探测，随 2s 周期） | `state: off/down/up`（off=引擎未启用，down=server 不可达，up=可达）、`workers_online: int`、`ts` | 翻转即推（稳态不重发；引擎未启用不推，快照恒 off） |
+| `update.progress` | 数据 | 更新包下载中（apply 受理后） | `version`（目标版本）、`percent`、`speed_bps`、`ts` | 下载期间 ~500ms/条（合并窗口取最新；沿 execution.progress「窗口内多条推最新」先例，窗口收紧为 500ms） |
+| `update.phase` | 数据 | 更新流程阶段翻转（含自动检查发现新版本） | `phase: idle/checking/available/up_to_date/downloading/installing/restarting/done/failed`（九相，与设置页更新卡显示状态机一一对应）、`version?`、`message?`、`ts` | 翻转即推 |
 
 ## 3. 推送时机表（逐事件「何时推什么」速查）
 
@@ -71,6 +73,9 @@
 | 归档历史条目 | 无专门事件（归档为冻结后唯一可变标记，归档列表属拉取型页面，按需重拉）；`history.appended` 不重发 |
 | 历史重新排队 | `pending.snapshot`（追加席位；历史条目本身不变） |
 | 历史退回候选 | `candidates.changed(created)`（新 id、带来源标记） |
+| 检查更新完成（手动「检查更新」/自动检查到点或启动补查） | `update.phase(checking→available/up_to_date/failed)`（只发现不安装；发现新版本即广播，执行与否永远由用户手动触发） |
+| 更新包下载中（apply 受理后） | `update.progress`（~500ms/条，合并窗口取最新） |
+| 更新流程阶段翻转（下载→installing→restarting→done，及任一环节 failed） | `update.phase`（翻转即推） |
 | chk/rwf 清理 | 无事件（响应携带清理统计，拉取型） |
 
 ## 4. 连接管理
