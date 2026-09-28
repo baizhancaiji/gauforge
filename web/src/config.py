@@ -6,8 +6,11 @@
 """
 from __future__ import annotations
 
+import json
+import logging
 import os
 import shutil
+import subprocess
 from pathlib import Path
 
 # ---------- 启动级（环境变量覆盖；WebUI 只读） ----------
@@ -21,6 +24,16 @@ HQ_HTTP_PORT = int(os.environ.get("G16WEB_HQ_HTTP_PORT", "0") or 0)
 FRONTEND_DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 CONTRACT_PATH = Path(__file__).resolve().parent.parent.parent / "docs" / "api" / "openapi.yaml"
 
+# ---------- 更新通道默认值（启动级；v2.1.0 功能更新） ----------
+# G16WEB_UPDATE_BASE 兼端到端演练口：指向本地 http server 伪装的 release 目录
+# 即可离线演练检查/下载链路（测试与演练不触真实网络）。
+UPDATE_BASE = os.environ.get(
+    "G16WEB_UPDATE_BASE", "https://github.com/baizhancaiji/gauforge")
+UPDATE_ASSET = "gauforge-deploy-linux-x64.tar.gz"  # 固定名附件（与 update.sh 同源）
+UPDATE_DEFAULT_PROXY = "https://v4.gh-proxy.org"  # 与 update.sh DEFAULT_PROXY 一致
+UPDATE_CONNECT_TIMEOUT_S = 15  # 连接超时（与 update.sh --connect-timeout 一致）
+UPDATE_READ_TIMEOUT_S = 30  # 读超时
+
 # ---------- 运行级默认值（契约 §2.2 运行级参数表） ----------
 RUNTIME_DEFAULTS: dict[str, object] = {
     "listen_port": 8300,
@@ -33,6 +46,7 @@ RUNTIME_DEFAULTS: dict[str, object] = {
     "link0_default_nproc": 4,
     "link0_default_mem_gb": 8,
     "g16_root": "~/g16",
+    "update_check_interval": "weekly",
 }
 
 # ---------- 设置目录（数据驱动渲染元数据） ----------
@@ -85,6 +99,10 @@ RUNTIME_SETTINGS: list[dict] = [
     {"key": "g16_root", "value_type": "string", "range": None,
      "editable": True, "effect": "new_submissions", "env_var": None,
      "description": "G16 发行目录（g16root 布局；仅对其后新任务生效）"},
+    {"key": "update_check_interval", "value_type": "string",
+     "range": {"enum": ["daily", "weekly", "monthly", "never"]},
+     "editable": True, "effect": "immediate", "env_var": None,
+     "description": "自动检查更新周期（凌晨 1:00 锚定、错过窗口启动补查；只发现不安装）"},
 ]
 
 # 未知 key 拒改：白名单 = 目录全部 key（PUT 校验用）。
@@ -94,6 +112,82 @@ SETTINGS_CATALOG: dict[str, dict] = {
 
 # 仓库根（SSOT 测试等以仓库根为工作目录跑生成命令）。
 PROJECT_ROOT = CONTRACT_PATH.parent.parent
+
+
+# ---------- 版本单一事实来源（v2.1.0 功能更新，version-update-impl-plan B1） ----------
+# 三级解析链：部署目录 VERSION 文件 → git describe --tags（源码形态）→
+# CHANGELOG.jsonl 最新 released 行兜底；进程启动时一次完成（模块级常量，不做
+# 运行时探测）。对外形态带 v 前缀（与部署 VERSION 文件、git tag 同形态）；
+# 版本比较与 openapi info.version 派生一律经 bare_version() 取裸版本，
+# 消费方不得各自剥离。
+
+logger = logging.getLogger(__name__)
+
+_VERSION_FALLBACK = "v0.0.0+unknown"
+
+
+def _version_from_file(root: Path) -> str | None:
+    """① 部署目录 VERSION 文件（package_release.sh 打包时写入，如 v2.0.0）。"""
+    try:
+        text = (root / "VERSION").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return text or None
+
+
+def _version_from_git(root: Path) -> str | None:
+    """② git describe --tags（源码形态；非 git 仓库或无 tag 时失败）。"""
+    try:
+        proc = subprocess.run(
+            ["git", "describe", "--tags"], cwd=root,
+            capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    out = proc.stdout.strip()
+    if proc.returncode != 0 or not out:
+        return None
+    return out
+
+
+def _version_from_changelog(root: Path) -> str | None:
+    """③ CHANGELOG.jsonl 最新 released 行兜底（append-only 时序，末个 released 即最新）。"""
+    latest: str | None = None
+    try:
+        with (root / "CHANGELOG.jsonl").open(encoding="utf-8") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if (row.get("status") == "released"
+                        and isinstance(row.get("version"), str)):
+                    latest = row["version"]
+    except OSError:
+        return None
+    return latest
+
+
+def resolve_version(root: Path | None = None) -> str:
+    """版本三级解析；全链失败兜底 v0.0.0+unknown 并告警，不炸启动。"""
+    base = PROJECT_ROOT if root is None else root
+    found = (_version_from_file(base) or _version_from_git(base)
+             or _version_from_changelog(base))
+    if not found:
+        logger.warning("版本解析链全部失败（VERSION 文件/git/CHANGELOG 均不可得）")
+        return _VERSION_FALLBACK
+    found = found.strip()
+    return found if found.startswith("v") else f"v{found}"
+
+
+def bare_version(version: str | None = None) -> str:
+    """剥 v 前缀的裸版本：版本比较与 openapi info.version 派生的单点入口。"""
+    raw = APP_VERSION if version is None else version
+    return raw[1:] if raw.startswith("v") else raw
+
+
+APP_VERSION = resolve_version()
 
 
 def setting_value(key: str) -> object:
