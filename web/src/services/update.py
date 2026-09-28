@@ -27,14 +27,14 @@ import subprocess
 import tempfile
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
 from packaging.version import InvalidVersion, Version
 
 from .. import config
-from ..errors import err
+from ..errors import ApiError, err
 from ..mock import get_state
 from ..store import executions as executions_store
 
@@ -314,6 +314,12 @@ class UpdateService:
     def phase(self) -> str:
         with self._lock:
             return self._phase
+
+    @property
+    def pending(self) -> dict | None:
+        """受理上下文（路由受理后据此调度 run_pending 后台流水线）。"""
+        with self._lock:
+            return self._pending
 
     def transition(self, phase: str, *, message: str | None = None,
                    version: str | None = None) -> None:
@@ -631,3 +637,89 @@ def reset_service() -> None:
     """测试清理：丢弃单例（内存相归零，伴生文件由测试自管）。"""
     global _service
     _service = None
+
+
+# ---------------- 自动检查调度（D4：30s 轮询式，§1.2-5） ----------------
+
+AUTO_CHECK_POLL_S = 30.0  # 轮询粒度（验收口径：设置变更 30s 内生效）
+
+
+def window_start(interval: str, now: datetime) -> datetime | None:
+    """当前周期窗口起点（本地时间锚定凌晨 01:00；never 不排程 → None）。
+
+    daily=今日 01:00；weekly=本周一 01:00；monthly=本月 1 日 01:00。"""
+    anchor = now.replace(hour=1, minute=0, second=0, microsecond=0)
+    if interval == "daily":
+        return anchor
+    if interval == "weekly":
+        return anchor - timedelta(days=now.weekday())
+    if interval == "monthly":
+        return anchor.replace(day=1)
+    return None
+
+
+def checked_within_window(checked_at: str | None, start: datetime) -> bool:
+    """.update-check 的 checked_at 是否落在当前窗口起点之后
+    （=本窗口已查过；解析失败按未查过处理，触发补查）。"""
+    if not checked_at:
+        return False
+    try:
+        dt = datetime.fromisoformat(checked_at)
+    except ValueError:
+        return False
+    return dt >= start
+
+
+class AutoCheckScheduler:
+    """自动检查调度（30s 轮询式）。
+
+    - 每轮醒来读最新设置值（保存即时生效，验收=30s 内生效，§1.2-5）；
+    - 窗口已开始且本窗口未查过（.update-check 判定，§1.2-6）→ 触发一次
+      检查：到点触发与启动补查同一口径，服务启动 ≤5min 补查由首轮醒来满足；
+    - never 空转休眠（不排程不补查）；只发现不安装（run_check 无 apply）。
+    """
+
+    def __init__(self, service: UpdateService | None = None,
+                 poll_seconds: float = AUTO_CHECK_POLL_S,
+                 clock=None, sleeper=None, settings_reader=None) -> None:
+        self._service = service or get_service()
+        self._poll = poll_seconds
+        self._clock = clock or (lambda: datetime.now().astimezone())
+        self._sleep = sleeper or asyncio.sleep
+        self._settings = settings_reader or self._read_interval
+        self._stopped = False
+
+    @staticmethod
+    def _read_interval() -> str:
+        from ..store import settings as settings_store
+        return str(settings_store().get("update_check_interval"))
+
+    def should_run_now(self) -> bool:
+        """本时刻是否应触发检查（窗口已开始且本窗口未查过）。"""
+        now = self._clock()
+        start = window_start(self._settings(), now)
+        if start is None or now < start:
+            return False
+        return not checked_within_window(load_check_state()["checked_at"],
+                                         start)
+
+    async def step(self) -> None:
+        """单次轮询步（测试入口；生产由 run() 循环调用）。
+
+        探测在工作线程执行（httpx 同步栈不阻塞事件循环）；失败仅记日志
+        （失败文案已随 phase=failed 入状态机，如实反馈）。"""
+        if not self.should_run_now():
+            return
+        try:
+            await asyncio.to_thread(self._service.run_check)
+        except ApiError:
+            logger.info("自动检查失败（失败文案已随 failed 相入状态机）")
+
+    async def run(self) -> None:
+        """调度主循环（挂 lifespan 后台任务；stop 后退出）。"""
+        while not self._stopped:
+            await self.step()
+            await self._sleep(self._poll)
+
+    def stop(self) -> None:
+        self._stopped = True
