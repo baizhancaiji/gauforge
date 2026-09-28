@@ -33,6 +33,10 @@ def _isolated_db(tmp_path, monkeypatch):
     # 引擎默认关闭（B10）：不 spawn 真 HQ、lifespan 走 M0 演示模式；
     # 引擎用例自行置 True 并注入 FakeGateway/FakePM。
     monkeypatch.setattr(config, "ENGINE_ENABLED", False)
+    # 更新自动检查调度（v2.1.0）在测试环境预置 never：lifespan 挂载的调度
+    # 协程醒来即空转，防止长用例（>30s，如 e2e）里真实触发检查（触网/写
+    # 伴生文件）；清表用例自行回落默认值，调度器方法保持真实语义可测。
+    store.settings().set("update_check_interval", "never")
     yield
     store.reset_db()
 

@@ -110,8 +110,9 @@ SETTINGS_CATALOG: dict[str, dict] = {
     m["key"]: m for m in [*STARTUP_SETTINGS, *RUNTIME_SETTINGS]
 }
 
-# 仓库根（SSOT 测试等以仓库根为工作目录跑生成命令）。
-PROJECT_ROOT = CONTRACT_PATH.parent.parent
+# 仓库根（部署形态=部署目录；伴生文件/形态判定/hq 定位的基准）。
+# 注意三层 parent：CONTRACT_PATH=<仓库根>/docs/api/openapi.yaml。
+PROJECT_ROOT = CONTRACT_PATH.parent.parent.parent
 
 
 # ---------- 版本单一事实来源（v2.1.0 功能更新，version-update-impl-plan B1） ----------
