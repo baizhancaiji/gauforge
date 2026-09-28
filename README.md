@@ -1,10 +1,7 @@
 # GauForge · Gaussian 16 管理工作台
 
-GauForge 是以 [HyperQueue](https://github.com/It4innovations/hyperqueue)
-为执行内核的 Gaussian 16 计算化学工作台，为 WSL2 单机工作流打造，
-以「输入 → 计算」为完整闭环。
-当前版本 **v1.0.0**：M0–M2（契约骨架、候选入口与队列执行、输入工程）已全部完成，
-构成完整产品；结果分析（M3）及以后为后续功能更新。
+GauForge 是以 [HyperQueue](https://github.com/It4innovations/hyperqueue)为执行内核的 Gaussian 16 计算化学工作台，为 WSL2 单机工作流打造，以「输入 → 计算」为完整闭环。
+当前版本 **v1.0.0**：M0–M2（契约骨架、候选入口与队列执行、输入工程）已全部完成，构成完整产品；结果分析（M3）及以后为后续功能更新。
 工作分支：`g16-webui`。
 
 ```
@@ -53,25 +50,20 @@ cargo build --release
 
 ## 内核来源
 
-`crates/` 改自上游 [It4innovations/hyperqueue](https://github.com/It4innovations/hyperqueue)
-主干（v0.26.2 之后的未发版提交，fork 点 `21f2d2e8b`，含其调度器改进），
-本项目历史已自立，上游更新改为按需手动移植（见 ADR 0002）。
+`crates/` 改自上游 [It4innovations/hyperqueue](https://github.com/It4innovations/hyperqueue)主干（v0.26.2 之后的未发版提交，fork 点 `21f2d2e8b`，含其调度器改进），本项目历史已自立，上游更新改为按需手动移植（见 ADR 0002）。
 若你在研究中使用 HyperQueue，请考虑
 [引用其论文](https://github.com/It4innovations/hyperqueue#publications)。
 
 ## AI 使用声明
 
-本项目由 keepoux 主导开发，过程中大量使用 AI 编码代理（ZCode CLI，GLM 系列模型）
-协作完成代码与文档的编写、测试与走查；需求定义、方案决策与验收把关由人类完成。
+本项目开发过程中大量使用 AI 编码代理协作完成代码与文档的编写、测试与走查；需求定义、方案决策与验收把关由作者完成。
 
 ## 许可
 
 分层许可（详见 [LICENSE](LICENSE)）：
 
-- **自有代码**（除 `crates/` 外的全部内容）：PolyForm Noncommercial License 1.0.0——
-  可自由使用、修改与再分发，但仅限非商业目的；商业使用需另行获得授权。
-- **内核 `crates/`**：上游 HyperQueue 的 MIT 许可完整保留
-  ([`crates/LICENSE`](crates/LICENSE))，不受上述限制。
+- **自有代码**（除 `crates/` 外的全部内容）：PolyForm Noncommercial License 1.0.0——可自由使用、修改与再分发，但仅限非商业目的；商业使用需另行获得授权。
+- **内核 `crates/`**：上游 HyperQueue 的 MIT 许可完整保留  ([`crates/LICENSE`](crates/LICENSE))，不受上述限制。
 - 其余第三方依赖各依其原始许可证。
 
 v1.0.0（含）之前的发布版本按 MIT 授权存续。
