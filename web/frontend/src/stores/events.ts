@@ -66,6 +66,10 @@ export const useEventsStore = defineStore("events", () => {
     workers_online: 0,
   });
 
+  // 更新流程相（update.phase 载荷，v2.1 更新域）：侧栏圆点与设置页
+  // 更新卡的联动状态源；载荷的 message/version 由更新卡按需消费。
+  const updatePhase = ref<string>("idle");
+
   // Toast 队列（右上滑入、自动消）。
   const toasts = ref<Toast[]>([]);
 
@@ -233,6 +237,9 @@ export const useEventsStore = defineStore("events", () => {
           workers_online: Number(d.workers_online),
         };
         break;
+      case "update.phase":
+        updatePhase.value = String(d.phase ?? "idle");
+        break;
       case "settings.updated":
         // 设置变更通知（多标签页同步，sse.md §2）：设置页 watch 后重拉。
         dirty.settings++;
@@ -345,6 +352,7 @@ export const useEventsStore = defineStore("events", () => {
     executions,
     pending,
     hq,
+    updatePhase,
     toasts,
     dirty,
     stalled,

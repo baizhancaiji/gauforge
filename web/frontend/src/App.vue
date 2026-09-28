@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
-import { RouterLink, RouterView, useRoute } from "vue-router";
+import { computed, onMounted, ref, watch } from "vue";
+import { RouterLink, RouterView, useRoute, useRouter } from "vue-router";
 
 import ThemeToggle from "@/components/ThemeToggle.vue";
+import { client } from "@/api/client";
 import { useEventsStore } from "@/stores/events";
 
 const route = useRoute();
+const router = useRouter();
 const events = useEventsStore();
 
 const nav = [
@@ -39,7 +41,27 @@ const hqText = computed(() => {
   }
 });
 
-onMounted(() => events.start());
+// 侧栏版本行（§3.1）：health 下发带 v 形态直接渲染，前端不加前缀；
+// 启动拉取一次，断线重连/服务重启后重拉校对（随强刷机制自然对齐）。
+const version = ref("");
+async function pullVersion() {
+  const { data } = await client.GET("/system/health");
+  if (data) version.value = data.version;
+}
+watch(
+  () => events.connection,
+  (conn, prev) => {
+    if (conn === "open" && prev === "reconnecting") pullVersion();
+  },
+);
+
+// 更新可用圆点（D5）：available 点亮，done/up_to_date 熄灭，其余相默认灭。
+const updateDotOn = computed(() => events.updatePhase === "available");
+
+onMounted(() => {
+  pullVersion();
+  events.start();
+});
 </script>
 
 <template>
@@ -52,6 +74,13 @@ onMounted(() => events.start());
           <span class="brand-line mono">管理工作台</span>
         </span>
       </div>
+
+      <!-- 版本行（§3.1）：品牌两行下方，点击（热区含圆点）跳设置页更新卡；
+           无导航项形态，hover/focus 微反馈为唯一交互暗示 -->
+      <button class="version-row" type="button" @click="router.push('/settings')">
+        <span class="update-dot" :class="{ 'update-dot--on': updateDotOn }" aria-hidden="true"></span>
+        <span class="version-text mono">{{ version }}</span>
+      </button>
 
       <nav class="nav">
         <RouterLink
@@ -136,7 +165,7 @@ onMounted(() => events.start());
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-2) var(--space-6);
+  padding: var(--space-2) var(--space-2) var(--space-4);
 }
 /* 磷光青 8px 方块电源灯（§3）：服务在线常亮、断线 danger 闪烁（接 SSE 连接态） */
 .brand-dot {
@@ -173,11 +202,55 @@ onMounted(() => events.start());
   color: var(--text-primary);
 }
 
+/* 版本行（§3.1）：mono 弱化色装饰从简；点击跳设置页，去按钮化样式 */
+.version-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 var(--space-2) var(--space-3);
+  padding: 2px var(--space-2);
+  padding-left: 16px; /* 与 brand-name 左缘对齐（brand-dot 8px + gap 8px） */
+  background: none;
+  border: none;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  color: var(--text-faint);
+  transition:
+    color var(--dur-fast) var(--ease-std),
+    background-color var(--dur-fast) var(--ease-std);
+}
+.version-row:hover {
+  color: var(--text-secondary);
+  background: var(--row-hover);
+}
+.version-row:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+.version-text {
+  font-size: var(--text-xs); /* 版本号纯拉丁（v 前缀形态），微标签档 */
+}
+/* D5 accent 圆点：available 点亮、熄灭为中性灰；--dot-size 圆形与
+   brand-dot（8px 方形）以位置尺寸区分，不新增颜色语义 */
+.update-dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border-radius: 50%;
+  background: var(--state-idle);
+  transition: background-color var(--dur-fast) var(--ease-std);
+}
+.update-dot--on {
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 70%, transparent);
+}
+
 .nav {
   display: flex;
   flex-direction: column;
   gap: 2px;
   flex: 1;
+  border-top: 1px solid var(--border-hair); /* 导航区与版本行视觉分离（§3.1） */
+  padding-top: var(--space-3);
 }
 /* 导航项（§3，2026-09-27 人为指定调整）：中英上下两行，命中区 --nav-item-height */
 .nav-item {
