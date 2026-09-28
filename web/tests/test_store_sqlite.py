@@ -102,6 +102,26 @@ def test_seats_crud(repos):
     assert s.get(sid) is None
 
 
+def test_seats_order_persists_across_restart(tmp_path):
+    """席位序列（用户拖拽重排结果）跨服务重启保持：写库重开连接后
+    list_by_position 顺序一致（工作区持久化、更新/重启不回默认，2026-09-29）。"""
+    t1 = TasksRepo(Database(tmp_path / "p.db"))
+    run_migrations(t1._db)
+    s1 = SeatsRepo(t1._db)
+    ids = sorted(t1.create_candidate(f"{i}.gjf", "imported") for i in range(3))
+    sids = [s1.append(kind="task", task_id=tid) for tid in ids]
+    s1.reorder([sids[2], sids[0], sids[1]])  # 模拟用户重排
+    t1._db.close()
+
+    t2 = TasksRepo(Database(tmp_path / "p.db"))
+    run_migrations(t2._db)
+    s2 = SeatsRepo(t2._db)
+    assert [r["seat_id"] for r in s2.list_by_position()] == \
+        [sids[2], sids[0], sids[1]]
+    assert [r["position"] for r in s2.list_by_position()] == [0, 1, 2]
+    t2._db.close()
+
+
 def test_executions_crud(repos):
     t = repos["tasks"]
     e = repos["executions"]
