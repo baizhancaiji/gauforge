@@ -241,3 +241,180 @@ def test_preview_and_input_404_for_locked_member(tmp_path, monkeypatch):
     assert client.get(
         f"/api/v1/candidates/{tid}/preview").status_code == 404
     assert client.get(f"/api/v1/candidates/{tid}/input").status_code == 404
+
+# ============================= 更新域（v2.1.0）=============================
+
+import httpx
+
+from web.src.mock import get_state
+from web.src.services import update as update_svc
+
+
+@pytest.fixture()
+def update_env(tmp_path, monkeypatch):
+    """更新域隔离：独立部署目录（VERSION+bin/hq）、服务单例复位、
+    拉起/自退替换（不真 Popen、不真 SIGTERM）、不触真实网络。"""
+    monkeypatch.setattr(config, "PROJECT_ROOT", tmp_path)
+    (tmp_path / "VERSION").write_text("v2.0.0", encoding="utf-8")
+    (tmp_path / "bin").mkdir()
+    (tmp_path / "bin" / "hq").write_bytes(b"\x7fELF")
+    update_svc.reset_service()
+    get_state().event_history.clear()
+    monkeypatch.setattr(update_svc.UpdateService, "_popen",
+                        staticmethod(lambda args, **kw: None))
+    monkeypatch.setattr(update_svc.UpdateService, "_self_terminate",
+                        staticmethod(lambda: None))
+    yield tmp_path
+    update_svc.reset_service()
+    get_state().event_history.clear()
+
+
+def _mock_release(monkeypatch, version=b"v2.1.1", version_exc=None,
+                  sha_status=200):
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if url.endswith("/VERSION"):
+            if version_exc is not None:
+                raise version_exc
+            return httpx.Response(200, content=version)
+        if url.endswith(".sha256"):
+            return httpx.Response(sha_status, content=f"{'0' * 64}  x\n".encode())
+        return httpx.Response(200, content=b"PAYLOAD",
+                              headers={"content-length": "7"})
+    # 每次调用新建 client（_request 的 with 自收会 close 实例）。
+    monkeypatch.setattr(update_svc, "_client",
+                        lambda: httpx.Client(
+                            transport=httpx.MockTransport(handler)))
+    return handler
+
+
+def test_update_status_fields_complete(update_env):
+    r = client.get("/api/v1/update/status")
+    assert r.status_code == 200
+    body = r.json()
+    assert set(body) == {"current_version", "latest_version",
+                         "last_checked_at", "phase", "message", "proxy",
+                         "supported"}
+    assert body["phase"] == "idle"
+    assert body["supported"] is True  # 部署形态（update_env 伪造布局）
+    assert body["proxy"] is None
+    assert body["latest_version"] is None
+    assert_contract_schema(spec, "GET", "/update/status", 200, body)
+
+
+def test_update_status_source_form_unsupported(monkeypatch):
+    monkeypatch.setattr(config, "PROJECT_ROOT", config.PROJECT_ROOT)  # 源码形态
+    update_svc.reset_service()
+    try:
+        r = client.get("/api/v1/update/status")
+        assert r.status_code == 200
+        assert r.json()["supported"] is False
+        assert_contract_schema(spec, "GET", "/update/status", 200, r.json())
+    finally:
+        update_svc.reset_service()
+
+
+def test_update_check_available(update_env, monkeypatch):
+    _mock_release(monkeypatch, version=b"v2.1.1")
+    r = client.post("/api/v1/update/check")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["phase"] == "available"
+    assert body["latest_version"] == "v2.1.1"
+    assert body["message"] == "发现新版本 v2.1.1！查看更新说明"
+    assert_contract_schema(spec, "POST", "/update/check", 200, body)
+
+
+def test_update_check_up_to_date(update_env, monkeypatch):
+    _mock_release(monkeypatch, version=b"v2.0.0")
+    r = client.post("/api/v1/update/check")
+    assert r.status_code == 200
+    assert r.json()["phase"] == "up_to_date"
+    assert_contract_schema(spec, "POST", "/update/check", 200, r.json())
+
+
+def test_update_check_failed_502(update_env, monkeypatch):
+    _mock_release(monkeypatch, version_exc=httpx.ConnectTimeout("boom"))
+    r = client.post("/api/v1/update/check")
+    assert r.status_code == 502
+    body = r.json()
+    assert body["error"]["code"] == "UPDATE_CHECK_FAILED"
+    assert body["error"]["message"] == "连接超时，请检查网络"
+    assert_contract_schema(spec, "POST", "/update/check", 502, body)
+
+
+def test_update_apply_unsupported_409(update_env):
+    (update_env / "bin" / "hq").unlink()
+    r = client.post("/api/v1/update/apply")
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "UPDATE_UNSUPPORTED"
+    assert_contract_schema(spec, "POST", "/update/apply", 409, r.json())
+
+
+def test_update_apply_blocked_running_409(update_env):
+    from web.src import store
+    tid = store.tasks().create_candidate("running.gjf", "imported")
+    store.executions().create(
+        task_id=tid, filename="running.gjf",
+        resources={"nproc": {"value": 1, "defaulted": True},
+                   "mem_gb": {"value": 1.0, "defaulted": True}})
+    r = client.post("/api/v1/update/apply")
+    assert r.status_code == 409
+    assert r.json()["error"]["code"] == "UPDATE_BLOCKED_RUNNING"
+    assert r.json()["error"]["message"] == \
+        "为保证运行稳定性，任务执行期间禁止更新"
+    assert_contract_schema(spec, "POST", "/update/apply", 409, r.json())
+
+
+def test_update_apply_precheck_sha_failed_502(update_env, monkeypatch):
+    _mock_release(monkeypatch, sha_status=404)
+    r = client.post("/api/v1/update/apply")
+    assert r.status_code == 502
+    body = r.json()
+    assert body["error"]["code"] == "UPDATE_DOWNLOAD_FAILED"
+    assert_contract_schema(spec, "POST", "/update/apply", 502, body)
+
+
+def test_update_apply_precheck_check_failed_502(update_env, monkeypatch):
+    _mock_release(monkeypatch, version_exc=httpx.ConnectError("down"))
+    r = client.post("/api/v1/update/apply")
+    assert r.status_code == 502
+    assert r.json()["error"]["code"] == "UPDATE_CHECK_FAILED"
+    assert_contract_schema(spec, "POST", "/update/apply", 502, r.json())
+
+
+def test_update_apply_accepted_202(update_env, monkeypatch):
+    _mock_release(monkeypatch, version=b"v2.1.1")
+    r = client.post("/api/v1/update/apply")
+    assert r.status_code == 202
+    body = r.json()
+    assert body["phase"] == "downloading"
+    assert body["latest_version"] == "v2.1.1"
+    assert_contract_schema(spec, "POST", "/update/apply", 202, body)
+
+
+def test_update_proxy_set_and_direct(update_env):
+    r = client.put("/api/v1/update/proxy", json={"proxy": None})
+    assert r.status_code == 200
+    assert r.json()["proxy"] is None
+    assert (update_env / ".update-proxy").read_bytes() == b""  # 直连=空文件
+    assert_contract_schema(spec, "PUT", "/update/proxy", 200, r.json())
+
+    r = client.put("/api/v1/update/proxy",
+                   json={"proxy": "https://v4.gh-proxy.org"})
+    assert r.status_code == 200
+    assert r.json()["proxy"] == "https://v4.gh-proxy.org"
+    assert (update_env / ".update-proxy").read_bytes() == \
+        b"https://v4.gh-proxy.org"  # URL 原文、无尾换行
+    assert_contract_schema(spec, "PUT", "/update/proxy", 200, r.json())
+
+
+def test_update_proxy_invalid_400(update_env):
+    for bad in ("not a url", "ftp://x.example", "https://"):
+        r = client.put("/api/v1/update/proxy", json={"proxy": bad})
+        assert r.status_code == 400, bad
+        assert r.json()["error"]["code"] == "INVALID_REQUEST"
+        assert_contract_schema(spec, "PUT", "/update/proxy", 400, r.json())
+    r = client.put("/api/v1/update/proxy", json={})
+    assert r.status_code == 400  # 缺 proxy 字段
+    assert r.json()["error"]["code"] == "INVALID_REQUEST"
