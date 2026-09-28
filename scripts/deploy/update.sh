@@ -6,7 +6,9 @@
 #   ./update.sh --proxy https://自定义/     自定义代理（需兼容 gh-proxy 的 URL 前缀改写约定）
 #   ./update.sh --no-proxy                 直连
 #   环境变量 GAUFORGE_PROXY 等效 --proxy <值>
-# 选择持久化到 .update-proxy，之后不带参数沿用上次选择；--check 只查远端版本。
+# 选择持久化到工作区 ${G16WEB_HOME:-$HOME/g16web}/.update-proxy（与 WebUI
+# 更新卡共用同一份；更新/重装部署目录不丢），之后不带参数沿用上次选择；
+# --check 只查远端版本。
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -14,7 +16,7 @@ OWNER="baizhancaiji"
 REPO="gauforge"
 ASSET="gauforge-deploy-linux-x64.tar.gz"
 DEFAULT_PROXY="https://v4.gh-proxy.org"
-CONF=".update-proxy"
+CONF="${G16WEB_HOME:-$HOME/g16web}/.update-proxy"
 
 mode="apply"
 proxy=""
@@ -31,6 +33,7 @@ while [ $# -gt 0 ]; do
     *) echo "未知参数: $1（可用 --proxy [URL] / --no-proxy / --check）" >&2; exit 2 ;;
   esac
 done
+mkdir -p "$(dirname "$CONF")"
 printf '%s' "$proxy" > "$CONF"
 
 base="https://github.com/$OWNER/$REPO"
@@ -62,7 +65,7 @@ tar -xzf "$tmp/$ASSET" -C "$tmp/unpack"
 src="$tmp/unpack/gauforge"
 [ -d "$src/web/src" ] || { echo "[update] 包结构异常，中止" >&2; exit 1; }
 
-# 覆盖代码与产物（包内不含 .venv / .update-proxy，本目录二者不受影响）
+# 覆盖代码与产物（包内不含 .venv；代理配置在工作区，本目录与工作区均不受影响）
 cp -a "$src/web" "$src/docs" .
 install -m 644 "$src/requirements.txt" "$src/VERSION" "$src/README.md" "$src/CHANGELOG.md" "$src/LICENSE" .
 install -d crates
