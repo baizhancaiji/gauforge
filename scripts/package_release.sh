@@ -52,7 +52,8 @@ install -m 644 requirements.txt LICENSE README.md CHANGELOG.md "$pkg/"
 install -d "$pkg/crates"
 install -m 644 crates/LICENSE "$pkg/crates/LICENSE"   # 保持 crates/ 路径：与根 LICENSE 基本名冲突
 install -m 755 target/release/hq "$pkg/bin/hq"
-install -m 755 scripts/deploy/install.sh scripts/deploy/update.sh "$pkg/"
+install -m 755 scripts/deploy/install.sh scripts/deploy/update.sh \
+  scripts/deploy/self_update.sh "$pkg/"
 printf '%s\n' "$version" > "$pkg/VERSION"
 
 mkdir -p "$out"
