@@ -545,6 +545,18 @@ components:
               nullable: true
               description: "M3 占位，恒 null（Result 字段全集随 M3 契约 diff 一次性扩展）"
 
+    HistoryExportRequest:
+      type: object
+      description: 批量导出请求（执行 id 集合；服务端去重保序）
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          items:
+            type: integer
+          description: 历史条目（终态执行）id 集合
+
     # ---------------- 输入分块结构 ----------------
     MoleculeSummary:
       type: object
@@ -1722,6 +1734,37 @@ paths:
                     type: integer
                   removed_rwf:
                     type: integer
+
+  /history/export:
+    post:
+      tags: [history]
+      operationId: exportHistoryOutputs
+      summary: 批量导出选中条目的输出文件（ZIP；逐条 .out 命名）
+      description: |
+        按执行 id 集合打包 run/<id>/input.log（G16 输出）为 ZIP 下载：
+        条目内命名 <任务stem>.out（正规输出扩展），同一任务多次执行产生
+        同名冲突时全部改用「三位补零执行 id-<stem>.out」前缀区分；
+        无输出文件的条目（skipped/输出已缺）跳过并在包内 _导出说明.txt
+        逐条登记，选中条目全部无输出时 404。响应
+        Content-Disposition: attachment; filename=gauforge-outputs-<时刻>.zip。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoryExportRequest'
+      responses:
+        '200':
+          description: 输出文件 ZIP 包
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
 
   /events:
     get:

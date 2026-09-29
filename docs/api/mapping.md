@@ -55,11 +55,12 @@
 
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
-| 历史表格（终态/归因/耗时/资源/队列归属） | GET /api/v1/history | `history.appended` → 重拉当前页 |
+| 历史表格（终态/归因/耗时/资源/队列归属；复选框多选与候选页同套件：Shift 范围/Ctrl 单选/Ctrl+A/Esc/方向键） | GET /api/v1/history | `history.appended` → 重拉当前页 |
+| 勾选批量导出输出文件（.out 打包 ZIP） | GET /api/v1/history；POST /api/v1/history/export | — |
 | 排序切换（提交时间/完成时间/文件名，升降；`sort` 参数；选择经 ui-preferences 跨会话记忆，历史页与归档页键分立） | GET /api/v1/history?sort=…；GET·PUT /api/v1/ui-preferences（键 `history.sort`/`archive.sort`） | 同上（重拉当前页） |
 | 行点击 → 详情抽屉（全字段 + input_hash/监控摘要/chk 快照/result_ref） | GET /api/v1/history/{id} | — |
 | 查看输入原文 | GET /api/v1/history/{id}/input | — |
-| 输出预览 / 导出 | GET /api/v1/history/{id}/output | — |
+| 输出预览 / 单条导出（?download 以 <stem>.out 命名下载） | GET /api/v1/history/{id}/output | — |
 | 归档 | POST /api/v1/history/{id}/archive | — |
 | 重新排队（M1） | POST /api/v1/history/{id}/requeue | `pending.snapshot` |
 | 退回候选（M1） | POST /api/v1/history/{id}/return-candidate | `candidates.changed(created)` |
@@ -90,8 +91,8 @@
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 39 个操作均已在上表被至少一个界面元素引用：
-candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(8) ·
+全部 40 个操作均已在上表被至少一个界面元素引用：
+candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(9) ·
 settings(2) · system/events(3) · update(4) · ui-prefs(2)。—— 由 A5
 walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
-计划 D3；ui-prefs(2) 为视图偏好持久化域）。
+计划 D3；ui-prefs(2) 为视图偏好持久化域；history/export 为历史批量导出）。

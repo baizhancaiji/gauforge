@@ -571,6 +571,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 批量导出选中条目的输出文件（ZIP；逐条 .out 命名）
+         * @description 按执行 id 集合打包 run/<id>/input.log（G16 输出）为 ZIP 下载：
+         *     条目内命名 <任务stem>.out（正规输出扩展），同一任务多次执行产生
+         *     同名冲突时全部改用「三位补零执行 id-<stem>.out」前缀区分；
+         *     无输出文件的条目（skipped/输出已缺）跳过并在包内 _导出说明.txt
+         *     逐条登记，选中条目全部无输出时 404。响应
+         *     Content-Disposition: attachment; filename=gauforge-outputs-<时刻>.zip。
+         */
+        post: operations["exportHistoryOutputs"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -871,6 +896,11 @@ export interface components {
             archived: boolean;
             /** @description M3 占位，恒 null（Result 字段全集随 M3 契约 diff 一次性扩展） */
             result_ref: string | null;
+        };
+        /** @description 批量导出请求（执行 id 集合；服务端去重保序） */
+        HistoryExportRequest: {
+            /** @description 历史条目（终态执行）id 集合 */
+            ids: number[];
         };
         /** @description 分子说明节统计（Hill 记法元素统计） */
         MoleculeSummary: {
@@ -2003,6 +2033,32 @@ export interface operations {
                     };
                 };
             };
+        };
+    };
+    exportHistoryOutputs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HistoryExportRequest"];
+            };
+        };
+        responses: {
+            /** @description 输出文件 ZIP 包 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
         };
     };
     sseEvents: {
