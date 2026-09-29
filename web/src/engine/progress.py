@@ -6,7 +6,9 @@
 
 - 优化步：` Step number   N out of a maximum of   M`（Berny 每优化步一行）；
 - SCF 迭代：` Cycle   N  Pass M  IDiag D:`（每 SCF 迭代一行，新一轮 SCF
-  自 Cycle 1 重启，converged 随之复位 False）；
+  自 Cycle 1 重启，converged 随之复位 False；`Cycle 1` 行出现即新一轮，
+  scf_round 自 1 递增——单任务 SCF 随优化步/扫描点多轮进行，圈数单独
+  重置不利于监控，轮次+圈数组合唯一定位当前进度）；
 - SCF 收敛：` SCF Done:` → converged=True（附加信号，非独立进度类型）。
 
 位点续传：per-execution offset 内存保持，文件增长只读增量；半行缓冲待
@@ -51,7 +53,7 @@ class ProgressTracker:
         if st is None:
             st = self._state[execution_id] = {
                 "offset": 0, "pending": "", "catchup": True,
-                "opt_step": None, "scf_cycle": None,
+                "opt_step": None, "scf_cycle": None, "scf_round": None,
                 "converged": None, "last_line": None, "last_emit": None}
         try:
             if log_path.stat().st_size < st["offset"]:
@@ -60,7 +62,7 @@ class ProgressTracker:
                 st["offset"] = 0
                 st["pending"] = ""
                 st["catchup"] = True
-                st["opt_step"] = st["scf_cycle"] = None
+                st["opt_step"] = st["scf_cycle"] = st["scf_round"] = None
                 st["converged"] = st["last_line"] = None
             with log_path.open("rb") as fh:
                 fh.seek(st["offset"])
@@ -84,6 +86,7 @@ class ProgressTracker:
             if m:
                 st["scf_cycle"] = int(m.group(1))
                 if st["scf_cycle"] == 1:
+                    st["scf_round"] = (st["scf_round"] or 0) + 1
                     st["converged"] = False  # 新一轮 SCF 开始
                 st["last_line"] = ln[:_LAST_LINE_MAX]
                 progress = True
@@ -114,6 +117,8 @@ class ProgressTracker:
             facts["opt_step"] = st["opt_step"]
         if st["scf_cycle"] is not None:
             facts["scf_cycle"] = st["scf_cycle"]
+        if st["scf_round"] is not None:
+            facts["scf_round"] = st["scf_round"]
         if st["converged"] is not None:
             facts["converged"] = st["converged"]
         if st["last_line"] is not None:
