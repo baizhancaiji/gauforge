@@ -16,3 +16,12 @@ export function getText(
 ) {
   return client.GET(path, { params: { path: { id } }, parseAs: "text" });
 }
+
+/**
+ * 历史批量导出（application/zip 二进制）：按 parseAs blob 取包，
+ * 下载落盘与文件名生成由视图层处理（契约 schema 为 binary string，
+ * 运行时 Blob 由调用方自断言）。
+ */
+export function exportOutputs(ids: number[]) {
+  return client.POST("/history/export", { body: { ids }, parseAs: "blob" });
+}

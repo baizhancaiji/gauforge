@@ -1,24 +1,28 @@
 <script setup lang="ts">
 /**
  * 05 历史 / 归档（m0-frontend-design §5 · 表格型全宽；m1-plan C6 真实化）
- * 全宽表格（id/任务/状态徽标/归因/提交/结束/耗时/资源/队列归属）+ 顶部状态筛选；
+ * 全宽表格（复选框/ID/任务/状态徽标/归因/提交/结束/耗时/资源/队列归属）
+ * + 顶部状态筛选；表格多选与候选页同一交互套件（useMultiSelect：复选框、
+ * Shift 锚点范围、Ctrl/Cmd 单选、Ctrl+A/Esc/方向键），勾选经工具条批量
+ * 导出 .out（POST /history/export → ZIP blob 下载，跨页勾选整体参与）；
  * 状态徽标与筛选下拉中文显示（taskStateLabel 单一来源，与队列页同纪律，
  * 2026-09-27 验收修正）；
- * 行点击 → 详情抽屉：终态冻结全字段以单行键值行呈现（dt 左/值右，
- * 2026-09-29 紧凑化，抽屉宽 --drawer-width 440px）+ 输入查看 / 输出预览
- * （限高滚动，打开后滚入视野）与 ?download=true 导出 + 归档 +
- * failed/skipped 重新排队与退回候选（409 提示）+ 清理入口（统计回显）。
+ * 行点击（普通点击）→ 详情抽屉：终态冻结全字段以单行键值行呈现（dt 左/值右，
+ * 2026-09-29 紧凑化，抽屉宽 --drawer-width 520px）+ 输入查看 / 输出预览
+ * （限高滚动，打开后滚入视野）与 ?download=true 单条导出（<stem>.out 命名）
+ * + 归档 + failed/skipped 重新排队与退回候选（409 提示）+ 清理入口（统计回显）。
  * 归档管理视图承载 archived=true（独立路由 /archive，决策点 10），仅保留查看动作。
  */
 import { computed, nextTick, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
-import { client, getText } from "@/api/client";
+import { client, exportOutputs, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
+import { useMultiSelect } from "@/composables/useMultiSelect";
 import { useSortPref } from "@/composables/useSortPref";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtDeclaredRes, fmtDuration, fmtHash, fmtMemory, fmtPercent } from "@/utils/format";
@@ -117,6 +121,106 @@ const activeId = computed(() => selected.value?.id ?? null);
 const canRequeue = computed(
   () => selected.value?.state === "failed" || selected.value?.state === "skipped",
 );
+
+// ---------- 表格多选（与候选页同套件：useMultiSelect 锚点+焦点驱动） ----------
+/** 滚动容器 ref：键盘事件宿主（tabindex=0）与行元素序来源（与列表响应序
+ *  对齐，供导航滚动定位）。 */
+const tableScroll = ref<HTMLElement | null>(null);
+const {
+  checkedIds,
+  anchorIndex,
+  focusedIndex,
+  clearAll,
+  resetIndices,
+  click: checkAt,
+  pointAt,
+  toggle: toggleId,
+  selectRange,
+  selectAll,
+  onKeydown: onListKeydown,
+} = useMultiSelect({
+  ids: () => list.value.map((h) => h.id),
+  rows: () =>
+    tableScroll.value
+      ? Array.from(tableScroll.value.querySelectorAll<HTMLElement>("tbody tr"))
+      : null,
+});
+// 列表整体重载（翻页/重取）→ 页内索引失效：重置锚点/焦点（勾选跨页保留）
+watch(list, resetIndices);
+
+const allChecked = computed(
+  () =>
+    list.value.length > 0 && list.value.every((h) => checkedIds.value.has(h.id)),
+);
+
+/** 表头全选/清空 */
+function toggleAll() {
+  if (allChecked.value) clearAll();
+  else selectAll();
+}
+
+/** 行点击（修饰交互全在行上，参照资源管理器范式）：普通点击 → 详情抽屉
+ *  （排错入口）+ 锚点/焦点同步衔接 Shift 扩展；Shift+行点击——从锚点行
+ *  到目标行范围勾选（普通 Shift 替换式、Ctrl+Shift 追加式，锚点不动）；
+ *  Ctrl/Cmd+行点击——切换单项勾选并重置锚点。修饰点击不开抽屉，
+ *  多选导出不被打断。 */
+function onRowClick(h: HistoryEntry, index: number, e: MouseEvent) {
+  if (e.shiftKey && anchorIndex.value !== -1) {
+    selectRange(anchorIndex.value, index, e.ctrlKey || e.metaKey);
+    focusedIndex.value = index;
+    return;
+  }
+  if (e.ctrlKey || e.metaKey) {
+    toggleId(h.id);
+    anchorIndex.value = index;
+    focusedIndex.value = index;
+    return;
+  }
+  open(h);
+  pointAt(index);
+}
+
+/** 行复选框点击（统一接 Shift/Ctrl 修饰）。不 preventDefault——Chromium 的
+ *  checkbox 取消激活回滚发生在 Vue 渲染写入之后，会覆盖 :checked 的同步
+ *  （候选页同款修正：counter 已更新而复选框不亮）；放行原生翻转后按
+ *  checkedIds 语义同步修正被点击项 DOM，随后容器聚焦承接键盘导航。 */
+function onRowCheck(index: number, e: MouseEvent) {
+  checkAt(index, e);
+  const box = e.target as HTMLInputElement;
+  const id = list.value[index]?.id;
+  if (box && id != null) box.checked = checkedIds.value.has(id);
+  tableScroll.value?.focus();
+}
+
+// ---------- 勾选批量导出（POST /history/export → ZIP blob 落盘） ----------
+const exporting = ref(false);
+const exportNote = ref<string | null>(null);
+
+async function exportSelected() {
+  // 跨页勾选集合整体参与（useMultiSelect 勾选跨页保留），按 id 升序打包
+  const ids = [...checkedIds.value].map(Number).sort((a, b) => a - b);
+  if (!ids.length) return;
+  exporting.value = true;
+  exportNote.value = null;
+  const { data, error } = await exportOutputs(ids);
+  exporting.value = false;
+  if (error || !data) {
+    const body = error as unknown as { error?: { message?: string } };
+    exportNote.value = body?.error?.message ?? "导出失败";
+    return;
+  }
+  // binary 契约经 parseAs blob 取包；文件名带本地时刻避免重复导出互相覆盖
+  const url = URL.createObjectURL(data as unknown as Blob);
+  const a = document.createElement("a");
+  const t = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  a.download =
+    `gauforge-outputs-${t.getFullYear()}${p(t.getMonth() + 1)}${p(t.getDate())}` +
+    `-${p(t.getHours())}${p(t.getMinutes())}${p(t.getSeconds())}.zip`;
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ---------- 输入查看 / 输出预览与导出（?download=true） ----------
 async function viewText(kind: "input" | "output") {
@@ -250,6 +354,19 @@ async function confirmCleanup() {
         </select>
       </label>
 
+      <!-- 勾选批量导出（与候选页多选同套件）：跨页勾选整体参与 -->
+      <span class="tb-divider" aria-hidden="true"></span>
+      <span v-if="checkedIds.size" class="picked-count mono">已选 {{ checkedIds.size }}</span>
+      <button
+        class="btn btn--secondary"
+        type="button"
+        :disabled="!checkedIds.size || exporting"
+        @click="exportSelected"
+      >
+        {{ exporting ? "导出中 …" : "导出 .out" }}
+      </button>
+      <span v-if="exportNote" class="export-note mono" role="alert">{{ exportNote }}</span>
+
       <span class="spacer"></span>
       <RouterLink v-if="!archived" class="btn btn--secondary" to="/archive">归档管理</RouterLink>
       <RouterLink v-else class="btn btn--secondary" to="/history">返回历史</RouterLink>
@@ -276,38 +393,74 @@ async function confirmCleanup() {
     </div>
 
     <section v-else class="table-card">
-      <div class="table-scroll">
-        <div class="thead mono">
-          <span>ID</span>
-          <span>任务</span>
-          <span>状态</span>
-          <span>归因</span>
-          <span>提交</span>
-          <span>结束</span>
-          <span>耗时</span>
-          <span>资源</span>
-          <span>出处</span>
-        </div>
-        <div
-          v-for="h in list"
-          :key="h.id"
-          class="row"
-          :class="{ 'row--active': activeId === h.id }"
-          @click="open(h)"
-        >
-          <span class="mono dim">{{ String(h.id).padStart(3, "0") }}</span>
-          <span class="mono file" :title="h.filename">{{ h.filename }}</span>
-          <!-- 状态列中文显示（taskStateLabel 单一来源，与队列页同纪律，2026-09-27） -->
-          <span>
-            <StateChip :state="h.state" :label="taskStateLabel[h.state] ?? h.state" />
-          </span>
-          <span class="mono dim">{{ h.cause ? causeLabel[h.cause] : "—" }}</span>
-          <span class="mono dim">{{ fmtDateTime(h.submitted_at) }}</span>
-          <span class="mono dim">{{ fmtDateTime(h.finished_at) }}</span>
-          <span class="mono">{{ fmtDuration(h.wall_time_s) }}</span>
-          <span class="mono dim">{{ fmtDeclaredRes(h.resources) }}</span>
-          <span class="mono dim">{{ h.queue_id ?? "直提" }}</span>
-        </div>
+      <!-- 多选交互宿主容器（与候选页同款）：tabindex 承接键盘导航
+           （Ctrl+A/Esc/方向键），Shift 按下的 mousedown 阻止默认行为
+           防范围点击拖出文本选区 -->
+      <div
+        ref="tableScroll"
+        class="table-scroll"
+        tabindex="0"
+        @keydown="onListKeydown"
+        @mousedown.shift.prevent
+      >
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="chk-col">
+                <input
+                  class="ck"
+                  type="checkbox"
+                  :checked="allChecked"
+                  aria-label="全选历史条目"
+                  @change="toggleAll"
+                />
+              </th>
+              <th class="mono">ID</th>
+              <th class="mono">任务</th>
+              <th class="mono">状态</th>
+              <th class="mono">归因</th>
+              <th class="mono">提交</th>
+              <th class="mono">结束</th>
+              <th class="mono">耗时</th>
+              <th class="mono">资源</th>
+              <th class="mono">出处</th>
+            </tr>
+          </thead>
+          <tbody class="stagger">
+            <tr
+              v-for="(h, i) in list"
+              :key="h.id"
+              :class="{
+                'row--active': activeId === h.id,
+                'row--checked': checkedIds.has(h.id),
+                'row--focused': focusedIndex === i,
+              }"
+              @click="onRowClick(h, i, $event)"
+            >
+              <td class="chk-col" @click.stop>
+                <input
+                  class="ck"
+                  type="checkbox"
+                  :checked="checkedIds.has(h.id)"
+                  :aria-label="`选择 ${h.filename}`"
+                  @click="onRowCheck(i, $event)"
+                />
+              </td>
+              <td class="mono dim">{{ String(h.id).padStart(3, "0") }}</td>
+              <td class="mono file" :title="h.filename">{{ h.filename }}</td>
+              <!-- 状态列中文显示（taskStateLabel 单一来源，与队列页同纪律，2026-09-27） -->
+              <td>
+                <StateChip :state="h.state" :label="taskStateLabel[h.state] ?? h.state" />
+              </td>
+              <td class="mono dim">{{ h.cause ? causeLabel[h.cause] : "—" }}</td>
+              <td class="mono dim">{{ fmtDateTime(h.submitted_at) }}</td>
+              <td class="mono dim">{{ fmtDateTime(h.finished_at) }}</td>
+              <td class="mono">{{ fmtDuration(h.wall_time_s) }}</td>
+              <td class="mono dim">{{ fmtDeclaredRes(h.resources) }}</td>
+              <td class="mono dim">{{ h.queue_id ?? "直提" }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
       <div class="scanline" aria-hidden="true" v-if="loading"></div>
       <!-- 列表底栏（§4.3 标准套件）：计数右对齐 + 分页控件居中（单页时控件隐藏） -->
@@ -389,7 +542,7 @@ async function confirmCleanup() {
         <div class="actions">
           <button class="btn btn--secondary" type="button" @click="viewText('input')">输入</button>
           <button class="btn btn--secondary" type="button" @click="viewText('output')">输出</button>
-          <a class="btn btn--ghost" :href="outputUrl">导出 .log</a>
+          <a class="btn btn--ghost" :href="outputUrl">导出 .out</a>
           <template v-if="!archived">
             <button
               v-if="canRequeue"
@@ -496,46 +649,91 @@ async function confirmCleanup() {
   min-height: 0;
   overflow: auto;
 }
-/* 行级 min-width 触发横向滚动（收窄窗口不挤压列） */
-.thead,
-.row {
-  min-width: 760px;
-}
-.thead,
-.row {
-  display: grid;
-  grid-template-columns: 48px 1.2fr 1fr 1fr 1fr 1fr 90px 1fr 70px;
-  gap: var(--space-3);
-  align-items: center;
-  padding: var(--space-2) var(--space-3);
+/* ---------- 表格套件（与候选页同款：真表格 + 粘性表头 + 复选框列） ---------- */
+.table {
+  width: 100%;
+  /* 行级 min-width 触发横向滚动（收窄窗口不挤压列；复选框列后 760+32） */
+  min-width: 800px;
+  /* 边框模型必须 separate（间距 0）：collapse 的单元格绘制由表层级合并处理，
+     粘性表头滚动时行内容会穿透（候选页列表局部滚动改造显形，同款修复） */
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--text-sm);
 }
-.thead {
-  position: sticky;
-  top: 0;
-  background: var(--bg-raised);
-  border-bottom: 1px solid var(--border-hair);
-  /* 表头承载中文（混排纪律 1）：升 --text-sm、去字距 */
+th {
+  text-align: left;
+  /* 表头样式类承载中文（混排纪律 1）：升 --text-sm、去字距 */
   font-size: var(--text-sm);
+  font-weight: 500;
   text-transform: uppercase;
   color: var(--text-faint);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-raised);
+  position: sticky;
+  top: 0;
+  /* z-index 建自身层叠上下文（与 separate 边框模型配套，同候选页）；
+     局部层 1 远低于全局层级档，不入 z 令牌 */
+  z-index: 1;
+  border-bottom: 1px solid var(--border-hair);
 }
-.row {
+td {
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-hair);
   cursor: pointer;
-  min-height: var(--row-height); /* §4.3 行高 40px */
-  transition: background-color var(--dur-fast) var(--ease-std);
+  vertical-align: middle;
+  white-space: nowrap;
 }
-.row:last-child {
+tbody tr:last-child td {
   border-bottom: none;
 }
-.row:hover,
-.row--active {
+tbody tr {
+  transition: background-color var(--dur-fast) var(--ease-std);
+}
+tbody tr:hover {
   background: var(--row-hover);
+}
+/* 勾选行（useMultiSelect 勾选集合）：范围内每行呈选中态底色，hover 轻微
+   加深保留反馈 */
+tbody tr.row--checked,
+tbody tr.row--checked:hover {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+/* 选中行（抽屉打开）：inset 2px accent 条 */
+.row--active {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+/* 键盘导航焦点行：inset 发丝描边区别于抽屉选中左条，叠加时两形态并存 */
+.row--focused {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.row--active.row--focused {
+  box-shadow: inset 2px 0 0 var(--accent), inset 0 0 0 1px var(--accent);
+}
+/* 复选框列（§4.6 checkbox 规格，样式类 .ck 全局定义） */
+.chk-col {
+  width: 32px;
+  text-align: center;
+}
+/* 工具条批量导出组（与筛选区以竖分割线分主从） */
+.tb-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border-strong);
+  flex: none;
+}
+.picked-count {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.export-note {
+  font-size: var(--text-sm);
+  color: var(--danger);
 }
 .file {
   color: var(--text-primary);
   font-weight: 500;
+  max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
