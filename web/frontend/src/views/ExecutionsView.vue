@@ -7,7 +7,8 @@
  * 节流刷新（仪器刷新率语义）；running 态卡描边磷光呼吸；停滞时卡脚
  * 琥珀灯行（翻转即现/隐，只提示不终止）；停止走 danger 二次确认
  * （POST /executions/{id}/stop，归因手动停止）。
- * 8s REST 基线轮询兜底（SSE 死窗口外的卡补齐）。
+ * 8s→3s REST 基线轮询兜底（SSE 死窗口外的卡补齐 + 对账撤卡：REST 运行
+ * 列表之外的一律移除，事件丢失场景下幽灵卡 ≤3s 自愈）。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
@@ -57,6 +58,16 @@ function elapsed(exec: LiveExecution): number | null {
   return null;
 }
 
+/** SCF 读数「x-y」：x=第几轮 SCF（scf_round），y=轮内圈数（scf_cycle）。
+ * 旧载荷缺 scf_round 时退单圈数值，两者皆缺显示占位符。 */
+function scfDisplay(exec: LiveExecution): string {
+  const p = exec.progress;
+  if (p?.scf_round != null && p?.scf_cycle != null) {
+    return `${p.scf_round}-${p.scf_cycle}`;
+  }
+  return p?.scf_cycle != null ? String(p.scf_cycle) : "—";
+}
+
 let pollId: number | null = null;
 let tickId: number | null = null;
 
@@ -65,7 +76,11 @@ async function pollRunning() {
     const { data } = await client.GET("/executions", {
       params: { query: { state: "running" } },
     });
-    (data ?? []).forEach((e) => events.push(e as unknown as LiveExecution));
+    const rows = data ?? [];
+    rows.forEach((e) => events.push(e as unknown as LiveExecution));
+    // 基线对账：仅成功响应时撤除列表之外的卡（服务不可达窗口保持现状，
+    // 连接恢复后基线回流）
+    events.pruneExecutions(new Set(rows.map((e) => Number(e.id))));
   } catch {
     /* 服务不可达（重启窗口）：保持现状，连接恢复后基线回流 */
   }
@@ -75,8 +90,9 @@ async function pollRunning() {
 onMounted(async () => {
   await pollRunning();
   // 轻量基线回流：SSE 只在死窗口外广播运行态，周期轮询补齐"30s 间隙中被
-  // upsert 建出但缺真实文件名/基线的卡"（monitor/progress 首个事件已含读数）。
-  pollId = window.setInterval(pollRunning, 8000);
+  // upsert 建出但缺真实文件名/基线的卡"（monitor/progress 首个事件已含读数），
+  // 并对账撤除已终态/丢失事件的幽灵卡（3s 自愈，见 pollRunning）。
+  pollId = window.setInterval(pollRunning, 3000);
   // UI 1Hz 节流刷新（§4.4 读数节流）。
   tickId = window.setInterval(refreshSnap, 1000);
 });
@@ -146,7 +162,7 @@ async function confirmStop() {
         v-for="card in sortedCards"
         :key="card.exec.id"
         class="card"
-        :class="{ 'card--running': card.exec.monitor || card.exec.progress?.opt_step != null }"
+        :class="{ 'card--running': card.exec.monitor || card.exec.progress?.opt_step != null || card.exec.progress?.scf_round != null }"
       >
         <header class="head">
           <span class="ch mono">CH {{ String(card.exec.id).padStart(3, "0") }}</span>
@@ -174,8 +190,8 @@ async function confirmStop() {
             <div class="l mono">OPT STEP</div>
           </div>
           <div class="ro ro--sub">
-            <div class="n mono">{{ card.exec.progress?.scf_cycle ?? "—" }}</div>
-            <div class="l mono">SCF CYCLE</div>
+            <div class="n mono">{{ scfDisplay(card.exec) }}</div>
+            <div class="l mono">SCF RUN-CYCLE</div>
           </div>
         </div>
 

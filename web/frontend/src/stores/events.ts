@@ -176,6 +176,16 @@ export const useEventsStore = defineStore("events", () => {
   let attempt = 0;
   let toastSeq = 0;
 
+  // ---- 无帧看门狗（v2.0.0 实测缺陷加固）：链路静默失血（fanout 停摆/
+  // 半开连接）时心跳仍由服务端直发、连接看似 open，读数却冻结且无
+  // 「连接中断」提示——连续 60s（4×默认心跳 15s）无任何帧即主动断开，
+  // 走既有退避重连并以快照重建基线。注意：sse_heartbeat_seconds 调大
+  // 超过 60s 时会周期性误重连（当前设置范围远低于该值，不做动态读取）。 ----
+  const FRAME_TIMEOUT_MS = 60_000;
+  const WATCHDOG_TICK_MS = 15_000;
+  let lastFrameAt = 0;
+  let watchdogId: number | null = null;
+
   function push(live: LiveExecution | HistoryEntry) {
     const e = live as LiveExecution;
     if (e.filename) knownNames.set(e.id, e.filename);
@@ -199,6 +209,17 @@ export const useEventsStore = defineStore("events", () => {
   function upsert(eid: number) {
     if (!executions.has(eid)) {
       executions.set(eid, { id: eid, task_id: eid, filename: knownNames.get(eid) || "—" });
+    }
+  }
+
+  /** REST 基线对账：移除运行列表之外的卡与停滞告警（幽灵卡自愈）。
+   * 仅在基线轮询成功响应时调用——服务不可达窗口保持现状不误删。 */
+  function pruneExecutions(alive: Set<number>) {
+    for (const eid of [...executions.keys()]) {
+      if (!alive.has(eid)) executions.delete(eid);
+    }
+    for (const eid of [...stalled.keys()]) {
+      if (!alive.has(eid)) stalled.delete(eid);
     }
   }
 
@@ -244,10 +265,13 @@ export const useEventsStore = defineStore("events", () => {
         const e = executions.get(eid);
         if (e)
           e.progress = {
-            opt_step: Number(d.opt_step),
-            scf_cycle: Number(d.scf_cycle),
-            converged: Boolean(d.converged),
-            last_line: String(d.last_line ?? ""),
+            // 可选字段缺省判空（sse.md 载荷 opt_step? 等）：Number(undefined)
+            // 得 NaN 渲染上卡（v2.0.0 实测，scan 类任务无优化步时）
+            opt_step: d.opt_step != null ? Number(d.opt_step) : null,
+            scf_cycle: d.scf_cycle != null ? Number(d.scf_cycle) : null,
+            scf_round: d.scf_round != null ? Number(d.scf_round) : null,
+            converged: d.converged != null ? Boolean(d.converged) : null,
+            last_line: d.last_line != null ? String(d.last_line) : "",
           };
         break;
       }
@@ -357,6 +381,10 @@ export const useEventsStore = defineStore("events", () => {
       if (!res.ok || !res.body) throw new Error(`sse http ${res.status}`);
       connection.value = "open";
       attempt = 0;
+      lastFrameAt = Date.now();
+      watchdogId = window.setInterval(() => {
+        if (Date.now() - lastFrameAt > FRAME_TIMEOUT_MS) controller?.abort();
+      }, WATCHDOG_TICK_MS);
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -382,6 +410,7 @@ export const useEventsStore = defineStore("events", () => {
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
+        lastFrameAt = Date.now(); // 任意字节即活流证据（含心跳/注释帧）
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
@@ -403,6 +432,10 @@ export const useEventsStore = defineStore("events", () => {
     } catch {
       /* 断线/中止 */
     } finally {
+      if (watchdogId != null) {
+        window.clearInterval(watchdogId);
+        watchdogId = null;
+      }
       if (closedByUs || !controller?.signal || controller.signal.aborted) {
         /* 主动关闭：不重连 */
       } else if (updateRestartSeen.value && !updateTimeout.value) {
@@ -447,6 +480,7 @@ export const useEventsStore = defineStore("events", () => {
     dirty,
     stalled,
     push,
+    pruneExecutions,
     dismissToast,
     start,
     stop,
