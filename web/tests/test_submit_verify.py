@@ -1,9 +1,11 @@
 """提交前输入核验测试（B6，m2-plan §5 test_submit_verify）。
 
 覆盖：换行规范化（CRLF/孤立 \\r）、空行规约正反例（Link0 后不加/多余空行
-去/末节与文件末尾补、Variables-Constants 分隔保真）、解析失败与多步拒绝
-（不落盘）、三条提交路径统一（行内/队列/重新排队）、无变化零操作、有变化
-原子写回且重解析结构不变、normalized 标记一致、金标准样本不损坏。
+去/末节与文件末尾补、Variables-Constants 分隔保真）、多结构任务（QST2/QST3）
+结构交界双空行规约（§2.7 例外：正反例、幂等、非多结构回归、Variables 共存、
+三条提交路径）、解析失败与多步拒绝（不落盘）、三条提交路径统一（行内/队列/
+重新排队）、无变化零操作、有变化原子写回且重解析结构不变、normalized 标记
+一致、金标准样本不损坏。
 """
 from __future__ import annotations
 
@@ -121,6 +123,95 @@ def test_clean_sample_zero_change(ind):
     assert out["normalized"] is False
     assert _file(ind, tid) == before
     assert not list(ind.glob("*.tmp"))
+
+
+# ---------------- 多结构任务结构交界双空行（§2.7 例外） ----------------
+# 本机 G16 实测：部分发行版输入读取层把「单空行紧邻」的后续结构误并为单行
+# （约 800 字符行缓冲截断），报 End of file in ZSymb；结构交界须恰双空行。
+
+QST2_DOUBLE = (  # 多结构规范形态：结构交界恰双空行，其余节末恰一空行
+    "%mem=1GB\n"
+    "#p opt=(qst2,calcfc) freq b3lyp/6-31g(d)\n"
+    "\n"
+    "qst2 示例\n"
+    "\n"
+    "0 1\n"
+    "O 0.0 0.0 0.0\n"
+    "H 0.96 0.0 0.0\n"
+    "H 0.0 0.96 0.0\n"
+    "\n"
+    "\n"
+    "0 1\n"
+    "O 0.0 0.0 0.0\n"
+    "H -0.96 0.0 0.0\n"
+    "H 0.0 0.96 0.0\n"
+    "\n"
+)
+# 同一文件的「单空行交界」形态（导入常见形态，规范化应补为双空行）
+QST2_SINGLE = QST2_DOUBLE.replace(
+    "H 0.0 0.96 0.0\n\n\n0 1", "H 0.0 0.96 0.0\n\n0 1")
+
+
+def test_qst2_structure_gap_normalized_to_double():
+    r = verify_and_normalize(QST2_SINGLE)
+    assert r["changed"] is True
+    # 结构交界恰双空行
+    assert "H 0.0 0.96 0.0\n\n\n0 1" in r["text"]
+    # 其余交界仍恰一空行（route→title、title→电荷行；双空行会令 title 读空、
+    # 电荷行误读 title 文本，见 §2.7 例外条款）
+    assert "#p opt=(qst2,calcfc) freq b3lyp/6-31g(d)\n\nqst2 示例\n" in r["text"]
+    assert "qst2 示例\n\n0 1\n" in r["text"]
+    # 结构不变
+    assert _mask(parse_input(r["text"])["blocks"]) == \
+        _mask(parse_input(QST2_SINGLE)["blocks"])
+
+
+def test_qst2_double_blank_idempotent():
+    r = verify_and_normalize(QST2_DOUBLE)
+    assert r["changed"] is False
+    assert r["text"] == QST2_DOUBLE
+
+
+def test_qst3_all_structure_gaps_double():
+    text = ("%mem=1GB\n#p opt=(qst3) b3lyp/6-31g(d)\n\nt\n\n"
+            "0 1\nO 0.0 0.0 0.0\nH 0.96 0.0 0.0\nH 0.0 0.96 0.0\n\n"
+            "0 1\nO 0.0 0.0 0.0\nH -0.96 0.0 0.0\nH 0.0 0.96 0.0\n\n"
+            "0 1\nO 0.0 0.0 0.0\nH 0.0 0.0 0.96\nH 0.96 0.0 0.0\n\n")
+    r = verify_and_normalize(text)
+    assert r["text"].count("\n\n\n0 1") == 2  # 两处结构交界均双空行
+
+
+def test_non_qst_gap_stays_single():
+    """非多结构任务维持既有规约（恰好一空行），行为不回退：单空行形态本身
+    即规范形态（零操作），结构交界不会被误补双空行。"""
+    src = QST2_SINGLE.replace("opt=(qst2,calcfc) freq", "opt freq")
+    r = verify_and_normalize(src)
+    assert r["changed"] is False
+    assert r["text"] == src
+
+
+def test_qst2_with_variables_sections():
+    """结构交界双空行不波及 Variables 区：变量区分隔保持单空行。"""
+    text = ("%mem=1GB\n#p opt=qst2\n\nt\n\n"
+            "0 1\nO\nH 1 R1\n\n\n"
+            "0 1\nO\nH -1 R1\n\n\n"
+            "Variables:\nR1 0.96\n\n")
+    r = verify_and_normalize(text)
+    assert "H 1 R1\n\n\n0 1\n" in r["text"]        # 结构交界双空行
+    assert "H -1 R1\n\nVariables:\n" in r["text"]  # 结构 2 → 变量区 单空行
+
+
+def test_qst2_submit_keeps_double_blank(ind):
+    """三条提交路径统一回归（行内提交为代表）：导入→提交后副本仍保双空行
+    （用户实测回归：规范化曾把双空行压回单空行致派发副本再次踩雷）。"""
+    tid = _mk(ind, QST2_DOUBLE)
+    out = submit_candidate(tid, None)
+    assert out["normalized"] is False  # 规范形态零操作
+    assert _file(ind, tid) == QST2_DOUBLE.encode()
+    tid2 = _mk(ind, QST2_SINGLE, name="b.gjf")
+    out2 = submit_candidate(tid2, None)
+    assert out2["normalized"] is True
+    assert "H 0.0 0.96 0.0\n\n\n0 1" in _file(ind, tid2).decode("utf-8")
 
 
 # ---------------- 解析失败与多步拒绝（不落盘） ----------------
