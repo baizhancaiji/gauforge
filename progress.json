@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-29T12:00+08:00",
+  "updated": "2026-09-29T15:42+08:00",
   "latest_released_version": "2.0.0",
   "unreleased": [
     {
@@ -253,10 +253,17 @@
       "summary": "历史页表格接入候选页同款通用多选套件（复选框列、useMultiSelect 锚点驱动 Shift 范围/Ctrl+Shift 追加、Ctrl/Cmd 单选、Ctrl+A/Esc/方向键导航与滚动定位、勾选跨页保留）与工具条勾选批量导出 .out（POST export 经 blob 下载 zip、跨页勾选整体参与、修饰点击不开详情抽屉），抽屉单条导出按钮同步改名「导出 .out」",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复多结构任务提交核验压平结构交界双空行：QST2/QST3 输入经提交核验后，第二套结构电荷行前的双空行被规约为单空行，派发副本在部分发行版 G16 上被误并为单行读取而报 End of file in ZSymb；verify_and_normalize 登记多结构例外（下一附加节首行为电荷/多重度整数对时交界规约为恰双空行，其余交界仍恰一空行），同步 roadmap §2.7 规约条款并补 6 项核验测试（正反例/幂等/QST3 双交界/非多结构回归/Variables 共存/提交路径）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "计划外需求（历史导出完善）已落库：单条输出导出附件名 .log→.out、新增 POST /history/export 批量打包 ZIP（.out 命名/冲突 id 前缀/缺失包内说明/404·400）、历史页表格换候选页同款通用多选套件并接工具条勾选批量导出；4 提交（契约/fix/后端/前端）+ 进度同步共 5 提交落库，全量闸门 pytest 475 通过、四校验脚本与 gen:types 零 diff 全绿、真实页面冒烟（多选/键盘/单条与批量下载）逐项实证",
+    "task": "计划外修复（多结构任务 QST2/QST3 提交核验压平结构交界双空行）：定位本机与服务器同款发行版 G16 输入读取层对单空行紧邻的后续结构误并单行（End of file in ZSymb）根因，verify_and_normalize 登记多结构例外规约（结构交界恰双空行、其余交界恰一空行），roadmap §2.7 同步条款，6 项新测试；全量 pytest 481 通过、四闸门脚本全绿、核验输出直接交本机 g16 端到端复验通过（NAtoms=76、越过 l101 进入 l103）",
     "note": "v2.1.0 发布流程（冻结 CHANGELOG → 本地 tag → package_release）仍待用户确认执行，与本需求互不阻塞"
   },
   "next_steps": [
