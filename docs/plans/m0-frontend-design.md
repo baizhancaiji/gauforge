@@ -232,8 +232,9 @@ g16web 的典型运行环境是内网/离线实验室机器，外链字体失败
   无限拉伸）、`--gap-card: 16px`（通道卡网格与双栏间距）、
   `--channel-card-width: 340px`（通道卡网格 minmax 基准，§4.4）。
   **复用度量增补（2026-09-27 令牌化收口）**：`--preview-width: 380px`
-  （双栏页右列预览卡，§5 候选页）、`--drawer-width: 380px`（详情抽屉，§6；
-  与预览列现同值、语义分立）、`--modal-width: 560px` 与
+  （双栏页右列预览卡，§5 候选页）、`--drawer-width: 520px`（详情抽屉，§6；
+  2026-09-29 由 380px 加宽——单行键值行须同行容纳「提交/启动/结束」三个
+  时间戳，与预览列语义分立）、`--modal-width: 560px` 与
   `--modal-max-height: 640px`（模态，§4.6）、`--row-height: 40px`（数据表
   行高，§4.3）、`--control-height: 32px` / `--control-height-sm: 24px`
   （常规/行内小控件高，§4.2）、`--dot-size: 6px`（状态点直径，§4.1）、
