@@ -88,17 +88,19 @@ class SseBroker:
 async def fanout_task(state: MockState) -> None:
     """把新 emitted 事件广播到所有订阅者；在 app 后台持续运行。
 
-    以「已广播条数」（history 索引）推进，与事件 id 空间解耦——B11 起
-    序号持久化后 id 不再等于列表下标（重启延续），不得以 id/seq 做差量。
+    以**事件 id** 为增量基准（持久单调、不受重放窗口修剪影响）：每轮只
+    广播 id 大于上次已广播的事件。不得以「已广播条数」对固定容量列表做
+    差量——event_history 超 1024 条即修剪，绝对计数会令 ``len(history) >
+    broadcast_count`` 永假而静默停摆（v2.0.0 实测：实时事件全丢、心跳照常、
+    连接看似正常，执行页幽灵卡与读数冻结的根因）。
     """
-    broadcast_count = 0
+    last_id = 0
     while True:
         await asyncio.sleep(0.02)
-        history = state.event_history
-        if len(history) > broadcast_count:
-            for ev in history[broadcast_count:]:
+        for ev in state.event_history:
+            if ev["id"] > last_id:
                 await broker.broadcast(ev)
-            broadcast_count = len(history)
+                last_id = ev["id"]
 
 
 def _window(state: MockState) -> list[dict]:
