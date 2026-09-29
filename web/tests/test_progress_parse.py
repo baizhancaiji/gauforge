@@ -242,6 +242,37 @@ def test_converged_resets_on_new_scf(tmp_path):
     assert tr.step(eid, log)["converged"] is False
 
 
+def test_scf_round_counts_scf_runs(tmp_path):
+    """Cycle 1 每次出现 = 新一轮 SCF：scf_round 自 1 递增，scf_cycle 为轮内圈数。"""
+    tr, log, eid = fresh_tracker(tmp_path)
+    append(log, CYCLE1 % 1 + CYCLE1 % 2)
+    f = tr.step(eid, log)
+    assert f["scf_round"] == 1 and f["scf_cycle"] == 2
+    append(log, " SCF Done:  E(RB-HF-LYP) =  -1.0     A.U. after    2 cycles\n"
+                + CYCLE1 % 1 + CYCLE1 % 2 + CYCLE1 % 3)
+    f = tr.step(eid, log)
+    assert f["scf_round"] == 2 and f["scf_cycle"] == 3
+    assert tr.state(eid)["scf_round"] == 2  # 快照恢复读数同源
+
+
+def test_scf_round_absent_before_first_cycle(tmp_path):
+    tr, log, eid = fresh_tracker(tmp_path)
+    append(log, STEP1 % 1)
+    f = tr.step(eid, log)
+    assert f["opt_step"] == 1 and "scf_round" not in f
+
+
+def test_scf_round_rebuilds_on_truncated_rescan(tmp_path):
+    """截断重扫：轮次计数随进度状态一并重置，按新日志自 Cycle 1 重建。"""
+    tr, log, eid = fresh_tracker(tmp_path)
+    append(log, CYCLE1 % 1 + CYCLE1 % 2)
+    assert tr.step(eid, log)["scf_round"] == 1
+    log.write_text(CYCLE1 % 1 + CYCLE1 % 2 + CYCLE1 % 1 + CYCLE1 % 3,
+                   encoding="utf-8")
+    f = tr.step(eid, log)
+    assert f["scf_round"] == 2 and f["scf_cycle"] == 3
+
+
 # ---------------- Dispatcher 集成 ----------------
 
 def add_input(text: str, name: str = "h2o.gjf") -> int:
