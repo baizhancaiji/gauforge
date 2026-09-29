@@ -1,11 +1,13 @@
 {
-  "updated": "2026-09-29T17:25+08:00",
+  "updated": "2026-09-30T00:41+08:00",
   "latest_released_version": "2.1.0",
-  "unreleased": [],
+  "unreleased": [
+    {"type": "added", "scope": "docs", "summary": "新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案", "breaking": false, "migration": null}
+  ],
   "in_progress": null,
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
-    "M3（cclib 结果解析与可视化）开工准备与排期"
+    "按 docs/plans/m3-m4-plan.md M3 波开工：A1 Result 契约 diff 与 A2 解析管道设计先行（文档先行闸门）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",

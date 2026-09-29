@@ -4,7 +4,9 @@
 
 ## Unreleased（未发布）
 
-_暂无条目。_
+### 新增
+
+- 【docs】新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案
 
 ## v2.1.0（2026-09-29T17:25+08:00 发布，minor）
 
