@@ -191,7 +191,7 @@ def test_history_output_and_download_header(home):
                    params={"download": "true"})
     assert r.status_code == 200
     assert r.headers["Content-Disposition"] == \
-        "attachment; filename*=UTF-8''h2o.log"
+        "attachment; filename*=UTF-8''h2o.out"
 
 
 def test_history_output_missing_404(home):

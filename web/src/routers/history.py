@@ -60,8 +60,9 @@ def get_history_output(id: int, download: bool = False) -> Response:
     if download:
         name = history_svc.get_entry(id)["filename"]
         stem = name.rsplit(".", 1)[0] if "." in name else name
+        # 导出命名 .out（G16 输出正规扩展；内容为 run/<id>/input.log）
         headers = {"Content-Disposition":
-                   f"attachment; filename*=UTF-8''{quote(stem + '.log')}"}
+                   f"attachment; filename*=UTF-8''{quote(stem + '.out')}"}
     return Response(content=data, media_type="text/plain; charset=utf-8",
                     headers=headers)
 
