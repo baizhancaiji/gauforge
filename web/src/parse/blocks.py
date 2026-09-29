@@ -344,6 +344,10 @@ def reassemble(text: str, section: str, lines: list[str]) -> str:
     return out
 
 
+_CHARGE_MULT_LINE_RE = re.compile(r"^-?\d+[ ,]+\d+$")
+_MULTI_STRUCTURE_RE = re.compile(r"qst[23]\b")
+
+
 def verify_and_normalize(text: str) -> dict:
     """提交前输入核验的规范化（m2-plan §2.5 ①②）。
 
@@ -352,6 +356,10 @@ def verify_and_normalize(text: str) -> dict:
        link0 之后不加空行；只动节边界空行带（注释行原位保留），节内容与
        分子节内部不动；charge_mult 与原子定义行之间不插空行（分子说明节
        连续，终止空行在原子块之后）。
+       多结构例外（§2.7，2026-09-29 本机 G16 实测）：route 含 QST2/QST3 时，
+       分子说明节与「首行为电荷/多重度整数对」的附加节（即下一套结构）之间
+       规约为恰好两个空行——部分发行版 G16 对单空行紧邻的后续结构会误并单行
+       读取报 End of file in ZSymb。
 
     返回 {"text", "changed"}；解析校验（③④）由调用方执行。
     """
@@ -361,6 +369,10 @@ def verify_and_normalize(text: str) -> dict:
     keys = list(spans)
     if not keys:
         return {"text": normalized, "changed": normalized != text}
+    route_span = spans.get("route")
+    route_cf = "\n".join(logical[route_span[0]:route_span[1]]).casefold() \
+        if route_span else ""
+    multi_structure = _MULTI_STRUCTURE_RE.search(route_cf) is not None
     out = list(logical[:spans[keys[0]][0]])  # 前导空行/注释原样
     for idx, key in enumerate(keys):
         start, end = spans[key]
@@ -371,8 +383,16 @@ def verify_and_normalize(text: str) -> dict:
         out.extend(ln for ln in gap
                    if ln.strip() and ln.lstrip().startswith("!"))
         # link0 之后不加空行；charge_mult 直连原子定义行（分子说明节内部）
-        if key not in ("link0", "charge_mult") and not last:
-            out.append("")
+        if key in ("link0", "charge_mult") or last:
+            continue
+        sep = 1
+        if multi_structure and keys[idx + 1].startswith("additional-"):
+            n_start, n_end = spans[keys[idx + 1]]
+            first = next((ln for ln in logical[n_start:n_end] if ln.strip()
+                          and not ln.lstrip().startswith("!")), "")
+            if _CHARGE_MULT_LINE_RE.match(first.strip()):
+                sep = 2  # §2.7 多结构例外：下一套结构的电荷行前须双空行
+        out.extend([""] * sep)
     body = "\n".join(out)
     if keys[-1] == "link0":  # 末节为 link0：其后不加空行，仅保留原结尾换行
         new_text = body + ("\n" if normalized.endswith("\n") else "")
