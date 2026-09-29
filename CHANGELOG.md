@@ -23,6 +23,8 @@
 - 【api】契约增 UI 偏好域 /ui-preferences 两端点与 QueueSortKey/UiPreferences/UiPreferencesUpdate schema（GET 读全量、PUT 合并 upsert 整批校验、不发 SSE 事件），代理通道三处口径改工作区 .update-proxy，contract.ts 与 models.py 生成物再生
 - 【web】UI 偏好域落地：迁移 v2 增 ui_prefs 键值表（工作区 SQLite 持久化、跨重启/更新不回默认）、UiPrefsRepo 与 store 访问器、GET/PUT /ui-preferences 路由（键白名单与值域 all-or-nothing 校验、未知键/越域值 400 INVALID_REQUEST）、config.UI_PREF_KEYS 单一来源
 - 【web】前端列表排序规则持久化：新增 useSortPref 组合式（挂载拉取回填、变更即时单键写回、失败静默降级下次重拉校对、回填期间屏蔽写回），队列页 queues.sort 与历史/归档页 history.sort/archive.sort 分立接入，同组件跨路由复用实例时键切换重拉
+- 【web】增量解析新增 SCF 轮次计数 scf_round（Cycle 1 行出现即新一轮、自 1 递增，截断重扫随进度状态重建），execution.progress 载荷与快照 progress 增 scf_round 字段（sse.md/openapi.yaml/models 契约同步，contract.ts 再生）
+- 【frontend】SSE 客户端无帧看门狗：连续 60s（4×默认心跳 15s）无任何帧主动断开走退避重连并以快照重建基线，消除半开连接等场景「连接看似在线、读数实已冻结」的无提示失联
 
 ### 变更
 
@@ -34,6 +36,12 @@
 - 【docs】视图偏好域与代理通道工作区口径文档同步：mapping 端点对照 37→39（队列/历史/归档排序挂 ui-preferences）、version-update-spec 六处 .update-proxy 改工作区、deployment 升级章节注明部署目录旧位置自动搬迁、roadmap §2.5 增视图偏好条目
 - 【web】更新代理配置迁工作区：proxy_path 改 G16WEB_HOME/.update-proxy（更新/重装部署目录不丢）、启动时一次性搬迁部署目录旧位置遗留（幂等、工作区已有则以工作区为准）、write_proxy 补目录创建；迁移三分支测试与既有 proxy 用例随改
 - 【build】update.sh 代理配置改读工作区 ${G16WEB_HOME:-$HOME/g16web}/.update-proxy 与 WebUI 更新卡共用同一份（落盘前 mkdir -p，默认值与后端一致），覆盖范围注释同步
+- 【frontend】执行中页 REST 基线轮询 8s→3s 并对账撤卡：REST 运行列表之外的卡与停滞告警一律移除（仅成功响应时执行，服务不可达窗口保持现状），SSE 事件丢失场景幽灵卡 ≤3s 自愈
+
+### 修复
+
+- 【web】修复 SSE fanout 重放窗口修剪后实时广播永久停摆：增量基准由「绝对已广播条数」（对固定 1024 容量列表 len 比较永假）改为事件 id——此前服务启动累计事件超 1024 条即全量静默丢失（心跳照常、连接看似正常），执行页幽灵卡与监控读数冻结的根因
+- 【frontend】执行中页读数修复：execution.progress 可选字段判空渲染（scan 类任务无优化步时 OPT STEP 不再显示 NaN）、SCF 读数改「轮次-圈数」x-y 展示（标签 SCF RUN-CYCLE，旧载荷缺 scf_round 退单圈数值）
 
 ## v2.0.0（2026-09-28T02:06+08:00 发布，major）
 

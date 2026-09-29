@@ -176,6 +176,41 @@
       "summary": "前端列表排序规则持久化：新增 useSortPref 组合式（挂载拉取回填、变更即时单键写回、失败静默降级下次重拉校对、回填期间屏蔽写回），队列页 queues.sort 与历史/归档页 history.sort/archive.sort 分立接入，同组件跨路由复用实例时键切换重拉",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复 SSE fanout 重放窗口修剪后实时广播永久停摆：增量基准由「绝对已广播条数」（对固定 1024 容量列表 len 比较永假）改为事件 id——此前服务启动累计事件超 1024 条即全量静默丢失（心跳照常、连接看似正常），执行页幽灵卡与监控读数冻结的根因",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "增量解析新增 SCF 轮次计数 scf_round（Cycle 1 行出现即新一轮、自 1 递增，截断重扫随进度状态重建），execution.progress 载荷与快照 progress 增 scf_round 字段（sse.md/openapi.yaml/models 契约同步，contract.ts 再生）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "frontend",
+      "summary": "执行中页 REST 基线轮询 8s→3s 并对账撤卡：REST 运行列表之外的卡与停滞告警一律移除（仅成功响应时执行，服务不可达窗口保持现状），SSE 事件丢失场景幽灵卡 ≤3s 自愈",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "SSE 客户端无帧看门狗：连续 60s（4×默认心跳 15s）无任何帧主动断开走退避重连并以快照重建基线，消除半开连接等场景「连接看似在线、读数实已冻结」的无提示失联",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "执行中页读数修复：execution.progress 可选字段判空渲染（scan 类任务无优化步时 OPT STEP 不再显示 NaN）、SCF 读数改「轮次-圈数」x-y 展示（标签 SCF RUN-CYCLE，旧载荷缺 scf_round 退单圈数值）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
