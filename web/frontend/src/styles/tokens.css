@@ -56,7 +56,7 @@
   --gap-card: 16px;
   --channel-card-width: 340px;
   --preview-width: 380px; /* 双栏页右列预览卡（§5 候选页；工具条按钮对齐偏移同源） */
-  --drawer-width: 380px; /* 详情抽屉（§6；与预览列现同值，语义分立） */
+  --drawer-width: 520px; /* 详情抽屉（§6；2026-09-29 由 380px 加宽：单行键值行容纳三时间戳） */
   --modal-width: 560px; /* 模态宽（§4.6） */
   --modal-max-height: 640px; /* 模态限高（§4.6） */
   --row-height: 40px; /* 数据表行高（§4.3，hover 命中与触达目标） */

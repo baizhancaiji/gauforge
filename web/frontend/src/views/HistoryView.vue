@@ -4,12 +4,13 @@
  * 全宽表格（id/任务/状态徽标/归因/提交/结束/耗时/资源/队列归属）+ 顶部状态筛选；
  * 状态徽标与筛选下拉中文显示（taskStateLabel 单一来源，与队列页同纪律，
  * 2026-09-27 验收修正）；
- * 行点击 → 详情抽屉：终态冻结全字段 + 输入查看 / 输出预览（限高滚动）与
- * ?download=true 导出 + 归档 + failed/skipped 重新排队与退回候选（409 提示）
- * + 清理入口（统计回显）。归档管理视图承载 archived=true（独立路由 /archive，
- * 决策点 10），仅保留查看动作。
+ * 行点击 → 详情抽屉：终态冻结全字段以单行键值行呈现（dt 左/值右，
+ * 2026-09-29 紧凑化，抽屉宽 --drawer-width 440px）+ 输入查看 / 输出预览
+ * （限高滚动，打开后滚入视野）与 ?download=true 导出 + 归档 +
+ * failed/skipped 重新排队与退回候选（409 提示）+ 清理入口（统计回显）。
+ * 归档管理视图承载 archived=true（独立路由 /archive，决策点 10），仅保留查看动作。
  */
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { client, getText } from "@/api/client";
@@ -49,6 +50,7 @@ const sort = useSortPref(
   ["submitted_desc", "finished_desc", "finished_asc", "filename_asc", "filename_desc"]);
 const selected = ref<HistoryEntry | null>(null);
 const textView = ref<{ kind: "input" | "output"; content: string; error: string | null } | null>(null);
+const textViewEl = ref<HTMLElement | null>(null);
 const actionNote = ref<{ ok: boolean; msg: string } | null>(null);
 
 async function load() {
@@ -132,9 +134,12 @@ async function viewText(kind: "input" | "output") {
       content: "",
       error: kind === "output" ? "无输出文件（任务可能未产生输出）" : "无输入文件",
     };
-    return;
+  } else {
+    textView.value = { kind, content: (res.data as unknown as string) ?? "", error: null };
   }
-  textView.value = { kind, content: (res.data as unknown as string) ?? "", error: null };
+  // 预览区位于抽屉底部，内容超高时可能在视口外——渲染后滚入视野
+  await nextTick();
+  textViewEl.value?.scrollIntoView({ block: "end" });
 }
 
 const outputUrl = computed(() =>
@@ -331,9 +336,11 @@ async function confirmCleanup() {
         </dl>
         <dl class="cell">
           <dt class="mono">提交 / 启动 / 结束</dt>
-          <dd class="mono">{{ fmtDateTime(selected.submitted_at) }}</dd>
-          <dd class="mono">{{ fmtDateTime(selected.started_at) }}</dd>
-          <dd class="mono">{{ fmtDateTime(selected.finished_at) }}</dd>
+          <dd class="mono">
+            {{ fmtDateTime(selected.submitted_at) }} /
+            {{ fmtDateTime(selected.started_at) }} /
+            {{ fmtDateTime(selected.finished_at) }}
+          </dd>
         </dl>
         <dl class="cell">
           <dt class="mono">耗时</dt>
@@ -346,12 +353,8 @@ async function confirmCleanup() {
         <dl class="cell">
           <dt class="mono">资源（声明/补齐）</dt>
           <dd class="mono">
-            CPU {{ selected.resources.nproc.value }}
-            （{{ selected.resources.nproc.defaulted ? "默认补齐" : "声明" }}）
-          </dd>
-          <dd class="mono">
-            MEM {{ selected.resources.mem_gb.value }} GB
-            （{{ selected.resources.mem_gb.defaulted ? "默认补齐" : "声明" }}）
+            CPU {{ selected.resources.nproc.value }}（{{ selected.resources.nproc.defaulted ? "默认补齐" : "声明" }}）
+            / MEM {{ selected.resources.mem_gb.value }} GB（{{ selected.resources.mem_gb.defaulted ? "默认补齐" : "声明" }}）
           </dd>
         </dl>
         <dl class="cell">
@@ -362,10 +365,8 @@ async function confirmCleanup() {
           <dt class="mono">监控峰值</dt>
           <dd class="mono">
             CPU {{ fmtPercent(selected.monitor_summary.cpu_peak_percent) }} / MEM
-            {{ fmtMemory(selected.monitor_summary.mem_peak_mb) }}
-          </dd>
-          <dd class="mono">
-            停滞告警 {{ selected.monitor_summary.stall_alerts ?? 0 }} 次 · 累计
+            {{ fmtMemory(selected.monitor_summary.mem_peak_mb) }} · 停滞
+            {{ selected.monitor_summary.stall_alerts ?? 0 }} 次 · 累计
             {{ fmtDuration((selected.monitor_summary.stall_total_minutes ?? 0) * 60) }}
           </dd>
         </dl>
@@ -422,7 +423,7 @@ async function confirmCleanup() {
           <button class="btn btn--ghost" type="button" @click="selected = null">关闭</button>
         </div>
 
-        <div v-if="textView" class="text-view">
+        <div v-if="textView" ref="textViewEl" class="text-view">
           <header class="tv-head">
             <span class="mono">{{ textView.kind === "input" ? "输入原文" : "输出预览" }}</span>
             <button class="btn btn--ghost" type="button" @click="textView = null">×</button>
@@ -592,7 +593,6 @@ async function confirmCleanup() {
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
   animation: slide var(--dur-slide) var(--ease-std);
 }
 @keyframes slide {
@@ -616,22 +616,35 @@ async function confirmCleanup() {
   font-weight: 500;
   color: var(--text-primary);
 }
+/* 字段行（2026-09-29 紧凑化）：一行一字段，dt 左 / 值右对齐；
+   行距由自身 padding 承担（抽屉不设 gap），首个字段行与表头分隔线相邻去重 */
 .cell {
   margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
   border-top: 1px solid var(--border-hair);
-  padding-top: var(--space-3);
+  padding: var(--space-2) 0;
+}
+.cell:first-of-type {
+  border-top: none;
 }
 .cell dt {
+  flex: none;
   font-size: var(--text-sm); /* 承载中文（状态 / 归因 等） */
   color: var(--text-faint);
-  margin-bottom: var(--space-1);
 }
 .cell dd {
+  flex: 1;
+  min-width: 0;
   margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere; /* 超长值（chk 位置等）换行不出格 */
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
 .note {
+  margin: var(--space-2) 0 0;
   font-size: var(--text-sm);
 }
 .note--ok {
@@ -644,7 +657,7 @@ async function confirmCleanup() {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
 }
 .archived-tag {
   font-size: var(--text-sm);
@@ -652,6 +665,7 @@ async function confirmCleanup() {
   align-self: center;
 }
 .text-view {
+  margin-top: var(--space-3);
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-inset);
