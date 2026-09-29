@@ -481,6 +481,10 @@ components:
             scf_cycle:
               type: integer
               nullable: true
+            scf_round:
+              type: integer
+              nullable: true
+              description: "T；第几次 SCF（Cycle 1 行出现即新一轮，自 1 递增）"
             converged:
               type: boolean
               nullable: true

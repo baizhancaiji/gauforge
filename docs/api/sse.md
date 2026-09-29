@@ -39,7 +39,7 @@
 | `queue.status` | 数据 | 队列状态流转（含失败回退、成功终结） | `queue_id`、`from`、`to`、`finish_reason?`、`failure_positions?: [task_id]`、`rollback_count?`、`ts` | 变更即推 |
 | `pending.snapshot` | 数据 | 席位任何变化（追加/整席移除/重排/成员移除/挤出/锁定变化） | 同 GET /pending 响应体 | 变更即推；全量快照式（席位≤10，快照防止漏中间态） |
 | `task.status` | 数据 | 任务状态转换：staged→running（派发，此时执行记录已建）、running→succeeded/failed、→skipped（失败中止即时/手动停止） | `task_id`、`execution_id?`（staged 无）、`queue_id?`、`from`、`to`、`cause?: FailureCause`（终态时）、`ts` | 变更即推 |
-| `execution.progress` | 数据 | 增量解析发现新优化步/SCF 迭代；引擎重启（S1 接管）首读快进吞历史行后若含既有进度，补发一条最新状态（每执行至多一条，避免重扫风暴） | `execution_id`、`task_id`、`opt_step?`、`scf_cycle?`、`converged?`、`last_line?`（截断 200 字符）、`ts` | **每 execution 至多 1 条/s**（1s 合并窗口内多条则推最新值） |
+| `execution.progress` | 数据 | 增量解析发现新优化步/SCF 迭代；引擎重启（S1 接管）首读快进吞历史行后若含既有进度，补发一条最新状态（每执行至多一条，避免重扫风暴） | `execution_id`、`task_id`、`opt_step?`、`scf_cycle?`、`scf_round?`（第几次 SCF：`Cycle 1` 行出现即新一轮，自 1 递增）、`converged?`、`last_line?`（截断 200 字符）、`ts` | **每 execution 至多 1 条/s**（1s 合并窗口内多条则推最新值） |
 | `execution.monitor` | 数据 | psutil 采样完成（采样周期 2s，M1 实测校准） | `execution_id`、`cpu_percent`、`mem_rss_mb`、`elapsed_s`、`ts` | 2s/条，随采样直推 |
 | `execution.stalled` | 数据 | 超过停滞阈值无新优化步/SCF 迭代（置位）/恢复新进度（解除） | `execution_id`、`task_id`、`stalled: boolean`、`threshold_minutes`、`last_progress_ts`、`ts` | 状态翻转即推（同一停滞期开始/解除各一条）。引擎重启（S1 接管）后停滞检测重新起算：重启前未解除的告警不随快照恢复（客户端重建时清空），阈值重新超出再置位 |
 | `history.appended` | 数据 | 执行到达终态、历史条目落库 | `execution_id`、`task_id`、`queue_id?`、`state`、`cause?`、`ts` | 变更即推 |

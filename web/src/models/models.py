@@ -248,6 +248,9 @@ class Monitor(BaseModel):
 class Progress(BaseModel):
     opt_step: int | None = None
     scf_cycle: int | None = None
+    scf_round: int | None = Field(
+        None, description='T；第几次 SCF（Cycle 1 行出现即新一轮，自 1 递增）'
+    )
     converged: bool | None = None
     last_line: str | None = None
 

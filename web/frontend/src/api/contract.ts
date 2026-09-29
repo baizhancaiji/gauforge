@@ -834,6 +834,8 @@ export interface components {
             progress?: {
                 opt_step?: number | null;
                 scf_cycle?: number | null;
+                /** @description T；第几次 SCF（Cycle 1 行出现即新一轮，自 1 递增） */
+                scf_round?: number | null;
                 converged?: boolean | null;
                 last_line?: string | null;
             } | null;
