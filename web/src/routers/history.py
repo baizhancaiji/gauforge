@@ -7,6 +7,7 @@ requeue → pending.snapshot；return-candidate → candidates.changed(created)�
 """
 from __future__ import annotations
 
+from datetime import datetime
 from urllib.parse import quote
 
 from fastapi import APIRouter
@@ -40,6 +41,22 @@ def list_history(state: str | None = None, queue_id: str | None = None,
 @router.post("/history/cleanup")
 def cleanup_transients() -> dict:
     return history_svc.cleanup()
+
+
+@router.post("/history/export")
+def export_history_outputs(payload: dict) -> Response:
+    """批量导出选中条目输出为 ZIP（openapi /history/export；前端 blob 下载）。"""
+    ids = payload.get("ids")
+    if not isinstance(ids, list) or not ids or not all(
+            isinstance(i, int) and not isinstance(i, bool) and i > 0
+            for i in ids):
+        raise err("INVALID_REQUEST", "ids 须为非空正整数数组", http=400)
+    data = history_svc.export_outputs(ids)
+    stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
+    return Response(
+        content=data, media_type="application/zip",
+        headers={"Content-Disposition":
+                 f"attachment; filename=gauforge-outputs-{stamp}.zip"})
 
 
 @router.get("/history/{id}")

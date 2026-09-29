@@ -4,7 +4,9 @@
 - 详情：HistoryEntry 形状（派生 wall_time_s、chk_snapshot 缺省、result_ref
   占位 null），running 行按不存在处理 404；
 - input/output：run/<id>/ 实际执行副本、skipped 回落任务副本、download
-  导出头；
+  导出头（.out 正规扩展命名）；
+- export：批量导出 ZIP（<stem>.out 命名与 id 前缀冲突消解、缺失容错与
+  包内说明、全部无输出 404、请求体校验 400）；
 - archive：204 + archived 过滤联动（#29）；
 - requeue：成功沿用原 id 建席 / succeeded 409 / 队列成员 409 / 满员 409
   （#30），事件 pending.snapshot 由路由层发；
@@ -17,7 +19,9 @@
 """
 from __future__ import annotations
 
+import io
 import json
+import zipfile
 from datetime import datetime, timedelta
 
 import pytest
@@ -198,6 +202,70 @@ def test_history_output_missing_404(home):
     eid, _ = seed_terminal("failed", cause="program_error")
     r = client.get(f"/api/v1/history/{eid}/output")
     assert r.status_code == 404
+
+
+# ---------------- export（批量导出 ZIP，openapi /history/export） ----------------
+
+def test_history_export_zip_out_naming(home):
+    """<stem>.out 命名；无同名冲突不加前缀。"""
+    eid, _ = seed_terminal("succeeded", with_run=True)
+    r = client.post("/api/v1/history/export", json={"ids": [eid]})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/zip")
+    assert "attachment" in r.headers["content-disposition"]
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.out"]
+    assert zf.read("h2o.out") == b" Gaussian log\n"
+
+
+def test_history_export_same_task_collision_id_prefix(home):
+    """同任务多次执行（同名 stem）→ 冲突组全部加三位补零 id 前缀。"""
+    e1, _ = seed_terminal("succeeded", with_run=True)
+    e2, _ = seed_terminal("succeeded", with_run=True)  # 同名 h2o.gjf
+    other, _ = seed_terminal("succeeded", filename="nh3.gjf", with_run=True)
+    r = client.post("/api/v1/history/export", json={"ids": [e1, e2, other]})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert sorted(zf.namelist()) == \
+        sorted([f"{e1:03d}-h2o.out", f"{e2:03d}-h2o.out", "nh3.out"])
+    # 重复 id 去重保序：只导一份（去重后无冲突，不加前缀）
+    r = client.post("/api/v1/history/export", json={"ids": [e1, e1]})
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.out"]
+
+
+def test_history_export_missing_manifest_and_all_missing_404(home):
+    """无输出条目跳过并在包内 _导出说明.txt 登记；全部无输出 404。"""
+    ok, _ = seed_terminal("succeeded", with_run=True)
+    skip, _ = seed_terminal("skipped", cause="predecessor_failed")  # 无 run 目录
+    gone, _ = seed_terminal("succeeded")  # run 目录缺失
+    r = client.post("/api/v1/history/export", json={"ids": [ok, skip, gone]})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.out", "_导出说明.txt"]
+    note = zf.read("_导出说明.txt").decode("utf-8")
+    assert f"执行 {skip}：无输出文件" in note
+    assert f"执行 {gone}：无输出文件" in note
+    r = client.post("/api/v1/history/export", json={"ids": [skip, gone]})
+    assert r.status_code == 404
+    body = r.json()
+    assert body["error"]["code"] == "NOT_FOUND"
+    assert len(body["error"]["details"]["missing"]) == 2
+
+
+def test_history_export_nonterminal_treated_missing_404(home):
+    """running 行（非终态）按无输出处理，全部如此时 404。"""
+    eid = seed_running()
+    r = client.post("/api/v1/history/export", json={"ids": [eid]})
+    assert r.status_code == 404
+
+
+def test_history_export_bad_body_400():
+    for body in ({}, {"ids": []}, {"ids": ["a"]}, {"ids": [0]},
+                 {"ids": [True]}, {"ids": [1.5]}, {"ids": None}):
+        r = client.post("/api/v1/history/export", json=body)
+        assert r.status_code == 400, body
+        assert r.json()["error"]["code"] == "INVALID_REQUEST"
 
 
 # ---------------- archive（#29） ----------------

@@ -1,8 +1,10 @@
-"""历史领域服务（B9）：终态条目序列化、输入/输出视图、归档、重新排队、
-退回候选、过期清理。
+"""历史领域服务（B9）：终态条目序列化、输入/输出视图、批量输出导出、
+归档、重新排队、退回候选、过期清理。
 
 - 历史条目 = executions 终态行（m1-plan §2.2 运行与历史同表）；wall_time_s
   按 started_at→finished_at 派生（契约标注 F 字段不落库）；
+- 批量导出：选中条目的 run/<id>/input.log（G16 输出）打包 ZIP，条目内以
+  <stem>.out 正规扩展命名（同任务多次执行同名冲突加补零 id 前缀）；
 - 重新排队：仅 failed/skipped、且任务不归属任何队列（队列成员经队列
   重新提交，防止撕裂队列成员构成）；沿用原任务 id 建席（finished→
   seat_task），满员 409 与一般任务同待遇（roadmap §2.1）；
@@ -14,6 +16,9 @@
 """
 from __future__ import annotations
 
+import io
+import zipfile
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
@@ -95,6 +100,47 @@ def load_output(execution_id: int) -> bytes:
         return src.read_bytes()
     except OSError:
         raise not_found("output", execution_id)
+
+
+def export_outputs(ids: list[int]) -> bytes:
+    """批量导出选中条目的输出文件（ZIP 字节）。
+
+    条目内容 = run/<id>/input.log（G16 输出），条目内命名 <stem>.out
+    （正规输出扩展）；同一任务多次执行产生同名冲突时，冲突组全部改用
+    「三位补零执行 id-<stem>.out」前缀区分。无输出文件的条目（skipped、
+    输出已缺、id 不存在/非终态）跳过，包内 _导出说明.txt 逐条登记；
+    选中条目全部无输出 → 404（openapi /history/export）。
+    """
+    picked: list[tuple[int, str, bytes]] = []  # (执行 id, 任务 stem, 内容)
+    missing: list[str] = []                    # 导出说明行
+    for eid in dict.fromkeys(ids):             # 去重保序
+        row = executions().get(eid)
+        if row is None or row["state"] not in _TERMINAL:
+            missing.append(f"- 执行 {eid}：条目不存在或非终态")
+            continue
+        try:
+            data = _run_dir(eid).joinpath("input.log").read_bytes()
+        except OSError:
+            missing.append(f"- 执行 {eid}：无输出文件（任务未产生输出或已清理）")
+            continue
+        name = row["filename"]
+        picked.append((eid, name.rsplit(".", 1)[0] if "." in name else name,
+                       data))
+    if not picked:
+        raise err("NOT_FOUND", "选中条目均无输出文件",
+                  {"missing": missing}, http=404)
+    dup = {stem for stem, n in Counter(s for _, s, _ in picked).items()
+           if n > 1}
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for eid, stem, data in picked:
+            inner = f"{eid:03d}-{stem}.out" if stem in dup else f"{stem}.out"
+            zf.writestr(inner, data)
+        if missing:
+            zf.writestr("_导出说明.txt",
+                        "以下选中条目无输出文件，未包含在本次导出中：\n"
+                        + "\n".join(missing) + "\n")
+    return buf.getvalue()
 
 
 def archive(execution_id: int) -> None:
