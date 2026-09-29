@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-29T11:15+08:00",
+  "updated": "2026-09-29T12:00+08:00",
   "latest_released_version": "2.0.0",
   "unreleased": [
     {
@@ -225,11 +225,39 @@
       "summary": "历史详情抽屉紧凑化与预览可见性：全字段改单行键值行（dt 左/值右对齐，「提交/启动/结束」三时间戳以「/」分隔同行、资源 CPU/MEM 与监控峰值各并一行），抽屉 380→520px，打开输入/输出预览后自动滚入视野；最小支持视口 1280×720 下含全尺寸预览零滚动（此前字段双行堆叠，无预览即超高约 100px、预览区被裁切在视口外）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "api",
+      "summary": "契约增历史批量导出端点 POST /history/export（ids 集合请求体 → application/zip 打包下载，新增 HistoryExportRequest schema，400/404 错误响应），mapping.md 登记多选表格套件与导出映射、端点对照 39→40（history 8→9），前后端契约生成物再生",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "历史单条输出导出附件名 .log 改 .out（G16 输出正规扩展；内容不变仍为 run/<id>/input.log）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "历史批量导出端点落地：run/<id>/input.log 打包 ZIP，条目内 <stem>.out 正规扩展命名、同任务多次执行同名冲突组全部加三位补零执行 id 前缀、无输出条目跳过并在包内 _导出说明.txt 逐条登记、选中条目全部无输出 404、ids 非空正整数数组校验 400",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "历史页表格接入候选页同款通用多选套件（复选框列、useMultiSelect 锚点驱动 Shift 范围/Ctrl+Shift 追加、Ctrl/Cmd 单选、Ctrl+A/Esc/方向键导航与滚动定位、勾选跨页保留）与工具条勾选批量导出 .out（POST export 经 blob 下载 zip、跨页勾选整体参与、修饰点击不开详情抽屉），抽屉单条导出按钮同步改名「导出 .out」",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
-    "task": "计划外需求（配置持久化加固）已落库：设置页运行级项确认存于工作区 SQLite、更新卡代理配置迁工作区 .update-proxy（部署目录旧位置启动自动搬迁）、队列/历史/归档排序规则经 /ui-preferences 持久化（ui_prefs 表迁移 v2）、待执行席位序列跨重启回归实证；8 提交（契约/文档/UI 偏好域/代理迁移/update.sh/前端/测试/登记）全部落库，全量闸门 466 通过",
-    "note": "冒烟期间 pkill -f web.src.main 误停了用户在跑的 8300 实例（02:03:38 仓库根 .update-check 即其实例每周补查所写，非冒烟污染；never 档空转已复现实验证伪嫌疑），8300 服务需用户自行重启；v2.1.0 发布流程（冻结 CHANGELOG → 本地 tag → package_release）仍待用户确认执行，与本需求互不阻塞"
+    "task": "计划外需求（历史导出完善）已落库：单条输出导出附件名 .log→.out、新增 POST /history/export 批量打包 ZIP（.out 命名/冲突 id 前缀/缺失包内说明/404·400）、历史页表格换候选页同款通用多选套件并接工具条勾选批量导出；4 提交（契约/fix/后端/前端）+ 进度同步共 5 提交落库，全量闸门 pytest 475 通过、四校验脚本与 gen:types 零 diff 全绿、真实页面冒烟（多选/键盘/单条与批量下载）逐项实证",
+    "note": "v2.1.0 发布流程（冻结 CHANGELOG → 本地 tag → package_release）仍待用户确认执行，与本需求互不阻塞"
   },
   "next_steps": [
     "用户确认后执行发布流程（impl-plan §5.1）：冻结 CHANGELOG unreleased（v2.1.0/minor/ISO 时间）→ 追加空 unreleased → progress 清空 unreleased 与 latest_released_version → 本地 git tag v2.1.0 → package_release.sh v2.1.0（--upload 需当次授权）→ 发布后连通性冒烟",

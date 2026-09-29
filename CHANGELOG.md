@@ -25,6 +25,9 @@
 - 【web】前端列表排序规则持久化：新增 useSortPref 组合式（挂载拉取回填、变更即时单键写回、失败静默降级下次重拉校对、回填期间屏蔽写回），队列页 queues.sort 与历史/归档页 history.sort/archive.sort 分立接入，同组件跨路由复用实例时键切换重拉
 - 【web】增量解析新增 SCF 轮次计数 scf_round（Cycle 1 行出现即新一轮、自 1 递增，截断重扫随进度状态重建），execution.progress 载荷与快照 progress 增 scf_round 字段（sse.md/openapi.yaml/models 契约同步，contract.ts 再生）
 - 【frontend】SSE 客户端无帧看门狗：连续 60s（4×默认心跳 15s）无任何帧主动断开走退避重连并以快照重建基线，消除半开连接等场景「连接看似在线、读数实已冻结」的无提示失联
+- 【api】契约增历史批量导出端点 POST /history/export（ids 集合请求体 → application/zip 打包下载，新增 HistoryExportRequest schema，400/404 错误响应），mapping.md 登记多选表格套件与导出映射、端点对照 39→40（history 8→9），前后端契约生成物再生
+- 【web】历史批量导出端点落地：run/<id>/input.log 打包 ZIP，条目内 <stem>.out 正规扩展命名、同任务多次执行同名冲突组全部加三位补零执行 id 前缀、无输出条目跳过并在包内 _导出说明.txt 逐条登记、选中条目全部无输出 404、ids 非空正整数数组校验 400
+- 【frontend】历史页表格接入候选页同款通用多选套件（复选框列、useMultiSelect 锚点驱动 Shift 范围/Ctrl+Shift 追加、Ctrl/Cmd 单选、Ctrl+A/Esc/方向键导航与滚动定位、勾选跨页保留）与工具条勾选批量导出 .out（POST export 经 blob 下载 zip、跨页勾选整体参与、修饰点击不开详情抽屉），抽屉单条导出按钮同步改名「导出 .out」
 
 ### 变更
 
@@ -44,6 +47,7 @@
 - 【web】修复 SSE fanout 重放窗口修剪后实时广播永久停摆：增量基准由「绝对已广播条数」（对固定 1024 容量列表 len 比较永假）改为事件 id——此前服务启动累计事件超 1024 条即全量静默丢失（心跳照常、连接看似正常），执行页幽灵卡与监控读数冻结的根因
 - 【frontend】执行中页读数修复：execution.progress 可选字段判空渲染（scan 类任务无优化步时 OPT STEP 不再显示 NaN）、SCF 读数改「轮次-圈数」x-y 展示（标签 SCF RUN-CYCLE，旧载荷缺 scf_round 退单圈数值）
 - 【frontend】历史详情抽屉紧凑化与预览可见性：全字段改单行键值行（dt 左/值右对齐，「提交/启动/结束」三时间戳以「/」分隔同行、资源 CPU/MEM 与监控峰值各并一行），抽屉 380→520px，打开输入/输出预览后自动滚入视野；最小支持视口 1280×720 下含全尺寸预览零滚动（此前字段双行堆叠，无预览即超高约 100px、预览区被裁切在视口外）
+- 【web】历史单条输出导出附件名 .log 改 .out（G16 输出正规扩展；内容不变仍为 run/<id>/input.log）
 
 ## v2.0.0（2026-09-28T02:06+08:00 发布，major）
 
