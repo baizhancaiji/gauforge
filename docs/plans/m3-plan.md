@@ -40,7 +40,7 @@
 | M3.4 | fchk → cubegen → 轨道/静电势可视化（3Dmol.js） |
 | M3.5 | 指定工作区内 `.out`/`.log` 文件只读分析 |
 | M3.6 | Result 字段全集随 M3 契约 diff 一次性扩展（roadmap §2.6 规则 3）；`result_ref`（M0 占位恒 null）起写 |
-| M3.7 | 空间占用统计与告警（2026-09-30 随审查裁决回填；替代 M1 托付的自动定时清理——统计各执行与总空间占用、超总占用阈值仅警告**不自动清理**、手动清理沿用 M1 历史页入口） | 已同步回填 roadmap §3 M3 段 |
+| M3.7 | 空间占用统计与告警（2026-09-30 随审查裁决回填；替代 M1 托付的自动定时清理——统计各执行与总空间占用、超总占用阈值仅警告**不自动清理**、手动清理沿用 M1 历史页入口；已同步回填 roadmap §3 M3 段） |
 
 ### 0.3 不做（非目标）
 
@@ -269,6 +269,32 @@ Result:
   的「失败/中断样例」由本项部分关闭（构造样例覆盖解析降级面；真机失败样例
   随 D1 走查强停产出并抽查、不入库大文件——动作已编入 §7.2 走查路径第 3
   条；不同方法/任务类型的覆盖缺口在后续里程碑按需补充）。
+- **定稿记录（2026-09-30 探针实证，A2 关闭）**：
+  - **cclib 1.8.1 版本识别缺口与运行时垫片**：G16 发行版测试样本
+    （anisoles/phenoxyls，Gaussian DV 开发版 2006–2007 头部）在 cclib 1.8.1
+    下解析即抛 `KeyError: 'DV'`（`Gaussian, Inc.,` 引用行误触发版本识别分支，
+    `AM64L-GDVRevF.01` 的 year_suffix=DV 不在 YEAR_SUFFIXES_TO_YEARS 表；
+    cclib master 分支同样存在，改为正则不匹配断言失败）。处置：B1 在
+    `web/src/parse/results.py` 内做运行时垫片——把 `Gaussian.YEAR_SUFFIXES_TO_YEARS`
+    包为缺失键回落 "unknown" 的 defaultdict（仅未知后缀行为变化，已识别
+    版本逐位不变；带形状守卫，cclib 升级致属性形态不符时告警跳过、不静默）。
+    垫片后 package_version 落 "unknown+F.01" 形态（Result.package.version 如实
+    承载）。上游 patch 待提（风险 1 预案）。
+  - **白名单属性实测形状**（垫片后 4 份金标准逐属性提取全绿）：scfvalues=逐
+    SCF 迹线（数值频率任务为逐位移 SCF，实测 85/97/73 步；energy_series 的
+    geometry_step 取序列序号）；scftargets (n,3)/geotargets (4,) 判据列；
+    vibfreqs/vibirs/vibsyms/vibrmasses 等长逐模（实测 42/30 模、虚频 0）；
+    moenergies 单/双自旋（开壳层 homos=[α,β] 两值，实测 [24,23]）；**mosyms
+    老版输出缺失**（实测 4 份全缺 → symmetry null 实证）；homos 等为 numpy
+    标量，JSON 前一律转原生类型。
+  - **method 摘要**：metadata.functional + basis_set 优先（实测
+    "B+HF-LYP/TZVP"），缺失回落 methods 去重连接（"DFT"）。
+  - **opt_converged 判定**：optdone 存在→bool(optdone)；缺失但 optstatus
+    存在→false（未收敛，实测 anisoles1 optstatus=[1]）；两者皆无→null
+    （非优化任务）。
+  - **fixtures 构造方案定稿**（B5 入库，仅入库 `web/tests/fixtures/`）：
+    ① freq 输出 Frequencies 表中段截断；② opt 输出去除 Normal termination
+    尾段；③ route 去 Pop 后无 MO 表输出。
 
 ### 2.3 分析端点数据形状与边界（A1 评审输入，B3 实施依据）
 
@@ -331,6 +357,16 @@ Result:
   超时 120s；fchk 取 `run/<id>/input.fchk`（M1 formchk 产物），缺失时
   502（details 注明 formchk 产物缺失）。环境沿用 roadmap §2.5 g16 自洽构建口径
   （GAUSS_MEMDEF 缺省不设）。
+- **定稿记录（2026-09-30，A3 关闭）**：决策点 1 图表方案 = **ECharts 按需
+  引入**（LineChart/BarChart/Grid/Tooltip/DataZoom 按需注册，镜像源本地安装
+  随 Vite 打包；收敛三源切换+判据参考线+IR 联动高亮超出手写 SVG 合理工量，
+  备选不采纳）；决策点 3 cube 留存 = `run/<id>/cubes/` **不入保留期清理**、
+  与执行目录同生命周期（建议值采纳）；决策点 4 候选清单端点**不纳入**
+  （A1 已按 8 端点落库），`.out` 入口定稿 = 历史详情分析区头部路径输入；
+  决策点 2 analysis.json 惰性重建一次（建议值采纳，B3 实施）；决策点 5
+  `disk_usage_warn_gb` 默认 50（随 A1 SettingItem 登记）。3Dmol 包内资源
+  加载方式与纯本地打包的兼容性核对随 C1/C4 实施时经 context7 核对（本节
+  交互规格不变）。
 
 ### 2.5 依赖安装与前端离线化（用户补充要求，2026-09-30 固化）
 
@@ -779,6 +815,9 @@ pytest 通过」时一律适用**——既有 e2e 同受其制约，静默跳过
    audit_frontend_offline 通过；分析区/占用面板与设计规格并排目检。
 
 ## 8. 开放决策点（实施中关闭，建议值先行）
+
+> 2026-09-30 A2/A3 定稿时 1–5 全部关闭：1/3/4/5 按建议值采纳（回填见
+> §2.2/§2.4），2 采纳建议值随 B3 实施。
 
 1. **图表方案**（A3 关闭）：建议 ECharts 按需引入（镜像源本地安装）；
    备选手写 SVG（零依赖、约 300 行、无缩放）。
