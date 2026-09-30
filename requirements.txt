@@ -1,18 +1,23 @@
 # Python 子系统（web/）依赖清单，uv 冻结版本；Rust 依赖见 Cargo.toml / Cargo.lock
-# 运行时依赖：M0 引入 FastAPI 应用栈（REST + SSE）；M1 追加 cclib；ASE/OpenBabel 暂缓（结构互转需求落地再引入，见 docs/specs/roadmap.md §6）
+# 运行时依赖：M0 引入 FastAPI 应用栈（REST + SSE）；M3 追加 cclib（结果解析，
+# 仅进项目 .venv，uv + 镜像源安装；m3-plan B1/§2.5）；ASE/OpenBabel 暂缓（结构互转需求落地再引入，见 docs/specs/roadmap.md §6）
 # 契约生成链的 datamodel-code-generator 为 dev 依赖，独立安装在 venv，不入本清单运行时组
 # 上游文档站依赖独立管理于 docs/requirements.txt，与本清单无关
+cclib==1.8.1
 exceptiongroup==1.3.1
 fastapi==0.141.1
 httpx==0.28.1
 iniconfig==2.3.0
+numpy==2.2.6
 openapi-core==0.23.1
 packaging==26.3
+periodictable==2.1.0
 pluggy==1.6.0
 pydantic==2.13.5
 pygments==2.21.0
 pyyaml==6.0.3
 pytest==9.1.1
+scipy==1.15.3
 sse-starlette==3.4.11
 tomli==2.4.1
 typing-extensions==4.16.0

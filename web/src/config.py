@@ -105,6 +105,11 @@ RUNTIME_SETTINGS: list[dict] = [
      "description": "自动检查更新周期（凌晨 1:00 锚定、错过窗口启动补查；只发现不安装）"},
 ]
 
+# ---------- M3 结果分析（B1）：金标准样本目录（解析回归/惰性重建的取数基准） ----------
+# 环境变量 G16WEB_G16_SAMPLES 可覆盖；缺失时相关测试显式 skip（reason 可见，不静默）。
+G16_SAMPLES_DIR = Path(
+    os.environ.get("G16WEB_G16_SAMPLES", "~/g16/tests")).expanduser()
+
 # 未知 key 拒改：白名单 = 目录全部 key（PUT 校验用）。
 SETTINGS_CATALOG: dict[str, dict] = {
     m["key"]: m for m in [*STARTUP_SETTINGS, *RUNTIME_SETTINGS]
