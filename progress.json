@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30T23:40+08:00",
+  "updated": "2026-09-30T23:42+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -57,12 +57,20 @@
       "summary": "M3/M4 拆分后两计划经独立子代理二次审核并修复审核发现（9 项 P2 全部闭环，P1 零项）：两版结构完整、对照 git 历史原联合计划逐节零丢失、内部与外部引用自洽；m3-plan 修复 §2.5 外链审计 D3 残留改 D1 收口、§0.1 补空间占用治理句对齐 roadmap 现行 M3 段、§4 公共纪律 hq 口径去 M4 归因、WORKSPACE_PATH_OUTSIDE 指向 §2.3 路径守卫、§3.3 E422 节点与错误码表口径统一；m4-plan 修复决策点 7 三处拆分残留（风险 8/#4（B7）/17.5 人天）、§7.2 走查清单重排 1-9 并拆分粘连行、§4.1 步骤②赘字、§4.10 体例指针补 m3-plan 前缀、§5 真机依赖清单改 M4 口径（crest/真 g16/真机 hq）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": null,
+  "in_progress": "M3 结果解析与可视化（A2 解析管道设计定稿：cclib 探针验证 4 份金标准逐属性可提取；A3 可视化/离线化设计定稿回填）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
-    "按 docs/plans/m3-plan.md 开工：A1 Result 契约 diff 与 A2 解析管道设计先行（文档先行闸门）"
+    "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
+    "A2/A3 定稿后按 m3-plan §6 提交序列推进 B1（cclib 引入）→B2→B3/B4→B5→B12"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
