@@ -26,7 +26,9 @@
 **M3 · 结果分析**：以执行历史为主入口，分析视图内嵌在历史详情中，仅作简单
 预览（不单列页面）；另支持指定工作区内 `.out`/`.log` 文件只读分析。**仅正常结束**
 的执行才进入解析管道。能量收敛曲线、频率表与红外谱图（cclib 数据 + 前端
-绘图）、fchk → cubegen → 轨道/静电势可视化。
+绘图）、fchk → cubegen → 轨道/静电势可视化。空间占用治理（roadmap M3 段
+2026-09-30 回填）：统计各执行与总空间占用，达到总占用阈值仅警告、**不自动
+清理**，手动清理沿用 M1 历史页入口（工作项 M3.7，定稿见 §2.6）。
 
 ### 0.2 工作项编号（引 roadmap 原文段落顺序，WBS 表「对应项」列引用）
 
@@ -222,7 +224,7 @@ Result:
 |---|---|---|
 | `ANALYSIS_UNAVAILABLE` | 409 | 非 succeeded 条目请求分析，或 analysis.json 缺失且重建失败 |
 | `ANALYSIS_PARSE_FAILED` | 422 | 请求的分析块数据不足**或解析超时**（如无频率任务请求 frequencies；超时 details 注明，§2.3——修订说明三⑨） |
-| `WORKSPACE_PATH_OUTSIDE` | 400 | `.out` 分析路径越出工作区（§2.4 边界） |
+| `WORKSPACE_PATH_OUTSIDE` | 400 | `.out` 分析路径越出工作区（§2.3 路径守卫） |
 | `CUBE_GENERATION_FAILED` | 502 | cubegen 非零退出/超时（details 携带 stderr 尾部） |
 | `CUBE_EXECUTABLE_MISSING` | 503 | `g16_root/cubegen` 探测失败（显式，不静默） |
 
@@ -342,7 +344,7 @@ Result:
 - **外链审计闸门（新增脚本）**：`scripts/audit_frontend_offline.sh`——对
   `web/frontend/dist/` 构建产物扫描 `https?://` 资源引用（豁免：注释与
   license 文本、SVG namespace 等非资源引用白名单），命中即非零退出；纳入
-  C1/C4 与 D1/D3 收口闸门（AGENTS.md §6.3）。图表库若引入，同规约束。
+  C1/C4 与 D1 收口闸门（AGENTS.md §6.3）。图表库若引入，同规约束。
 
 ### 2.6 空间占用统计与告警（M3.7 定稿基线，2026-09-30 裁决替代自动定时清理）
 
@@ -462,7 +464,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     SEL[轨道面板选择 MO=n / 静电势] -->|"POST analysis/cube {kind,orbital,npts}"| VAL{白名单与上界校验}
-    VAL -->|越界| E422[422 CUBE_GENERATION_FAILED 前置校验]
+    VAL -->|越界| E422[422 参数白名单与上界前置校验]
     VAL -->|通过| HIT{同参数 cube 已存在?}
     HIT -->|是| RET[直接返回 cube_id·幂等]
     HIT -->|否| RUN[cubegen nprocs kind input.fchk cubes/&lt;id&gt;.cube npts h·120s 超时]
@@ -476,7 +478,8 @@ flowchart LR
 
 > 每任务四要素：**步骤**（动手顺序）、**技术要求**（硬约束）、**质量标准**
 > （可验证判据）、**交付物**（落库物）。公共纪律不重复写：文档先行、
-> 全量 `uv run pytest` + 四校验脚本过闸、hq 产物在位（M4 派发相关）、
+> 全量 `uv run pytest` + 四校验脚本过闸、hq 产物在位（凡声称「全量
+> pytest 通过」时适用，§0.4 第 2 条）、
 > 契约生成物随 diff 再生（gen:types 零 diff）、契约 diff 涉及新存储
 > 字段者对应 SQLite 迁移随该批次落库（幂等、版本化，migrations 机制
 > ——修订说明三⑥）。

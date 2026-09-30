@@ -472,7 +472,7 @@ flowchart LR
   两形态与载体约束、派生依赖、DAG 校验、窗口联动、错误码六枚——每码
   须有正文触发场景承载、SettingItem 增 crest_root/xtb_root、resume 端点
   与历史条目 `resumed_from` 关联字段、`GET /workflows/{id}` 与
-  energy-summary 端点、Task.kind）；② 与
+  energy-summary 端点、Task.kind）；②
   与 roadmap §2.1 及本计划 §2.1/§2.3 交互项走查（重排/哈希跳过/重新排队/成员下限/清理边界/
   单任务席位引用禁止逐条）；③ 评审（此项即 roadmap §7 开放事项 1 的关闭
   动作，关闭后回填 roadmap）。
@@ -607,7 +607,7 @@ flowchart LR
 
 - D3：按 §7.2 走查路径清单真机走查（含 chk 链、断点续跑、组合流与能量表；
   GUI 经 Playwright 黑盒驱动），走查记录落 `docs/plans/m4-acceptance.md`
-  （体例同 D1；截图存本地不入库）；对照 roadmap M4 验收段核验。
+  （体例同 m3-plan D1；截图存本地不入库）；对照 roadmap M4 验收段核验。
 - D4：AGENTS.md §5.2 五步执行（2.3.0；不推送远端，授权另请）。
 
 ## 5. 测试矩阵（先测试后实现）
@@ -622,7 +622,7 @@ flowchart LR
 | test_e2e_m4.py | D3 | chk 链、断点续跑、组合流（真机段走查留痕） | e2e |
 | 既有回归 | 全程 | `test_error_codes.py`、`test_openapi_ssot.py`、`gen:types` 零 diff、`test_e2e_fake_g16.py` 不回归 | 闸门 |
 
-说明：真机依赖（cubegen/crest/金标准/真 g16）缺失时 skip 必须显式带
+说明：真机依赖（crest/真 g16/真机 hq）缺失时 skip 必须显式带
 reason（`-rs` 可见）；hq 产物缺失静默跳过的既有教训（AGENTS.md §6.1 第 4 条）不得
 在新增测试重演——M4 派发类用例开工前先核 `target/release/hq`。
 
@@ -705,29 +705,21 @@ diff（契约批次）、`target/release/hq` 在位（**M4 硬依赖**——触�
 
 ### 7.2 M4 D3 走查路径清单（同体例；记录落 `docs/plans/m4-acceptance.md`）
 
-1. **依赖链（三段，对齐 roadmap M4.1 原文——修订说明二）**：队列 [opt,
-   freq（%OldChk=@task:opt）, sp（%OldChk=@task:freq）] 提交 → 断言 opt
+1. **依赖链（三段，对齐 roadmap M4.1 原文——修订说明二）**：队列 [opt,   freq（%OldChk=@task:opt）, sp（%OldChk=@task:freq）] 提交 → 断言 opt
    在跑时后继窗口停等可见（执行中页原因标注）；逐级 succeeded → 逐级
    物化执行成功；上游 chk 原件哈希前后一致。
-2. **依赖校验**：环/自环/悬引用/跨队列/单任务席位引用逐例 422 + 错误码；
-   PATCH 移除被依赖成员拒绝；溯源 chk 清理后重提交 `CHK_SOURCE_MISSING`。
-3. **失败联动**：opt 失败（fake 注入）→ sp 即时 skipped
-   （predecessor_failed）+ 队列回退归因可见。
-1. **哈希跳过溯源**：上游成功未变 + 下游依赖 → 重提交后下游物化使用上游
-   被沿用的历史 chk；上游重跑（新执行 id）→ 下游重跑（A4 裁决语义）。
-2. **断点续跑 opt**：真机强停 opt → resume preview（探针/注入 diff）→
-   确认 → 新任务「续跑自」双向关联可见 → Opt=Restart 跑通。
-3. **续跑 sp 与 freq**：sp 场景 %OldChk+Guess=Read 跑通；freq 场景弹窗
-   明示回落原样重跑；ineligible（无资产/探针失败）原因明确。
-4. **组合流**：crest 真机小分子（甲醇）一键提交 → crest 执行 → top-2
-   精修队列自动生成并提交 → `GET /workflows/{id}` 进度与能量表（相对
+2. **依赖校验**：环/自环/悬引用/跨队列/单任务席位引用逐例 422 + 错误码；   PATCH 移除被依赖成员拒绝；溯源 chk 清理后重提交 `CHK_SOURCE_MISSING`。
+3. **失败联动**：opt 失败（fake 注入）→ sp 即时 skipped   （predecessor_failed）+ 队列回退归因可见。
+4. **哈希跳过溯源**：上游成功未变 + 下游依赖 → 重提交后下游物化使用上游   被沿用的历史 chk；上游重跑（新执行 id）→ 下游重跑（A4 裁决语义）。
+5. **断点续跑 opt**：真机强停 opt → resume preview（探针/注入 diff）→   确认 → 新任务「续跑自」双向关联可见 → Opt=Restart 跑通。
+6. **续跑 sp 与 freq**：sp 场景 %OldChk+Guess=Read 跑通；freq 场景弹窗   明示回落原样重跑；ineligible（无资产/探针失败）原因明确。
+7. **组合流**：crest 真机小分子（甲醇）一键提交 → crest 执行 → top-2   精修队列自动生成并提交 → `GET /workflows/{id}` 进度与能量表（相对
    kJ/mol）可查、增量刷新、页面刷新后经 `GET /workflows` 列表恢复进度
    面板（修订说明三⑦）；精修自动提交满员受控场景断言保留未提交提示，
    crest 任务入队席位满员受控场景断言 409 整体拒绝零副作用（§2.3，
    修订说明三④）。
 8. **可执行缺失**：crest/xtb 受控不可用 → 提交 503 显式。
-5. **闸门与并排**：全量测试与全部闸门脚本通过（含 hq 产物在位、offline
-   审计与 `npm run build`、M3/M4 e2e 不回归；口径同 m3-plan §7.2 第 7 条）。
+9. **闸门与并排**：全量测试与全部闸门脚本通过（含 hq 产物在位、offline   审计与 `npm run build`、M3/M4 e2e 不回归；口径同 m3-plan §7.2 第 7 条）。
 
 ## 8. 开放决策点（实施中关闭，建议值先行）
 
@@ -758,10 +750,10 @@ diff（契约批次）、`target/release/hq` 在位（**M4 硬依赖**——触�
     （修订说明三⑤）：(a) HQ 提交参数已支持 per-job 重试上限 → 零 Rust
     改动，B7 提交参数携带即可；(b) 不支持但改动限于提交结构体加字段 +
     server 应用 + HTTP 层透传（不触调度核心）→ B7 内扩展（L 估算预留可
-    容纳），提交序列 #21 前插 `feat(hq)` 批次（闸门 cargo test + 重建
-    hq，总工量 +1~2 人天未计入 35）；(c) 需触调度核心 → 放弃提交侧
+    容纳），提交序列 #4（B7）前插 `feat(hq)` 批次（闸门 cargo test + 重建
+    hq，总工量 +1~2 人天未计入 17.5）；(c) 需触调度核心 → 放弃提交侧
     禁用，退守对账拦截（重入② journal 对账 + M1 对账路径识别重跑者
-    取消），风险 7 应对预案相应改写。
+    取消），风险 8 应对预案相应改写。
 
 ## 9. 风险评估与应对预案
 
