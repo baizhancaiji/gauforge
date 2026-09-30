@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T00:42+08:00",
+  "updated": "2026-10-01T00:45+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -69,6 +69,13 @@
       "type": "changed",
       "scope": "docs",
       "summary": "A2/A3 设计定稿回填：A2 探针实证 4 份金标准 cclib 1.8.1 逐属性提取全绿，发现并定稿 G16 发行版 DV 样本版本识别缺口处置（运行时垫片，defaultdict 回落 unknown 带形状守卫，master 同缺口）、白名单实测形状（逐 SCF 迹线/mosyms 全缺→null/开壳层 αβ 双自旋/numpy 转原生）、method 摘要与 opt_converged 三态判定、fixtures 三份构造方案；A3 关闭决策点 1（ECharts 按需）/2（惰性重建）/3（cube 留存）/4（候选清单端点不纳入、.out 入口定稿）/5（阈值默认 50）；修复 §0.2 M3.7 表格列错位",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "OrbitalsResponse 契约补丁：加 spin 自旋组维度（alpha/beta、闭壳层 null，各组独立 1..n 编号；nmo 明确为 α 组轨道数即 cubegen MO=<n> 上界基）——B1 探针实证开壳层金标准 phenoxyls 双自旋后随契约 diff 补录，两侧契约生成物再生",
       "breaking": false,
       "migration": null
     }
