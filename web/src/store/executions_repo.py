@@ -80,19 +80,24 @@ class ExecutionsRepo:
     def finalize(self, *, execution_id: int, state: str, finished_at: str,
                  cause: str | None = None,
                  monitor_summary: dict | None = None,
-                 chk_snapshot: dict | None = None) -> None:
+                 chk_snapshot: dict | None = None,
+                 result_ref: str | None = None) -> None:
         """终态冻结（B9 管线调用；冻结后仅 archived 可变）。
 
-        chk_snapshot：非正常终止保全快照 {protected, location}（仅 failed）。
+        chk_snapshot：非正常终止保全快照 {protected, location}（仅 failed）；
+        result_ref：M3 B2，analysis.json 落盘成功置位（含 degraded），
+        随冻结同事务落库、冻结后不再写（m3-plan §2.1 字段生命周期）。
         """
         self._db.run(
             "UPDATE executions SET state = ?, finished_at = ?, cause = ?,"
-            " monitor_summary = ?, chk_snapshot = ? WHERE id = ?",
+            " monitor_summary = ?, chk_snapshot = ?, result_ref = ?"
+            " WHERE id = ?",
             (state, finished_at, cause,
              json.dumps(monitor_summary, ensure_ascii=False)
              if monitor_summary is not None else None,
              json.dumps(chk_snapshot, ensure_ascii=False)
              if chk_snapshot is not None else None,
+             result_ref,
              execution_id))
 
     def set_archived(self, execution_id: int) -> None:

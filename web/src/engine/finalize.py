@@ -24,6 +24,37 @@ TRANSIENT_EXTS = (".chk", ".rwf")
 
 _PROTECTED_DIR = "protected"
 
+ANALYSIS_NAME = "analysis.json"
+ANALYSIS_TIMEOUT_S = 60
+
+
+def write_analysis(run_dir: Path, *,
+                   timeout_s: int = ANALYSIS_TIMEOUT_S) -> str | None:
+    """M3 解析步（m3-plan §4.5 B2）：succeeded 后解析 input.log →
+    run/<id>/analysis.json（临时文件+rename 原子写）。
+
+    - 解析异常/超时由 parse_output 保底按 degraded 落地（不抛出），
+      degraded 产物照常落盘（result_ref 置位口径 §2.1 含 degraded）；
+    - 落盘失败（磁盘等 OSError）记日志返回 None，不阻断终态管线
+      （沿用 formchk「失败不阻断」先例）；
+    - 返回 result_ref 值："analysis.json"（落盘成功，含 degraded）| None。
+    """
+    from ..parse import results as results_parse
+    try:
+        payload = results_parse.parse_output(run_dir / "input.log",
+                                             timeout_s=timeout_s)
+    except Exception as exc:  # noqa: BLE001  parse_output 不抛出，防御兜底
+        print(f"[finalize] analysis 解析异常：{exc}", file=sys.stderr)
+        return None
+    tmp = run_dir / (ANALYSIS_NAME + ".tmp")
+    try:
+        tmp.write_text(results_parse.dumps_compact(payload), encoding="utf-8")
+        tmp.replace(run_dir / ANALYSIS_NAME)
+    except OSError as exc:
+        print(f"[finalize] analysis 落盘失败：{exc}", file=sys.stderr)
+        return None
+    return ANALYSIS_NAME
+
 
 def _iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts)

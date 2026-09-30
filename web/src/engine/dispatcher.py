@@ -31,6 +31,7 @@ finished_with_failures 处理；手动停止——在跑成员全部被 stop，
 """
 from __future__ import annotations
 
+import sys
 import threading
 import time
 import traceback
@@ -360,10 +361,18 @@ class Dispatcher:
         eid, tid = execution["id"], execution["task_id"]
         run_d = self._run_root / str(eid)
         snap = chk_snapshot
+        result_ref: str | None = None
         if state == "succeeded":
             # ② formchk：失败记日志不阻断（finalize.make_fchk）
             g16_root = Path(str(settings().get("g16_root"))).expanduser()
             finalize.make_fchk(run_d, g16_root)
+            # ②' M3 解析步（m3-plan §4.5 B2）：input.log → analysis.json，
+            #    degraded 亦落盘置位；落盘失败 result_ref=null 不阻断
+            try:
+                result_ref = finalize.write_analysis(run_d)
+            except Exception as exc:  # noqa: BLE001  硬保证：不阻断终态
+                print(f"[finalize] analysis 步异常：{exc}", file=sys.stderr)
+                result_ref = None
         elif state == "failed" and snap is _SUMMARY_AUTO:
             # ③ 保全快照：非正常终止 chk/rwf 移入 protected/
             snap = finalize.protect_transient(run_d)
@@ -375,7 +384,8 @@ class Dispatcher:
                               finished_at=now_iso(), cause=cause,
                               monitor_summary=monitor_summary,
                               chk_snapshot=None if snap is _SUMMARY_AUTO
-                              else snap)
+                              else snap,
+                              result_ref=result_ref)
         self._monitor.forget(eid)
         self._progress.forget(eid)
         extra = ({"queue_id": execution["queue_id"]}
