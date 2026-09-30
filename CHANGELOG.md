@@ -10,6 +10,7 @@
 - 【docs】A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步
 - 【web】B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过
 - 【web】B2 Result 落库与 finalize 接线落库：finalize.write_analysis 原子写 analysis.json（degraded 亦落盘、失败记日志不阻断），dispatcher formchk 步后接线并随终态冻结同事务写 result_ref（reconcile 单点全覆盖、SSE 时序不受扰），executions_repo.finalize 增 result_ref，test_finalize_result 10 例集成断言，全量 pytest 507 通过
+- 【web】B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过
 
 ### 变更
 

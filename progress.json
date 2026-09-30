@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:52+08:00",
+  "updated": "2026-10-01T01:54+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -127,13 +127,20 @@
       "summary": "scf_trace.cycles 内层补 nullable 契约补丁：cclib scfvalues 判据列迭代早期未更新为 NaN（真机 CVL 链路实证），null 保列对齐语义，两侧契约生成物再生",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（B3 分析端点集：概览/收敛/频率/轨道四端点+ workspace-out 只读分析 + analysis.json 惰性重建 + 契约测试；B4 cubegen 集成可在 B3 后并行）",
+  "in_progress": "M3 结果解析与可视化（B4 cubegen 集成：services/cube.py 探测/白名单/幂等/120s 超时 + POST/GET cube 两端点，真机 fchk 用 h2o_optfreq_popreg/oh_doublet_popreg）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
-    "B3/B4 落库后推进 B5（金标准回归闸门扩 10 份矩阵+fixtures）→B12"
+    "B4 落库后推进 B5（金标准回归闸门 10 份矩阵+fixtures 入库）→B12"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
