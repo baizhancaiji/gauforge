@@ -2,7 +2,27 @@
   "updated": "2026-09-30T00:41+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
-    {"type": "added", "scope": "docs", "summary": "新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案", "breaking": false, "migration": null}
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "roadmap 开放事项 5 裁决回填：自动定时清理不引入、替代为空间占用统计与阈值告警（仅警告不自动清理、手动清理沿用 M1 入口，随 M3 实施 M3.7），M3 段落与验收段补录",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "M3/M4 联合计划审查修订（用户裁决落实）：H2 新增 GET /workflows/{id} 跨容器聚合、H3 续跑改新建任务并以 @exec 符号引用与 resumed_from 建立关联、H4 新增 M3.7 存储统计告警设计，及走查路径清单 §7.3/§7.4、定稿提交表与总工量、result_ref 口径统一、依赖图表对齐、孤儿错误码场景落位等 25 项修复",
+      "breaking": false,
+      "migration": null
+    }
   ],
   "in_progress": null,
   "next_steps": [
