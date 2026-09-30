@@ -687,11 +687,14 @@ components:
                 type: integer
               cycles:
                 type: array
-                description: 每次迭代一行的判据值（列序同 scf_targets）
+                description: 每次迭代一行的判据值（列序同 scf_targets；个别判据
+                  在迭代早期未更新时为 null——cclib scfvalues 实测含 NaN，
+                  真机链路实证后随契约 diff 补 nullable，前端绘图按断点处理）
                 items:
                   type: array
                   items:
                     type: number
+                    nullable: true
         scf_targets:
           type: array
           items:

@@ -1091,8 +1091,8 @@ export interface components {
             /** @description 每几何步内各次 SCF 迭代的收敛判据列（cclib scfvalues 逐列展开） */
             scf_trace: {
                 geometry_step: number;
-                /** @description 每次迭代一行的判据值（列序同 scf_targets） */
-                cycles: number[][];
+                /** @description 每次迭代一行的判据值（列序同 scf_targets；个别判据 在迭代早期未更新时为 null——cclib scfvalues 实测含 NaN， 真机链路实证后随契约 diff 补 nullable，前端绘图按断点处理） */
+                cycles: (number | null)[][];
             }[];
             /** @description SCF 判据阈值（与 cycles 列同序） */
             scf_targets: number[];
