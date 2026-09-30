@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:24+08:00",
+  "updated": "2026-10-01T01:33+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -104,6 +104,13 @@
       "type": "changed",
       "scope": "docs",
       "summary": "M3 金标准剩余三缺口补齐（金标准集 10 份 .out + 16 份 .fchk）：线性水 freq 样本实证 -2045.3 cm⁻¹ 二重简并虚频（imaginary 路径关闭）；本机 formchk 产出现代闭壳层/开壳层小 fchk 各一（cubegen MO=1 与 Potential=SCF 冒烟通过，B4 测试资产）；c8b_qst2_error 实证 success=false 且零分析块的极端降级；澄清 Nosymm 抑制轨道对称性打印（mosyms 恒缺根因，symmetry 按 nullable 兼容）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "parse 原生化补漏：_native 精确 type 判定使 np.float64 等 float/int/bool 内建子类统一落成纯原生类型（新金标准 h2o_linear 虚频值实测）",
       "breaking": false,
       "migration": null
     }
