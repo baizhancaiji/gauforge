@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30T23:42+08:00",
+  "updated": "2026-10-01T00:42+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -64,13 +64,20 @@
       "summary": "A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "A2/A3 设计定稿回填：A2 探针实证 4 份金标准 cclib 1.8.1 逐属性提取全绿，发现并定稿 G16 发行版 DV 样本版本识别缺口处置（运行时垫片，defaultdict 回落 unknown 带形状守卫，master 同缺口）、白名单实测形状（逐 SCF 迹线/mosyms 全缺→null/开壳层 αβ 双自旋/numpy 转原生）、method 摘要与 opt_converged 三态判定、fixtures 三份构造方案；A3 关闭决策点 1（ECharts 按需）/2（惰性重建）/3（cube 留存）/4（候选清单端点不纳入、.out 入口定稿）/5（阈值默认 50）；修复 §0.2 M3.7 表格列错位",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（A2 解析管道设计定稿：cclib 探针验证 4 份金标准逐属性可提取；A3 可视化/离线化设计定稿回填）",
+  "in_progress": "M3 结果解析与可视化（B1 cclib 引入：requirements.txt 冻结 cclib==1.8.1 + web/src/parse/results.py 白名单解析服务（含 DV 垫片）+ 金标准单测）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
-    "A2/A3 定稿后按 m3-plan §6 提交序列推进 B1（cclib 引入）→B2→B3/B4→B5→B12"
+    "B1 落库后按 m3-plan §6 推进 B2（finalize 接线）→B3/B4→B5→B12"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",

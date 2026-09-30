@@ -7,6 +7,7 @@
 ### 新增
 
 - 【docs】新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案
+- 【docs】A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步
 
 ### 变更
 
@@ -17,6 +18,7 @@
 - 【docs】M3/M4 联合计划三轮审查修订（修订说明三，17 项）：决策点 8 拆分关闭时点（候选清单端点有无随 A1 评审定稿、入口形态随 A3）、注入矩阵 route 判定规则定稿（含 Opt 即优化行、Opt+Freq 并存归优化，ineligible 统一四态并补图）、关键路径更正（M4 波实算最长链 A4→A5→B10→B11→C7→D3→D4、总≈19 人天，原声明漏 B9 对 A5 依赖）、组合流提交席位满员语义定稿（409 PENDING_CAPACITY_FULL 整体拒绝零副作用）、决策点 12 补三分支 contingency（HQ per-job 重试上限 a/b/c 落位，b 插 feat(hq) 批次+cargo test 闸门）、M4 schema 迁移落位（resumed_from 列与 workflow 表走 migrations 版本化）、workflow 发现路径补全（POST 响应形状+新增 GET /workflows 列表端点）、resumed_by 派生只读字段定稿（原历史条目零 schema 变更）、workspace-out 解析超时 60s 定稿、A4/B5 批次 roadmap 回填登记（M4 段物化措辞校正与 §7.2 部分关闭注记）、A1 mapping 增行补归档详情分析区、v2.1.0 附件上传悬留注记、offline 审计/RESUME_NOT_ELIGIBLE HTTP 语义/hq 在位三处口径统一、crest 能量单位列入 A5 核验
 - 【docs】M3/M4 联合计划拆分为两份独立计划（m3-plan.md/m4-plan.md）：联合总工量 35 人天过大，按「两波执行、两次发布」既有结构一分为二（各 ≈17.5 人天），版本目标与波次闸门不变（M4 以 M3 收口 tag v2.2.0 为开工闸门）；章节编号重排自洽（M3 版 §2.5/§2.6=原 §2.8/§2.9，M4 版 §2.1-2.3/§3.2-3.4/§4.1-4.10=原 §2.5-2.7/§3.4-3.6/§4.14-4.23），提交表各自 15/13 项、决策点 5/7 条、风险 9/8 条拆分重编号，交叉引用经全文校验，M4 版 §0.4 前置重写为 M3 收口闸门、§0.5/§0.6 改 M4 视角（M1 遗产 protected chk/M3 产出 B1 解析），三轮修订说明以沿革注记形式保留回指（完整文本见 git 历史）；roadmap 两处引用同步改向，原 m3-m4-plan.md 删除
 - 【docs】M3/M4 拆分后两计划经独立子代理二次审核并修复审核发现（9 项 P2 全部闭环，P1 零项）：两版结构完整、对照 git 历史原联合计划逐节零丢失、内部与外部引用自洽；m3-plan 修复 §2.5 外链审计 D3 残留改 D1 收口、§0.1 补空间占用治理句对齐 roadmap 现行 M3 段、§4 公共纪律 hq 口径去 M4 归因、WORKSPACE_PATH_OUTSIDE 指向 §2.3 路径守卫、§3.3 E422 节点与错误码表口径统一；m4-plan 修复决策点 7 三处拆分残留（风险 8/#4（B7）/17.5 人天）、§7.2 走查清单重排 1-9 并拆分粘连行、§4.1 步骤②赘字、§4.10 体例指针补 m3-plan 前缀、§5 真机依赖清单改 M4 口径（crest/真 g16/真机 hq）
+- 【docs】A2/A3 设计定稿回填：A2 探针实证 4 份金标准 cclib 1.8.1 逐属性提取全绿，发现并定稿 G16 发行版 DV 样本版本识别缺口处置（运行时垫片，defaultdict 回落 unknown 带形状守卫，master 同缺口）、白名单实测形状（逐 SCF 迹线/mosyms 全缺→null/开壳层 αβ 双自旋/numpy 转原生）、method 摘要与 opt_converged 三态判定、fixtures 三份构造方案；A3 关闭决策点 1（ECharts 按需）/2（惰性重建）/3（cube 留存）/4（候选清单端点不纳入、.out 入口定稿）/5（阈值默认 50）；修复 §0.2 M3.7 表格列错位
 
 ## v2.1.0（2026-09-29T17:25+08:00 发布，minor）
 
