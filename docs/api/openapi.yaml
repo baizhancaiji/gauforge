@@ -769,32 +769,41 @@ components:
     OrbitalsResponse:
       type: object
       description: 轨道能量清单（不含 mocoeffs——系数不进响应，等值面走 cube 端点；
-        输出无 MO 表时 blocks.orbitals=false，提示建议 Pop=Reg/Full）
+        输出无 MO 表时 blocks.orbitals=false，提示建议 Pop=Reg/Full）。开壳层
+        任务 α/β 两组自旋各承载一份清单（spin 区分，各自 1..n 编号；B1 探针
+        实证 phenoxyls 双自旋后随契约 diff 补录）
       required: [nmo, nbasis, homos, orbitals]
       properties:
         nmo:
           type: integer
+          description: α 组轨道数（cubegen MO=<n> 上界校验基）
         nbasis:
           type: integer
         homos:
           type: array
           items:
             type: number
+          description: HOMO 序号（闭壳层单值，开壳层 [α,β] 两值）
         orbitals:
           type: array
           items:
             type: object
-            required: [index, energy_eV, symmetry]
+            required: [index, energy_eV, symmetry, spin]
             properties:
               index:
                 type: integer
-                description: 1 起（与 cubegen MO=<n> 同基，orbitals 上界）
+                description: 同自旋组内 1 起（与 cubegen MO=<n> 同基；cube 生成
+                  仅对 α 组，1≤n≤nmo）
               energy_eV:
                 type: number
               symmetry:
                 type: string
                 nullable: true
-                description: mosyms；缺失时 null
+                description: mosyms；缺失时 null（老版输出实测全缺）
+              spin:
+                type: string
+                nullable: true
+                description: 自旋组标记 alpha/beta；闭壳层 null（单组清单）
 
     WorkspaceOutAnalysis:
       type: object

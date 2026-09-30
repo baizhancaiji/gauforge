@@ -1127,17 +1127,21 @@ export interface components {
                 imaginary: boolean;
             }[];
         };
-        /** @description 轨道能量清单（不含 mocoeffs——系数不进响应，等值面走 cube 端点； 输出无 MO 表时 blocks.orbitals=false，提示建议 Pop=Reg/Full） */
+        /** @description 轨道能量清单（不含 mocoeffs——系数不进响应，等值面走 cube 端点； 输出无 MO 表时 blocks.orbitals=false，提示建议 Pop=Reg/Full）。开壳层 任务 α/β 两组自旋各承载一份清单（spin 区分，各自 1..n 编号；B1 探针 实证 phenoxyls 双自旋后随契约 diff 补录） */
         OrbitalsResponse: {
+            /** @description α 组轨道数（cubegen MO=<n> 上界校验基） */
             nmo: number;
             nbasis: number;
+            /** @description HOMO 序号（闭壳层单值，开壳层 [α,β] 两值） */
             homos: number[];
             orbitals: {
-                /** @description 1 起（与 cubegen MO=<n> 同基，orbitals 上界） */
+                /** @description 同自旋组内 1 起（与 cubegen MO=<n> 同基；cube 生成 仅对 α 组，1≤n≤nmo） */
                 index: number;
                 energy_eV: number;
-                /** @description mosyms；缺失时 null */
+                /** @description mosyms；缺失时 null（老版输出实测全缺） */
                 symmetry: string | null;
+                /** @description 自旋组标记 alpha/beta；闭壳层 null（单组清单） */
+                spin: string | null;
             }[];
         };
         /** @description 工作区 .out/.log 只读分析一次性负载（四块合一，与分块端点同形 嵌套；不落库、不写 result_ref；解析超时 60s 按 422 ANALYSIS_PARSE_FAILED） */
