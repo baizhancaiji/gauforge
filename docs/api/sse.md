@@ -48,6 +48,11 @@
 | `update.progress` | 数据 | 更新包下载中（apply 受理后） | `version`（目标版本）、`percent`、`speed_bps`、`ts` | 下载期间 ~500ms/条（合并窗口取最新；沿 execution.progress「窗口内多条推最新」先例，窗口收紧为 500ms） |
 | `update.phase` | 数据 | 更新流程阶段翻转（含自动检查发现新版本） | `phase: idle/checking/available/up_to_date/downloading/installing/restarting/done/failed`（九相，与设置页更新卡显示状态机一一对应）、`version?`、`message?`、`ts` | 翻转即推 |
 
+> **M3 波 A1 注记（2026-09-30 随 A1 契约 diff 落库留痕）**：M3 全部为拉取型——分析数据
+> （Result/收敛/频率/轨道/cube）与空间占用统计不新增 SSE 事件，随
+> `history.appended` 后的 REST 拉取（历史页加载与 `history.appended` 后
+> 重拉 `GET /storage/usage`，m3-plan §2.1/§2.6 断言）。事件全集维持 15 类。
+
 ## 3. 推送时机表（逐事件「何时推什么」速查）
 
 | 时点（业务动作） | 触发的事件（按序） |

@@ -596,6 +596,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/{id}/analysis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Result 概览（读 analysis.json；非 succeeded 或缺失且重建失败 409，M3） */
+        get: operations["getAnalysisOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/convergence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** SCF 迹线+几何收敛+能量序列（块缺失 422 ANALYSIS_PARSE_FAILED，M3） */
+        get: operations["getAnalysisConvergence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/frequencies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 频率表与红外强度（无频率任务 422 ANALYSIS_PARSE_FAILED，M3） */
+        get: operations["getAnalysisFrequencies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/orbitals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 轨道能量清单（无 MO 表 422 ANALYSIS_PARSE_FAILED，建议 Pop=Reg/Full，M3） */
+        get: operations["getAnalysisOrbitals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/cube": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 生成 cube（幂等：同参数返回既有 cube_id；白名单/上界越界 422， 生成失败 502、cubegen 缺失 503，M3） */
+        post: operations["generateCube"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/cube/{cube_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** cube 文件流（chemical/x-cube；前端 3Dmol 直接 fetch，M3） */
+        get: operations["downloadCube"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/analysis/workspace-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 工作区 .out/.log 只读分析（一次性四块合一；越出工作区 400， 缺失 404、不可解析/超时 422；不落库，M3） */
+        post: operations["analyzeWorkspaceOut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 空间占用统计与阈值告警（M3.7，只读；entries 降序截断前 50 条） */
+        get: operations["getStorageUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -894,13 +1030,154 @@ export interface components {
             };
             /** @description F→；冻结后唯一可变字段 */
             archived: boolean;
-            /** @description M3 占位，恒 null（Result 字段全集随 M3 契约 diff 一次性扩展） */
+            /** @description M3 起：succeeded 且 run/<id>/analysis.json 落盘成功（含 degraded 降级产物）时 = "analysis.json"（执行目录内相对引用，读取方 按 run/<执行id>/ 拼接）；落盘失败/缺失恒 null。非 succeeded 恒 null （口径 m3-plan §2.1，2026-09-30 三轮审查统一） */
             result_ref: string | null;
         };
         /** @description 批量导出请求（执行 id 集合；服务端去重保序） */
         HistoryExportRequest: {
             /** @description 历史条目（终态执行）id 集合 */
             ids: number[];
+        };
+        /** @description 分析结果概览（仅 succeeded 执行；run/<id>/analysis.json 的契约 形状，cclib 白名单解析产物。字段集一次定死，roadmap §2.6 规则 1/3） */
+        Result: {
+            /**
+             * @description degraded=至少一个请求块解析失败/缺失
+             * @enum {string}
+             */
+            state: "parsed" | "degraded";
+            parser: {
+                name: string;
+                version: string;
+            };
+            /** @description cclib metadata（package/package_version）；不可得时 null */
+            package: {
+                name: string;
+                version: string;
+            } | null;
+            /** @description metadata.methods 摘要（如 b3lyp/6-31g(d)） */
+            method: string | null;
+            summary: {
+                natom: number;
+                nmo: number;
+                nbasis: number;
+                /** @description scfenergies 末值 */
+                scf_energy_eV: number | null;
+                /** @description eV→hartree 换算单点（供能量表直接使用） */
+                scf_energy_hartree: number | null;
+                /** @description optdone；非优化任务 null */
+                opt_converged: boolean | null;
+                /** @description vibfreqs 长度；非频率任务 null */
+                freq_count: number | null;
+                imaginary_freq_count: number | null;
+                /** @description HOMO 序号（开壳层 α/β 两值） */
+                homos: number[];
+            };
+            blocks: components["schemas"]["ResultBlocks"];
+            /** @description degraded 时的缺失属性清单 */
+            missing: string[];
+            /** @description 解析异常摘要（degraded 主因） */
+            parse_error: string | null;
+        };
+        /** @description 可用分析块清单（驱动端点可见性与前端 tab 置灰；独立组件命名， 避免与输入预览域 blocks 生成类名撞名） */
+        ResultBlocks: {
+            convergence: boolean;
+            frequencies: boolean;
+            orbitals: boolean;
+            thermochemistry: boolean;
+        };
+        /** @description 收敛数据（GET /history/{id}/analysis/convergence；单端点响应 ≤2MB，超出按步均匀抽稀并置 downsampled=true） */
+        ConvergenceResponse: {
+            downsampled: boolean;
+            /** @description 每几何步内各次 SCF 迭代的收敛判据列（cclib scfvalues 逐列展开） */
+            scf_trace: {
+                geometry_step: number;
+                /** @description 每次迭代一行的判据值（列序同 scf_targets） */
+                cycles: number[][];
+            }[];
+            /** @description SCF 判据阈值（与 cycles 列同序） */
+            scf_targets: number[];
+            /** @description 几何收敛判据逐几何步（优化任务；无则空数组） */
+            geo_trace: {
+                geometry_step: number;
+                values: number[];
+            }[];
+            geo_targets: number[];
+            /** @description 各几何步末次 SCF 能量（scfenergies；hartree/eV 双单位） */
+            energy_series: components["schemas"]["EnergyPoint"][];
+        };
+        /** @description 能量序列单点（各几何步末次 SCF 能量，hartree/eV 双单位） */
+        EnergyPoint: {
+            geometry_step: number;
+            energy_eV: number;
+            energy_hartree: number;
+        };
+        /** @description 频率表与红外强度（vibfreqs/vibirs/vibsyms/vibrmasses） */
+        FrequenciesResponse: {
+            frequencies: {
+                index: number;
+                /** @description vibfreqs（1/cm） */
+                frequency_cm: number;
+                /** @description vibirs（km/mol） */
+                ir_intensity: number | null;
+                /** @description vibsyms；缺失时 null */
+                symmetry: string | null;
+                /** @description vibrmasses */
+                reduced_mass: number | null;
+                /** @description 频率 < 0（虚频标红） */
+                imaginary: boolean;
+            }[];
+        };
+        /** @description 轨道能量清单（不含 mocoeffs——系数不进响应，等值面走 cube 端点； 输出无 MO 表时 blocks.orbitals=false，提示建议 Pop=Reg/Full） */
+        OrbitalsResponse: {
+            nmo: number;
+            nbasis: number;
+            homos: number[];
+            orbitals: {
+                /** @description 1 起（与 cubegen MO=<n> 同基，orbitals 上界） */
+                index: number;
+                energy_eV: number;
+                /** @description mosyms；缺失时 null */
+                symmetry: string | null;
+            }[];
+        };
+        /** @description 工作区 .out/.log 只读分析一次性负载（四块合一，与分块端点同形 嵌套；不落库、不写 result_ref；解析超时 60s 按 422 ANALYSIS_PARSE_FAILED） */
+        WorkspaceOutAnalysis: {
+            overview: components["schemas"]["Result"];
+            convergence: components["schemas"]["ConvergenceResponse"];
+            frequencies: components["schemas"]["FrequenciesResponse"];
+            orbitals: components["schemas"]["OrbitalsResponse"];
+        };
+        /** @description cube 生成请求（kind 为类别名、服务端合成 cubegen 实参—— MO=<orbital> 与 <kind>=SCF；幂等：同参数命中已生成文件直接返回） */
+        CubeRequest: {
+            /**
+             * @description 白名单外 422；MO 时 orbital 必填
+             * @enum {string}
+             */
+            kind: "MO" | "Potential" | "Density" | "Spin";
+            /** @description kind=MO 必填且 1≤orbital≤nmo（越界 422） */
+            orbital?: number | null;
+            /** @description 40–120 整数（默认 80；越界 422） */
+            npts?: number | null;
+        };
+        /** @description 空间占用统计（M3.7，只读；entries 按总占用降序、默认截断前 50 条；纯拉取式无定时器，超阈仅警告不自动清理） */
+        StorageUsage: {
+            /** @description run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用 */
+            total_bytes: number;
+            /** @description disk_usage_warn_gb 换算字节数；0=禁用告警 */
+            threshold_bytes: number;
+            /** @description threshold_bytes>0 且 total_bytes≥threshold_bytes */
+            over: boolean;
+            entries: {
+                execution_id: number;
+                task_id: number;
+                filename: string;
+                total_bytes: number;
+                /** @description 可被手动清理入口移除的量（与 M1 清理边界判定同源单一实现；保全快照计 0） */
+                reclaimable_bytes: number;
+            }[];
+            /** @description 明细总数（截断前） */
+            total_entries: number;
+            truncated: boolean;
         };
         /** @description 分子说明节统计（Hill 记法元素统计） */
         MoleculeSummary: {
@@ -959,7 +1236,7 @@ export interface components {
             env_var?: string | null;
             description?: string;
         };
-        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） */
+        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 待 A1 评审定；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6） */
         SettingsResponse: {
             startup: components["schemas"]["SettingItem"][];
             runtime: components["schemas"]["SettingItem"][];
@@ -2059,6 +2336,213 @@ export interface operations {
             };
             400: components["responses"]["Error"];
             404: components["responses"]["Error"];
+        };
+    };
+    getAnalysisOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Result 全集（含 degraded） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Result"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    getAnalysisConvergence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 收敛数据（hartree/eV 双单位） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConvergenceResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getAnalysisFrequencies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 频率表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrequenciesResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getAnalysisOrbitals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 轨道清单（不含系数） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrbitalsResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    generateCube: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CubeRequest"];
+            };
+        };
+        responses: {
+            /** @description cube 标识 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description 参数摘要哈希；产物落 run/<id>/cubes/<cube_id>.cube */
+                        cube_id: string;
+                    };
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            502: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    downloadCube: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+                cube_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description cube 文件流 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "chemical/x-cube": string;
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    analyzeWorkspaceOut: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description 工作区内相对路径（后缀 ∈ {.out,.log}） */
+                    path: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 四块合一负载 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOutAnalysis"];
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+        };
+    };
+    getStorageUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 占用统计 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageUsage"];
+                };
+            };
         };
     };
     sseEvents: {

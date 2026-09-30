@@ -1,7 +1,8 @@
 """错误码全集一致性闸门（B7，m2-plan §2.6/§5 test_error_codes）。
 
 - 静态：web/src 全部 err("…")/ApiError("…") 码 ⊆ openapi.yaml 文件头全集
-  （24 码，SSOT 载体；v2.1.0 更新域增补 5 码），私有码零残留；
+  （29 码，SSOT 载体；v2.1.0 更新域增补 5 码 + M3 波 A1 分析/存储域 5 码），
+  私有码零残留；
 - 行为：席位/设置/导入域替换项逐条断言（§2.6 映射表）。
 """
 from __future__ import annotations
@@ -18,7 +19,7 @@ from web.src.errors import ApiError
 from web.src.services import pending
 from web.src.store import executions, queues, seats, tasks
 
-# openapi.yaml 文件头错误码全集（24 码，SSOT；与契约文件头同步维护）
+# openapi.yaml 文件头错误码全集（29 码，SSOT；与契约文件头同步维护）
 CONTRACT_CODES = {
     "INVALID_REQUEST", "NOT_FOUND", "VALIDATION_FAILED", "INTERNAL_ERROR",
     "QUEUE_MEMBER_RANGE", "QUEUE_STATE_CONFLICT", "PENDING_CAPACITY_FULL",
@@ -28,6 +29,9 @@ CONTRACT_CODES = {
     "SETTING_READONLY", "INVALID_MEMBERS", "TASK_IN_FLIGHT", "TASK_FINISHED",
     "UPDATE_BLOCKED_RUNNING", "UPDATE_IN_PROGRESS", "UPDATE_UNSUPPORTED",
     "UPDATE_CHECK_FAILED", "UPDATE_DOWNLOAD_FAILED",
+    "ANALYSIS_UNAVAILABLE", "ANALYSIS_PARSE_FAILED",
+    "WORKSPACE_PATH_OUTSIDE", "CUBE_GENERATION_FAILED",
+    "CUBE_EXECUTABLE_MISSING",
 }
 RETIRED_CODES = ("SEAT_MEMBER_LAST", "SEAT_MEMBER_EXECUTED")
 

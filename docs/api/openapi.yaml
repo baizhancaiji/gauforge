@@ -13,8 +13,8 @@
 #   - 分页信封 {"items":[],"page":1,"page_size":50,"total":123}，offset 式。
 #   - 错误结构统一 {"error":{"code","message","details"}}，code 为 SCREAMING_SNAKE_CASE 枚举。
 #
-# 错误码全集（24 码，SSOT 载体；M2 A4 定稿 19 码 + 版本更新功能 v2.1.0 增补 5 码。
-# m0-plan §2.1.1 为历史原稿不再现行）：
+# 错误码全集（29 码，SSOT 载体；M2 A4 定稿 19 码 + 版本更新功能 v2.1.0 增补 5 码
+# + M3 波 A1 增补分析/存储域 5 码。m0-plan §2.1.1 为历史原稿不再现行）：
 #   ErrorBody.code 取值以本清单为准，实现集合 ⊆ 清单（test_error_codes.py 静态闸门）。
 #   - INVALID_REQUEST — 400：请求形态错误（路径/参数级，如 molecule 节或未知节名编辑）
 #   - NOT_FOUND — 404：资源不存在
@@ -49,6 +49,15 @@
 #     HTTP 非 200，上游不可达语义；检查端点与 apply 同步预检共用）
 #   - UPDATE_DOWNLOAD_FAILED — 502：apply 同步预检拉 .sha256 验下载通道失败
 #     （不进异步；下载中段失败走 phase=failed 如实反馈，不经此码）
+#   - ANALYSIS_UNAVAILABLE — 409：非 succeeded 条目请求分析，或 analysis.json
+#     缺失且惰性重建失败（M3；重建 = finalize 急解析失败后端点首次访问补跑一次）
+#   - ANALYSIS_PARSE_FAILED — 422：请求的分析块数据不足或解析超时（如无频率
+#     任务请求 frequencies；workspace-out 解析超时 60s，details 注明 timeout；M3）
+#   - WORKSPACE_PATH_OUTSIDE — 400：工作区 .out/.log 分析路径越出工作区
+#     （§2.3 路径守卫：resolve 后须为 workspace_root 子孙且后缀 ∈ {.out,.log}；M3）
+#   - CUBE_GENERATION_FAILED — 502：cubegen 非零退出/超时 120s（details 携带
+#     stderr 尾部；fchk 产物缺失亦走此码、details 注明；M3）
+#   - CUBE_EXECUTABLE_MISSING — 503：g16_root/cubegen 探测失败（显式不静默；M3）
 #
 # 词表一：导入 per-file reason（files[].error 值域）
 #   INVALID_FILENAME / UNSUPPORTED_EXTENSION / INVALID_ENCODING /
@@ -84,6 +93,7 @@ tags:
   - name: history
   - name: update
   - name: ui-prefs
+  - name: storage
 
 components:
   securitySchemes: {}
@@ -543,7 +553,10 @@ components:
             result_ref:
               type: string
               nullable: true
-              description: "M3 占位，恒 null（Result 字段全集随 M3 契约 diff 一次性扩展）"
+              description: "M3 起：succeeded 且 run/<id>/analysis.json 落盘成功（含
+                degraded 降级产物）时 = \"analysis.json\"（执行目录内相对引用，读取方
+                按 run/<执行id>/ 拼接）；落盘失败/缺失恒 null。非 succeeded 恒 null
+                （口径 m3-plan §2.1，2026-09-30 三轮审查统一）"
 
     HistoryExportRequest:
       type: object
@@ -556,6 +569,304 @@ components:
           items:
             type: integer
           description: 历史条目（终态执行）id 集合
+
+    # ---------------- 分析域（M3 波 A1 增补，m3-plan §2.1/§2.3） ----------------
+    Result:
+      type: object
+      description: 分析结果概览（仅 succeeded 执行；run/<id>/analysis.json 的契约
+        形状，cclib 白名单解析产物。字段集一次定死，roadmap §2.6 规则 1/3）
+      required: [state, parser, package, method, summary, blocks, missing,
+        parse_error]
+      properties:
+        state:
+          type: string
+          enum: [parsed, degraded]
+          description: degraded=至少一个请求块解析失败/缺失
+        parser:
+          type: object
+          required: [name, version]
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+        package:
+          type: object
+          nullable: true
+          description: cclib metadata（package/package_version）；不可得时 null
+          required: [name, version]
+          properties:
+            name:
+              type: string
+            version:
+              type: string
+        method:
+          type: string
+          nullable: true
+          description: metadata.methods 摘要（如 b3lyp/6-31g(d)）
+        summary:
+          type: object
+          required: [natom, nmo, nbasis, scf_energy_eV, scf_energy_hartree,
+            opt_converged, freq_count, imaginary_freq_count, homos]
+          properties:
+            natom:
+              type: integer
+            nmo:
+              type: integer
+            nbasis:
+              type: integer
+            scf_energy_eV:
+              type: number
+              nullable: true
+              description: scfenergies 末值
+            scf_energy_hartree:
+              type: number
+              nullable: true
+              description: eV→hartree 换算单点（供能量表直接使用）
+            opt_converged:
+              type: boolean
+              nullable: true
+              description: optdone；非优化任务 null
+            freq_count:
+              type: integer
+              nullable: true
+              description: vibfreqs 长度；非频率任务 null
+            imaginary_freq_count:
+              type: integer
+              nullable: true
+            homos:
+              type: array
+              items:
+                type: number
+              description: HOMO 序号（开壳层 α/β 两值）
+        blocks:
+          $ref: '#/components/schemas/ResultBlocks'
+        missing:
+          type: array
+          items:
+            type: string
+          description: degraded 时的缺失属性清单
+        parse_error:
+          type: string
+          nullable: true
+          description: 解析异常摘要（degraded 主因）
+
+    ResultBlocks:
+      type: object
+      description: 可用分析块清单（驱动端点可见性与前端 tab 置灰；独立组件命名，
+        避免与输入预览域 blocks 生成类名撞名）
+      required: [convergence, frequencies, orbitals, thermochemistry]
+      properties:
+        convergence:
+          type: boolean
+        frequencies:
+          type: boolean
+        orbitals:
+          type: boolean
+        thermochemistry:
+          type: boolean
+
+    ConvergenceResponse:
+      type: object
+      description: 收敛数据（GET /history/{id}/analysis/convergence；单端点响应
+        ≤2MB，超出按步均匀抽稀并置 downsampled=true）
+      required: [downsampled, scf_trace, scf_targets, geo_trace, geo_targets,
+        energy_series]
+      properties:
+        downsampled:
+          type: boolean
+        scf_trace:
+          type: array
+          description: 每几何步内各次 SCF 迭代的收敛判据列（cclib scfvalues 逐列展开）
+          items:
+            title: ScfTraceStep
+            type: object
+            required: [geometry_step, cycles]
+            properties:
+              geometry_step:
+                type: integer
+              cycles:
+                type: array
+                description: 每次迭代一行的判据值（列序同 scf_targets）
+                items:
+                  type: array
+                  items:
+                    type: number
+        scf_targets:
+          type: array
+          items:
+            type: number
+          description: SCF 判据阈值（与 cycles 列同序）
+        geo_trace:
+          type: array
+          description: 几何收敛判据逐几何步（优化任务；无则空数组）
+          items:
+            title: GeoTraceStep
+            type: object
+            required: [geometry_step, values]
+            properties:
+              geometry_step:
+                type: integer
+              values:
+                type: array
+                items:
+                  type: number
+        geo_targets:
+          type: array
+          items:
+            type: number
+        energy_series:
+          type: array
+          description: 各几何步末次 SCF 能量（scfenergies；hartree/eV 双单位）
+          items:
+            $ref: '#/components/schemas/EnergyPoint'
+
+    EnergyPoint:
+      type: object
+      description: 能量序列单点（各几何步末次 SCF 能量，hartree/eV 双单位）
+      required: [geometry_step, energy_eV, energy_hartree]
+      properties:
+        geometry_step:
+          type: integer
+        energy_eV:
+          type: number
+        energy_hartree:
+          type: number
+
+    FrequenciesResponse:
+      type: object
+      description: 频率表与红外强度（vibfreqs/vibirs/vibsyms/vibrmasses）
+      required: [frequencies]
+      properties:
+        frequencies:
+          type: array
+          items:
+            type: object
+            required: [index, frequency_cm, ir_intensity, symmetry,
+              reduced_mass, imaginary]
+            properties:
+              index:
+                type: integer
+              frequency_cm:
+                type: number
+                description: vibfreqs（1/cm）
+              ir_intensity:
+                type: number
+                nullable: true
+                description: vibirs（km/mol）
+              symmetry:
+                type: string
+                nullable: true
+                description: vibsyms；缺失时 null
+              reduced_mass:
+                type: number
+                nullable: true
+                description: vibrmasses
+              imaginary:
+                type: boolean
+                description: 频率 < 0（虚频标红）
+
+    OrbitalsResponse:
+      type: object
+      description: 轨道能量清单（不含 mocoeffs——系数不进响应，等值面走 cube 端点；
+        输出无 MO 表时 blocks.orbitals=false，提示建议 Pop=Reg/Full）
+      required: [nmo, nbasis, homos, orbitals]
+      properties:
+        nmo:
+          type: integer
+        nbasis:
+          type: integer
+        homos:
+          type: array
+          items:
+            type: number
+        orbitals:
+          type: array
+          items:
+            type: object
+            required: [index, energy_eV, symmetry]
+            properties:
+              index:
+                type: integer
+                description: 1 起（与 cubegen MO=<n> 同基，orbitals 上界）
+              energy_eV:
+                type: number
+              symmetry:
+                type: string
+                nullable: true
+                description: mosyms；缺失时 null
+
+    WorkspaceOutAnalysis:
+      type: object
+      description: 工作区 .out/.log 只读分析一次性负载（四块合一，与分块端点同形
+        嵌套；不落库、不写 result_ref；解析超时 60s 按 422 ANALYSIS_PARSE_FAILED）
+      required: [overview, convergence, frequencies, orbitals]
+      properties:
+        overview:
+          $ref: '#/components/schemas/Result'
+        convergence:
+          $ref: '#/components/schemas/ConvergenceResponse'
+        frequencies:
+          $ref: '#/components/schemas/FrequenciesResponse'
+        orbitals:
+          $ref: '#/components/schemas/OrbitalsResponse'
+
+    CubeRequest:
+      type: object
+      description: cube 生成请求（kind 为类别名、服务端合成 cubegen 实参——
+        MO=<orbital> 与 <kind>=SCF；幂等：同参数命中已生成文件直接返回）
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [MO, Potential, Density, Spin]
+          description: 白名单外 422；MO 时 orbital 必填
+        orbital:
+          type: integer
+          nullable: true
+          description: kind=MO 必填且 1≤orbital≤nmo（越界 422）
+        npts:
+          type: integer
+          nullable: true
+          description: 40–120 整数（默认 80；越界 422）
+
+    StorageUsage:
+      type: object
+      description: 空间占用统计（M3.7，只读；entries 按总占用降序、默认截断前
+        50 条；纯拉取式无定时器，超阈仅警告不自动清理）
+      required: [total_bytes, threshold_bytes, over, entries, total_entries, truncated]
+      properties:
+        total_bytes:
+          type: integer
+          description: run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用
+        threshold_bytes:
+          type: integer
+          description: disk_usage_warn_gb 换算字节数；0=禁用告警
+        over:
+          type: boolean
+          description: threshold_bytes>0 且 total_bytes≥threshold_bytes
+        entries:
+          type: array
+          items:
+            type: object
+            required: [execution_id, task_id, filename, total_bytes, reclaimable_bytes]
+            properties:
+              execution_id:
+                type: integer
+              task_id:
+                type: integer
+              filename:
+                type: string
+              total_bytes:
+                type: integer
+              reclaimable_bytes:
+                type: integer
+                description: 可被手动清理入口移除的量（与 M1 清理边界判定同源单一实现；保全快照计 0）
+        total_entries:
+          type: integer
+          description: 明细总数（截断前）
+        truncated:
+          type: boolean
 
     # ---------------- 输入分块结构 ----------------
     MoleculeSummary:
@@ -693,6 +1004,9 @@ components:
       description: GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期
         update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认
         weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装）
+        与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50
+        待 A1 评审定；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅
+        警告不自动清理，m3-plan §2.6）
       required: [startup, runtime]
       properties:
         startup:
@@ -1765,6 +2079,193 @@ paths:
           $ref: '#/components/responses/Error'
         '404':
           $ref: '#/components/responses/Error'
+
+  # ---------------- 分析域端点（M3 波 A1 增补；全部只读或幂等派生） ----------------
+  /history/{id}/analysis:
+    get:
+      tags: [history]
+      operationId: getAnalysisOverview
+      summary: Result 概览（读 analysis.json；非 succeeded 或缺失且重建失败 409，M3）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: Result 全集（含 degraded）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Result'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/analysis/convergence:
+    get:
+      tags: [history]
+      operationId: getAnalysisConvergence
+      summary: SCF 迹线+几何收敛+能量序列（块缺失 422 ANALYSIS_PARSE_FAILED，M3）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 收敛数据（hartree/eV 双单位）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConvergenceResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/analysis/frequencies:
+    get:
+      tags: [history]
+      operationId: getAnalysisFrequencies
+      summary: 频率表与红外强度（无频率任务 422 ANALYSIS_PARSE_FAILED，M3）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 频率表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrequenciesResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/analysis/orbitals:
+    get:
+      tags: [history]
+      operationId: getAnalysisOrbitals
+      summary: 轨道能量清单（无 MO 表 422 ANALYSIS_PARSE_FAILED，建议 Pop=Reg/Full，M3）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      responses:
+        '200':
+          description: 轨道清单（不含系数）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrbitalsResponse'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/analysis/cube:
+    post:
+      tags: [history]
+      operationId: generateCube
+      summary: 生成 cube（幂等：同参数返回既有 cube_id；白名单/上界越界 422，
+        生成失败 502、cubegen 缺失 503，M3）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CubeRequest'
+      responses:
+        '200':
+          description: cube 标识
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cube_id]
+                properties:
+                  cube_id:
+                    type: string
+                    description: 参数摘要哈希；产物落 run/<id>/cubes/<cube_id>.cube
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/analysis/cube/{cube_id}:
+    get:
+      tags: [history]
+      operationId: downloadCube
+      summary: cube 文件流（chemical/x-cube；前端 3Dmol 直接 fetch，M3）
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+        - name: cube_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: cube 文件流
+          content:
+            chemical/x-cube:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/Error'
+
+  /analysis/workspace-out:
+    post:
+      tags: [history]
+      operationId: analyzeWorkspaceOut
+      summary: 工作区 .out/.log 只读分析（一次性四块合一；越出工作区 400，
+        缺失 404、不可解析/超时 422；不落库，M3）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [path]
+              properties:
+                path:
+                  type: string
+                  description: 工作区内相对路径（后缀 ∈ {.out,.log}）
+      responses:
+        '200':
+          description: 四块合一负载
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceOutAnalysis'
+        '400':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+
+  /storage/usage:
+    get:
+      tags: [storage]
+      operationId: getStorageUsage
+      summary: 空间占用统计与阈值告警（M3.7，只读；entries 降序截断前 50 条）
+      responses:
+        '200':
+          description: 占用统计
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageUsage'
 
   /events:
     get:

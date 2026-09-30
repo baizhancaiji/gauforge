@@ -65,13 +65,21 @@
 | 重新排队（M1） | POST /api/v1/history/{id}/requeue | `pending.snapshot` |
 | 退回候选（M1） | POST /api/v1/history/{id}/return-candidate | `candidates.changed(created)` |
 | 手动触发 chk/rwf 清理（M1） | POST /api/v1/history/cleanup | — |
+| 详情「分析」区 · 概览 tab（Result 全集；blocks 驱动四 tab 可见性，M3） | GET /api/v1/history/{id}/analysis | `history.appended` → 拉取 |
+| 详情「分析」区 · 能量收敛 tab（SCF 迹线/几何收敛/能量序列三源切换，M3） | GET /api/v1/history/{id}/analysis/convergence | 同上 |
+| 详情「分析」区 · 频率与 IR tab（频率表+虚频标红+IR 棒图联动，M3） | GET /api/v1/history/{id}/analysis/frequencies | 同上 |
+| 详情「分析」区 · 轨道与静电势 tab（清单选择→等值面渲染；异常条目整区置灰+原因注记=409 语义 UI 承载，M3） | GET /api/v1/history/{id}/analysis/orbitals | 同上 |
+| 轨道面板 cube 生成与拉取（isoval 档位、正负双色、静电势色彩映射；M3） | POST /api/v1/history/{id}/analysis/cube；GET /api/v1/history/{id}/analysis/cube/{cube_id} | — |
+| 分析区头部「.out 打开」入口（工作区 .out/.log 只读分析，复用同组图表；越界 400 内联提示；M3） | POST /api/v1/analysis/workspace-out | — |
+| 归档详情分析区（复用历史详情分析组件，可见性同 succeeded 条目，M3） | GET /api/v1/history/{id}/analysis 等（同上四端点） | — |
+| 清理区占用面板（总占用读数+前 N 大明细+超阈琥珀警示条，M3.7） | GET /api/v1/storage/usage | `history.appended` → 重拉 |
 
 ## 06 设置
 
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
 | 启动级只读区（锁定图标 + 值） | GET /api/v1/settings | — |
-| 运行级分组表单（生效语义徽标；自动检查更新周期 update_check_interval 四选，v2.1.0） | GET /api/v1/settings | — |
+| 运行级分组表单（生效语义徽标；自动检查更新周期 update_check_interval 四选，v2.1.0；空间占用告警阈值 disk_usage_warn_gb，0=禁用，M3） | GET /api/v1/settings | — |
 | 「保存」 | PUT /api/v1/settings | `settings.updated` |
 | 更新卡状态显示与页面恢复（八态状态机、不渲染卡片标题，v2.1.0） | GET /api/v1/update/status | `update.phase`/`update.progress` |
 | 更新卡「检查更新」（v2.1.0） | POST /api/v1/update/check | `update.phase` |
@@ -91,8 +99,9 @@
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 40 个操作均已在上表被至少一个界面元素引用：
-candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(9) ·
-settings(2) · system/events(3) · update(4) · ui-prefs(2)。—— 由 A5
-walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
-计划 D3；ui-prefs(2) 为视图偏好持久化域；history/export 为历史批量导出）。
+全部 48 个操作均已在上表被至少一个界面元素引用：
+candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(16)
+· settings(2) · system/events(3) · update(4) · ui-prefs(2) · storage(1)。
+—— 由 A5 walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
+计划 D3；ui-prefs(2) 为视图偏好持久化域；history/export 为历史批量导出；history
+分析域 7 操作 + storage(1) 为 M3 波 A1 增补——契约预告，实施随 m3-plan B3/B4/B12）。
