@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:18+08:00",
+  "updated": "2026-10-01T01:24+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -97,6 +97,13 @@
       "type": "added",
       "scope": "web",
       "summary": "B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "M3 金标准剩余三缺口补齐（金标准集 10 份 .out + 16 份 .fchk）：线性水 freq 样本实证 -2045.3 cm⁻¹ 二重简并虚频（imaginary 路径关闭）；本机 formchk 产出现代闭壳层/开壳层小 fchk 各一（cubegen MO=1 与 Potential=SCF 冒烟通过，B4 测试资产）；c8b_qst2_error 实证 success=false 且零分析块的极端降级；澄清 Nosymm 抑制轨道对称性打印（mosyms 恒缺根因，symmetry 按 nullable 兼容）",
       "breaking": false,
       "migration": null
     }

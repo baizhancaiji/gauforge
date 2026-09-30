@@ -23,6 +23,7 @@
 - 【docs】OrbitalsResponse 契约补丁：加 spin 自旋组维度（alpha/beta、闭壳层 null，各组独立 1..n 编号；nmo 明确为 α 组轨道数即 cubegen MO=<n> 上界基）——B1 探针实证开壳层金标准 phenoxyls 双自旋后随契约 diff 补录，两侧契约生成物再生
 - 【docs】M3 金标准集更换为 CVL 实测现代输出（用户裁决）：原 4 份 2007 年样例 cclib 1.8.1 解析全挂 KeyError 'DV'，CVL 探针实证 64 份 Gaussian 输出全部可解析（最大 12.5MB 耗时 2.0s）；新集 6 份落 ~/g16/tests/ 覆盖 opt+freq 旗舰/最小 freq/纯 opt/纯 sp/异常终止/强停各态（异常样例缺口由真机样本补齐），旧 4 份保留为 M1 进度解析回归样本，m3-plan §0.4/§0.6/§2.2 回填与口径统一
 - 【docs】M3 金标准补样两份（本机 g16 实测生成入库 ~/g16/tests/）：h2o_optfreq_popreg（opt+freq+Pop=Reg 闭壳层，关闭 mosyms/aonames 缺口，兼作 D1 真机 freq 走查预演）与 oh_doublet_popreg（开壳层双重态 sp，homos α/β 双值与双自旋组实证）；金标准集共 8 份，m3-plan §2.2 补样记录与 §0.4 口径同步
+- 【docs】M3 金标准剩余三缺口补齐（金标准集 10 份 .out + 16 份 .fchk）：线性水 freq 样本实证 -2045.3 cm⁻¹ 二重简并虚频（imaginary 路径关闭）；本机 formchk 产出现代闭壳层/开壳层小 fchk 各一（cubegen MO=1 与 Potential=SCF 冒烟通过，B4 测试资产）；c8b_qst2_error 实证 success=false 且零分析块的极端降级；澄清 Nosymm 抑制轨道对称性打印（mosyms 恒缺根因，symmetry 按 nullable 兼容）
 
 ## v2.1.0（2026-09-29T17:25+08:00 发布，minor）
 
