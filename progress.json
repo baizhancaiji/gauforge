@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:16+08:00",
+  "updated": "2026-10-01T01:18+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -92,13 +92,20 @@
       "summary": "M3 金标准补样两份（本机 g16 实测生成入库 ~/g16/tests/）：h2o_optfreq_popreg（opt+freq+Pop=Reg 闭壳层，关闭 mosyms/aonames 缺口，兼作 D1 真机 freq 走查预演）与 oh_doublet_popreg（开壳层双重态 sp，homos α/β 双值与双自旋组实证）；金标准集共 8 份，m3-plan §2.2 补样记录与 §0.4 口径同步",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（B1 cclib 引入：requirements.txt 冻结 cclib==1.8.1 + web/src/parse/results.py 白名单解析服务（含 DV 垫片）+ 金标准单测）",
+  "in_progress": "M3 结果解析与可视化（B2 Result 落库与 finalize 接线：formchk 步后追加解析步、analysis.json 原子写、result_ref 置位含 degraded、落盘失败不阻断终态）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
-    "B1 落库后按 m3-plan §6 推进 B2（finalize 接线）→B3/B4→B5→B12"
+    "B2 落库后按 m3-plan §6 推进 B3/B4（可并行）→B5→B12"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",

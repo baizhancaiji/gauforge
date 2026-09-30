@@ -8,6 +8,7 @@
 
 - 【docs】新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案
 - 【docs】A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步
+- 【web】B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过
 
 ### 变更
 
