@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T02:02+08:00",
+  "updated": "2026-10-01T02:18+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -141,13 +141,20 @@
       "summary": "B4 cubegen 集成与 cube 端点落库：services/cube.py kind 白名单+参数治理（上界取 analysis.json）、sha256 幂等留存 run/<id>/cubes/（不入保留期清理）、120s 超时与 stderr 尾部、探测缺失 503 显式、fchk 缺失 502，POST/GET 两端点（chemical/x-cube 流），test_cube_api 20 例含真机 MO=1/Potential=SCF 与开壳层 fchk 演练，全量 pytest 550 通过",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B5 金标准回归与降级样例闸门落库：test_analysis_parse 扩终态 10 份矩阵（mosyms 有值/开壳层双自旋/虚频标红/零块极端降级），构造异常样例四份入库 fixtures（42KB 内机器无关）覆盖降级三分支（解析异常/success 假已得块保留/属性缺失不降级），全量 pytest 558 通过",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（B5 金标准回归与降级样例闸门：test_analysis_parse 扩 10 份矩阵、构造异常 fixtures 入库、全量回归收口）",
+  "in_progress": "M3 结果解析与可视化（B12 空间占用统计与告警：services/storage.py + GET /storage/usage + disk_usage_warn_gb 运行级设置 + 测试）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
-    "B5 落库后推进 B12（storage/usage 端点与 disk_usage_warn_gb 设置项）"
+    "B12 落库后 A/B 阶段全部完成（C/D 阶段属下一波次）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
