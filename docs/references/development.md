@@ -36,7 +36,11 @@ source .envrc            # LIBCLANG_PATH/PATH 指向 .venv 内工具链；direnv
 cargo build --release    # 产物 target/release/hq
 ```
 
-注意：cclib 为 M3 规划依赖，当前M2阶段代码未使用，无需安装。
+注意：cclib 已随 M3 B1 引入并冻结进 requirements.txt（cclib==1.8.1 及
+numpy/scipy/periodictable 依赖链），随上表首行命令一并装入项目 `.venv`，
+**禁止全局 pip 安装**（质量标准含全局无包核查）；若需单独补装，单行命令：
+`uv pip install cclib -i https://pypi.tuna.tsinghua.edu.cn/simple`
+（m3-plan §2.5；镜像不可达时可换 `--default-index` 指定其他国内镜像）。
 
 ### 1.3 前端构建
 
