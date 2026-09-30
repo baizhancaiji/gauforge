@@ -69,10 +69,10 @@
    既有 `test_e2e_fake_g16.py` 同受其制约，静默跳过即通过数虚高（修订
    说明三⑰）；D1 走查需真机 g16 跑 freq 任务。
 3. 真机资产在位（已实测确认）：`~/g16/g16`、`~/g16/formchk`、
-   `~/g16/cubegen`；金标准样本 `~/g16/tests/` 6 份 `.out`
-   （2026-10-01 更换为 CVL 实测现代输出，清单与覆盖见 §2.2 样本
-   更换记录；原 anisoles0/1、phenoxyls0/1 保留为 M1 进度解析计数
-   回归样本）+ 14 份 `.fchk`。
+   `~/g16/cubegen`；金标准样本 `~/g16/tests/` 8 份 `.out`
+   （6 份 CVL 现代输出 + 2 份本机 g16 生成补样，清单与覆盖见 §2.2
+   样本更换记录与补样记录；原 anisoles0/1、phenoxyls0/1 保留为 M1
+   进度解析计数回归样本）+ 14 份 `.fchk`。
 4. A1 契约 diff 经用户评审通过（文档先行，roadmap §4）。
 5. roadmap §7 开放事项 5 处置已裁决（2026-09-30）：① 自动定时清理不引入、
    替代为 M3.7 占用统计与阈值告警；② 前端页面单测不引入——两项均随联合
@@ -318,7 +318,16 @@ Result:
   method 摘要口径、opt_converged 判定）对新集同样成立（新集实证：
   mosyms 全缺→null、homos 单值闭壳层）。B1 金标准单测与 B5 回归闸门
   改用新集。
+- **补样记录（2026-10-01，本机 g16 实测生成）**：为关闭两个属性覆盖
+  缺口，用本机 WSL g16 生成两份秒级小算例入库 `~/g16/tests/`（同时预演
+  D1 真机链路；生成用输入与 scratch 留会话痕、不入库）：
 
+  | 样本 | 算例形态 | 覆盖点 |
+  |---|---|---|
+  | h2o_optfreq_popreg.out | opt+freq+Pop=Reg 闭壳层 | **mosyms/aonames 缺口关闭**（A'/A" 对称标签实证）；optdone=True、3 频率 0 虚频+IR+热化学——兼作 D1 真机 freq 走查预演样本 |
+  | oh_doublet_popreg.out | sp+Pop=Reg 开壳层双重态 | **开壳层缺口关闭**：homos=[4,3] α/β 双值、moenergies 双自旋组、双自旋 mosyms——OrbitalsResponse spin 自旋组维度的实证数据形态 |
+
+  金标准集自此共 8 份；前述「6 份」表述按 8 份理解。
 ### 2.3 分析端点数据形状与边界（A1 评审输入，B3 实施依据）
 
 - convergence 响应含三类序列，前端直接绘图：`scf_trace`（每几何步内 SCF 迭代
