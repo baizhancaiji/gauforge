@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:54+08:00",
+  "updated": "2026-10-01T02:02+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -134,13 +134,20 @@
       "summary": "B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B4 cubegen 集成与 cube 端点落库：services/cube.py kind 白名单+参数治理（上界取 analysis.json）、sha256 幂等留存 run/<id>/cubes/（不入保留期清理）、120s 超时与 stderr 尾部、探测缺失 503 显式、fchk 缺失 502，POST/GET 两端点（chemical/x-cube 流），test_cube_api 20 例含真机 MO=1/Potential=SCF 与开壳层 fchk 演练，全量 pytest 550 通过",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（B4 cubegen 集成：services/cube.py 探测/白名单/幂等/120s 超时 + POST/GET cube 两端点，真机 fchk 用 h2o_optfreq_popreg/oh_doublet_popreg）",
+  "in_progress": "M3 结果解析与可视化（B5 金标准回归与降级样例闸门：test_analysis_parse 扩 10 份矩阵、构造异常 fixtures 入库、全量回归收口）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
-    "B4 落库后推进 B5（金标准回归闸门 10 份矩阵+fixtures 入库）→B12"
+    "B5 落库后推进 B12（storage/usage 端点与 disk_usage_warn_gb 设置项）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",

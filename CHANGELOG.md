@@ -11,6 +11,7 @@
 - 【web】B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过
 - 【web】B2 Result 落库与 finalize 接线落库：finalize.write_analysis 原子写 analysis.json（degraded 亦落盘、失败记日志不阻断），dispatcher formchk 步后接线并随终态冻结同事务写 result_ref（reconcile 单点全覆盖、SSE 时序不受扰），executions_repo.finalize 增 result_ref，test_finalize_result 10 例集成断言，全量 pytest 507 通过
 - 【web】B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过
+- 【web】B4 cubegen 集成与 cube 端点落库：services/cube.py kind 白名单+参数治理（上界取 analysis.json）、sha256 幂等留存 run/<id>/cubes/（不入保留期清理）、120s 超时与 stderr 尾部、探测缺失 503 显式、fchk 缺失 502，POST/GET 两端点（chemical/x-cube 流），test_cube_api 20 例含真机 MO=1/Potential=SCF 与开壳层 fchk 演练，全量 pytest 550 通过
 
 ### 变更
 
