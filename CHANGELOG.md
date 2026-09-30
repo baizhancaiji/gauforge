@@ -20,6 +20,8 @@
 - 【docs】M3/M4 拆分后两计划经独立子代理二次审核并修复审核发现（9 项 P2 全部闭环，P1 零项）：两版结构完整、对照 git 历史原联合计划逐节零丢失、内部与外部引用自洽；m3-plan 修复 §2.5 外链审计 D3 残留改 D1 收口、§0.1 补空间占用治理句对齐 roadmap 现行 M3 段、§4 公共纪律 hq 口径去 M4 归因、WORKSPACE_PATH_OUTSIDE 指向 §2.3 路径守卫、§3.3 E422 节点与错误码表口径统一；m4-plan 修复决策点 7 三处拆分残留（风险 8/#4（B7）/17.5 人天）、§7.2 走查清单重排 1-9 并拆分粘连行、§4.1 步骤②赘字、§4.10 体例指针补 m3-plan 前缀、§5 真机依赖清单改 M4 口径（crest/真 g16/真机 hq）
 - 【docs】A2/A3 设计定稿回填：A2 探针实证 4 份金标准 cclib 1.8.1 逐属性提取全绿，发现并定稿 G16 发行版 DV 样本版本识别缺口处置（运行时垫片，defaultdict 回落 unknown 带形状守卫，master 同缺口）、白名单实测形状（逐 SCF 迹线/mosyms 全缺→null/开壳层 αβ 双自旋/numpy 转原生）、method 摘要与 opt_converged 三态判定、fixtures 三份构造方案；A3 关闭决策点 1（ECharts 按需）/2（惰性重建）/3（cube 留存）/4（候选清单端点不纳入、.out 入口定稿）/5（阈值默认 50）；修复 §0.2 M3.7 表格列错位
 - 【docs】OrbitalsResponse 契约补丁：加 spin 自旋组维度（alpha/beta、闭壳层 null，各组独立 1..n 编号；nmo 明确为 α 组轨道数即 cubegen MO=<n> 上界基）——B1 探针实证开壳层金标准 phenoxyls 双自旋后随契约 diff 补录，两侧契约生成物再生
+- 【docs】M3 金标准集更换为 CVL 实测现代输出（用户裁决）：原 4 份 2007 年样例 cclib 1.8.1 解析全挂 KeyError 'DV'，CVL 探针实证 64 份 Gaussian 输出全部可解析（最大 12.5MB 耗时 2.0s）；新集 6 份落 ~/g16/tests/ 覆盖 opt+freq 旗舰/最小 freq/纯 opt/纯 sp/异常终止/强停各态（异常样例缺口由真机样本补齐），旧 4 份保留为 M1 进度解析回归样本，m3-plan §0.4/§0.6/§2.2 回填与口径统一
+- 【docs】M3 金标准补样两份（本机 g16 实测生成入库 ~/g16/tests/）：h2o_optfreq_popreg（opt+freq+Pop=Reg 闭壳层，关闭 mosyms/aonames 缺口，兼作 D1 真机 freq 走查预演）与 oh_doublet_popreg（开壳层双重态 sp，homos α/β 双值与双自旋组实证）；金标准集共 8 份，m3-plan §2.2 补样记录与 §0.4 口径同步
 
 ## v2.1.0（2026-09-29T17:25+08:00 发布，minor）
 
