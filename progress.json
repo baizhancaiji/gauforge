@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:41+08:00",
+  "updated": "2026-10-01T01:52+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -118,6 +118,13 @@
       "type": "added",
       "scope": "web",
       "summary": "B2 Result 落库与 finalize 接线落库：finalize.write_analysis 原子写 analysis.json（degraded 亦落盘、失败记日志不阻断），dispatcher formchk 步后接线并随终态冻结同事务写 result_ref（reconcile 单点全覆盖、SSE 时序不受扰），executions_repo.finalize 增 result_ref，test_finalize_result 10 例集成断言，全量 pytest 507 通过",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "scf_trace.cycles 内层补 nullable 契约补丁：cclib scfvalues 判据列迭代早期未更新为 NaN（真机 CVL 链路实证），null 保列对齐语义，两侧契约生成物再生",
       "breaking": false,
       "migration": null
     }
