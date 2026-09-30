@@ -69,10 +69,11 @@
    既有 `test_e2e_fake_g16.py` 同受其制约，静默跳过即通过数虚高（修订
    说明三⑰）；D1 走查需真机 g16 跑 freq 任务。
 3. 真机资产在位（已实测确认）：`~/g16/g16`、`~/g16/formchk`、
-   `~/g16/cubegen`；金标准样本 `~/g16/tests/` 8 份 `.out`
-   （6 份 CVL 现代输出 + 2 份本机 g16 生成补样，清单与覆盖见 §2.2
-   样本更换记录与补样记录；原 anisoles0/1、phenoxyls0/1 保留为 M1
-   进度解析计数回归样本）+ 14 份 `.fchk`。
+   `~/g16/cubegen`；金标准样本 `~/g16/tests/` 10 份 `.out`
+   （6 份 CVL 现代输出 + 4 份本机 g16 生成/CVL 补样，清单与覆盖见
+   §2.2 样本更换记录、补样记录与补样记录二；原 anisoles0/1、
+   phenoxyls0/1 保留为 M1 进度解析计数回归样本）+ 16 份 `.fchk`
+   （含现代闭壳层/开壳层小 fchk 各一，B4 cube 测试资产）。
 4. A1 契约 diff 经用户评审通过（文档先行，roadmap §4）。
 5. roadmap §7 开放事项 5 处置已裁决（2026-09-30）：① 自动定时清理不引入、
    替代为 M3.7 占用统计与阈值告警；② 前端页面单测不引入——两项均随联合
@@ -328,6 +329,20 @@ Result:
   | oh_doublet_popreg.out | sp+Pop=Reg 开壳层双重态 | **开壳层缺口关闭**：homos=[4,3] α/β 双值、moenergies 双自旋组、双自旋 mosyms——OrbitalsResponse spin 自旋组维度的实证数据形态 |
 
   金标准集自此共 8 份；前述「6 份」表述按 8 份理解。
+- **补样记录二（2026-10-01，同日第二三轮补齐）**：三个剩余覆盖缺口一并关闭，
+  金标准集扩至 10 份 `.out`：
+
+  | 样本 | 形态 | 覆盖点 |
+  |---|---|---|
+  | h2o_linear_freq_popreg.out | 线性水 freq（TS 形态，本机 g16 生成） | **虚频缺口关闭**：vibfreqs 含 -2045.3 cm⁻¹ 二重简并弯曲，imaginary_freq_count>0 与虚频标红路径实证；3N-5 线性模数形态 |
+  | h2o_optfreq_popreg.fchk / oh_doublet_popreg.fchk | 现代小 fchk（本机 formchk 产物，闭壳层/开壳层各一） | B4 cube 真机测试资产（替代老格式 test0009-ref.fchk 的优先选择）；cubegen MO=1 与 Potential=SCF 已冒烟通过（~843KB cube）；开壳层 fchk 供风险 4 演练；cclib 解析 nmo/homos/moenergies（双自旋组）正确 |
+  | c8b_qst2_error.out | 微型异常终止输出（CVL 实机文件） | **极端降级样例**：解析不抛异常但 success=false 且零分析块（cclib 报 end of logfile），degraded 全 false 分支实证 |
+
+  - **Nosymm 与 mosyms 因果澄清**：h2o_linear 带 Pop=Reg 仍无 mosyms——
+    Nosymm 抑制轨道对称性打印（实测 grep「Symmetries」为零）。用户工作负载
+    routes 普遍带 nosymm，故 mosyms 恒缺的根因是 Nosymm 而非仅缺 Pop=Reg；
+    轨道清单 symmetry 须按 nullable 兼容（契约已定），mosyms 有值形态以
+    h2o_optfreq_popreg.out（未加 Nosymm）为唯一实证样本。
 ### 2.3 分析端点数据形状与边界（A1 评审输入，B3 实施依据）
 
 - convergence 响应含三类序列，前端直接绘图：`scf_trace`（每几何步内 SCF 迭代
