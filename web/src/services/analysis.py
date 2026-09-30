@@ -26,8 +26,8 @@ _RESPONSE_BUDGET = 2 * 1024 * 1024  # 单端点响应预算（§2.3）
 _OUT_SUFFIXES = (".out", ".log")
 
 
-def _terminal_succeeded(execution_id: int) -> dict:
-    """历史终态行且 succeeded（其余 409：非 succeeded 条目请求分析）。"""
+def terminal_succeeded(execution_id: int) -> dict:
+    """历史终态行且 succeeded（cube 域复用；其余 409 语义同源）（其余 409：非 succeeded 条目请求分析）。"""
     row = executions().get(execution_id)
     if row is None or row["state"] not in ("succeeded", "failed", "skipped"):
         raise not_found("history", execution_id)
@@ -38,13 +38,14 @@ def _terminal_succeeded(execution_id: int) -> dict:
     return row
 
 
-def _run_dir(execution_id: int) -> Path:
+def run_dir(execution_id: int) -> Path:
     return config.HOME_DIR / "run" / str(execution_id)
 
 
-def _load_analysis(execution_id: int) -> dict:
-    """读 analysis.json；缺失/损坏时惰性重建一次再读，仍无则 409。"""
-    run_d = _run_dir(execution_id)
+def load_analysis(execution_id: int) -> dict:
+    """读 analysis.json；缺失/损坏时惰性重建一次再读，仍无则 409
+    （cube 域 MO 上界校验复用）。"""
+    run_d = run_dir(execution_id)
     path = run_d / finalize.ANALYSIS_NAME
     payload = _read_json(path)
     if payload is None:
@@ -77,27 +78,27 @@ def _require_block(payload: dict, key: str) -> dict:
 
 def overview(execution_id: int) -> dict:
     """GET /history/{id}/analysis：Result 全集（含 degraded）。"""
-    _terminal_succeeded(execution_id)
-    return _load_analysis(execution_id)["result"]
+    terminal_succeeded(execution_id)
+    return load_analysis(execution_id)["result"]
 
 
 def convergence(execution_id: int) -> dict:
     """GET /history/{id}/analysis/convergence：SCF 迹线+几何收敛+能量序列。"""
-    _terminal_succeeded(execution_id)
-    payload = _load_analysis(execution_id)
+    terminal_succeeded(execution_id)
+    payload = load_analysis(execution_id)
     return _fit_budget(_require_block(payload, "convergence"))
 
 
 def frequencies(execution_id: int) -> dict:
     """GET /history/{id}/analysis/frequencies：频率表与红外强度。"""
-    _terminal_succeeded(execution_id)
-    return _require_block(_load_analysis(execution_id), "frequencies")
+    terminal_succeeded(execution_id)
+    return _require_block(load_analysis(execution_id), "frequencies")
 
 
 def orbitals(execution_id: int) -> dict:
     """GET /history/{id}/analysis/orbitals：轨道能量清单（不含系数）。"""
-    _terminal_succeeded(execution_id)
-    return _require_block(_load_analysis(execution_id), "orbitals")
+    terminal_succeeded(execution_id)
+    return _require_block(load_analysis(execution_id), "orbitals")
 
 
 # ---------------- workspace-out（工作区 .out/.log 只读分析） ----------------

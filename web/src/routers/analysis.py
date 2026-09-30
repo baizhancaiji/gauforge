@@ -6,9 +6,11 @@ storage 域（GET /storage/usage）随 B12 单独装配。
 from __future__ import annotations
 
 from fastapi import APIRouter
+from fastapi import Response
 
 from ..errors import err
 from ..services import analysis as analysis_svc
+from ..services import cube as cube_svc
 
 router = APIRouter(tags=["history"])
 
@@ -31,6 +33,19 @@ def get_analysis_frequencies(id: int) -> dict:
 @router.get("/history/{id}/analysis/orbitals")
 def get_analysis_orbitals(id: int) -> dict:
     return analysis_svc.orbitals(id)
+
+
+@router.post("/history/{id}/analysis/cube")
+def generate_cube(id: int, payload: dict) -> dict:
+    """生成 cube（幂等；白名单/上界越界 422、生成失败 502、cubegen 缺失 503）。"""
+    return cube_svc.generate(id, payload.get("kind"),
+                             payload.get("orbital"), payload.get("npts"))
+
+
+@router.get("/history/{id}/analysis/cube/{cube_id}")
+def download_cube(id: int, cube_id: str) -> Response:
+    return Response(content=cube_svc.load(id, cube_id),
+                    media_type="chemical/x-cube")
 
 
 @router.post("/analysis/workspace-out")

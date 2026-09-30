@@ -120,17 +120,20 @@ class FakeResponse:
 
 def validate(spec: OpenAPI, method: str, path: str,
              status_code: int, data: Any,
-             query: dict[str, Any] | None = None) -> list:
-    """返回响应校验错误列表（空=通过）。"""
+             query: dict[str, Any] | None = None,
+             content_type: str = "application/json") -> list:
+    """返回响应校验错误列表（空=通过；content_type 供二进制流端点）。"""
     req = FakeRequest(method, path, query=query)
-    resp = FakeResponse(status_code, data)
+    resp = FakeResponse(status_code, data, content_type=content_type)
     return list(spec.iter_response_errors(req, resp))
 
 
 def assert_contract_schema(spec: OpenAPI, method: str, path: str,
                            status_code: int, data: Any,
-                           query: dict[str, Any] | None = None) -> None:
-    errors = validate(spec, method, path, status_code, data, query=query)
+                           query: dict[str, Any] | None = None,
+                           content_type: str = "application/json") -> None:
+    errors = validate(spec, method, path, status_code, data, query=query,
+                      content_type=content_type)
     if errors:
         raise AssertionError(
             f"响应不符合契约 {method} {path}（{status_code}）: {[repr(e) for e in errors]}")
