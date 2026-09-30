@@ -75,8 +75,11 @@ def _ensure_cclib_shim() -> None:
 
 
 def _native(value: object) -> object:
-    """numpy 标量/数组 → JSON 原生类型；NaN/Inf → None（json 兼容）。"""
-    if value is None or isinstance(value, (str, bool, int, float)):
+    """numpy 标量/数组 → JSON 原生类型；NaN/Inf → None（json 兼容）。
+
+    精确 type 判定：np.float64 等内建子类不放行（cclib 返回值须落成
+    纯 float/int/bool，保证 analysis.json 纯原生类型），走 tolist/item 链。"""
+    if value is None or type(value) in (str, bool, int, float):
         if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
             return None
         return value
