@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T02:29+08:00",
+  "updated": "2026-10-01T02:30+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -160,6 +160,13 @@
       "type": "added",
       "scope": "web",
       "summary": "B12 空间占用统计与告警落库：GET /storage/usage（du -sb 同口径只读统计、明细降序截断前 50、reclaimable 与 M1 清理边界单一实现、保全快照计 0）、disk_usage_warn_gb 运行级设置（默认 50、0=禁用、即时生效）、超阈仅警告不自动清理无定时器，test_storage_usage 9 例含千级目录 P95<2s 基准，全量 pytest 567 通过",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "补提交 parse TIMEOUT_PREFIX 超时原因常量（B3 分析域 422 details 判定单一来源，随 B3 遗漏提交）",
       "breaking": false,
       "migration": null
     }

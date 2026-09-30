@@ -35,6 +35,7 @@
 ### 修复
 
 - 【web】parse 原生化补漏：_native 精确 type 判定使 np.float64 等 float/int/bool 内建子类统一落成纯原生类型（新金标准 h2o_linear 虚频值实测）
+- 【web】补提交 parse TIMEOUT_PREFIX 超时原因常量（B3 分析域 422 details 判定单一来源，随 B3 遗漏提交）
 
 ## v2.1.0（2026-09-29T17:25+08:00 发布，minor）
 
