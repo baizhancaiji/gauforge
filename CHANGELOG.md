@@ -13,6 +13,7 @@
 - 【web】B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过
 - 【web】B4 cubegen 集成与 cube 端点落库：services/cube.py kind 白名单+参数治理（上界取 analysis.json）、sha256 幂等留存 run/<id>/cubes/（不入保留期清理）、120s 超时与 stderr 尾部、探测缺失 503 显式、fchk 缺失 502，POST/GET 两端点（chemical/x-cube 流），test_cube_api 20 例含真机 MO=1/Potential=SCF 与开壳层 fchk 演练，全量 pytest 550 通过
 - 【web】B5 金标准回归与降级样例闸门落库：test_analysis_parse 扩终态 10 份矩阵（mosyms 有值/开壳层双自旋/虚频标红/零块极端降级），构造异常样例四份入库 fixtures（42KB 内机器无关）覆盖降级三分支（解析异常/success 假已得块保留/属性缺失不降级），全量 pytest 558 通过
+- 【web】B12 空间占用统计与告警落库：GET /storage/usage（du -sb 同口径只读统计、明细降序截断前 50、reclaimable 与 M1 清理边界单一实现、保全快照计 0）、disk_usage_warn_gb 运行级设置（默认 50、0=禁用、即时生效）、超阈仅警告不自动清理无定时器，test_storage_usage 9 例含千级目录 P95<2s 基准，全量 pytest 567 通过
 
 ### 变更
 
