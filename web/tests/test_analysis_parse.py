@@ -1,20 +1,26 @@
-"""结果解析单测（M3 B1，m3-plan §4.4/§5 test_analysis_parse）。
+"""结果解析单测与金标准回归闸门（M3 B1/B5，m3-plan §4.4/§4.8/§5）。
 
-金标准 = 新集 6 份（m3-plan §2.2 样本更换记录 2026-10-01，G16WEB_G16_SAMPLES
-可覆盖，默认 ~/g16/tests）：
-- 正常态 4 份逐属性断言：CVL_open（opt+freq 全属性旗舰）、anion_BC1_393
-  （最小 freq；内含已完成 Berny 优化段，optdone=True 属实）、
-  CVLH_open_opt_svp_hd（纯 opt，无频率/热化学块）、c9c1_sp_smd_hd（纯 sp，
-  optdone=None → opt_converged=null）；
-- 异常态 2 份降级分支断言：c8b_ts（Error termination，success=false）、
-  crest9_BC1c_c4_res6（强停/截断，无 Normal termination）——均 degraded 且
-  已得块保留；
+金标准 = 终态 10 份（m3-plan §2.2 样本更换记录/补样记录/补样记录二，
+G16WEB_G16_SAMPLES 可覆盖，默认 ~/g16/tests）：
+- 全属性旗舰 CVL_open（opt+freq 闭壳层）、h2o_optfreq_popreg（mosyms 有值
+  唯一实证）、oh_doublet_popreg（开壳层双自旋 spin 维度实证）、
+  h2o_linear_freq_popreg（虚频 -2045.3 二重简并标红路径）、
+  anion_BC1_393（最小 freq；内含已完成 Berny 优化段，optdone=True 属实）、
+  CVLH_open_opt_svp_hd（纯 opt 块缺失）、c9c1_sp_smd_hd（纯 sp
+  opt_converged=null）；
+- 异常态：c8b_ts（Error termination）、crest9_BC1c_c4_res6（强停截断）、
+  c8b_qst2_error（零分析块极端降级）——degraded 且已得块保留；
 真机依赖缺失时整组显式 skip（-rs 可见 reason，不得静默）。
-构造异常输入（空文件/垃圾字节/纯文本）与解析超时无需真机，断言降级不抛出。
+
+fixtures 降级三分支（web/tests/fixtures/，构造样本随仓库走、机器无关、
+B5 起常驻闸门）：analysis_garbage（①解析异常）、analysis_truncated_freq /
+analysis_no_normal_termination（②success 假、已得块保留）、
+analysis_no_mo_table（③属性缺失不降级、blocks 置 false）。
 """
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -22,9 +28,13 @@ from web.src import config
 from web.src.parse import results as results_mod
 
 GOLD_OK = ("CVL_open.out", "anion_BC1_393.out",
-           "CVLH_open_opt_svp_hd.out", "c9c1_sp_smd_hd.out")
-GOLD_BAD = ("c8b_ts.out", "crest9_BC1c_c4_res6.out")
+           "CVLH_open_opt_svp_hd.out", "c9c1_sp_smd_hd.out",
+           "h2o_optfreq_popreg.out", "oh_doublet_popreg.out",
+           "h2o_linear_freq_popreg.out")
+GOLD_BAD = ("c8b_ts.out", "crest9_BC1c_c4_res6.out", "c8b_qst2_error.out")
 _ALL_GOLD = GOLD_OK + GOLD_BAD
+
+FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
 def _sample(name: str):
@@ -37,9 +47,10 @@ def _gold_available() -> bool:
 
 requires_gold = pytest.mark.skipif(
     not _gold_available(),
-    reason="真机金标准缺失：G16WEB_G16_SAMPLES（默认 ~/g16/tests）下无新集 6 份"
-           "（CVL_open/anion_BC1_393/CVLH_open_opt_svp_hd/c9c1_sp_smd_hd/"
-           "c8b_ts/crest9_BC1c_c4_res6）")
+    reason="真机金标准缺失：G16WEB_G16_SAMPLES（默认 ~/g16/tests）下无终态 "
+           "10 份（CVL_open/anion_BC1_393/CVLH_open_opt_svp_hd/c9c1_sp_smd_hd/"
+           "h2o_optfreq_popreg/oh_doublet_popreg/h2o_linear_freq_popreg/"
+           "c8b_ts/crest9_BC1c_c4_res6/c8b_qst2_error）")
 
 
 # ---------------- 金标准 · 正常态逐属性 ----------------
@@ -261,3 +272,124 @@ def test_parse_timeout_degrades(tmp_path, monkeypatch):
 def test_missing_file_degrades(tmp_path):
     out = results_mod.parse_output(tmp_path / "nope.out")
     assert out["result"]["state"] == "degraded"
+
+
+# ---------------- 补样记录/补样记录二新增形态（真机） ----------------
+
+@requires_gold
+def test_h2o_optfreq_mosyms_present():
+    """h2o_optfreq_popreg：mosyms/aonames 有值唯一实证（未加 Nosymm）。"""
+    out = results_mod.parse_output(_sample("h2o_optfreq_popreg.out"))
+    r = out["result"]
+    assert r["state"] == "parsed" and r["method"] == "B3LYP/6-31G(d)"
+    s = r["summary"]
+    assert s["natom"] == 3 and s["nmo"] == 19 and s["homos"] == [4.0]
+    assert s["freq_count"] == 3 and s["imaginary_freq_count"] == 0
+    assert s["opt_converged"] is True
+    assert r["blocks"] == {"convergence": True, "frequencies": True,
+                           "orbitals": True, "thermochemistry": True}
+    orbs = out["orbitals"]["orbitals"]
+    syms = {o["symmetry"] for o in orbs}
+    assert syms == {"A'", 'A"'}          # 对称标签有值
+    assert {o["spin"] for o in orbs} == {None}  # 闭壳层单组
+
+
+@requires_gold
+def test_oh_doublet_spin_groups():
+    """oh_doublet_popreg：开壳层双重态——homos=[α,β]、moenergies 双自旋组，
+    OrbitalsResponse spin 维度实证（α/β 各自 1..n 编号）。"""
+    out = results_mod.parse_output(_sample("oh_doublet_popreg.out"))
+    r = out["result"]
+    assert r["state"] == "parsed"
+    assert r["summary"]["homos"] == [4.0, 3.0]
+    assert r["summary"]["opt_converged"] is None      # 纯 sp
+    assert r["blocks"]["frequencies"] is False
+    o = out["orbitals"]
+    assert len(o["orbitals"]) == 34                   # 17α + 17β
+    alpha = [x for x in o["orbitals"] if x["spin"] == "alpha"]
+    beta = [x for x in o["orbitals"] if x["spin"] == "beta"]
+    assert [x["index"] for x in alpha] == list(range(1, 18))
+    assert [x["index"] for x in beta] == list(range(1, 18))
+    assert alpha[4]["index"] == 5                     # HOMO_α = homos[0]+1
+    assert beta[3]["index"] == 4                      # HOMO_β = homos[1]+1
+
+
+@requires_gold
+def test_h2o_linear_imaginary_freqs():
+    """h2o_linear_freq_popreg：线性水 TS 形态——-2045.3 cm⁻¹ 二重简并虚频，
+    imaginary_freq_count>0 与频率表虚频标红路径实证。"""
+    out = results_mod.parse_output(_sample("h2o_linear_freq_popreg.out"))
+    r = out["result"]
+    assert r["state"] == "parsed"
+    s = r["summary"]
+    assert s["freq_count"] == 4 and s["imaginary_freq_count"] == 2
+    assert s["opt_converged"] is False   # 有 optstatus 记录而无收敛（TS 形态）
+    neg = [f for f in out["frequencies"]["frequencies"] if f["imaginary"]]
+    assert len(neg) == 2
+    assert all(f["frequency_cm"] == pytest.approx(-2045.3389, abs=0.01)
+               for f in neg)
+
+
+@requires_gold
+def test_c8b_qst2_error_zero_blocks():
+    """c8b_qst2_error：success=false 且零分析块的极端降级（degraded 全 false）。"""
+    out = results_mod.parse_output(_sample("c8b_qst2_error.out"))
+    r = out["result"]
+    assert r["state"] == "degraded"
+    assert r["parse_error"] is not None and "success" in r["parse_error"]
+    assert r["blocks"] == {"convergence": False, "frequencies": False,
+                           "orbitals": False, "thermochemistry": False}
+    assert "scfenergies" in r["missing"]
+
+
+# ---------------- fixtures 降级三分支（构造样本，机器无关常驻） ----------------
+
+def _fixture(name: str) -> Path:
+    return FIXTURES / name
+
+
+def test_fixture_garbage_parse_exception_branch():
+    """分支①：垃圾字节 → ccopen 识别失败 → degraded 全 false、无已得块。"""
+    out = results_mod.parse_output(_fixture("analysis_garbage.out"))
+    r = out["result"]
+    assert r["state"] == "degraded" and r["parse_error"] is not None
+    assert r["blocks"] == {"convergence": False, "frequencies": False,
+                           "orbitals": False, "thermochemistry": False}
+    assert r["missing"] == []
+
+
+def test_fixture_truncated_freq_degrades_with_partial_blocks():
+    """分支②（截断形态）：Frequencies 区中段截断 → degraded（无终止记录），
+    已得块保留（收敛迹线 + 部分频率表 18 模）。"""
+    out = results_mod.parse_output(_fixture("analysis_truncated_freq.out"))
+    r = out["result"]
+    assert r["state"] == "degraded"
+    assert r["parse_error"] is not None and "success" in r["parse_error"]
+    assert r["blocks"]["convergence"] is True
+    assert r["blocks"]["frequencies"] is True
+    assert r["summary"]["freq_count"] == 18   # 截断前已解析的模数（实证）
+    assert r["blocks"]["thermochemistry"] is False
+
+
+def test_fixture_no_normal_termination_degrades_with_blocks():
+    """分支②（去尾形态）：完整输出去除 Normal termination → degraded，
+    收敛/轨道块照常保留。"""
+    out = results_mod.parse_output(
+        _fixture("analysis_no_normal_termination.out"))
+    r = out["result"]
+    assert r["state"] == "degraded"
+    assert r["blocks"]["convergence"] is True
+    assert r["blocks"]["orbitals"] is True
+    assert r["summary"]["nmo"] == 740
+
+
+def test_fixture_no_mo_table_attribute_missing_branch():
+    """分支③：Population 节缺失（无 MO 表）→ state 保持 parsed、
+    blocks.orbitals=false、missing 恒空（预期缺失不是缺失事故）。"""
+    out = results_mod.parse_output(_fixture("analysis_no_mo_table.out"))
+    r = out["result"]
+    assert r["state"] == "parsed"
+    assert r["parse_error"] is None
+    assert r["blocks"]["orbitals"] is False
+    assert out["orbitals"]["orbitals"] == []
+    assert r["missing"] == []
