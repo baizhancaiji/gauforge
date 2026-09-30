@@ -51,6 +51,34 @@ finalize 先例）；⑪ storage 响应预算定稿——entries 默认截断前
 括注、M3.5 工作区分析后缀扩为 `.out`/`.log`（本计划 §0.1/§0.2/§2.3
 同步）。
 
+**修订说明三**（2026-09-30 第三轮计划审查裁决落实，同日，17 项）：
+① 决策点 8 拆分——候选清单**端点有无改随 A1 评审**定稿（直接决定 A1
+端点清单；未决默认不纳入、后续走独立 diff），入口形态留 A3
+（§2.1/§2.4/§4.1/§8）；② 注入矩阵 **route 判定规则定稿**——含 Opt 即
+优化行（Opt+Freq 并存归优化）、无 Opt 含 Freq 归 freq、其余单点、
+不可解析 ineligible；ineligible 统一四态并补入 §3.5 图（§2.6/§3.5/
+§4.19/§5）；③ 关键路径更正——M4 波实算最长链 `A4→A5→B10→B11→C7→D3→D4`
+（9.5 人天），总关键路径 ≈19 人天；原声明漏 B9 对 A5 的硬依赖且非最长
+（§1）；④ 组合流提交**席位满员语义定稿**——409 `PENDING_CAPACITY_FULL`
+整体拒绝、零副作用（§2.7/§3.6/§4.20/§5/§7.4）；⑤ 决策点 12 补**三分支
+contingency**（HQ per-job 重试上限实测后 a/b/c 落位；b 分支 #21 前插
+feat(hq) 批次 + cargo test 闸门，+1~2 人天未计入 35；c 退守对账拦截——
+§1/§6/§8/§9 风险 16）；⑥ M4 schema 迁移落位——`resumed_from`（TEXT
+JSON）与 workflow 表均走 migrations 版本化，公共纪律补「契约 diff 批次
+伴生迁移」（§4 公共纪律/§2.6/§4.19/§4.20）；⑦ workflow 发现路径补全
+——POST 响应形状定稿 + 新增 `GET /workflows`（列表，只读）随 A4 登记
+（§2.5/§2.7/§4.21/§4.22/§5/§7.4）；⑧ `resumed_by` 派生只读字段定稿
+——原历史条目零 schema 变更、不落库（§2.5/§2.6）；⑨ workspace-out
+解析超时 60s 定稿——超时 422 `ANALYSIS_PARSE_FAILED`（码语义扩注，
+§2.1/§2.3/§5）；⑩ 进度同步段补回填登记——A4 批次校正 roadmap M4 段
+「确认后物化」措辞为派发时物化（§6）；⑪ B5 批次注记 roadmap §7.2 金
+标准部分关闭（§6）；⑫ A1 mapping 增行补**归档详情分析区**（§2.1/
+§4.1）；⑬ §0.4 补 v2.1.0 Release 附件上传悬留注记（不阻塞开工）；
+⑭ offline 审计闸门口径统一为「前端批次与 D1/D3 收口」（§6/§7.1）；
+⑮ `RESUME_NOT_ELIGIBLE` HTTP 语义定稿——preview 恒 200、resume 422
+（§2.6/§4.19/§5）；⑯ crest 能量表输出单位实测列入 A5 核验项（§2.7/
+§4.15）；⑰ hq 在位口径绑定「凡声称全量 pytest 通过」（§0.4/§6）。
+
 ## 0. 目标、范围与依据
 
 ### 0.1 目标（= roadmap §3 M3/M4 原文定义）
@@ -105,12 +133,17 @@ finalize 先例）；⑪ storage 响应预算定稿——entries 默认截断前
 
 1. M0–M2 与 v2.1.0 已收口（progress.json：`latest_released_version=2.1.0`、
    `unreleased` 仅含 scope=docs 的文档条目、无代码与契约类条目——修订
-   说明二校正，原「为空」措辞被本计划自身的落盘提交证伪）；M3 开工前把
+   说明二校正，原「为空」措辞被本计划自身的落盘提交证伪）；v2.1.0 唯一
+   悬留为 Release 附件上传（progress.json next_steps 首条，待 gh CLI
+   认证与用户授权），**不阻塞 M3 开工**、随下次授权窗口处置（修订说明
+   三⑬）；M3 开工前把
    「M3 结果解析与可视化」登记入 `in_progress`。
 2. `target/release/hq` 在位（M4 触及派发链路，B8/e2e 依赖；缺失会静默跳过
    关键 e2e，违反 AGENTS.md §6.1 第 4 条）。M3 不触及派发窗口/资源逻辑（B2 仅于
-   `engine/finalize` 终态管线追加解析步，随既有 e2e 回归覆盖），无此硬
-   依赖，但 D1 走查需真机 g16 跑 freq 任务。
+   `engine/finalize` 终态管线追加解析步，随既有 e2e 回归覆盖），M3 新增
+   测试无此硬依赖，但**凡声称「全量 pytest 通过」时 hq 一律须在位**——
+   既有 `test_e2e_fake_g16.py` 同受其制约，静默跳过即通过数虚高（修订
+   说明三⑰）；D1 走查需真机 g16 跑 freq 任务。
 3. 真机资产在位（已实测确认）：`~/g16/g16`、`~/g16/formchk`、
    `~/g16/cubegen`；`~/opt/xtb-6.7.1`、`~/opt/crest-3.0.2`；金标准样本
    `~/g16/tests/` 4 份 `.out`（anisoles0/1、phenoxyls0/1，均含
@@ -231,10 +264,15 @@ diff 以 M3 落库后的契约基线为前提，避免两次 diff 叠加冲突�
 **总工量与关键路径**（2026-09-30 按审查补录，沿 m1/m2 口径）：总工量 ≈
 **35 人天**——M3 波 ≈17.5（A1–A3 3 + B1–B5 7 + B12 1 + C1–C4 4.5 + C8 0.5
 + D1/D2 1.5），M4 波 ≈17.5（A4/A5 4 + B6–B11 9 + C5–C7 3 + D3/D4 1.5）。
-逻辑关键路径 `A1→B1→B2→B3→C2→D1→D2→A4→B7→B9→D3→D4`；B9（续跑，含
-@exec 物化）与 B10（组合流）为 M4 波关键链，A4 契约评审为其共同前置。
-单人串行执行时总工期即总工量；B3/C2/B7/B9/B10（L 估算）建议各预留 ~20%
-缓冲；估算不含 D 阶段走查缺陷 fix 的返工。
+逻辑关键路径 `A1→B1→B2→B3→C2→D1→D2→A4→A5→B10→B11→C7→D3→D4`
+（M3 段 9.5 + M4 段 9.5 ≈ **19 人天**——修订说明三③更正：原声明
+`A4→B7→B9` 段漏 B9 对 A5 的硬依赖且非最长链）；M4 波两条关键链：组合流
+链 `A5→B10→B11→C7`（9.5，最长）与续跑链 `A5→B9→C6`（8.5），A4 契约
+评审为其共同前置，B9 另受 B7（物化器，与 A5 并行）约束。
+单人串行执行时总工期即总工量；B1/B3/C2/B7/B9/B10（L 估算）建议各预留
+~20% 缓冲；估算不含 D 阶段走查缺陷 fix 的返工，亦不含决策点 12 分支 b
+（改 `crates/` 的 HQ per-job 重试上限）+1~2 人天的 contingency（修订
+说明三⑤）。
 
 ## 2. 关键设计定稿（A 阶段规格输入）
 
@@ -272,7 +310,9 @@ Result:
   parse_error: string | null          # 解析异常摘要（degraded 主因）
 ```
 
-**新增端点**（路径前缀 `/api/v1`，A1 评审定稿；全部只读或幂等派生）：
+**新增端点**（路径前缀 `/api/v1`，A1 评审定稿；全部只读或幂等派生；若
+决策点 8 入选 workspace 候选清单端点则另 +1，随 A1 评审一并定——修订
+说明三①）：
 
 | 方法与路径 | 用途 |
 |---|---|
@@ -290,12 +330,14 @@ Result:
 | 码 | HTTP | 语义 |
 |---|---|---|
 | `ANALYSIS_UNAVAILABLE` | 409 | 非 succeeded 条目请求分析，或 analysis.json 缺失且重建失败 |
-| `ANALYSIS_PARSE_FAILED` | 422 | 请求的分析块数据不足（如无频率任务请求 frequencies） |
+| `ANALYSIS_PARSE_FAILED` | 422 | 请求的分析块数据不足**或解析超时**（如无频率任务请求 frequencies；超时 details 注明，§2.3——修订说明三⑨） |
 | `WORKSPACE_PATH_OUTSIDE` | 400 | `.out` 分析路径越出工作区（§2.4 边界） |
 | `CUBE_GENERATION_FAILED` | 502 | cubegen 非零退出/超时（details 携带 stderr 尾部） |
 | `CUBE_EXECUTABLE_MISSING` | 503 | `g16_root/cubegen` 探测失败（显式，不静默） |
 
-**mapping.md**：历史详情分析区四 tab、`.out` 打开入口、轨道面板、历史页
+**mapping.md**：历史详情分析区四 tab、归档详情分析区（复用历史详情分析
+组件，可见性同 succeeded 条目——修订说明三⑫）、`.out` 打开入口、轨道
+面板、历史页
 清理区占用面板（M3.7）等界面元素逐行登记；**sse.md 不变**（M3 全部为拉取型：
 分析数据与占用统计随 `history.appended` 后的 REST 拉取，无需新事件——在 A1
 评审中显式确认此结论并留痕）。
@@ -344,7 +386,9 @@ Result:
 - workspace-out 端点的路径守卫：`(workspace_root / path).resolve()` 后必须是
   `workspace_root.resolve()` 的子孙且后缀 ∈ {.out, .log}（`.log` 为 g16
   输出后缀两态的扩展，roadmap M3.5 已同批回填——修订说明二）；
-  越界/缺失/不可解析分别 400/404/422。只读，绝不写工作区外
+  越界/缺失/不可解析分别 400/404/422；解析超时 60s（沿用 §2.2 finalize
+  同款），超时 422 `ANALYSIS_PARSE_FAILED`（details 注明 timeout——修订
+  说明三⑨）。只读，绝不写工作区外
   （roadmap §2.4：工作区外一律只读）。
 - cube 幂等与留存：产物落 `run/<执行id>/cubes/<cube_id>.cube`
   （cube_id=参数摘要哈希）；同参数重复 POST 直接返回既有 cube_id。cube 为
@@ -361,7 +405,9 @@ Result:
   清单、cube/等值面入口置灰并注明「工作区文件无 fchk」（cube 端点以执行
   id 键控——修订说明二）；路径输入的辅助形态（工作区 `.out/.log` 候选列表——
   浏览器不可直接读文件系统，入选需增一个只读候选清单端点）列为决策点 8
-  的评审项，见 §8。
+  的评审项（**端点有无随 A1 评审定稿**——直接决定 A1 端点清单（8 或 9），
+  不能后置；A1 评审未决时默认不纳入、后续如需走独立契约 diff；入口位置
+  与交互随 A3——修订说明三①），见 §8。
 - **图表方案（A3 决策，建议值：ECharts 按需引入）**：收敛曲线（折线，双
   判据虚线参考线）、IR 谱图（棒图 + 频率表联动高亮）。按需注册
   LineChart/BarChart/Grid/Tooltip/DataZoom，控制包体；镜像源本地安装、随
@@ -452,7 +498,9 @@ Result:
   diff 一并定稿。
 - **契约 diff**：openapi（Queue/Task 描述与校验规则、符号引用文法含
   `@task:<id>`/`@exec:<执行id>` 两形态及其载体约束、resume 端点与历史条目
-  `resumed_from` 关联字段见 §2.6、能量表与 workflow 查询端点见 §2.7、
+  `resumed_from`（落库）+ `resumed_by`（派生只读、不入存储）关联字段见
+  §2.6（修订说明三⑧）、能量表与 workflow 查询端点（含 `GET /workflows`
+  列表，修订说明三⑦）见 §2.7、
   新错误码 `DEPENDENCY_CYCLE`/`DEPENDENCY_UNREACHABLE`/`RESUME_NOT_ELIGIBLE`/
   `CHK_SOURCE_MISSING`/`WORKFLOW_STATE_INVALID`/`CREST_EXECUTABLE_MISSING`
   ——每码均须在正文有触发场景承载）+ mapping.md + sse.md 无新增事件说明。
@@ -469,8 +517,19 @@ Result:
   该任务存在成功执行记录者取最近成功执行的 `input.chk`；两者皆无 ⇒
   ineligible。探针 = 对该 chk 跑 `<g16_root>/formchk`（临时目录），formchk
   成功且 fchk 可读 ⇒ 有效；超时沿用 finalize 同款 120s，超时按探针失败
-  处理（修订说明二）。探针失败/无 chk ⇒ `ineligible`（码
-  `RESUME_NOT_ELIGIBLE`，原因：无续跑资产/chk 损坏/探针超时）。
+  处理（修订说明二）。探针失败/无 chk/route 不可解析 ⇒ `ineligible`
+  （preview **恒 200**、以 `eligible=false` + reason 表达；`POST resume`
+  对 ineligible 条目 422 `RESUME_NOT_ELIGIBLE`——修订说明三⑮。原因
+  **四态**：无续跑资产/chk 损坏/探针超时/类型不明——修订说明三②）。
+- **route 判定规则**（修订说明三②定稿；复用 M0 契约输入分块解析器取
+  route 节文本，大小写不敏感，不另写解析——roadmap §4 禁正则领域解析）：
+  ① route 含 `Opt`（含 QST2/QST3/TS/Restart 等一切变体）→ 优化行——
+  **Opt 与 Freq 并存（`opt freq` 组合）同样归优化行**（此类任务中断几乎
+  必然发生在优化段、chk 内即优化轨迹状态，Restart 恢复最上游未完成段、
+  优化收敛后 freq 段自然执行）；② 不含 Opt 但含 `Freq` → freq 行；
+  ③ 其余（sp/能量类）→ 单点行；④ route 缺失或不可解析 → ineligible
+  （类型不明）。「组合任务中断点已过优化段」的边缘（Opt=Restart 遇已
+  完成优化）列为 A5 真机核验项。
 - **注入矩阵**（与 roadmap M4.4 逐字对齐；chk 来源以 `@exec:<原执行id>`
   符号引用表达，物化随派发钩子执行——文法与校验见 §2.5）：
 
@@ -488,7 +547,13 @@ Result:
   「已续跑 → #MMM」（可读关联）。物化链路：confirm → 新建任务（改写输入
   副本）入队 → 派发时经 B7 物化钩子在 `run/<新eid>/` 复制原 chk、重写
   `%OldChk` 为实际路径 → 正常派发（与链式 `@task:` 引用共用同一物化器
-  ——「自我续跑同源」的工程落点）。
+  ——「自我续跑同源」的工程落点）。原历史条目**零 schema 变更**——
+  「已续跑 → #MMM」由响应时按 `resumed_from` 反查的
+  `resumed_by: [execution_id]` **派生只读字段**承载（不落库、不违反
+  roadmap §2.6 规则 2 的冻结语义；与 `resumed_from` 随 A4 契约 diff
+  一次定义——修订说明三⑧）。存储落位：新条目侧为历史表加列
+  `resumed_from`（可空 TEXT JSON，与契约对象形状一一对应），随
+  `web/src/store/migrations.py` 版本化迁移幂等落库（修订说明三⑥）。
 - **弹窗与确认**：preview 载荷 = `{eligible, probe:{formchk_ok, reason},
   injections:[{type, link0_lines?, route_lines?}], input_diff}`（diff 为统一
   diff 文本，展示注入改动前后全文）；用户确认后按上述链路创建并派发；
@@ -509,7 +574,11 @@ Result:
   - 载荷语义：`candidate_id` 提供电荷/多重度与分子说明节框架（候选输入
     副本）；`template.route/link0` 为精修 route 与可选 Link0（坐标由
     top-N 构象替换注入）；crest 引导模板为本仓库内置模板（非通用编辑器）。
-  - 提交静态校验：来源候选须仍在候选形态，否则 422 `WORKFLOW_STATE_INVALID`
+  - 提交前置检查（顺序：可执行探测 → 在途席位满员 → 候选形态与 top_n
+    ——修订说明三④）：席位满员 → 409 `PENDING_CAPACITY_FULL`，组合流
+    **整体拒绝、零副作用**（不建 workflow 记录、不生成 crest 任务），
+    前端提示与行内提交满员同文案——与普通提交同待遇、不设特权绕过；
+    来源候选须仍在候选形态，否则 422 `WORKFLOW_STATE_INVALID`
     （details 注明当前形态）；`top_n ∈ [2, 10]`（对齐队列成员数下限与
     上限，越界 422 `VALIDATION_FAILED`）。
   - 流程：① 生成 crest 任务（输入=候选输入副本的分子坐标引导文件，程序化
@@ -534,7 +603,7 @@ Result:
     `{rows: [{task_id, kind, state, method?, energy_hartree?, energy_eV?,
     relative_kJ_mol?, source}]}`——g16 成员取 B1 解析的末次 SCF 能量；
     crest 成员取 ensemble 相对能量；`relative_kJ_mol` 以**该查询范围内最低
-    能量**为零点；部分完成态照常返回已完成行（前端增量刷新）。
+    能量**为零点（crest 侧换算系数随 A5 实测定档——修订说明三⑯）；部分完成态照常返回已完成行（前端增量刷新）。
   - `GET /workflows/{id}`（**新增端点**，组合流单点数据源）→
     `{workflow_id, source_candidate_id, state, crest_execution_id,
     refine_queue_id, refine_queue_pending, created_at, updated_at,
@@ -543,6 +612,14 @@ Result:
     `energy_summary` 由**后端聚合** crest 行 + 精修队列行（零点是聚合范围
     内最低能量）；无 combo 需求的队列能量表直接走 `/queues/{id}/energy-summary`。
     端点随 A4 契约 diff 登记（mapping 增行）。
+  - `POST /workflows/conformer-refinement` 响应（与既有提交端点同形，
+    200）：`{workflow_id, state, crest_execution_id?}`——前端由此取得
+    id 打开进度面板（修订说明三⑦）。
+  - `GET /workflows?limit=20`（**新增列表端点**，只读）→
+    `{workflows: [<GET /workflows/{id} 同形响应>…]}`，按 `updated_at`
+    倒序——页面刷新后找回组合流、`refine_queue_pending` 满员提示回看的
+    恢复路径（单机同时进行的组合流几乎恒 0~1 个，一个只读列表端点为
+    最短路径——修订说明三⑦）；随 A4 契约 diff 登记（mapping 增行）。
 
 ### 2.8 依赖安装与前端离线化（用户补充要求，2026-09-30 固化）
 
@@ -770,6 +847,7 @@ flowchart TD
     TYPE -->|Opt| INJ1["注入 %OldChk=@exec:原执行id + Opt=Restart"]
     TYPE -->|sp/SCF| INJ2["注入 %OldChk=@exec:原执行id + Guess=Read"]
     TYPE -->|freq| INJ3[无注入·回落原样重跑·弹窗明示]
+    TYPE -->|不可解析| INEL3[ineligible：类型不明·修订说明三②]
     INJ1 --> DIFF[preview：注入改动+输入 diff]
     INJ2 --> DIFF
     INJ3 --> DIFF
@@ -784,7 +862,9 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    DIA[组合流对话框：候选+crest 参数+top N+精修模板] -->|"POST /workflows/conformer-refinement"| CHK{crest/xtb 可执行探测}
+    DIA[组合流对话框：候选+crest 参数+top N+精修模板] -->|"POST /workflows/conformer-refinement"| SEAT{在途席位满员?}
+    SEAT -->|是| E409[409 PENDING_CAPACITY_FULL·整体拒绝·零副作用]
+    SEAT -->|否| CHK{crest/xtb 可执行探测}
     CHK -->|缺失| E503[503 CREST_EXECUTABLE_MISSING]
     CHK -->|通过| CT[生成 crest 任务入队·登记 workflow_id]
     CT --> CR[crest 执行·monitor 照常·无 cclib 管道]
@@ -801,15 +881,20 @@ flowchart LR
 > 每任务四要素：**步骤**（动手顺序）、**技术要求**（硬约束）、**质量标准**
 > （可验证判据）、**交付物**（落库物）。公共纪律不重复写：文档先行、
 > 全量 `uv run pytest` + 四校验脚本过闸、hq 产物在位（M4 派发相关）、
-> 契约生成物随 diff 再生（gen:types 零 diff）。
+> 契约生成物随 diff 再生（gen:types 零 diff）、契约 diff 涉及新存储
+> 字段者对应 SQLite 迁移随该批次落库（幂等、版本化，migrations 机制
+> ——修订说明三⑥）。
 
 ### 4.1 A1 · Result 契约 diff
 
 - 步骤：① 依 §2.1 起草 openapi.yaml diff（Result schema、**8 端点**＝
-  7 分析端点 + `GET /storage/usage`、5 错误码、设置项
+  7 分析端点 + `GET /storage/usage`（若决策点 8 入选 workspace 候选
+  清单端点则 9，随 A1 评审一并定——修订说明三①）、5 错误码、设置项
   `disk_usage_warn_gb` 随 SettingItem 目录登记、HistoryEntry.result_ref
   描述改写——修订说明二与 WBS A1 行对齐）；② mapping.md 增行——
-  「05 执行历史」分析区四 tab、`.out` 打开入口、轨道面板、历史页清理区
+  「05 执行历史」分析区四 tab、归档详情分析区（复用历史详情分析组件，
+  可见性同 succeeded 条目——修订说明三⑫）、`.out` 打开入口、轨道面板、
+  历史页清理区
   占用面板（M3.7）逐行登记；③ sse.md 补「M3 无新增事件」决策说明；
   ④ gen:types 再生；⑤ 评审。
 - 技术要求：字段一次定死不预留「以后再加」（roadmap §2.6 规则 1）；错误码
@@ -976,7 +1061,9 @@ flowchart LR
   `@exec`/`resumed_from` 两层关联链路）；② 组合流时序与 workflow
   记录/查询模型定稿（§2.7，含 `GET /workflows/{id}` 响应形状与能量表
   聚合主体）；③ crest 提取器锚点清单 + `XTB_PATH` 环境变量拼写与生效
-  方式（对 crest 3.0.2 实测输出核验）；④ 能量表数据形状定稿；⑤ 程序化
+  方式 + crest 3.0.2 能量表**输出单位实测**（其输出惯不以 kJ/mol 计，
+  换算系数随锚点一并核验留痕——修订说明三⑯）——均对 crest 3.0.2 实测
+  输出核验；④ 能量表数据形状定稿；⑤ 程序化
   输入生成的模板与坐标替换规则定稿（沿用 roadmap §2.7 空行规约——模板重组经
   既有 verify_and_normalize）。
 - 质量标准：crest 真机输出实测锚点与 XTB_PATH 核验留痕；评审通过。
@@ -1022,23 +1109,31 @@ flowchart LR
 
 - 步骤：① preview 端点（探针+注入矩阵+diff 生成，无副作用）；② confirm
   端点（**新建任务**：输入副本=注入改写文本、Link0 携带
-  `%OldChk=@exec:<原执行id>`、历史条目记 `resumed_from` 关联、入队——
+  `%OldChk=@exec:<原执行id>`、历史条目记 `resumed_from` 关联【历史表
+  加列 `resumed_from`（可空 TEXT JSON），随 migrations 版本化迁移幂等
+  落库——修订说明三⑥】、入队——
   物化随派发钩子即 B7 物化器，不提前复制）；③ M1 保全 chk
   （protected/）与最近成功执行 input.chk 两条取数路径；④ freq 回落分支
   （无注入、原样重跑、保留 resumed_from 关联）。
-- 技术要求：注入矩阵与 §2.6 逐字一致；resume 不改动原历史条目（新任务
-  新执行 id，历史不可变）；`@exec` 文法静态校验随 B6 校验链落位；
-  ineligible 三态（无资产/探针失败/类型不明）原因明确。
+- 技术要求：注入矩阵与 §2.6 逐字一致（route 判定按 §2.6 规则：含 Opt
+  即优化行、Opt+Freq 并存归优化——修订说明三②）；resume 不改动原历史条目（新任务
+  新执行 id，历史不可变；原条目「已续跑」走 `resumed_by` 派生只读，
+  §2.6）；`@exec` 文法静态校验随 B6 校验链落位；
+  ineligible 四态（无资产/chk 损坏/探针超时/类型不明）原因明确，preview
+  恒 200、resume 422（修订说明三⑮）。
 - 质量标准：真机强停 opt → 探针 → Opt=Restart 续跑成功走查（D3 留痕，
-  含新任务与「续跑自」双向展示）；单测覆盖注入矩阵三分支、ineligible、
+  含新任务与「续跑自」双向展示）；单测覆盖注入矩阵三分支、ineligible
+  四态与 HTTP 语义（preview 200 / resume 422）、
   `resumed_from` 落库与物化链复用（与 B7 共用物化器的断言）。
 - 交付物：resume 端点对 + 测试。
 
 ### 4.20 B10 · CREST 组合流
 
 - 步骤：① Task.kind 扩展与派发适配（crest 程序、cwd、`XTB_PATH` 环境、
-  资源声明）；② workflow 记录表与迁移；③ 组合流端点（提交即建 crest
-  任务；来源候选形态校验 `WORKFLOW_STATE_INVALID`；`top_n ∈ [2,10]`
+  资源声明）；② workflow 记录表（随 migrations 版本化新建——修订说明
+  三⑥）；③ 组合流端点（提交前置检查按 §2.7 顺序：可执行探测 → 在途
+  席位满员 409 `PENDING_CAPACITY_FULL` 整体拒绝零副作用（修订说明三④）
+  → 来源候选形态校验 `WORKFLOW_STATE_INVALID`；`top_n ∈ [2,10]`
   校验）；④ ensemble 最小提取器（锚点解析 crest_ensemble.xyz + 能量表，
   crest 3.0.2 实测核验）；⑤ top-N 程序化输入生成与精修队列自动提交
   （满员时保留 unsubmitted + workflow 记 `refine_queue_pending`）。
@@ -1054,12 +1149,14 @@ flowchart LR
 
 - 步骤：① 队列汇总查询（队列成员 × kind × 解析结果/ensemble 能量）；②
   `GET /workflows/{id}`（状态 + `energy_summary` 跨容器后端聚合——crest
-  执行行 + 精修队列行，修订说明一①）；③ `relative_kJ_mol` 零点计算
+  执行行 + 精修队列行，修订说明一①）与 `GET /workflows?limit=20` 列表
+  端点（按 `updated_at` 倒序、复用单点同形响应——刷新恢复路径，修订
+  说明三⑦）；③ `relative_kJ_mol` 零点计算
   （查询范围内最低能量）；④ 部分完成态语义；⑤ 契约测试。
 - 技术要求：单位换算单点（hartree↔eV↔kJ/mol）与 B1 双单位一致；crest 行
   source 标注 ensemble；聚合在后端完成（前端不拼两段数据）。
-- 质量标准：混合队列（crest+g16）汇总单测；workflow 端点状态与聚合
-  单测；缺失成员行为明确。
+- 质量标准：混合队列（crest+g16）汇总单测；workflow 单点与列表端点状态
+  与聚合单测（修订说明三⑦）；缺失成员行为明确。
 - 交付物：端点对 + 测试。
 
 ### 4.22 C5/C6/C7 · M4 前端
@@ -1074,7 +1171,8 @@ flowchart LR
   （D3 走查）。
 - C7（组合流对话框+能量表）：参数表单（crest nproc / top N∈[2,10] /
   精修模板路由）、提交后经 `GET /workflows/{id}` 展示进度（crest 执行与
-  精修队列经既有 SSE 事件驱动刷新后再拉端点）、能量表增量刷新；自动
+  精修队列经既有 SSE 事件驱动刷新后再拉端点）、能量表增量刷新；页面
+  刷新后经 `GET /workflows` 列表恢复进度面板（修订说明三⑦）；自动
   提交失败（满员）提示「精修队列已生成、未自动提交，可手动提交」。
   质量：一个按钮全链路 D3 留痕。
 
@@ -1117,15 +1215,15 @@ flowchart LR
 | 测试文件（拟） | 覆盖 | 关键用例 | 类型 |
 |---|---|---|---|
 | test_analysis_parse.py | B1/B2 | 4 金标准逐属性；异常样例降级三分支；超时降级；Result 全集字段 | 单元+回归 |
-| test_analysis_api.py | B3 | 四端点契约形状；非 succeeded 409；analysis.json 缺失惰性重建；workspace-out 越界（../、绝对路径、symlink）400/404 | 契约+边界 |
+| test_analysis_api.py | B3 | 四端点契约形状；非 succeeded 409；analysis.json 缺失惰性重建；workspace-out 越界（../、绝对路径、symlink）400/404；workspace-out 解析超时 422（慢解析桩注入——修订说明三⑨） | 契约+边界 |
 | test_cube_api.py | B4 | kind 白名单 422；npts 越界 422；幂等命中；真机 MO/Potential 生成；cubegen 缺失 503（探测注入） | 契约+集成 |
 | test_finalize_result.py | B2 | fake g16 成功→analysis.json+result_ref；解析注入失败→降级不阻断 | 集成 |
 | test_dependencies.py | B6 | 合法链/环/自环/跨队/悬引用/PATCH 移除被依赖成员 | 单元+契约 |
 | test_materialize.py | B7 | 物化重写内容断言；上游零改动；缺源失败归因；探针三分支；重入①提交参数（禁用 HQ 重试） | 单元 |
 | test_dispatch_deps.py | B8 | 依赖停等不越位；前驱失败→skipped；哈希跳过溯源物化；依赖+资源双停等叠加；重入②journal 重跑者取消+重新物化派发 | 单元（FakeGateway） |
 | test_storage_usage.py | B12 | 统计对照 `du`；per-execution 聚合与 reclaimable 口径（保全快照计 0）；阈值判定与 0=禁用；清理后即时反映；entries 截断 50 条与千级目录 P95<2s 基准 | 单元+集成 |
-| test_resume.py | B9 | 注入矩阵三分支（`@exec` 引用与 Opt=Restart/%OldChk 形态）；ineligible 三态；新建任务身份与 `resumed_from` 落库；物化链复用（与 B7 同器断言）；原历史条目不可变 | 单元+集成 |
-| test_workflow_crest.py | B10/B11 | 可执行缺失 503；来源候选形态校验（WORKFLOW_STATE_INVALID）；`top_n∈[2,10]`；提取器样例回归；top-N 队列生成与自动提交（含满员保留 unsubmitted）；workflow 查询端点状态与聚合；能量表混合聚合与换算 | 单元+契约 |
+| test_resume.py | B9 | 注入矩阵三分支（`@exec` 引用与 Opt=Restart/%OldChk 形态）；ineligible 四态与 HTTP 语义（preview 200 / resume 422——修订说明三⑮）；新建任务身份与 `resumed_from` 落库；物化链复用（与 B7 同器断言）；原历史条目不可变（`resumed_by` 派生只读） | 单元+集成 |
+| test_workflow_crest.py | B10/B11 | 可执行缺失 503；提交席位满员 409 零副作用（无 workflow 行——修订说明三④）；来源候选形态校验（WORKFLOW_STATE_INVALID）；`top_n∈[2,10]`；提取器样例回归；top-N 队列生成与自动提交（含满员保留 unsubmitted）；workflow 单点与列表端点状态与聚合；能量表混合聚合与换算 | 单元+契约 |
 | test_e2e_m3.py | D1 | roadmap M3 验收路径脚本化预演（真机段走查留痕） | e2e |
 | test_e2e_m4.py | D3 | chk 链、断点续跑、组合流（真机段走查留痕） | e2e |
 | 既有回归 | 全程 | `test_error_codes.py`、`test_openapi_ssot.py`、`gen:types` 零 diff、`test_e2e_fake_g16.py` 不回归 | 闸门 |
@@ -1175,19 +1273,32 @@ D1/D3 的随查随修 fix 一缺陷一提交、另计）：
 | 30 | chore(release): 2.3.0 冻结五步 | CHANGELOG/progress/tag |
 
 说明：A2/A3/A5 定稿若无评审修订，第 4/19 项可并入相邻文档提交；D2/D4
-发布五步按 AGENTS.md §5.2 独立提交（上表 17/30）。
+发布五步按 AGENTS.md §5.2 独立提交（上表 17/30）。若决策点 12 裁决走
+分支 b（HQ per-job 重试上限需改 `crates/`），于 #21 前插入独立批次
+`feat(hq): 提交参数支持 per-job 重试上限`（闸门含 `cargo test` 与重建
+hq，修订说明三⑤）。
 
 **进度同步**：每完成一项上表提交即向 CHANGELOG.jsonl unreleased 行与
 progress.json unreleased 追加摘要（AGENTS.md §九 约定，不 deferred）；
 每个 A 批次关闭时回填 roadmap（§7 开放事项 1 状态、§8.8 备忘如涉及；
-开放事项 5 已随本批回填）；M3 开工时把 in_progress 置为 M3。
+开放事项 5 已随本批回填）；M3 开工时把 in_progress 置为 M3。回填登记
+补充两项（修订说明三⑩⑪）：A4 批次关闭时同步校正 roadmap M4 段「用户
+确认后在新执行目录物化」措辞为「确认后新建续跑任务入队、**派发时**经
+同一物化机制在新执行目录物化」（修订说明一②裁决的时序措辞）；B5
+关闭时在 roadmap §7 待确认事项 2 注记——失败/中断样例的解析降级面已由
+M3 构造 fixtures + D1 强停抽查覆盖（部分关闭），不同方法/任务类型的
+覆盖缺口顺延后续里程碑按需补。
 
 **闸门清单**（提交前逐项）：`uv run pytest`（全量）、
 `scripts/validate_progress.py`、`scripts/check_tokens.py`、
 `scripts/check_contrast.py`、`scripts/gen_changelog_md.py --check`、
 `npm run build`（vue-tsc 零错误，前端改动批次）、
-`scripts/audit_frontend_offline.sh`（前端批次）、`npm run gen:types` 零
-diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）。
+`scripts/audit_frontend_offline.sh`（前端批次与 D1/D3 收口——修订说明
+三⑭统一口径）、`npm run gen:types` 零
+diff（契约批次）、`target/release/hq` 在位（M4 派发批次；**凡声称「全量
+pytest 通过」时一律适用**——M3 波既有 e2e 同受其制约，静默跳过即通过数
+虚高，修订说明三⑰）、`cargo test` 全绿 + 重建 hq（仅当批次触及
+`crates/`，修订说明三⑤）。
 
 ## 7. 验收标准（DoD）
 
@@ -1208,7 +1319,8 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
 7. 空间占用统计可查、超阈值警告可见（阈值受控调低触发；**仅警告不自动
    清理**，手动清理后统计即时反映）。
 8. 全量测试与全部闸门脚本通过（含 `npm run build` + check_tokens/
-   check_contrast + 前端批次 offline 审计）；cclib 仅在 `.venv`；前端
+   check_contrast + offline 审计（前端批次与 D 阶段收口——修订说明三⑭））；
+   cclib 仅在 `.venv`；前端
    构建产物零外链。
 9. 工作项销号：§0.2 的 M3.1–M3.7 逐项打勾（对应任务验收物留痕）。
 10. 2.2.0 冻结五步完成、tag v2.2.0 本地落位。
@@ -1282,7 +1394,10 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
    明示回落原样重跑；ineligible（无资产/探针失败）原因明确。
 7. **组合流**：crest 真机小分子（甲醇）一键提交 → crest 执行 → top-2
    精修队列自动生成并提交 → `GET /workflows/{id}` 进度与能量表（相对
-   kJ/mol）可查、增量刷新；满员受控场景断言保留未提交提示。
+   kJ/mol）可查、增量刷新、页面刷新后经 `GET /workflows` 列表恢复进度
+   面板（修订说明三⑦）；精修自动提交满员受控场景断言保留未提交提示，
+   crest 任务入队席位满员受控场景断言 409 整体拒绝零副作用（§2.7，
+   修订说明三④）。
 8. **可执行缺失**：crest/xtb 受控不可用 → 提交 503 显式。
 9. **闸门与并排**：同 §7.3 第 7 条口径（含 hq 产物在位、M4 e2e 不回归）。
 
@@ -1306,10 +1421,13 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
 7. **resume 与哈希跳过**（A5 关闭）：resume **新建任务**、首次执行无哈希
    记录天然不触发跳过——显式动作即强制重跑（修订说明一②，无需额外豁免
    逻辑）。
-8. **workspace `.out` 分析 UI 入口**（A3 关闭）：建议置于历史详情分析区
-   头部；如评审认为入口过深，备选历史页顶部工具位。**入口形态连同路径
-   输入的辅助方式一并评审**（§2.4：工作区候选列表需增只读清单端点，入选
-   则随 A1 契约 diff 登记）。
+8. **workspace `.out` 分析 UI 入口与候选清单端点**（**端点有无随 A1 评审
+   关闭、入口形态随 A3**——修订说明三①拆分：候选清单端点直接决定 A1
+   端点清单（8 或 9），不能后置；入口位置属前端信息架构，A3 决不迟）：
+   入口建议置于历史详情分析区头部；如评审认为入口过深，备选历史页顶部
+   工具位。**A1 评审未决时默认不纳入**候选清单端点（路径输入先行），
+   后续如需新增走独立契约 diff 提交（roadmap §4），不在已落库 diff 上
+   打补丁。
 9. **符号引用文法形态**（A4 关闭）：仅支持 `@task:<id>`（队列内）与
    `@exec:<执行id>`（resume 专用）两形态；`@prev` 不纳入（提交顺序不构成
    承诺、重排破坏语义）。如评审坚持保留 @prev，定义为「提交时展开为队首
@@ -1325,7 +1443,14 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
     依赖的执行禁用 HQ 内部重试（crash_limit 单执行关闭，失联即 failed、
     显式重跑经派发器重新物化）+ journal 重跑者对账取消后以新执行 id
     重新物化派发」（§2.5 重入语义，修订说明二）；A4 实测核验 crash_limit
-    旋钮粒度与 `%OldChk` 形态适用性后定案。
+    旋钮粒度与 `%OldChk` 形态适用性后定案。**裁决输出三分支及落位**
+    （修订说明三⑤）：(a) HQ 提交参数已支持 per-job 重试上限 → 零 Rust
+    改动，B7 提交参数携带即可；(b) 不支持但改动限于提交结构体加字段 +
+    server 应用 + HTTP 层透传（不触调度核心）→ B7 内扩展（L 估算预留可
+    容纳），提交序列 #21 前插 `feat(hq)` 批次（闸门 cargo test + 重建
+    hq，总工量 +1~2 人天未计入 35）；(c) 需触调度核心 → 放弃提交侧
+    禁用，退守对账拦截（重入② journal 对账 + M1 对账路径识别重跑者
+    取消），风险 16 应对预案相应改写。
 
 ## 9. 风险评估与应对预案
 
@@ -1346,4 +1471,4 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
 | 13 | 契约 diff 与 2.2.0/2.3.0 发布交叠（版本号/SSOT） | ssot 闸门误报 | 沿用 v2.1.0 动态覆盖与豁免口径（§0.6）；契约批次跑 openapi ssot 测试；发布五步独立提交 |
 | 14 | crest/xtb 与 g16 环境变量共存冲突（XTB_PATH 传递、worker env 构建） | 组合流 crest 任务启动失败或引错 xtb | A5 实测核验 XTB_PATH 拼写与生效路径（§2.7）；crest 任务 env 与 GAUSS_* 分域构建；可执行探测缺失提交即拒（503） |
 | 15 | 输出/派生资产长期累积占满磁盘（cube 不进清理、`.out` 永久保留） | 磁盘压力、写盘失败 | M3.7 占用统计与阈值告警（仅提示，用户按占用明细手动清理，§2.9）；cube 体量与留存策略随 A3 决策点 3 复核 |
-| 16 | HQ 隐式重跑（worker 失联 crash_limit 自动重排 / journal 恢复重提交）绕过物化钩子，二次尝试以被 G16 重写的 dep chk 为起点（%Chk 续用形态） | 链式/resume 执行从污染状态静默重启，结果错误或连环失败 | 重入语义定稿（§2.5/§8 决策点 12，修订说明二）：含依赖执行禁用 HQ 内部重试（失联即 failed、显式重跑重新物化）；journal 重跑者对账取消+新执行 id 重派发；B7/B8 用例与 test_materialize/test_dispatch_deps 覆盖 |
+| 16 | HQ 隐式重跑（worker 失联 crash_limit 自动重排 / journal 恢复重提交）绕过物化钩子，二次尝试以被 G16 重写的 dep chk 为起点（%Chk 续用形态） | 链式/resume 执行从污染状态静默重启，结果错误或连环失败 | 重入语义定稿（§2.5/§8 决策点 12，修订说明二）：含依赖执行禁用 HQ 内部重试（失联即 failed、显式重跑重新物化）；journal 重跑者对账取消+新执行 id 重派发；B7/B8 用例与 test_materialize/test_dispatch_deps 覆盖；crash_limit 不支持 per-job 时按决策点 12 三分支落位（b 改 `crates/` 或 c 退守对账拦截——修订说明三⑤） |
