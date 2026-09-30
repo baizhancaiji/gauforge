@@ -1,5 +1,5 @@
 {
-  "updated": "2026-09-30T21:57+08:00",
+  "updated": "2026-09-30T22:24+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -34,6 +34,13 @@
       "type": "changed",
       "scope": "docs",
       "summary": "M3/M4 联合计划二轮审查修订（修订说明二，15 项裁决落实）：重入语义定稿（含物化依赖执行禁用 HQ 内部重试、journal 重跑者对账取消后以新执行 id 重新物化派发）、A1 口径校正（8 端点/SettingItem/mapping 清单）、开工闸门 unreleased 措辞校正、B4 依赖改 A3+B2 与 B9 补 A5、workspace-out 轨道 tab 仅清单、依赖链验收扩三段 opt→freq→sp、决策点 11/12 补录、续跑探针超时 120s、storage entries 截断 50 条与千级目录 P95<2s 基准、跨文档引用显式化",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "M3/M4 联合计划三轮审查修订（修订说明三，17 项）：决策点 8 拆分关闭时点（候选清单端点有无随 A1 评审定稿、入口形态随 A3）、注入矩阵 route 判定规则定稿（含 Opt 即优化行、Opt+Freq 并存归优化，ineligible 统一四态并补图）、关键路径更正（M4 波实算最长链 A4→A5→B10→B11→C7→D3→D4、总≈19 人天，原声明漏 B9 对 A5 依赖）、组合流提交席位满员语义定稿（409 PENDING_CAPACITY_FULL 整体拒绝零副作用）、决策点 12 补三分支 contingency（HQ per-job 重试上限 a/b/c 落位，b 插 feat(hq) 批次+cargo test 闸门）、M4 schema 迁移落位（resumed_from 列与 workflow 表走 migrations 版本化）、workflow 发现路径补全（POST 响应形状+新增 GET /workflows 列表端点）、resumed_by 派生只读字段定稿（原历史条目零 schema 变更）、workspace-out 解析超时 60s 定稿、A4/B5 批次 roadmap 回填登记（M4 段物化措辞校正与 §7.2 部分关闭注记）、A1 mapping 增行补归档详情分析区、v2.1.0 附件上传悬留注记、offline 审计/RESUME_NOT_ELIGIBLE HTTP 语义/hq 在位三处口径统一、crest 能量单位列入 A5 核验",
       "breaking": false,
       "migration": null
     }
