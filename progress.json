@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T02:18+08:00",
+  "updated": "2026-10-01T02:19+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -146,6 +146,13 @@
       "type": "added",
       "scope": "web",
       "summary": "B5 金标准回归与降级样例闸门落库：test_analysis_parse 扩终态 10 份矩阵（mosyms 有值/开壳层双自旋/虚频标红/零块极端降级），构造异常样例四份入库 fixtures（42KB 内机器无关）覆盖降级三分支（解析异常/success 假已得块保留/属性缺失不降级），全量 pytest 558 通过",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "roadmap §7 待确认事项 2 注记 M3 B5 部分关闭：失败/中断样例解析降级面由真机降级三态金标准与构造 fixtures 常驻闸门覆盖，不同方法/任务类型缺口顺延后续里程碑",
       "breaking": false,
       "migration": null
     }

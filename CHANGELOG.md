@@ -29,6 +29,7 @@
 - 【docs】M3 金标准补样两份（本机 g16 实测生成入库 ~/g16/tests/）：h2o_optfreq_popreg（opt+freq+Pop=Reg 闭壳层，关闭 mosyms/aonames 缺口，兼作 D1 真机 freq 走查预演）与 oh_doublet_popreg（开壳层双重态 sp，homos α/β 双值与双自旋组实证）；金标准集共 8 份，m3-plan §2.2 补样记录与 §0.4 口径同步
 - 【docs】M3 金标准剩余三缺口补齐（金标准集 10 份 .out + 16 份 .fchk）：线性水 freq 样本实证 -2045.3 cm⁻¹ 二重简并虚频（imaginary 路径关闭）；本机 formchk 产出现代闭壳层/开壳层小 fchk 各一（cubegen MO=1 与 Potential=SCF 冒烟通过，B4 测试资产）；c8b_qst2_error 实证 success=false 且零分析块的极端降级；澄清 Nosymm 抑制轨道对称性打印（mosyms 恒缺根因，symmetry 按 nullable 兼容）
 - 【docs】scf_trace.cycles 内层补 nullable 契约补丁：cclib scfvalues 判据列迭代早期未更新为 NaN（真机 CVL 链路实证），null 保列对齐语义，两侧契约生成物再生
+- 【docs】roadmap §7 待确认事项 2 注记 M3 B5 部分关闭：失败/中断样例解析降级面由真机降级三态金标准与构造 fixtures 常驻闸门覆盖，不同方法/任务类型缺口顺延后续里程碑
 
 ### 修复
 
