@@ -135,29 +135,40 @@ def protect_transient(run_dir: Path) -> dict:
             "location": _PROTECTED_DIR if moved else None}
 
 
+def reclaimable_files(run_d: Path, row: dict, retention_days: int,
+                      now: datetime) -> list[Path]:
+    """M1 清理边界判定（单一实现，m3-plan §2.6）：succeeded 且 finished_at
+    超保留期的 run/<id>/ 顶层 .chk/.rwf 文件清单。
+
+    cleanup_expired（本模块清理动作）与 storage.usage（M3.7 可清理量统计）
+    共用，保证 reclaimable_bytes 与清理逻辑口径同源；failed 的保全快照
+    （protected/）不在边界内（计 0），.out/.log/输入永不触碰。
+    """
+    if row.get("state") != "succeeded" or not run_d.is_dir():
+        return []
+    finished = row.get("finished_at")
+    if not finished or _iso(finished) > now - timedelta(days=retention_days):
+        return []
+    return [f for f in sorted(run_d.iterdir())
+            if f.is_file() and f.suffix.casefold() in TRANSIENT_EXTS]
+
+
 def cleanup_expired(entries: list[dict], run_root: Path,
                     retention_days: int, now: datetime) -> dict:
-    """手动清理：仅删「succeeded 且 finished_at 超保留期」的 run/<id>/
-    顶层 .chk/.rwf。protected/ 子目录与其余文件永不触碰。
+    """手动清理：仅删「succeeded 且超保留期」的 run/<id>/
+    顶层 .chk/.rwf（边界判定见 reclaimable_files）。protected/ 子目录与
+    其余文件永不触碰。
 
     返回 {"checked", "removed_chk", "removed_rwf"}；checked = 检查的
     正常结束执行数（run 目录存在者）。
     """
     stats = {"checked": 0, "removed_chk": 0, "removed_rwf": 0}
-    horizon = now - timedelta(days=retention_days)
     for row in entries:
-        if row.get("state") != "succeeded":
-            continue  # failed 的瞬态件由 protected/ 保全，不属清理范围
         run_d = run_root / str(row["id"])
-        if not run_d.is_dir():
-            continue
+        if row.get("state") != "succeeded" or not run_d.is_dir():
+            continue  # failed 的瞬态件由 protected/ 保全，不属清理范围
         stats["checked"] += 1
-        finished = row.get("finished_at")
-        if not finished or _iso(finished) > horizon:
-            continue  # 未超保留期
-        for f in sorted(run_d.iterdir()):
-            if not f.is_file() or f.suffix.casefold() not in TRANSIENT_EXTS:
-                continue
+        for f in reclaimable_files(run_d, row, retention_days, now):
             f.unlink()
             if f.suffix.casefold() == ".chk":
                 stats["removed_chk"] += 1

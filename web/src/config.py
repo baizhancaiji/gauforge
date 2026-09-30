@@ -47,6 +47,7 @@ RUNTIME_DEFAULTS: dict[str, object] = {
     "link0_default_mem_gb": 8,
     "g16_root": "~/g16",
     "update_check_interval": "weekly",
+    "disk_usage_warn_gb": 50,
 }
 
 # ---------- 设置目录（数据驱动渲染元数据） ----------
@@ -103,6 +104,11 @@ RUNTIME_SETTINGS: list[dict] = [
      "range": {"enum": ["daily", "weekly", "monthly", "never"]},
      "editable": True, "effect": "immediate", "env_var": None,
      "description": "自动检查更新周期（凌晨 1:00 锚定、错过窗口启动补查；只发现不安装）"},
+    {"key": "disk_usage_warn_gb", "value_type": "integer",
+     "range": {"min": 0, "max": 1024},
+     "editable": True, "effect": "immediate", "env_var": None,
+     "description": "空间占用告警阈值 GB（0=禁用告警；超阈仅琥珀警示、绝不自动清理，"
+                    "手动清理沿用历史页入口；M3 M3.7）"},
 ]
 
 # ---------- M3 结果分析（B1）：金标准样本目录（解析回归/惰性重建的取数基准） ----------
