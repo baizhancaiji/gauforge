@@ -69,9 +69,10 @@
    既有 `test_e2e_fake_g16.py` 同受其制约，静默跳过即通过数虚高（修订
    说明三⑰）；D1 走查需真机 g16 跑 freq 任务。
 3. 真机资产在位（已实测确认）：`~/g16/g16`、`~/g16/formchk`、
-   `~/g16/cubegen`；金标准样本
-   `~/g16/tests/` 4 份 `.out`（anisoles0/1、phenoxyls0/1，均含
-   `Frequencies --`）+ 14 份 `.fchk`。
+   `~/g16/cubegen`；金标准样本 `~/g16/tests/` 6 份 `.out`
+   （2026-10-01 更换为 CVL 实测现代输出，清单与覆盖见 §2.2 样本
+   更换记录；原 anisoles0/1、phenoxyls0/1 保留为 M1 进度解析计数
+   回归样本）+ 14 份 `.fchk`。
 4. A1 契约 diff 经用户评审通过（文档先行，roadmap §4）。
 5. roadmap §7 开放事项 5 处置已裁决（2026-09-30）：① 自动定时清理不引入、
    替代为 M3.7 占用统计与阈值告警；② 前端页面单测不引入——两项均随联合
@@ -117,7 +118,7 @@
 | 3Dmol.js **未入** `web/frontend/package.json`（roadmap M0 工作项 7「仅入依赖清单」未兑现） | C1 兑现：npm 镜像源安装并本地打包，禁 CDN；新增外链审计闸门脚本 |
 | 前端无图表库；六页视图与组件已成型（HistoryView.vue 为 M3 主入口） | A3 决策图表方案；C2/C3 增量改造历史详情 |
 | `HistoryEntry.result_ref` 契约占位恒 null | M3.6 契约 diff 一次扩展并起写（roadmap §2.6 规则 3） |
-| 金标准：4 份 `.out` 全部含 `Frequencies --`，**缺异常终止/失败样例** | A2 定样本扩充；B5 落构造样例入库 `web/tests/fixtures/` |
+| 金标准：2026-10-01 更换为 CVL 现代 6 份（opt+freq/纯 opt/纯 sp/异常终止/强停各态，**异常样例缺口已由真机样本补齐**）；原 4 份 2007 年样例 cclib 1.8.1 解析全挂（`KeyError: 'DV'`） | A2 定样本扩充；B5 落构造样例入库 `web/tests/fixtures/` |
 | `engine/finalize.py`：succeeded 自动 formchk → `run/<id>/input.fchk` | M3 cube 数据源现成（B4 直接消费） |
 | `~/g16/cubegen`、`~/g16/formchk` 在位 | B4 直接子进程调用；可执行探测缺失时显式降级（不静默） |
 | 契约现状 33 路径（40 操作）+ 15 类事件；错误码全集载体在 openapi.yaml 文件头（`test_error_codes.py` 静态闸门） | 新增错误码随 A1 diff 登记，闸门自动覆盖 |
@@ -136,11 +137,11 @@ M4 波（A4–A5、B6–B11、C5–C7、D3–D4）另立 [m4-plan.md](m4-plan.md
 | A1 | Result schema 与分析端点契约 diff 定稿 | openapi.yaml diff（Result 全集 + 7 分析端点 + 存储统计端点 + 设置项 `disk_usage_warn_gb` + 新错误码）+ mapping.md 增行 + sse.md「无新增事件」断言 | Result 字段一次定死（§2.1）；端点/错误码/设置项逐条列入映射无孤儿；`test_error_codes.py` 适配后通过；用户评审通过 | — | M | M3.1/M3.2/M3.5/M3.6/M3.7 |
 | A2 | 解析管道与样本覆盖设计定稿 | §2.2 定稿（属性白名单映射表、降级链、样本扩充清单） | 白名单逐属性标注单位与缺失语义；降级链覆盖「解析异常/部分属性缺失/success=false」三分支；异常样例构造方案可入库 | — | M | M3.2/M3.3 |
 | A3 | 可视化与依赖离线化设计定稿 | §2.4/§2.5 定稿（分析视图信息架构、图表方案选型、3Dmol 交互、cubegen 参数治理、离线化方案） | 视图嵌入历史详情不单列页面；cubegen kind/npts 治理表定稿；`.out` 入口形态（含辅助方式）关闭；离线化含审计闸门方案；图表选型关闭 | A1 | M | M3.1/M3.3/M3.4/M3.5 |
-| B1 | cclib 引入与结果解析服务 | `uv pip install cclib`（项目 `.venv`，清华镜像）+ requirements.txt 冻结 + `web/src/parse/results.py` | 安装命令单行落档且仅进 `.venv`（`uv run python -c "import cclib"` 通过、全局 pip list 无 cclib）；4 份金标准 `.out` 白名单属性提取单测全绿；异常输入降级不抛出 | A2 | L | M3.2/M3.3、用户补充要求① |
+| B1 | cclib 引入与结果解析服务 | `uv pip install cclib`（项目 `.venv`，清华镜像）+ requirements.txt 冻结 + `web/src/parse/results.py` | 安装命令单行落档且仅进 `.venv`（`uv run python -c "import cclib"` 通过、全局 pip list 无 cclib）；金标准集（6 份，§2.2 更换记录）白名单属性提取单测全绿；异常输入降级不抛出 | A2 | L | M3.2/M3.3、用户补充要求① |
 | B2 | Result 落库与 finalize 接线 | finalize 管线追加解析步；`result_ref` 写入（analysis.json + history 条目置位） | succeeded 执行完成后 `run/<id>/analysis.json` 存在、`GET /history` 该条 `result_ref` 非 null；解析失败时 result_ref=null 且日志留痕、执行不受影响 | B1 | M | M3.2/M3.6 |
 | B3 | 分析端点集 | `routers/history.py` 扩展（概览/收敛/频率/轨道）+ 工作区 `.out` 分析端点 | 契约测试逐端点过；succeeded 才可读（异常条目 409 `ANALYSIS_UNAVAILABLE`）；工作区外路径 400 `WORKSPACE_PATH_OUTSIDE`；不存在的分析块 404 语义明确 | B2 | L | M3.1/M3.5 |
 | B4 | cubegen 集成与 cube 端点 | POST/GET cube 两端点 + `services/cube.py`（子进程调用 `~/g16/cubegen`） | kind 白名单外 422；`npts` 越界 422；真机小 fchk 生成 cube 成功（MO 与 Potential 各一）；cubegen 缺失时 503 显式报错（不静默跳过） | A3, B2 | M | M3.4 |
-| B5 | 金标准回归与降级样例闸门 | `test_analysis_parse.py`/`test_analysis_api.py`/`test_cube_api.py` + 构造异常样例入库 fixtures | 4 份金标准逐属性断言；截断/失败构造样例走通降级三分支；全量 `uv run pytest` 通过 | B1–B4 | M | §4 质量底线 |
+| B5 | 金标准回归与降级样例闸门 | `test_analysis_parse.py`/`test_analysis_api.py`/`test_cube_api.py` + 构造异常样例入库 fixtures | 金标准集（6 份）逐属性断言；截断/失败构造样例走通降级三分支；全量 `uv run pytest` 通过 | B1–B4 | M | §4 质量底线 |
 | B12 | 空间占用统计与告警（M3 波补录） | `services/storage.py` + `GET /storage/usage` 端点 + 运行级设置 `disk_usage_warn_gb` | 各执行占用与总占用统计对照 `du` 一致（可清理量口径与既有清理规则同源）；超总占用阈值 `over=true`、仅警告不自动清理；阈值 0=禁用；手动清理后统计即时反映；entries 截断前 50 条、千级执行目录基准 P95 < 2s | A1（契约 diff 随批）、M1 清理边界 | M | M3.7 |
 | C1 | 前端依赖本地化 | `web/frontend/package.json` 增 `3dmol`（npm 镜像安装）+ 图表库（若 A3 选型引入）+ `scripts/audit_frontend_offline.sh` | `npm install --registry=https://registry.npmmirror.com` 单行落档；构建产物经审计脚本零外链（http/https 资源引用，含 3dmol 运行时动态加载路径）；`npm run build` 通过 | A3 | S | M3.4、用户补充要求② |
 | C2 | 分析视图（历史详情内嵌） | HistoryView 详情增分析区（tab：概览/能量收敛/频率与 IR/轨道与静电势）+ 工作区 `.out` 打开入口 | 分析区仅出现在历史详情内（无独立路由）；succeeded 条目展示、异常条目仅原文导出入口；`.out` 分析复用同一组件；workspace-out 模式轨道 tab 仅清单、cube 入口置灰注明无 fchk | A3, B3 | L | M3.1/M3.5 |
@@ -295,6 +296,28 @@ Result:
   - **fixtures 构造方案定稿**（B5 入库，仅入库 `web/tests/fixtures/`）：
     ① freq 输出 Frequencies 表中段截断；② opt 输出去除 Normal termination
     尾段；③ route 去 Pop 后无 MO 表输出。
+- **样本更换记录（2026-10-01，用户裁决）**：金标准集更换为 CVL 实测
+  现代输出（cclib 1.8.1 全量探针实证，67 份中 64 份 Gaussian 输出全部
+  解析成功，最大 12.5MB 耗时 2.0s——60s 超时预算充裕）。新集 6 份
+  （`~/g16/tests/`，副本逐份复验通过；**无需垫片即可解析**，垫片按 A2
+  定稿保留，转为旧格式用户文件容错，其回落路径由 B5 构造样例按需覆盖）：
+
+  | 样本 | 任务形态 | 覆盖点 |
+  |---|---|---|
+  | CVL_open.out | opt+freq 中性闭壳层 | 全属性旗舰：SCF 迹线 28 步、几何收敛、能量序列、174 频率+IR+对称性+约化质量、热化学、轨道 |
+  | anion_BC1_393.out | freq 阴离子 | 最小快速回归（0.1MB/39 频率+热化学；输出内含已完成 Berny 优化段，optdone=True 属实非误报） |
+  | CVLH_open_opt_svp_hd.out | 纯 opt（SMD） | 无频率/热化学块→422「块缺失」分支 |
+  | c9c1_sp_smd_hd.out | 纯 sp | optdone=None→opt_converged=null 路径 |
+  | c8b_ts.out | TS opt 异常终止 | Error termination、success=false→降级分支②真机样例 |
+  | crest9_BC1c_c4_res6.out | opt+freq 强停/截断 | 无 Normal termination→降级分支①真机样例 |
+
+  旧 4 份（anisoles0/1、phenoxyls0/1）：不再作 cclib 金标准，**保留为
+  M1 进度解析计数回归样本**（`test_progress_parse.py` 仍引用，与 cclib
+  无关）。全文其余「4 份金标准」表述自本记录起按上表 6 份理解；
+  A2 定稿记录的实测结论（numpy 标量转原生、mosyms 缺失→symmetry null、
+  method 摘要口径、opt_converged 判定）对新集同样成立（新集实证：
+  mosyms 全缺→null、homos 单值闭壳层）。B1 金标准单测与 B5 回归闸门
+  改用新集。
 
 ### 2.3 分析端点数据形状与边界（A1 评审输入，B3 实施依据）
 
@@ -545,7 +568,7 @@ flowchart LR
   ④ finalize 接线点与超时参数定稿。
 - 技术要求：自写解析仅限 cclib 属性整备与 shape 转换，禁领域正则
   （roadmap §4）；样本不写 `~/g16/tests/`（用户目录只读）。
-- 质量标准：4 份金标准在 cclib 当前版本下逐属性试提取通过（写一次性探针
+- 质量标准：金标准集 6 份在 cclib 当前版本下逐属性试提取通过（写一次性探针
   脚本验证，不入库为测试）。
 - 交付物：本节定稿内容回填（如评审有修订）+ fixtures 样例草案。
 
@@ -567,7 +590,7 @@ flowchart LR
   ④ 金标准单测。
 - 技术要求：**仅 `.venv`**（质量标准含全局无包核查）；解析输入只读
   （cclib 不改写原文件）；所有路径 `pathlib`、显式 `encoding="utf-8"`。
-- 质量标准：4 份金标准属性提取断言全绿；构造异常输入降级不抛出；cclib
+- 质量标准：金标准集 6 份属性提取断言全绿；构造异常输入降级不抛出；cclib
   版本号进入 Result.parser.version（可追溯）。
 - 交付物：parse/results.py + 测试 + requirements.txt diff。
 
@@ -610,7 +633,7 @@ flowchart LR
 
 ### 4.8 B5 · 金标准回归与降级样例闸门
 
-- 步骤：① test_analysis_parse（4 金标准逐属性 + fixtures 异常样例降级三
+- 步骤：① test_analysis_parse（6 金标准逐属性 + fixtures 异常样例降级三
   分支）；② test_analysis_api（端点/边界/越界）；③ test_cube_api（参数/
   幂等/真机）；④ 全量回归。
 - 技术要求：真机依赖（cubegen、金标准）缺失时 skip 必须带显式 reason
@@ -705,7 +728,7 @@ flowchart LR
 
 | 测试文件（拟） | 覆盖 | 关键用例 | 类型 |
 |---|---|---|---|
-| test_analysis_parse.py | B1/B2 | 4 金标准逐属性；异常样例降级三分支；超时降级；Result 全集字段 | 单元+回归 |
+| test_analysis_parse.py | B1/B2 | 6 金标准逐属性；异常样例降级三分支；超时降级；Result 全集字段 | 单元+回归 |
 | test_analysis_api.py | B3 | 四端点契约形状；非 succeeded 409；analysis.json 缺失惰性重建；workspace-out 越界（../、绝对路径、symlink）400/404；workspace-out 解析超时 422（慢解析桩注入——修订说明三⑨） | 契约+边界 |
 | test_cube_api.py | B4 | kind 白名单 422；npts 越界 422；幂等命中；真机 MO/Potential 生成；cubegen 缺失 503（探测注入） | 契约+集成 |
 | test_finalize_result.py | B2 | fake g16 成功→analysis.json+result_ref；解析注入失败→降级不阻断 | 集成 |
