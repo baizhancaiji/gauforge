@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T01:33+08:00",
+  "updated": "2026-10-01T01:41+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -113,13 +113,20 @@
       "summary": "parse 原生化补漏：_native 精确 type 判定使 np.float64 等 float/int/bool 内建子类统一落成纯原生类型（新金标准 h2o_linear 虚频值实测）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B2 Result 落库与 finalize 接线落库：finalize.write_analysis 原子写 analysis.json（degraded 亦落盘、失败记日志不阻断），dispatcher formchk 步后接线并随终态冻结同事务写 result_ref（reconcile 单点全覆盖、SSE 时序不受扰），executions_repo.finalize 增 result_ref，test_finalize_result 10 例集成断言，全量 pytest 508 通过",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（B2 Result 落库与 finalize 接线：formchk 步后追加解析步、analysis.json 原子写、result_ref 置位含 degraded、落盘失败不阻断终态）",
+  "in_progress": "M3 结果解析与可视化（B3 分析端点集：概览/收敛/频率/轨道四端点+ workspace-out 只读分析 + analysis.json 惰性重建 + 契约测试；B4 cubegen 集成可在 B3 后并行）",
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
-    "B2 落库后按 m3-plan §6 推进 B3/B4（可并行）→B5→B12"
+    "B3/B4 落库后推进 B5（金标准回归闸门扩 10 份矩阵+fixtures）→B12"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
