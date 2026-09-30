@@ -44,6 +44,8 @@ _BLOCK_ATTRS = {
 }
 
 PARSE_TIMEOUT_S = 60
+# 超时降级 reason 前缀（analysis 域 422 details 判定的单一来源）
+TIMEOUT_PREFIX = "解析超时"
 
 _shimmed = False
 
@@ -145,7 +147,7 @@ def parse_output(path: Path, *, timeout_s: int = PARSE_TIMEOUT_S) -> dict:
             future = pool.submit(_parse_sync, path)
             data = future.result(timeout=timeout_s)
         except concurrent.futures.TimeoutError:
-            return _degraded(None, "解析超时（>%ss）" % timeout_s)
+            return _degraded(None, f"{TIMEOUT_PREFIX}（>{timeout_s}s）")
         except Exception as exc:  # noqa: BLE001  降级链①：解析异常落地不抛出
             return _degraded(None, f"{type(exc).__name__}: {exc}")
         finally:
