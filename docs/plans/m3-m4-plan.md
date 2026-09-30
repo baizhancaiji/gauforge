@@ -29,12 +29,34 @@ task id + 新输入副本），以 `@exec:<原执行id>` 符号引用与历史�
 （§6/§1）、开放事项 5② 延续登记（§0.3）、孤儿错误码场景落位（§2.5/§2.7）、
 top_n 下限（§2.7）、风险表补强（§9）等。
 
+**修订说明二**（2026-09-30 第二轮计划审查裁决落实，同日）：① **重入语义
+定稿**（新设计项）——含 `@task:`/`@exec:` 物化依赖的执行**禁用 HQ 内部
+重试**、journal 重跑者对账取消后以新执行 id 重新物化派发（§2.5 新增、
+§8 决策点 12、§9 风险 16，B7/B8 与测试矩阵补用例）；② A1 口径校正——
+§4.1 端点数 6→8（7 分析端点 + storage）、SettingItem 登记与 mapping 增行
+清单补全（与 WBS A1 行对齐）；③ 开工闸门措辞校正——「unreleased 为空」
+改为「仅含 scope=docs 的文档条目」（§0.4，原措辞被本计划自身落盘提交
+证伪）；④ B4 依赖修正 A3+B2（orbital 上界 nmo 取自 B2 的 analysis.json、
+对 B1 无直接依赖），并行声明改「B3 与 B4 在 B2 后可并行」，WBS/依赖
+总览/§3.1 图三方同步；⑤ B9 依赖列补 A5（表与图对齐）；⑥ workspace-out
+模式「轨道与静电势」tab 定为仅清单展示、cube 入口置灰注明无 fchk
+（§2.4/C2/§7.1-4/§7.3-4）；⑦ 依赖链验收扩为三段 opt→freq→sp（对齐
+roadmap M4.1 原文，§7.2-2/§7.4-1）；⑧ 跨文档引用显式化三处（§2.4/
+§2.5/§4.15 改「roadmap §x」）；⑨ §8 补录决策点 11（上游重跑传导，
+自 §4.14 交互矩阵专项裁决升格）；⑩ 续跑探针超时显式 120s（§2.6，沿用
+finalize 先例）；⑪ storage 响应预算定稿——entries 默认截断前 50 条
+（`truncated`/`total_entries` 标注）+ 千级执行目录基准 P95 < 2s
+（§2.9/B12/§5）；⑫ 提交表 #1/#2 标注已落库（§6）。roadmap 同批回填：
+§8.8 事件数补注（12→15 以 sse.md 为准）、§1 原则 2 crest 最小提取豁免
+括注、M3.5 工作区分析后缀扩为 `.out`/`.log`（本计划 §0.1/§0.2/§2.3
+同步）。
+
 ## 0. 目标、范围与依据
 
 ### 0.1 目标（= roadmap §3 M3/M4 原文定义）
 
 **M3 · 结果分析**：以执行历史为主入口，分析视图内嵌在历史详情中，仅作简单
-预览（不单列页面）；另支持指定工作区内 `.out` 文件只读分析。**仅正常结束**
+预览（不单列页面）；另支持指定工作区内 `.out`/`.log` 文件只读分析。**仅正常结束**
 的执行才进入解析管道。能量收敛曲线、频率表与红外谱图（cclib 数据 + 前端
 绘图）、fchk → cubegen → 轨道/静电势可视化。
 
@@ -55,7 +77,7 @@ top_n 下限（§2.7）、风险表补强（§9）等。
 | M3.2 | 仅正常结束（succeeded）的执行进入解析管道；异常结束只可导出原文 |
 | M3.3 | 能量收敛曲线、频率表与红外谱图（cclib 数据 + 前端绘图） |
 | M3.4 | fchk → cubegen → 轨道/静电势可视化（3Dmol.js） |
-| M3.5 | 指定工作区内 `.out` 文件只读分析 |
+| M3.5 | 指定工作区内 `.out`/`.log` 文件只读分析 |
 | M3.6 | Result 字段全集随 M3 契约 diff 一次性扩展（roadmap §2.6 规则 3）；`result_ref`（M0 占位恒 null）起写 |
 | M3.7 | 空间占用统计与告警（2026-09-30 随审查裁决回填；替代 M1 托付的自动定时清理——统计各执行与总空间占用、超总占用阈值仅警告**不自动清理**、手动清理沿用 M1 历史页入口） | 已同步回填 roadmap §3 M3 段 |
 | M4.1 | 任务链（opt→freq→sp 精修），队列内任务间依赖与 chk 传递定稿（关闭 roadmap §7 开放事项 1） |
@@ -82,8 +104,9 @@ top_n 下限（§2.7）、风险表补强（§9）等。
 ### 0.4 前置条件（开工闸门）
 
 1. M0–M2 与 v2.1.0 已收口（progress.json：`latest_released_version=2.1.0`、
-   `unreleased` 为空）；M3 开工前把「M3 结果解析与可视化」登记入
-   `in_progress`。
+   `unreleased` 仅含 scope=docs 的文档条目、无代码与契约类条目——修订
+   说明二校正，原「为空」措辞被本计划自身的落盘提交证伪）；M3 开工前把
+   「M3 结果解析与可视化」登记入 `in_progress`。
 2. `target/release/hq` 在位（M4 触及派发链路，B8/e2e 依赖；缺失会静默跳过
    关键 e2e，违反 AGENTS.md §6.1 第 4 条）。M3 不触及派发窗口/资源逻辑（B2 仅于
    `engine/finalize` 终态管线追加解析步，随既有 e2e 回归覆盖），无此硬
@@ -169,11 +192,11 @@ top_n 下限（§2.7）、风险表补强（§9）等。
 | B1 | cclib 引入与结果解析服务 | `uv pip install cclib`（项目 `.venv`，清华镜像）+ requirements.txt 冻结 + `web/src/parse/results.py` | 安装命令单行落档且仅进 `.venv`（`uv run python -c "import cclib"` 通过、全局 pip list 无 cclib）；4 份金标准 `.out` 白名单属性提取单测全绿；异常输入降级不抛出 | A2 | L | M3.2/M3.3、用户补充要求① |
 | B2 | Result 落库与 finalize 接线 | finalize 管线追加解析步；`result_ref` 写入（analysis.json + history 条目置位） | succeeded 执行完成后 `run/<id>/analysis.json` 存在、`GET /history` 该条 `result_ref` 非 null；解析失败时 result_ref=null 且日志留痕、执行不受影响 | B1 | M | M3.2/M3.6 |
 | B3 | 分析端点集 | `routers/history.py` 扩展（概览/收敛/频率/轨道）+ 工作区 `.out` 分析端点 | 契约测试逐端点过；succeeded 才可读（异常条目 409 `ANALYSIS_UNAVAILABLE`）；工作区外路径 400 `WORKSPACE_PATH_OUTSIDE`；不存在的分析块 404 语义明确 | B2 | L | M3.1/M3.5 |
-| B4 | cubegen 集成与 cube 端点 | POST/GET cube 两端点 + `services/cube.py`（子进程调用 `~/g16/cubegen`） | kind 白名单外 422；`npts` 越界 422；真机小 fchk 生成 cube 成功（MO 与 Potential 各一）；cubegen 缺失时 503 显式报错（不静默跳过） | A3, B1 | M | M3.4 |
+| B4 | cubegen 集成与 cube 端点 | POST/GET cube 两端点 + `services/cube.py`（子进程调用 `~/g16/cubegen`） | kind 白名单外 422；`npts` 越界 422；真机小 fchk 生成 cube 成功（MO 与 Potential 各一）；cubegen 缺失时 503 显式报错（不静默跳过） | A3, B2 | M | M3.4 |
 | B5 | 金标准回归与降级样例闸门 | `test_analysis_parse.py`/`test_analysis_api.py`/`test_cube_api.py` + 构造异常样例入库 fixtures | 4 份金标准逐属性断言；截断/失败构造样例走通降级三分支；全量 `uv run pytest` 通过 | B1–B4 | M | §4 质量底线 |
-| B12 | 空间占用统计与告警（M3 波补录） | `services/storage.py` + `GET /storage/usage` 端点 + 运行级设置 `disk_usage_warn_gb` | 各执行占用与总占用统计对照 `du` 一致（可清理量口径与既有清理规则同源）；超总占用阈值 `over=true`、仅警告不自动清理；阈值 0=禁用；手动清理后统计即时反映 | A1（契约 diff 随批）、M1 清理边界 | M | M3.7 |
+| B12 | 空间占用统计与告警（M3 波补录） | `services/storage.py` + `GET /storage/usage` 端点 + 运行级设置 `disk_usage_warn_gb` | 各执行占用与总占用统计对照 `du` 一致（可清理量口径与既有清理规则同源）；超总占用阈值 `over=true`、仅警告不自动清理；阈值 0=禁用；手动清理后统计即时反映；entries 截断前 50 条、千级执行目录基准 P95 < 2s | A1（契约 diff 随批）、M1 清理边界 | M | M3.7 |
 | C1 | 前端依赖本地化 | `web/frontend/package.json` 增 `3dmol`（npm 镜像安装）+ 图表库（若 A3 选型引入）+ `scripts/audit_frontend_offline.sh` | `npm install --registry=https://registry.npmmirror.com` 单行落档；构建产物经审计脚本零外链（http/https 资源引用，含 3dmol 运行时动态加载路径）；`npm run build` 通过 | A3 | S | M3.4、用户补充要求② |
-| C2 | 分析视图（历史详情内嵌） | HistoryView 详情增分析区（tab：概览/能量收敛/频率与 IR/轨道与静电势）+ 工作区 `.out` 打开入口 | 分析区仅出现在历史详情内（无独立路由）；succeeded 条目展示、异常条目仅原文导出入口；`.out` 分析复用同一组件 | A3, B3 | L | M3.1/M3.5 |
+| C2 | 分析视图（历史详情内嵌） | HistoryView 详情增分析区（tab：概览/能量收敛/频率与 IR/轨道与静电势）+ 工作区 `.out` 打开入口 | 分析区仅出现在历史详情内（无独立路由）；succeeded 条目展示、异常条目仅原文导出入口；`.out` 分析复用同一组件；workspace-out 模式轨道 tab 仅清单、cube 入口置灰注明无 fchk | A3, B3 | L | M3.1/M3.5 |
 | C3 | 图表组件 | 收敛曲线（折线）/频率表（表格）/IR 谱图（棒图）组件 | 金标准数据渲染冒烟；数据为空/缺失块显示占位说明；符合设计令牌与对比度闸门（check_tokens/check_contrast） | C1, B3 | M | M3.3 |
 | C4 | 3Dmol 轨道/静电势渲染 | 轨道面板（清单选择 + 等值面渲染 + isoval 档位） | 选 MO=n → POST cube → 渲染等值面（正负相双色）+ 分子结构；静电势映射同链路；cube 失败显式提示 | C1, B4 | M | M3.4 |
 | C8 | 占用展示与阈值提示（M3 波补录） | 历史页清理区占用面板（总计 + 前 N 大占用明细 + 超阈琥珀警示） | 展示与端点一致；超阈警示显性可辨（琥珀=需要行动）；设置页阈值可配 | B12 | S | M3.7 |
@@ -184,7 +207,7 @@ top_n 下限（§2.7）、风险表补强（§9）等。
 | B6 | 依赖模型与 DAG 校验（后端） | 符号引用解析器 + 提交/编辑时静态校验 + 新错误码落位 | 成环/不可达/跨队列引用/越成员边界引用逐一 422 且错误码正确；`test_error_codes.py` 通过；合法链提交通过 | A4 | M | M4.3 |
 | B7 | chk 物化器（含 formchk 探针） | `engine/materialize.py`：派发前物化 %Chk/%OldChk 符号行（复制上游 chk 进本执行目录并重写）+ formchk 探针 | 物化后输入文件内无符号引用残留；上游原件零改动（哈希前后一致）；探针对「正常 chk/损坏 chk/缺 fchk 段」三分支判定正确 | A4 | L | M4.3/M4.4 |
 | B8 | 派发窗口依赖联动 | 窗口守卫：依赖未满足成员不取入窗口；依赖失败 → 下游 skipped | FakeGateway 单测：依赖满足前窗口停等不越位（保序语义与资源停等叠加）；上游 failed → 下游 skipped（归因 predecessor_failed）；哈希跳过视为依赖满足且 chk 溯源其最近成功执行 | B6, B7 | M | M4.3 |
-| B9 | 「从断点续跑」动作 | POST /history/{id}/resume/preview + POST /history/{id}/resume | 预览返回探针结果 + 注入改动 + 输入 diff；确认后在新执行目录物化并走既有派发；opt 注入 Opt=Restart、单点注入 %OldChk+Guess=Read、freq 回落原样重跑；无保全 chk 或探针失败时 ineligible 且原因明确 | B7 | L | M4.4 |
+| B9 | 「从断点续跑」动作 | POST /history/{id}/resume/preview + POST /history/{id}/resume | 预览返回探针结果 + 注入改动 + 输入 diff；确认后在新执行目录物化并走既有派发；opt 注入 Opt=Restart、单点注入 %OldChk+Guess=Read、freq 回落原样重跑；无保全 chk 或探针失败时 ineligible 且原因明确 | A5, B7 | L | M4.4 |
 | B10 | CREST 任务类型与组合流生成 | task_kind 扩展（g16\|crest）+ crest 派发 + ensemble 提取 + top-N 精修队列程序化生成与自动入队 | crest 任务经 HQ 真机跑通（小分子）；ensemble 坐标/能量提取对 crest 3.0.2 输出正确；生成队列成员数=top N、route 来自模板；crest 可执行缺失时提交即拒（显式错误码） | A5 | L | M4.2 |
 | B11 | 能量表汇总端点 | GET /queues/{id}/energy-summary | g16 成员能量取自 B1 解析（末次 SCF，附 hartree/eV 双单位）；crest 成员给相对能量；混合队列/部分完成态语义明确 | B10 | M | M4.5 |
 | C5 | 队列编辑依赖 UI | 成员行「接续前置 chk」勾选辅助生成符号行 + DAG 错误提示 | 勾选生成的 Link0 行与契约文法一致；DAG 校验错误逐成员内联提示；重排不改 @task:id 引用 | A4, B6 | M | M4.3 |
@@ -195,11 +218,12 @@ top_n 下限（§2.7）、风险表补强（§9）等。
 
 **依赖关系总览**：M3 波 `A1→(A3, B1 数据形状边)`；`A2→B1`（B1 硬依赖 A2；
 A1 评审为 §0.4 开工闸门，虚线语义=数据形状基线，不另设等待）；`A1→A3→(B4, C1)`；
-`B1→(B2, B4)`；`B2→B3`；`B3→(B5, C2, C3)`；`C1→(C3, C4)`；`B4→C4`；
+`B1→B2`；`B2→(B3, B4)`（B4 的 orbital 上界 nmo 取自 B2 的 analysis.json、
+对 B1 无直接依赖——修订说明二）；`B3→(B5, C2, C3)`；`C1→(C3, C4)`；`B4→C4`；
 `A1→B12`；`B12→C8`；`B1–B5/B12/C1–C4/C8→D1→D2`。M4 波
 `D2→A4→(A5, B6, B7)`；`A4→C5`；`A5→(B9, B10)`；`B6→B8`；
 `B7→(B8, B9)`；`B10→(B11, C7)`；`B11→C7`；`B9→C6`；
-`B6–B11/C5–C7→D3→D4`。A1 与 A2 可并行；B1 与 B4 在 A3 定稿后可并行；
+`B6–B11/C5–C7→D3→D4`。A1 与 A2 可并行；B3 与 B4 在 B2（及 A3）就绪后可并行（修订说明二）；
 C2 与 C3/C4 在 B3/B4 就绪后可并行；B12 在 A1 契约 diff 评审后即可开工
 （不阻塞 M3 解析链）。M4 波整体不早于 D2 启动（A4 的契约
 diff 以 M3 落库后的契约基线为前提，避免两次 diff 叠加冲突）。
@@ -318,8 +342,10 @@ Result:
   geotargets）、`energy_series`（scfenergies 逐几何步）。长输出预算：单端点
   响应 ≤ 2MB，超出按步均匀抽稀并附 `downsampled: true`（金标准样本不触发）。
 - workspace-out 端点的路径守卫：`(workspace_root / path).resolve()` 后必须是
-  `workspace_root.resolve()` 的子孙且后缀 ∈ {.out, .log}；越界/缺失/不可解析
-  分别 400/404/422。只读，绝不写工作区外（roadmap §2.4：工作区外一律只读）。
+  `workspace_root.resolve()` 的子孙且后缀 ∈ {.out, .log}（`.log` 为 g16
+  输出后缀两态的扩展，roadmap M3.5 已同批回填——修订说明二）；
+  越界/缺失/不可解析分别 400/404/422。只读，绝不写工作区外
+  （roadmap §2.4：工作区外一律只读）。
 - cube 幂等与留存：产物落 `run/<执行id>/cubes/<cube_id>.cube`
   （cube_id=参数摘要哈希）；同参数重复 POST 直接返回既有 cube_id。cube 为
   派生物、可再生，不参与 chk/rwf 保留期清理，也不进历史条目（留存与执行
@@ -331,7 +357,9 @@ Result:
   能量收敛 / 频率与 IR / 轨道与静电势；不新增路由页面（roadmap M3.1 硬约束）。
   tab 可见性由 `Result.blocks` 驱动（false 的 tab 置灰并注明缺失原因）。
   `.out` 打开入口置于分析区头部（工作区内路径输入 + 只读分析），复用同一
-  组图表/表格组件；路径输入的辅助形态（工作区 `.out/.log` 候选列表——
+  组图表/表格组件，workspace-out 模式下「轨道与静电势」tab 仅展示轨道能量
+  清单、cube/等值面入口置灰并注明「工作区文件无 fchk」（cube 端点以执行
+  id 键控——修订说明二）；路径输入的辅助形态（工作区 `.out/.log` 候选列表——
   浏览器不可直接读文件系统，入选需增一个只读候选清单端点）列为决策点 8
   的评审项，见 §8。
 - **图表方案（A3 决策，建议值：ECharts 按需引入）**：收敛曲线（折线，双
@@ -362,7 +390,7 @@ Result:
 
   调用：`<g16_root>/cubegen <nprocs> <kind> <fchk> <cube> <npts> h`，子进程
   超时 120s；fchk 取 `run/<id>/input.fchk`（M1 formchk 产物），缺失时
-  502（details 注明 formchk 产物缺失）。环境沿用 §2.5 g16 自洽构建口径
+  502（details 注明 formchk 产物缺失）。环境沿用 roadmap §2.5 g16 自洽构建口径
   （GAUSS_MEMDEF 缺省不设）。
 
 ### 2.5 任务链依赖与 chk 传递（A4 定稿基线，关闭 roadmap §7 开放事项 1）
@@ -397,12 +425,23 @@ Result:
   的提交。运行时物化失败（如期间被并发清理）→ 该成员 failed，归因沿用
   `program_error`（归因枚举为 M0 定稿不扩），details 注明
   `chk_materialization`（§8 决策点 6）。
+- **重入语义（HQ 隐式重跑 × 物化副作用，§8 决策点 12）**：`%Chk=@task:X`
+  （续用形态）的物化产物 `dep-<taskid>.chk` 是本任务的 %Chk 目标、会被
+  G16 运行中重写；而 HQ 的隐式重跑（worker 失联按 crash_limit 自动重排、
+  journal 恢复重提交，roadmap §8.6）**不经派发器物化钩子**——二次尝试
+  将以被污染的 chk 为起点。定稿：① 凡输入含物化依赖（`@task:`/`@exec:`
+  任一形态）的执行，提交 HQ 时**禁用内部重试**（worker 失联即终态
+  failed、按既有归因落历史；重跑由用户显式发起、经派发器重新物化）；
+  ② g16web 对账识别到 journal 恢复重跑者中含物化依赖的执行时，取消该
+  HQ job、以新执行 id 重新物化派发（复用 M1 对账路径与重跑者识别）。
+  crash_limit 旋钮粒度（per-job 可设否；无则按 ADR 0001 于提交路径加
+  覆盖）与 `%OldChk` 只读形态是否一并适用，为 A4 实测核验与评审项。
 - **与并行窗口联动**：依赖未满足（任一前驱未到 succeeded 终态）的成员**不
   取入窗口**——窗口守卫在资源检查之前（roadmap §7.1「依赖未满足者不得进入
   窗口」）；前驱 failed → 下游即时记 skipped（归因 `predecessor_failed`，
   既有语义复用）。窗口停等属显式接受语义，与资源停等叠加时先判依赖。
 - **与其他边界交互**：成员数 2–10 仅创建时校验、只减不增、至少保留 1 个
-  （§2.1 不变）；待执行席位语义不变（链队列仍占 1 席）；历史「重新排队」
+  （roadmap §2.1 不变）；待执行席位语义不变（链队列仍占 1 席）；历史「重新排队」
   为单任务席位重跑、不建立下游依赖语义，但原输入若含 `@task:<id>` 引用则
   须按原任务 id 重新解析——单任务席位**禁止** `@task:<id>` 文法（限定
   队列内成员间；非队列载体提交时校验拒绝），原输入含引用者经「重新排队」
@@ -429,8 +468,9 @@ Result:
 - **探针**：优先取 `chk_snapshot.location=protected` 的保全 chk；无保全但
   该任务存在成功执行记录者取最近成功执行的 `input.chk`；两者皆无 ⇒
   ineligible。探针 = 对该 chk 跑 `<g16_root>/formchk`（临时目录），formchk
-  成功且 fchk 可读 ⇒ 有效。探针失败/无 chk ⇒ `ineligible`（码
-  `RESUME_NOT_ELIGIBLE`，原因：无续跑资产/chk 损坏）。
+  成功且 fchk 可读 ⇒ 有效；超时沿用 finalize 同款 120s，超时按探针失败
+  处理（修订说明二）。探针失败/无 chk ⇒ `ineligible`（码
+  `RESUME_NOT_ELIGIBLE`，原因：无续跑资产/chk 损坏/探针超时）。
 - **注入矩阵**（与 roadmap M4.4 逐字对齐；chk 来源以 `@exec:<原执行id>`
   符号引用表达，物化随派发钩子执行——文法与校验见 §2.5）：
 
@@ -534,9 +574,9 @@ Result:
   - 统计只读（只 stat/遍历，不触碰、不移动任何文件）；清理动作后统计
     即时反映。
 - **端点**：`GET /storage/usage` →
-  `{total_bytes, threshold_bytes, over, entries[]}`（阈值判定见下；A1
-  契约 diff 定稿响应 schema 与响应预算——entries 全量降序，如需截断上限
-  随 A1 评审定）。
+  `{total_bytes, threshold_bytes, over, entries[], total_entries, truncated}`
+  （阈值判定见下；entries 按总占用降序**默认截断前 50 条**、`truncated`/
+  `total_entries` 标注截断与总数——修订说明二定稿，随 A1 契约登记）。
 - **阈值与告警**：运行级设置 `disk_usage_warn_gb`（整数 GB；0=禁用告警；
 只读告警不涉执行语义、建议即时生效；默认值建议 50，评审定；**随 A1
 契约 diff 的 SettingItem 目录登记**）。判定：`threshold_bytes > 0 &&
@@ -603,7 +643,7 @@ flowchart TD
     A1 -.->|数据形状| B1
     A2 --> B1
     B1 --> B2
-    B1 --> B4
+    B2 --> B4
     A3 --> B4
     A3 --> C1
     A3 --> C2
@@ -765,9 +805,13 @@ flowchart LR
 
 ### 4.1 A1 · Result 契约 diff
 
-- 步骤：① 依 §2.1 起草 openapi.yaml diff（Result schema、6 端点、5 错误码、
-  HistoryEntry.result_ref 描述改写）；② mapping.md 增「05 执行历史」分析区
-  行；③ sse.md 补「M3 无新增事件」决策说明；④ gen:types 再生；⑤ 评审。
+- 步骤：① 依 §2.1 起草 openapi.yaml diff（Result schema、**8 端点**＝
+  7 分析端点 + `GET /storage/usage`、5 错误码、设置项
+  `disk_usage_warn_gb` 随 SettingItem 目录登记、HistoryEntry.result_ref
+  描述改写——修订说明二与 WBS A1 行对齐）；② mapping.md 增行——
+  「05 执行历史」分析区四 tab、`.out` 打开入口、轨道面板、历史页清理区
+  占用面板（M3.7）逐行登记；③ sse.md 补「M3 无新增事件」决策说明；
+  ④ gen:types 再生；⑤ 评审。
 - 技术要求：字段一次定死不预留「以后再加」（roadmap §2.6 规则 1）；错误码
   登记文件头全集；`openapi-core` 契约测试与 `test_error_codes.py` 适配。
 - 质量标准：契约走查——Result 每字段有端点承载、每端点被 mapping 引用；
@@ -933,7 +977,7 @@ flowchart LR
   记录/查询模型定稿（§2.7，含 `GET /workflows/{id}` 响应形状与能量表
   聚合主体）；③ crest 提取器锚点清单 + `XTB_PATH` 环境变量拼写与生效
   方式（对 crest 3.0.2 实测输出核验）；④ 能量表数据形状定稿；⑤ 程序化
-  输入生成的模板与坐标替换规则定稿（沿用 §2.7 空行规约——模板重组经
+  输入生成的模板与坐标替换规则定稿（沿用 roadmap §2.7 空行规约——模板重组经
   既有 verify_and_normalize）。
 - 质量标准：crest 真机输出实测锚点与 XTB_PATH 核验留痕；评审通过。
 - 交付物：本节定稿回填 + crest 样例输出留存 fixtures（小文件）。
@@ -956,7 +1000,8 @@ flowchart LR
 - 技术要求：上游原件哈希前后零改动；物化失败 = failed(program_error,
   details.chk_materialization)；哈希按符号形式预计算。
 - 质量标准：FakeGateway 单测（物化后输入内容断言、上游零改动、缺源失败
-  分支）；真机小链路（opt→sp）冒烟。
+  分支）；真机小链路（opt→sp）冒烟；重入①断言——含物化依赖执行的 HQ
+  提交禁用内部重试（提交参数断言，§2.5 重入语义/修订说明二）。
 - 交付物：engine/materialize.py + 测试。
 
 ### 4.18 B8 · 窗口依赖联动
@@ -968,7 +1013,9 @@ flowchart LR
   与「资源不足停等」并存时的优先序与可观测性（执行中页原因标注，C5/C7
   范围外、后端先落）。
 - 质量标准：FakeGateway 场景单测（依赖停等不越位、失败联动 skipped、跳过
-  溯源物化）全绿；hq 产物在位跑 e2e。
+  溯源物化）全绿；重入②断言——对账识别 journal 重跑者中含物化依赖的执行
+  时取消 HQ job 并以新执行 id 重新物化派发（§2.5 重入语义/修订说明二）；
+  hq 产物在位跑 e2e。
 - 交付物：派发器守卫 + 测试。
 
 ### 4.19 B9 · 断点续跑动作
@@ -1047,8 +1094,10 @@ flowchart LR
 - 技术要求：只读统计（只 stat/遍历，不触碰文件）；仅警告**不自动清理**、
   无定时器（拉取式）；`reclaimable_bytes` 与 M1 清理边界判定单一实现。
 - 质量标准：统计对照实测 `du` 一致（含 protected/cubes 等子目录）；
-  超阈 `over=true`、阈值 0 恒 false；手动清理后统计即时反映；单测覆盖
-  per-execution 聚合与 reclaimable 口径（含保全快照计 0）。
+  超阈 `over=true`、阈值 0 恒 false；手动清理后统计即时反映；entries
+  默认截断前 50 条（`truncated`/`total_entries` 标注）；千级执行目录
+  构造基准 P95 < 2s（修订说明二）；单测覆盖 per-execution 聚合与
+  reclaimable 口径（含保全快照计 0）。
 - 交付物：services/storage.py + 端点 + 设置项 + 测试。
 
 ### 4.25 C8 · 占用展示与阈值提示（M3 波补录，修订说明一③）
@@ -1072,9 +1121,9 @@ flowchart LR
 | test_cube_api.py | B4 | kind 白名单 422；npts 越界 422；幂等命中；真机 MO/Potential 生成；cubegen 缺失 503（探测注入） | 契约+集成 |
 | test_finalize_result.py | B2 | fake g16 成功→analysis.json+result_ref；解析注入失败→降级不阻断 | 集成 |
 | test_dependencies.py | B6 | 合法链/环/自环/跨队/悬引用/PATCH 移除被依赖成员 | 单元+契约 |
-| test_materialize.py | B7 | 物化重写内容断言；上游零改动；缺源失败归因；探针三分支 | 单元 |
-| test_dispatch_deps.py | B8 | 依赖停等不越位；前驱失败→skipped；哈希跳过溯源物化；依赖+资源双停等叠加 | 单元（FakeGateway） |
-| test_storage_usage.py | B12 | 统计对照 `du`；per-execution 聚合与 reclaimable 口径（保全快照计 0）；阈值判定与 0=禁用；清理后即时反映 | 单元+集成 |
+| test_materialize.py | B7 | 物化重写内容断言；上游零改动；缺源失败归因；探针三分支；重入①提交参数（禁用 HQ 重试） | 单元 |
+| test_dispatch_deps.py | B8 | 依赖停等不越位；前驱失败→skipped；哈希跳过溯源物化；依赖+资源双停等叠加；重入②journal 重跑者取消+重新物化派发 | 单元（FakeGateway） |
+| test_storage_usage.py | B12 | 统计对照 `du`；per-execution 聚合与 reclaimable 口径（保全快照计 0）；阈值判定与 0=禁用；清理后即时反映；entries 截断 50 条与千级目录 P95<2s 基准 | 单元+集成 |
 | test_resume.py | B9 | 注入矩阵三分支（`@exec` 引用与 Opt=Restart/%OldChk 形态）；ineligible 三态；新建任务身份与 `resumed_from` 落库；物化链复用（与 B7 同器断言）；原历史条目不可变 | 单元+集成 |
 | test_workflow_crest.py | B10/B11 | 可执行缺失 503；来源候选形态校验（WORKFLOW_STATE_INVALID）；`top_n∈[2,10]`；提取器样例回归；top-N 队列生成与自动提交（含满员保留 unsubmitted）；workflow 查询端点状态与聚合；能量表混合聚合与换算 | 单元+契约 |
 | test_e2e_m3.py | D1 | roadmap M3 验收路径脚本化预演（真机段走查留痕） | e2e |
@@ -1094,8 +1143,8 @@ D1/D3 的随查随修 fix 一缺陷一提交、另计）：
 
 | # | 提交（type: 摘要） | 内容 |
 |---|---|---|
-| 1 | docs(plans): M3/M4 联合执行计划 | 本计划（含修订说明一裁决落实） |
-| 2 | docs(specs): roadmap 开放事项 5 裁决回填 | §7 开放事项 5（定时清理→占用统计告警）+ M3 段落/验收补录 |
+| 1 | docs(plans): M3/M4 联合执行计划 | 本计划（含修订说明一裁决落实）——已落库 |
+| 2 | docs(specs): roadmap 开放事项 5 裁决回填 | §7 开放事项 5（定时清理→占用统计告警）+ M3 段落/验收补录——已落库 |
 | 3 | docs(api): A1 Result 与分析/存储契约 diff | Result 全集、7 分析端点、storage 端点、5 错误码、mapping/sse 说明 |
 | 4 | docs(plans): A2/A3 设计定稿回填 | §2.2/§2.4/§2.8 评审修订（如有） |
 | 5 | feat(web): B1 cclib 引入与解析服务 | requirements 冻结 + parse/results.py + 测试 |
@@ -1150,7 +1199,9 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
    3Dmol 画出等值面（正负双色）；静电势映射可用。
 3. 异常结束的执行：详情仅原文查看/导出入口（分析区置灰 + 不可分析原因
    注记——409 语义的 UI 承载；不进管道）。
-4. 指定工作区内 `.out` 文件只读分析可用；工作区外路径被拒绝并明示。
+4. 指定工作区内 `.out`/`.log` 文件只读分析可用；工作区外路径被拒绝并
+   明示；workspace-out 模式轨道 tab 仅清单展示、cube 入口置灰注明无
+   fchk（§2.4）。
 5. `result_ref` 口径：succeeded 且 analysis.json 落盘（**含 degraded**）
    非 null、failed/skipped 恒 null；解析降级条目可查（原文不丢）。
 6. 金标准回归闸门常驻通过；异常样例降级三分支单测在位。
@@ -1168,8 +1219,9 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
    精修队列自动生成并提交（满员时保留未提交并提示）→ 能量表（crest 相对
    能量 + 精修能量，相对 kJ/mol，经 `GET /workflows/{id}` **后端跨容器
    聚合**）可查、增量刷新。
-2. 一条带 chk 依赖的任务链（opt→sp，%OldChk=@task:id）跑通：依赖未满足
-   期间窗口停等可见；物化后执行成功；上游 chk 原件零改动。
+2. 一条三段带 chk 依赖的任务链（opt→freq→sp，对齐 roadmap M4.1 原文；
+   freq 与 sp 各以 %OldChk=@task: 引用直接前驱——修订说明二）跑通：
+   依赖未满足期间窗口停等可见；逐级物化执行成功；上游 chk 原件零改动。
 3. 依赖校验：成环/悬引用/跨队列引用/单任务席位引用提交被拒且错误码
    正确；移除被依赖成员被拒绝；溯源 chk 已清理时提交拒绝
    （`CHK_SOURCE_MISSING`）。
@@ -1203,7 +1255,7 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
    protected/ 与 chk_snapshot 落库）——失败样例抽查记录入册、大文件不入库。
 4. **`.out` 只读分析**：工作区内放置 `.out`（金标准副本）→ 路径输入 →
    同构展示断言；越界路径（`../`、工作区外绝对路径、symlink 逃逸）被拒
-   并明示。
+   并明示；轨道 tab 仅清单展示、cube 入口置灰并注明无 fchk（§2.4）。
 5. **result_ref 三态**：succeeded（含 degraded 构造样本）非 null、failed
    恒 null；degraded 条目分析区可查 + missing[] 展示；原文导出不受影响。
 6. **占用面板（M3.7）**：run/ 填充多执行数据 → 断言统计与 `du` 对照
@@ -1214,9 +1266,10 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
 
 ### 7.4 M4 D3 走查路径清单（同体例；记录落 `docs/plans/m4-acceptance.md`）
 
-1. **依赖链**：队列 [opt, sp（%OldChk=@task:opt）] 提交 → 断言 opt 在跑时
-   sp 窗口停等可见（执行中页原因标注）；opt succeeded → sp 物化执行成功；
-   上游 chk 原件哈希前后一致。
+1. **依赖链（三段，对齐 roadmap M4.1 原文——修订说明二）**：队列 [opt,
+   freq（%OldChk=@task:opt）, sp（%OldChk=@task:freq）] 提交 → 断言 opt
+   在跑时后继窗口停等可见（执行中页原因标注）；逐级 succeeded → 逐级
+   物化执行成功；上游 chk 原件哈希前后一致。
 2. **依赖校验**：环/自环/悬引用/跨队列/单任务席位引用逐例 422 + 错误码；
    PATCH 移除被依赖成员拒绝；溯源 chk 清理后重提交 `CHK_SOURCE_MISSING`。
 3. **失败联动**：opt 失败（fake 注入）→ sp 即时 skipped
@@ -1264,6 +1317,15 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
 10. **空间占用告警阈值默认值**（A3/B12 关闭）：建议 `disk_usage_warn_gb`
     默认 50（0=禁用告警）；统计刷新时机=历史页加载与 history.appended 后
     （拉取式，无定时器）——仅警告不自动清理为既定裁决（§2.9）。
+11. **上游重跑对下游哈希跳过的传导**（A4 关闭；自 §4.14 交互矩阵专项
+    裁决升格登记——修订说明二）：建议「依赖满足与跳过溯源纳入直接前驱的
+    **溯源执行 id**——前驱产生新执行（重跑）即视依赖已变，下游不再沿用
+    旧结果、随之重跑」；随 A4 评审定案。
+12. **物化执行的重入语义**（A4 关闭）：建议「含 `@task:`/`@exec:` 物化
+    依赖的执行禁用 HQ 内部重试（crash_limit 单执行关闭，失联即 failed、
+    显式重跑经派发器重新物化）+ journal 重跑者对账取消后以新执行 id
+    重新物化派发」（§2.5 重入语义，修订说明二）；A4 实测核验 crash_limit
+    旋钮粒度与 `%OldChk` 形态适用性后定案。
 
 ## 9. 风险评估与应对预案
 
@@ -1284,3 +1346,4 @@ diff（契约批次）、`target/release/hq` 在位（M4 派发批次与 e2e）�
 | 13 | 契约 diff 与 2.2.0/2.3.0 发布交叠（版本号/SSOT） | ssot 闸门误报 | 沿用 v2.1.0 动态覆盖与豁免口径（§0.6）；契约批次跑 openapi ssot 测试；发布五步独立提交 |
 | 14 | crest/xtb 与 g16 环境变量共存冲突（XTB_PATH 传递、worker env 构建） | 组合流 crest 任务启动失败或引错 xtb | A5 实测核验 XTB_PATH 拼写与生效路径（§2.7）；crest 任务 env 与 GAUSS_* 分域构建；可执行探测缺失提交即拒（503） |
 | 15 | 输出/派生资产长期累积占满磁盘（cube 不进清理、`.out` 永久保留） | 磁盘压力、写盘失败 | M3.7 占用统计与阈值告警（仅提示，用户按占用明细手动清理，§2.9）；cube 体量与留存策略随 A3 决策点 3 复核 |
+| 16 | HQ 隐式重跑（worker 失联 crash_limit 自动重排 / journal 恢复重提交）绕过物化钩子，二次尝试以被 G16 重写的 dep chk 为起点（%Chk 续用形态） | 链式/resume 执行从污染状态静默重启，结果错误或连环失败 | 重入语义定稿（§2.5/§8 决策点 12，修订说明二）：含依赖执行禁用 HQ 内部重试（失联即 failed、显式重跑重新物化）；journal 重跑者对账取消+新执行 id 重派发；B7/B8 用例与 test_materialize/test_dispatch_deps 覆盖 |
