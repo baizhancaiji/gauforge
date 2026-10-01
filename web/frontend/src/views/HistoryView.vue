@@ -22,6 +22,7 @@ import AnalysisPanel from "@/components/analysis/AnalysisPanel.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
+import StoragePanel from "@/components/analysis/StoragePanel.vue";
 import TablePager from "@/components/TablePager.vue";
 import { useMultiSelect } from "@/composables/useMultiSelect";
 import { useSortPref } from "@/composables/useSortPref";
@@ -86,6 +87,15 @@ async function load() {
   }
 }
 
+// ---------- 空间占用面板（M3.7 C8）：拉取式，列表加载与清理后同步刷新 ----------
+const usage = ref<components["schemas"]["StorageUsage"] | null>(null);
+
+async function loadUsage() {
+  if (archived.value) return; // 归档视图不重复占用统计（历史页清理区承载）
+  const { data } = await client.GET("/storage/usage");
+  usage.value = data ?? null;
+}
+
 /** 筛选/排序变更：回到第 1 页再取。 */
 function resetPage() {
   page.value = 1;
@@ -98,7 +108,10 @@ function goPage(p: number) {
 }
 
 // history.appended（终态落库）→ 重拉当前页；路由切换（历史↔归档）回第 1 页重载。
-watch(() => events.dirty.history, load);
+watch(() => events.dirty.history, () => {
+  load();
+  loadUsage(); // 占用统计随终态落库/清理刷新（拉取式，无新增 SSE 事件）
+});
 watch(
   () => route.fullPath,
   () => {
@@ -109,6 +122,7 @@ watch(
   },
 );
 load();
+loadUsage();
 
 async function open(e: HistoryEntry) {
   selected.value = e;
@@ -329,6 +343,7 @@ async function confirmCleanup() {
   if (data) {
     cleanupNote.value = `清理完成 — 检查 ${data.checked} 项 · 移除 chk ${data.removed_chk} · rwf ${data.removed_rwf}`;
   }
+  loadUsage(); // 手动清理后统计即时反映（§2.6）
 }
 </script>
 
@@ -380,6 +395,8 @@ async function confirmCleanup() {
         清理 chk/rwf
       </button>
       <span v-if="cleanupNote" class="cleanup-note mono">{{ cleanupNote }}</span>
+      <!-- 占用面板（M3.7 C8）：常驻读数 + 超阈琥珀警示 + 可展开明细 -->
+      <StoragePanel v-if="!archived" :usage="usage" />
     </div>
 
     <div v-if="!everLoaded" class="skel" aria-hidden="true">

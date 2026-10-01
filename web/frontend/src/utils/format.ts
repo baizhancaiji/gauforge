@@ -46,6 +46,14 @@ export function fmtMemory(mb?: number | null): string {
   return `${Math.round(mb)} MB`;
 }
 
+/** 字节读数 → "12.3 GB" / "512 MB"（占用面板 M3.7；GB 一位小数）。 */
+export function fmtBytes(b?: number | null): string {
+  if (b == null || Number.isNaN(b)) return "—";
+  if (b >= 1024 ** 3) return `${(b / 1024 ** 3).toFixed(1)} GB`;
+  if (b >= 1024 ** 2) return `${(b / 1024 ** 2).toFixed(0)} MB`;
+  return `${(b / 1024).toFixed(0)} KB`;
+}
+
 /** 哈希 → 前 12 位缩写。 */
 export function fmtHash(h?: string | null): string {
   if (!h) return "—";
