@@ -56,27 +56,27 @@ def usage(now: datetime | None = None) -> dict:
     per_exec: dict[int, int] = {}
     if run_root.is_dir():
         try:
-            total += os.stat(run_root).st_size  # run 根自身条目（du -sb 含根）
+            total += run_root.stat().st_size  # run 根自身条目（du -sb 含根）
         except OSError:
             return {"total_bytes": 0, "threshold_bytes": warn_gb * 1024 ** 3,
                     "over": False, "entries": [], "total_entries": 0,
                     "truncated": False}
-        for root_s, dirs, files in os.walk(run_root):
+        for root, dirs, files in os.walk(run_root):
+            root_p = Path(root)
             cur: int | None = None
-            rel = os.path.relpath(root_s, run_root)
-            if rel != ".":
-                head = rel.split(os.sep, 1)[0]
+            if root_p != run_root:
+                head = root_p.relative_to(run_root).parts[0]
                 if head.isdigit() and int(head) in rows:
                     cur = int(head)
             for name in (*dirs, *files):
                 try:
-                    size = os.stat(os.path.join(root_s, name)).st_size
+                    size = (root_p / name).stat().st_size
                 except OSError:
                     continue  # 竞态消失的条目按 0 计
                 total += size
                 if cur is not None:
                     per_exec[cur] += size
-                elif cur is None and rel == "." and name.isdigit() \
+                elif root_p == run_root and name.isdigit() \
                         and int(name) in rows:
                     # 顶层执行目录条目自身归各自桶（目录 inode 尺寸）
                     per_exec[int(name)] = per_exec.get(int(name), 0) + size
