@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T16:00+0800",
+  "updated": "2026-10-01T16:11+0800",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -230,6 +230,13 @@
       "type": "added",
       "scope": "frontend",
       "summary": "前端引入 3Dmol 与 ECharts 依赖并经镜像源本地打包，新增构建产物零外链审计闸门保障离线可用",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "历史详情新增内嵌分析区：概览/收敛/频率/轨道四视图按块可用性展示，工作区输出文件可路径输入直接只读分析，异常执行明示不可分析原因",
       "breaking": false,
       "migration": null
     }
