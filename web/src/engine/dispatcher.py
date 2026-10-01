@@ -222,7 +222,7 @@ class Dispatcher:
     def _refresh_cycle_watermark(self, queue: dict) -> None:
         """观察 submitted 态且基准变化（新一次提交）时重置周期水位。
 
-        回退不重basis updated_at（见 _queue_rollback），故 updated_at 变化
+        回退不重置 updated_at（见 _queue_rollback），故 updated_at 变化
         即新周期提交。"""
         qid = queue["id"]
         mark = self._cycle_watermark.get(qid)
@@ -468,7 +468,7 @@ class Dispatcher:
                         failures: list[tuple[int, str, str | None]]) -> None:
         """队列失败回退：记 finish_reason/last_failure/回退标记 → unsubmitted。
 
-        不重basis updated_at（周期基准=进入 submitted/executing 时点）：
+        不重置 updated_at（周期基准=进入 submitted/executing 时点）：
         本周期已建 skipped/failed 记录须仍被 _executed_this_cycle 判为
         「本周期已执行」，席位结算 undone 判定才收敛。"""
         qid = queue["id"]
