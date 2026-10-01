@@ -5,105 +5,105 @@
     {
       "type": "added",
       "scope": "docs",
-      "summary": "新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案",
+      "summary": "新增 M3/M4 联合执行计划：结果分析与工作流两波共 27 项任务的完整实施方案（含契约基线、测试矩阵与风险预案）",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "roadmap 开放事项 5 裁决回填：自动定时清理不引入、替代为空间占用统计与阈值告警（仅警告不自动清理、手动清理沿用 M1 入口，随 M3 实施 M3.7），M3 段落与验收段补录",
+      "summary": "回填 roadmap 开放事项 5 裁决：自动定时清理不引入，改为空间占用统计与阈值告警（仅警告、手动清理沿用既有入口）",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3/M4 联合计划审查修订（用户裁决落实）：H2 新增 GET /workflows/{id} 跨容器聚合、H3 续跑改新建任务并以 @exec 符号引用与 resumed_from 建立关联、H4 新增 M3.7 存储统计告警设计，及走查路径清单 §7.3/§7.4、定稿提交表与总工量、result_ref 口径统一、依赖图表对齐、孤儿错误码场景落位等 25 项修复",
+      "summary": "修订 M3/M4 联合计划（用户裁决落实）：新增工作流查询端点、续跑以符号引用关联原执行、补占用告警设计等 25 项",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "roadmap 二轮审查回填：§8.8 事件数补注（M2 后 15 类、以 sse.md 为准）、§1 原则 2 补 crest 组合流最小提取豁免（cclib 不支持 crest 输出）、M3 工作区只读分析后缀扩为 .out/.log（g16 输出后缀两态）",
+      "summary": "回填 roadmap 二轮审查发现：SSE 事件数补注、crest 组合流提取豁免、工作区只读分析后缀扩为 .out/.log",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3/M4 联合计划二轮审查修订（修订说明二，15 项裁决落实）：重入语义定稿（含物化依赖执行禁用 HQ 内部重试、journal 重跑者对账取消后以新执行 id 重新物化派发）、A1 口径校正（8 端点/SettingItem/mapping 清单）、开工闸门 unreleased 措辞校正、B4 依赖改 A3+B2 与 B9 补 A5、workspace-out 轨道 tab 仅清单、依赖链验收扩三段 opt→freq→sp、决策点 11/12 补录、续跑探针超时 120s、storage entries 截断 50 条与千级目录 P95<2s 基准、跨文档引用显式化",
+      "summary": "修订 M3/M4 联合计划二轮 15 项裁决：重入语义、契约口径、依赖关系、验收边界与占用统计基准等定稿落档",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3/M4 联合计划三轮审查修订（修订说明三，17 项）：决策点 8 拆分关闭时点（候选清单端点有无随 A1 评审定稿、入口形态随 A3）、注入矩阵 route 判定规则定稿（含 Opt 即优化行、Opt+Freq 并存归优化，ineligible 统一四态并补图）、关键路径更正（M4 波实算最长链 A4→A5→B10→B11→C7→D3→D4、总≈19 人天，原声明漏 B9 对 A5 依赖）、组合流提交席位满员语义定稿（409 PENDING_CAPACITY_FULL 整体拒绝零副作用）、决策点 12 补三分支 contingency（HQ per-job 重试上限 a/b/c 落位，b 插 feat(hq) 批次+cargo test 闸门）、M4 schema 迁移落位（resumed_from 列与 workflow 表走 migrations 版本化）、workflow 发现路径补全（POST 响应形状+新增 GET /workflows 列表端点）、resumed_by 派生只读字段定稿（原历史条目零 schema 变更）、workspace-out 解析超时 60s 定稿、A4/B5 批次 roadmap 回填登记（M4 段物化措辞校正与 §7.2 部分关闭注记）、A1 mapping 增行补归档详情分析区、v2.1.0 附件上传悬留注记、offline 审计/RESUME_NOT_ELIGIBLE HTTP 语义/hq 在位三处口径统一、crest 能量单位列入 A5 核验",
+      "summary": "修订 M3/M4 联合计划三轮 17 项裁决：组合流满员拒绝、关键路径更正、schema 迁移版本化与超时口径等定稿",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3/M4 联合计划拆分为两份独立计划（m3-plan.md/m4-plan.md）：联合总工量 35 人天过大，按「两波执行、两次发布」既有结构一分为二（各 ≈17.5 人天），版本目标与波次闸门不变（M4 以 M3 收口 tag v2.2.0 为开工闸门）；章节编号重排自洽（M3 版 §2.5/§2.6=原 §2.8/§2.9，M4 版 §2.1-2.3/§3.2-3.4/§4.1-4.10=原 §2.5-2.7/§3.4-3.6/§4.14-4.23），提交表各自 15/13 项、决策点 5/7 条、风险 9/8 条拆分重编号，交叉引用经全文校验，M4 版 §0.4 前置重写为 M3 收口闸门、§0.5/§0.6 改 M4 视角（M1 遗产 protected chk/M3 产出 B1 解析），三轮修订说明以沿革注记形式保留回指（完整文本见 git 历史）；roadmap 两处引用同步改向，原 m3-m4-plan.md 删除",
+      "summary": "将 M3/M4 联合计划拆分为两份独立计划（m3-plan/m4-plan），两波执行、两次发布，章节与交叉引用随之重排",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3/M4 拆分后两计划经独立子代理二次审核并修复审核发现（9 项 P2 全部闭环，P1 零项）：两版结构完整、对照 git 历史原联合计划逐节零丢失、内部与外部引用自洽；m3-plan 修复 §2.5 外链审计 D3 残留改 D1 收口、§0.1 补空间占用治理句对齐 roadmap 现行 M3 段、§4 公共纪律 hq 口径去 M4 归因、WORKSPACE_PATH_OUTSIDE 指向 §2.3 路径守卫、§3.3 E422 节点与错误码表口径统一；m4-plan 修复决策点 7 三处拆分残留（风险 8/#4（B7）/17.5 人天）、§7.2 走查清单重排 1-9 并拆分粘连行、§4.1 步骤②赘字、§4.10 体例指针补 m3-plan 前缀、§5 真机依赖清单改 M4 口径（crest/真 g16/真机 hq）",
+      "summary": "修复两计划独立审核发现的 9 项问题：拆分残留、外链与错误码口径、走查清单重排等全部闭环",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "docs",
-      "summary": "A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步",
+      "summary": "新增分析与存储契约：结果分析、cube 生成、工作区文件只读分析与空间占用共 8 端点，错误码扩至 29，设置登记占用告警阈值",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "A2/A3 设计定稿回填：A2 探针实证 4 份金标准 cclib 1.8.1 逐属性提取全绿，发现并定稿 G16 发行版 DV 样本版本识别缺口处置（运行时垫片，defaultdict 回落 unknown 带形状守卫，master 同缺口）、白名单实测形状（逐 SCF 迹线/mosyms 全缺→null/开壳层 αβ 双自旋/numpy 转原生）、method 摘要与 opt_converged 三态判定、fixtures 三份构造方案；A3 关闭决策点 1（ECharts 按需）/2（惰性重建）/3（cube 留存）/4（候选清单端点不纳入、.out 入口定稿）/5（阈值默认 50）；修复 §0.2 M3.7 表格列错位",
+      "summary": "回填 A2/A3 设计定稿：金标准解析实证、样本版本缺口处置与前端渲染决策点全部关闭落档",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "OrbitalsResponse 契约补丁：加 spin 自旋组维度（alpha/beta、闭壳层 null，各组独立 1..n 编号；nmo 明确为 α 组轨道数即 cubegen MO=<n> 上界基）——B1 探针实证开壳层金标准 phenoxyls 双自旋后随契约 diff 补录，两侧契约生成物再生",
+      "summary": "补充轨道响应契约自旋维度：开壳层计算按 α/β 双自旋组返回轨道，闭壳层不受影响",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3 金标准集更换为 CVL 实测现代输出（用户裁决）：原 4 份 2007 年样例 cclib 1.8.1 解析全挂 KeyError 'DV'，CVL 探针实证 64 份 Gaussian 输出全部可解析（最大 12.5MB 耗时 2.0s）；新集 6 份落 ~/g16/tests/ 覆盖 opt+freq 旗舰/最小 freq/纯 opt/纯 sp/异常终止/强停各态（异常样例缺口由真机样本补齐），旧 4 份保留为 M1 进度解析回归样本，m3-plan §0.4/§0.6/§2.2 回填与口径统一",
+      "summary": "更换 M3 金标准集为可解析的现代实测输出：6 份覆盖各任务形态，旧样本保留作进度解析回归",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3 金标准补样两份（本机 g16 实测生成入库 ~/g16/tests/）：h2o_optfreq_popreg（opt+freq+Pop=Reg 闭壳层，关闭 mosyms/aonames 缺口，兼作 D1 真机 freq 走查预演）与 oh_doublet_popreg（开壳层双重态 sp，homos α/β 双值与双自旋组实证）；金标准集共 8 份，m3-plan §2.2 补样记录与 §0.4 口径同步",
+      "summary": "补充两份本机实测金标准：闭壳层与开壳层 Pop=Reg 输出，补齐轨道对称性等属性缺口",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "web",
-      "summary": "新增结果解析能力：正常结束的计算自动解析出能量收敛、频率、轨道与热化学分析数据；解析异常、超时与非正常结束一律降级留档、不阻断收尾；引入 cclib==1.8.1（.venv 冻结），金标准回归 17 例",
+      "summary": "新增结果解析能力：正常结束的计算自动解析出能量收敛、频率、轨道与热化学数据，异常与超时降级留档不阻断收尾",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3 金标准剩余三缺口补齐（金标准集 10 份 .out + 16 份 .fchk）：线性水 freq 样本实证 -2045.3 cm⁻¹ 二重简并虚频（imaginary 路径关闭）；本机 formchk 产出现代闭壳层/开壳层小 fchk 各一（cubegen MO=1 与 Potential=SCF 冒烟通过，B4 测试资产）；c8b_qst2_error 实证 success=false 且零分析块的极端降级；澄清 Nosymm 抑制轨道对称性打印（mosyms 恒缺根因，symmetry 按 nullable 兼容）",
+      "summary": "补齐金标准样本缺口：新增虚频、现代小 fchk 与极端降级样例，回归覆盖扩至 10 份输出与 16 份 fchk",
       "breaking": false,
       "migration": null
     },
@@ -124,7 +124,7 @@
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "scf_trace.cycles 内层补 nullable 契约补丁：cclib scfvalues 判据列迭代早期未更新为 NaN（真机 CVL 链路实证），null 保列对齐语义，两侧契约生成物再生",
+      "summary": "补充收敛迹线契约可空语义：迭代早期判据列以 null 占位，对齐实测数据",
       "breaking": false,
       "migration": null
     },
@@ -152,7 +152,7 @@
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "roadmap §7 待确认事项 2 注记 M3 B5 部分关闭：失败/中断样例解析降级面由真机降级三态金标准与构造 fixtures 常驻闸门覆盖，不同方法/任务类型缺口顺延后续里程碑",
+      "summary": "注记 roadmap 待确认事项 2 部分关闭：失败样例解析降级面已由常驻回归闸门覆盖",
       "breaking": false,
       "migration": null
     },
@@ -173,21 +173,21 @@
     {
       "type": "fixed",
       "scope": "web",
-      "summary": "修复空间占用统计运行期口径偏差：运行中执行目录与孤儿目录计入总占用（与 du -sb 全态一致），占用明细纳入运行中条目",
+      "summary": "修复空间占用统计口径偏差：运行中与孤儿执行目录计入总占用并纳入占用明细",
       "breaking": false,
       "migration": null
     },
     {
       "type": "fixed",
       "scope": "api",
-      "summary": "补登记 cube 文件流端点 409 响应与 workspace-out 路径守卫三态语义（契约与实现对齐），StorageUsage 描述补全态口径并去除悬置评审措辞",
+      "summary": "补登记 cube 文件流 409 响应与工作区路径守卫三态语义，占用统计描述补全态口径",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3 审核回填计划口径：降级分支③缺失清单语义、B3 验收块缺失 422、Result.package nullable、告警阈值默认值定稿、异常样例第四份与样本目录环境覆盖登记、开工闸门事后复核留痕；roadmap §2.5 补登记 G16WEB_G16_SAMPLES",
+      "summary": "回填 M3 审核口径：降级分支语义、错误码、可空字段与告警阈值默认值定稿，样本目录支持环境变量覆盖",
       "breaking": false,
       "migration": null
     },
@@ -201,14 +201,14 @@
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "M3 审核二轮补遗：§0.4 补记拆补模式二次发生与教训具体化、四处金标准份数同步现行 10 份、两处软换行断句重排；roadmap §2.5 样本目录登记拆句（仅环境变量覆盖、不进设置面板）",
+      "summary": "补记审核二轮发现：计划沿革留痕与金标准份数口径统一，roadmap 样本目录登记明确不进设置面板",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "落审核裁决两项：changelog-spec §1.4 补 docs 类记录豁免口径（影响用户可感知面与协作可见裁决照记），m3-plan C8 附存储统计单遍历优化需求（随 C8 实施、千级基准复测不回退）",
+      "summary": "落审核裁决两项：文档类变更记录补豁免口径，存储统计单遍历优化随占用面板任务实施",
       "breaking": false,
       "migration": null
     }
