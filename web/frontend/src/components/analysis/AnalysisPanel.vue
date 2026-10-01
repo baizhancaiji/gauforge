@@ -44,19 +44,70 @@ const activeTab = ref<TabKey>("overview");
 const overview = ref<Result | null>(null);
 const overviewError = ref<string | null>(null);
 const overviewLoading = ref(false);
-const conv = ref<ConvergenceResponse | null>(null);
-const convError = ref<string | null>(null);
-const convLoading = ref(false);
-const freq = ref<FrequenciesResponse | null>(null);
-const freqError = ref<string | null>(null);
-const freqLoading = ref(false);
-const orb = ref<OrbitalsResponse | null>(null);
-const orbError = ref<string | null>(null);
-const orbLoading = ref(false);
-/** 惰性拉取的去重与换执行失效：数据归属的执行 id。 */
-const convFor = ref<number | null>(null);
-const freqFor = ref<number | null>(null);
-const orbFor = ref<number | null>(null);
+
+/**
+ * 分块惰性拉取状态打包：收敛/频率/轨道三块同形（data/error/loading/forId
+ * 四 ref 结伴 + 同形 loader，审查裁决去重）；forId 记数据归属的执行 id，
+ * 换执行时随 loadOverview 失效。
+ */
+function useBlock<T>(
+  fetch: () => Promise<{ data?: T; error?: unknown; response?: Response }>,
+) {
+  const data = ref<T | null>(null);
+  const error = ref<string | null>(null);
+  const loading = ref(false);
+  const forId = ref<number | null>(null);
+  async function load() {
+    loading.value = true;
+    error.value = null;
+    const { data: d, error: e, response } = await fetch();
+    loading.value = false;
+    if (e || !d) {
+      error.value = errText(e, response?.status, "entry");
+      return;
+    }
+    data.value = d;
+    forId.value = props.executionId;
+  }
+  return { data, error, loading, forId, load };
+}
+
+const convBundle = useBlock<ConvergenceResponse>(() =>
+  client.GET("/history/{id}/analysis/convergence", {
+    params: { path: { id: props.executionId } },
+  }),
+);
+const {
+  data: conv,
+  error: convError,
+  loading: convLoading,
+  forId: convFor,
+  load: loadConv,
+} = convBundle;
+const freqBundle = useBlock<FrequenciesResponse>(() =>
+  client.GET("/history/{id}/analysis/frequencies", {
+    params: { path: { id: props.executionId } },
+  }),
+);
+const {
+  data: freq,
+  error: freqError,
+  loading: freqLoading,
+  forId: freqFor,
+  load: loadFreq,
+} = freqBundle;
+const orbBundle = useBlock<OrbitalsResponse>(() =>
+  client.GET("/history/{id}/analysis/orbitals", {
+    params: { path: { id: props.executionId } },
+  }),
+);
+const {
+  data: orb,
+  error: orbError,
+  loading: orbLoading,
+  forId: orbFor,
+  load: loadOrb,
+} = orbBundle;
 
 // ---------- 工作区文件分析（workspace-out，四块合一） ----------
 const wsInput = ref("");
@@ -92,15 +143,11 @@ function errText(
 async function loadOverview() {
   overview.value = null;
   overviewError.value = null;
-  conv.value = null;
-  convError.value = null;
-  convFor.value = null;
-  freq.value = null;
-  freqError.value = null;
-  freqFor.value = null;
-  orb.value = null;
-  orbError.value = null;
-  orbFor.value = null;
+  for (const b of [convBundle, freqBundle, orbBundle]) {
+    b.data.value = null;
+    b.error.value = null;
+    b.forId.value = null;
+  }
   if (props.entryState !== "succeeded") return; // 异常终态不进解析管道
   overviewLoading.value = true;
   const { data, error, response } = await client.GET("/history/{id}/analysis", {
@@ -194,54 +241,6 @@ function switchTab(t: (typeof tabs.value)[number]) {
     if (t.key === "orbitals" && !orb.value && orbFor.value !== props.executionId)
       void loadOrb();
   }
-}
-
-async function loadConv() {
-  convLoading.value = true;
-  convError.value = null;
-  const { data, error, response } = await client.GET(
-    "/history/{id}/analysis/convergence",
-    { params: { path: { id: props.executionId } } },
-  );
-  convLoading.value = false;
-  if (error || !data) {
-    convError.value = errText(error, response?.status, "entry");
-    return;
-  }
-  conv.value = data;
-  convFor.value = props.executionId;
-}
-
-async function loadFreq() {
-  freqLoading.value = true;
-  freqError.value = null;
-  const { data, error, response } = await client.GET(
-    "/history/{id}/analysis/frequencies",
-    { params: { path: { id: props.executionId } } },
-  );
-  freqLoading.value = false;
-  if (error || !data) {
-    freqError.value = errText(error, response?.status, "entry");
-    return;
-  }
-  freq.value = data;
-  freqFor.value = props.executionId;
-}
-
-async function loadOrb() {
-  orbLoading.value = true;
-  orbError.value = null;
-  const { data, error, response } = await client.GET(
-    "/history/{id}/analysis/orbitals",
-    { params: { path: { id: props.executionId } } },
-  );
-  orbLoading.value = false;
-  if (error || !data) {
-    orbError.value = errText(error, response?.status, "entry");
-    return;
-  }
-  orb.value = data;
-  orbFor.value = props.executionId;
 }
 </script>
 
