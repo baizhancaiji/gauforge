@@ -83,6 +83,13 @@
    > 前缀常量，致该提交快照不可运行（AGENTS §5.1 违规，超时用例
    > AttributeError 实证），随其后的补提交修复、HEAD 无此问题——历史
    > 不改写，教训为跨文件引用的常量须随功能同批提交、不可拆补。
+   >
+   > **二轮补遗（同日审核）**：上述拆补模式复现一次——审核修复批的契约
+   > diff 提交随批再生前端 contract.ts 而漏后端 models.py，经其后的补提交
+   > 恢复一致（仅描述字段滞后、无行为影响）。教训具体化：凡改
+   > docs/api/openapi.yaml 的提交，须同批重跑两侧生成器（前端 gen:types
+   > 与 web/scripts/gen_models.py）并经 test_openapi_ssot 复核后方可提交，
+   > 提交前抽样局部测试拦不住生成物类遗漏。
 5. roadmap §7 开放事项 5 处置已裁决（2026-09-30）：① 自动定时清理不引入、
    替代为 M3.7 占用统计与阈值告警；② 前端页面单测不引入——两项均随联合
    计划修订回填 roadmap（§7 开放事项 5 与 M3 段落）。
@@ -146,11 +153,11 @@ M4 波（A4–A5、B6–B11、C5–C7、D3–D4）另立 [m4-plan.md](m4-plan.md
 | A1 | Result schema 与分析端点契约 diff 定稿 | openapi.yaml diff（Result 全集 + 7 分析端点 + 存储统计端点 + 设置项 `disk_usage_warn_gb` + 新错误码）+ mapping.md 增行 + sse.md「无新增事件」断言 | Result 字段一次定死（§2.1）；端点/错误码/设置项逐条列入映射无孤儿；`test_error_codes.py` 适配后通过；用户评审通过 | — | M | M3.1/M3.2/M3.5/M3.6/M3.7 |
 | A2 | 解析管道与样本覆盖设计定稿 | §2.2 定稿（属性白名单映射表、降级链、样本扩充清单） | 白名单逐属性标注单位与缺失语义；降级链覆盖「解析异常/部分属性缺失/success=false」三分支；异常样例构造方案可入库 | — | M | M3.2/M3.3 |
 | A3 | 可视化与依赖离线化设计定稿 | §2.4/§2.5 定稿（分析视图信息架构、图表方案选型、3Dmol 交互、cubegen 参数治理、离线化方案） | 视图嵌入历史详情不单列页面；cubegen kind/npts 治理表定稿；`.out` 入口形态（含辅助方式）关闭；离线化含审计闸门方案；图表选型关闭 | A1 | M | M3.1/M3.3/M3.4/M3.5 |
-| B1 | cclib 引入与结果解析服务 | `uv pip install cclib`（项目 `.venv`，清华镜像）+ requirements.txt 冻结 + `web/src/parse/results.py` | 安装命令单行落档且仅进 `.venv`（`uv run python -c "import cclib"` 通过、全局 pip list 无 cclib）；金标准集（6 份，§2.2 更换记录）白名单属性提取单测全绿；异常输入降级不抛出 | A2 | L | M3.2/M3.3、用户补充要求① |
+| B1 | cclib 引入与结果解析服务 | `uv pip install cclib`（项目 `.venv`，清华镜像）+ requirements.txt 冻结 + `web/src/parse/results.py` | 安装命令单行落档且仅进 `.venv`（`uv run python -c "import cclib"` 通过、全局 pip list 无 cclib）；金标准集（现行 10 份——§2.2 更换与补样记录，2026-10-01 审核补遗同步）白名单属性提取单测全绿；异常输入降级不抛出 | A2 | L | M3.2/M3.3、用户补充要求① |
 | B2 | Result 落库与 finalize 接线 | finalize 管线追加解析步；`result_ref` 写入（analysis.json + history 条目置位） | succeeded 执行完成后 `run/<id>/analysis.json` 存在、`GET /history` 该条 `result_ref` 非 null；解析失败时 result_ref=null 且日志留痕、执行不受影响 | B1 | M | M3.2/M3.6 |
 | B3 | 分析端点集 | `routers/history.py` 扩展（概览/收敛/频率/轨道）+ 工作区 `.out` 分析端点 | 契约测试逐端点过；succeeded 才可读（异常条目 409 `ANALYSIS_UNAVAILABLE`）；工作区外路径 400 `WORKSPACE_PATH_OUTSIDE`；不存在的分析块 422 `ANALYSIS_PARSE_FAILED` 语义明确（§2.1 错误码表——A1 定稿同步，2026-10-01 审核回填） | B2 | L | M3.1/M3.5 |
 | B4 | cubegen 集成与 cube 端点 | POST/GET cube 两端点 + `services/cube.py`（子进程调用 `~/g16/cubegen`） | kind 白名单外 422；`npts` 越界 422；真机小 fchk 生成 cube 成功（MO 与 Potential 各一）；cubegen 缺失时 503 显式报错（不静默跳过） | A3, B2 | M | M3.4 |
-| B5 | 金标准回归与降级样例闸门 | `test_analysis_parse.py`/`test_analysis_api.py`/`test_cube_api.py` + 构造异常样例入库 fixtures | 金标准集（6 份）逐属性断言；截断/失败构造样例走通降级三分支；全量 `uv run pytest` 通过 | B1–B4 | M | §4 质量底线 |
+| B5 | 金标准回归与降级样例闸门 | `test_analysis_parse.py`/`test_analysis_api.py`/`test_cube_api.py` + 构造异常样例入库 fixtures | 金标准集（现行 10 份——§2.2 更换与补样记录，2026-10-01 审核补遗同步）逐属性断言；截断/失败构造样例走通降级三分支；全量 `uv run pytest` 通过 | B1–B4 | M | §4 质量底线 |
 | B12 | 空间占用统计与告警（M3 波补录） | `services/storage.py` + `GET /storage/usage` 端点 + 运行级设置 `disk_usage_warn_gb` | 各执行占用与总占用统计对照 `du` 一致（可清理量口径与既有清理规则同源）；超总占用阈值 `over=true`、仅警告不自动清理；阈值 0=禁用；手动清理后统计即时反映；entries 截断前 50 条、千级执行目录基准 P95 < 2s | A1（契约 diff 随批）、M1 清理边界 | M | M3.7 |
 | C1 | 前端依赖本地化 | `web/frontend/package.json` 增 `3dmol`（npm 镜像安装）+ 图表库（若 A3 选型引入）+ `scripts/audit_frontend_offline.sh` | `npm install --registry=https://registry.npmmirror.com` 单行落档；构建产物经审计脚本零外链（http/https 资源引用，含 3dmol 运行时动态加载路径）；`npm run build` 通过 | A3 | S | M3.4、用户补充要求② |
 | C2 | 分析视图（历史详情内嵌） | HistoryView 详情增分析区（tab：概览/能量收敛/频率与 IR/轨道与静电势）+ 工作区 `.out` 打开入口 | 分析区仅出现在历史详情内（无独立路由）；succeeded 条目展示、异常条目仅原文导出入口；`.out` 分析复用同一组件；workspace-out 模式轨道 tab 仅清单、cube 入口置灰注明无 fchk | A3, B3 | L | M3.1/M3.5 |
@@ -274,9 +281,9 @@ Result:
   由 `blocks=false` 承载；`missing[]` 口径为「degraded 时的缺失属性清单」
   （§2.1），仅在①②等 degraded 场景登记——2026-10-01 审核回填，原
   「`missing[]` 登记」字面与 A1 契约及 B1 实现口径不一，以契约为准）。
-  三分支均不
-  阻断历史落库，`ANALYSIS_UNAVAILABLE` 语义仅在「analysis.json 文件缺失且
-  重建失败」时出现（重建 = finalize 急解析失败后的惰性补跑一次，见 §8 决策点 2）。
+  三分支均不阻断历史落库，`ANALYSIS_UNAVAILABLE` 语义仅在「analysis.json
+  文件缺失且重建失败」时出现（重建 = finalize 急解析失败后的惰性补跑
+  一次，见 §8 决策点 2）。
 - **样本覆盖**：金标准回归沿用 m1 模式（`~/g16/tests/` 4 份 `.out` 真机样本，
   逐属性断言）；**异常/降级样例以构造样本入库 `web/tests/fixtures/`**（截断
   freq 输出、`Normal termination` 缺失的 opt 输出、无 MO 表输出——小体量、
@@ -371,9 +378,9 @@ Result:
   输出后缀两态的扩展，roadmap M3.5 已同批回填——修订说明二）；
   路径为空/越界/后缀不符一律 400 `WORKSPACE_PATH_OUTSIDE`、缺失 404、
   不可解析 422（三态同码 400 为 2026-10-01 审核回填，对齐实现）；
-  解析超时 60s（沿用 §2.2 finalize
-  同款），超时 422 `ANALYSIS_PARSE_FAILED`（details 注明 timeout——修订
-  说明三⑨）。只读，绝不写工作区外
+  解析超时 60s（沿用 §2.2 finalize 同款），超时 422
+  `ANALYSIS_PARSE_FAILED`（details 注明 timeout——修订说明三⑨）。只读，
+  绝不写工作区外
   （roadmap §2.4：工作区外一律只读）。
 - cube 幂等与留存：产物落 `run/<执行id>/cubes/<cube_id>.cube`
   （cube_id=参数摘要哈希）；同参数重复 POST 直接返回既有 cube_id。cube 为
@@ -614,7 +621,7 @@ flowchart LR
   ④ finalize 接线点与超时参数定稿。
 - 技术要求：自写解析仅限 cclib 属性整备与 shape 转换，禁领域正则
   （roadmap §4）；样本不写 `~/g16/tests/`（用户目录只读）。
-- 质量标准：金标准集 6 份在 cclib 当前版本下逐属性试提取通过（写一次性探针
+- 质量标准：金标准集（现行 10 份，§2.2）在 cclib 当前版本下逐属性试提取通过（写一次性探针
   脚本验证，不入库为测试）。
 - 交付物：本节定稿内容回填（如评审有修订）+ fixtures 样例草案。
 
@@ -636,7 +643,7 @@ flowchart LR
   ④ 金标准单测。
 - 技术要求：**仅 `.venv`**（质量标准含全局无包核查）；解析输入只读
   （cclib 不改写原文件）；所有路径 `pathlib`、显式 `encoding="utf-8"`。
-- 质量标准：金标准集 6 份属性提取断言全绿；构造异常输入降级不抛出；cclib
+- 质量标准：金标准集（现行 10 份，§2.2）属性提取断言全绿；构造异常输入降级不抛出；cclib
   版本号进入 Result.parser.version（可追溯）。
 - 交付物：parse/results.py + 测试 + requirements.txt diff。
 
