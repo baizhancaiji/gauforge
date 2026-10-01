@@ -119,6 +119,7 @@ watch(
     selected.value = null;
     page.value = 1;
     load();
+    loadUsage(); // 归档 ↔ 历史切换同样拉新占用（历史页加载时机，§4.14 ③）
   },
 );
 load();

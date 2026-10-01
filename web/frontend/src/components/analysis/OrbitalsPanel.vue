@@ -5,12 +5,13 @@
  * → POST cube（幂等）→ GET cube 文件流 → 等值面正负双色（isoval 档位
  * ±0.02 默认 / ±0.05 / ±0.08）；静电势（Potential=SCF）走 VDW 表面 +
  * RWB 色彩映射。失败态按契约区分：503 cubegen 不可用 / 502 生成失败
- * （details.stderr 尾部）/ 422 参数越界。workspace-out 模式无 fchk，
- * 由 AnalysisPanel 控制不进本面板（§2.4）。
+ * （details.stderr 尾部）/ 422 参数越界。
+ * workspace-out 模式（cubeAvailable=false，§2.4）：仅展示轨道能量清单，
+ * cube/等值面入口置灰并注明「工作区文件无 fchk」。
  *
- * viewer 生命周期：实例惰性创建单个 viewer，切换轨道/类型 clear() 重画
- * （GLViewer 无顶层 dispose，clear + 容器清空由浏览器回收 WebGL 上下文）；
- * 组件卸载清容器防泄漏。
+ * viewer 生命周期（§4.12 ④）：实例惰性创建单个 viewer，切换轨道/类型
+ * clear() 重画（GLViewer 无顶层 dispose）；组件卸载 clear + 显式释放
+ * WebGL 上下文（WEBGL_lose_context）后清容器，防连续切换累积上下文。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
@@ -27,7 +28,10 @@ import {
 
 type OrbitalsResponse = components["schemas"]["OrbitalsResponse"];
 
-const props = defineProps<{ executionId: number; data: OrbitalsResponse }>();
+const props = withDefaults(
+  defineProps<{ executionId: number; data: OrbitalsResponse; cubeAvailable?: boolean }>(),
+  { cubeAvailable: true },
+);
 
 const tokens = useVizTheme();
 const el = ref<HTMLElement | null>(null);
@@ -72,7 +76,7 @@ const nmoUpper = computed(() => props.data.nmo);
 // ---------- 渲染 ----------
 const rendering = ref(false);
 const error = ref<{ msg: string; detail?: string } | null>(null);
-const loaded = ref<{ label: string } | null>(null);
+const loaded = ref<string | null>(null);
 
 function ensureViewer() {
   if (viewer || !el.value) return viewer;
@@ -85,15 +89,15 @@ function ensureViewer() {
 }
 
 /** cube 文本 → viewer 场景（模型 + 等值面/静电势表面）。 */
-function renderCube(cubeText: string, what: { kind: Kind; orbital?: number }) {
+function renderCube(cubeText: string, kind: Kind) {
   const v = ensureViewer();
   if (!v) return;
   v.clear();
   v.addModel(cubeText, "cube");
   v.setStyle({}, { stick: { radius: 0.15 } });
   const vol = new VolumeData(cubeText, "cube");
-  if (what.kind === "MO") {
-    // 正负相双色等值面（§2.4：正相 accent / 负相 danger）
+  if (kind === "MO") {
+    // 正负相双色等值面（§2.4：正相 viz[0] / 负相 danger）
     v.addIsosurface(vol, {
       isoval: isoval.value,
       color: tokens.value.viz[0],
@@ -113,7 +117,7 @@ function renderCube(cubeText: string, what: { kind: Kind; orbital?: number }) {
 }
 
 async function generate() {
-  if (rendering.value) return;
+  if (rendering.value || !props.cubeAvailable) return;
   error.value = null;
   if (kind.value === "MO" && (orbital.value < 1 || orbital.value > nmoUpper.value)) {
     error.value = { msg: `请先选择轨道（1–${nmoUpper.value}）` };
@@ -163,14 +167,11 @@ async function generate() {
   const text = await (blob as unknown as Blob).text();
   const label =
     kind.value === "MO"
-      ? `MO ${orbital.value} · isoval ±${isoval.value}`
+      ? `MO ${orbital.value} / isoval ±${isoval.value}`
       : "静电势 Potential=SCF";
   try {
-    renderCube(text, {
-      kind: kind.value,
-      orbital: kind.value === "MO" ? orbital.value : undefined,
-    });
-    loaded.value = { label };
+    renderCube(text, kind.value);
+    loaded.value = label;
   } catch {
     // viewer 已建但场景初始化抛错：区分「环境无 WebGL」（canvas 上下文
     // 取不到）与「数据损坏」——D1 走查在真机显示环境复核渲染成功态
@@ -193,7 +194,17 @@ function clearScene() {
 onBeforeUnmount(() => {
   viewer?.clear();
   viewer = null;
-  if (el.value) el.value.innerHTML = "";
+  if (el.value) {
+    // 显式释放 WebGL 上下文（GLViewer 无 dispose；不释放则连续切换执行
+    // 累积上下文，触浏览器上限后 viewer 静默失渲染）
+    const canvas = el.value.querySelector("canvas");
+    const gl =
+      canvas?.getContext("webgl2") ?? canvas?.getContext("webgl");
+    (gl as WebGLRenderingContext | null)
+      ?.getExtension("WEBGL_lose_context")
+      ?.loseContext();
+    el.value.innerHTML = "";
+  }
 });
 </script>
 
@@ -202,7 +213,7 @@ onBeforeUnmount(() => {
     <div class="orb-controls">
       <label class="ctl mono">
         <span>类型</span>
-        <select v-model="kind">
+        <select v-model="kind" :disabled="!cubeAvailable">
           <option value="MO">分子轨道</option>
           <option value="Potential">静电势</option>
         </select>
@@ -214,6 +225,7 @@ onBeforeUnmount(() => {
             :key="p.label"
             class="preset"
             type="button"
+            :disabled="!cubeAvailable"
             :class="{ 'preset--on': orbital === p.n }"
             @click="orbital = p.n"
           >
@@ -226,7 +238,7 @@ onBeforeUnmount(() => {
             <option :value="0" disabled>选择（1–{{ nmoUpper }}）</option>
             <optgroup v-for="g in spinGroups" :key="g.label" :label="g.label">
               <option v-for="o in g.items" :key="`${o.spin}-${o.index}`" :value="o.index">
-                {{ o.index }}（{{ o.energy_eV.toFixed(2) }} eV{{ o.symmetry ? ` · ${o.symmetry}` : "" }}）
+                {{ o.index }}（{{ o.energy_eV.toFixed(2) }} eV{{ o.symmetry ? ` / ${o.symmetry}` : "" }}）
               </option>
             </optgroup>
           </select>
@@ -238,6 +250,7 @@ onBeforeUnmount(() => {
             :key="v"
             class="preset"
             type="button"
+            :disabled="!cubeAvailable"
             :class="{ 'preset--on': isoval === v }"
             @click="isoval = v"
           >
@@ -248,7 +261,7 @@ onBeforeUnmount(() => {
       <button
         class="btn btn--secondary"
         type="button"
-        :disabled="rendering || (kind === 'MO' && !orbital)"
+        :disabled="!cubeAvailable || rendering || (kind === 'MO' && !orbital)"
         @click="generate"
       >
         {{ rendering ? "生成中 …" : "生成并渲染" }}
@@ -262,9 +275,12 @@ onBeforeUnmount(() => {
       {{ error.msg }}
       <span v-if="error.detail" class="orb-detail">{{ error.detail }}</span>
     </p>
-    <p v-else-if="loaded" class="orb-note mono note--ok">已渲染：{{ loaded.label }}</p>
+    <p v-else-if="loaded" class="orb-note mono note--ok">已渲染：{{ loaded }}</p>
 
-    <div ref="el" class="orb-viewer"></div>
+    <div v-if="cubeAvailable" ref="el" class="orb-viewer"></div>
+    <p v-else class="orb-off mono">
+      工作区文件无 fchk — 等值面不可生成，仅轨道能量清单
+    </p>
     <p class="orb-hint mono">
       等值面以本地 cubegen 生成（{{ nmoUpper > 0 ? `MO 1–${nmoUpper}` : "—" }}）；
       连续切换无残留
@@ -316,6 +332,23 @@ onBeforeUnmount(() => {
 .preset--on {
   color: var(--accent);
   border-color: var(--accent-dim);
+}
+.preset:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.ctl select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.orb-off {
+  margin: 0;
+  border: 1px dashed var(--border-hair);
+  border-radius: var(--r-md);
+  padding: var(--space-3);
+  background: var(--bg-inset);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
 }
 .orb-note {
   margin: 0;

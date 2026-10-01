@@ -5,8 +5,8 @@
  * - 执行模式（executionId）：概览先行，收敛/频率/轨道按 tab 激活惰性拉取
  *   （分块端点），blocks=false 的 tab 置灰并注明缺失原因；
  * - 工作区文件模式（.out 打开入口，分析区头部）：POST /analysis/workspace-out
- *   四块合一负载直接注入，不落库；轨道 tab 仅清单形态（cube 入口随 C4
- *   置灰注明无 fchk）。
+ *   四块合一负载直接注入，不落库；轨道 tab 仅清单形态（OrbitalsPanel
+ *   cubeAvailable=false：清单可浏览、cube/等值面入口置灰注明无 fchk）。
  * 异常终态（failed/skipped）不进解析管道：本执行分析区置灰 + 不可分析
  * 原因注记（409 ANALYSIS_UNAVAILABLE 语义的 UI 承载，§7.1-3），
  * 工作区文件分析入口不受其影响。
@@ -355,18 +355,22 @@ function switchTab(t: (typeof tabs.value)[number]) {
           <FrequenciesPanel v-else-if="freq" :data="freq" />
         </template>
 
-        <!-- 轨道与静电势：轨道面板（执行模式，fchk 由 M1 formchk 产出） -->
+        <!-- 轨道与静电势：执行模式全功能（fchk 由 M1 formchk 产出）；
+             workspace 模式仅清单形态（cubeAvailable=false，§2.4） -->
         <template v-else>
           <p v-if="orbLoading" class="ana-hint mono">读取中 …</p>
           <p v-else-if="orbError" class="ana-note mono note--bad" role="alert">
             {{ orbError }}
           </p>
-          <template v-else-if="mode === 'workspace' && wsData">
-            <p class="ana-hint mono">
-              轨道清单已就绪 — 工作区文件无 fchk，等值面不可生成
-            </p>
-          </template>
           <OrbitalsPanel
+            key="orbital-ws"
+            v-else-if="mode === 'workspace' && wsData"
+            :execution-id="executionId"
+            :data="wsData.orbitals"
+            :cube-available="false"
+          />
+          <OrbitalsPanel
+            key="orbital-exec"
             v-else-if="orb"
             :execution-id="executionId"
             :data="orb"

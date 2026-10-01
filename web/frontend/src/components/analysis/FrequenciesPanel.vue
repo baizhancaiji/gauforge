@@ -4,7 +4,7 @@
  * 双向联动高亮（表行点击 ↔ 棒条点击）；虚频行/棒红色（--danger）标注，
  * 计数注记随虚频数显性；强度缺失（契约 nullable）的模不画棒、表内 "—"。
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import echarts from "@/charts/echarts";
 import type { components } from "@/api/contract";
@@ -21,6 +21,8 @@ let ro: ResizeObserver | null = null;
 
 const rows = computed(() => props.data.frequencies);
 const imagCount = computed(() => rows.value.filter((r) => r.imaginary).length);
+/** 棒图可绘性：存在任一含 IR 强度的模（§4.11 空态占位口径）。 */
+const hasIr = computed(() => rows.value.some((r) => r.ir_intensity != null));
 /** 默认选中第一个虚频（有则突出警示），否则不选。 */
 const selected = ref<number | null>(null);
 
@@ -76,7 +78,7 @@ function rebuild() {
   chart.setOption(option(), { notMerge: true });
 }
 
-onMounted(() => {
+function setupChart() {
   if (!el.value) return;
   chart = echarts.init(el.value);
   // 棒条点击 ↔ 表行选中（联动高亮，§4.11）；ECElementEvent.data 形状按
@@ -89,12 +91,23 @@ onMounted(() => {
   rebuild();
   ro = new ResizeObserver(() => chart?.resize());
   ro.observe(el.value);
-});
+}
 
-onBeforeUnmount(() => {
+function teardownChart() {
   ro?.disconnect();
+  ro = null;
   chart?.dispose();
   chart = null;
+}
+
+onMounted(setupChart);
+onBeforeUnmount(teardownChart);
+
+// 棒图 ↔ 占位互斥切换时容器重建：先释放旧实例，容器渲染后重挂
+watch(hasIr, async () => {
+  teardownChart();
+  await nextTick();
+  setupChart();
 });
 
 watch([rows, selected, tokens], rebuild);
@@ -110,40 +123,46 @@ watch(
 
 <template>
   <div class="fq">
-    <p class="fq-count mono" :class="{ 'fq-count--warn': imagCount > 0 }">
-      共 {{ rows.length }} 个频率 · 虚频 {{ imagCount }} 个
-    </p>
-    <div ref="el" class="fq-chart"></div>
-    <div class="fq-scroll">
-      <table class="fq-table mono">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>频率 cm⁻¹</th>
-            <th>IR km/mol</th>
-            <th>对称性</th>
-            <th>约化质量</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="r in rows"
-            :key="r.index"
-            :class="{
-              'fq-row--imag': r.imaginary,
-              'fq-row--sel': r.index === selected,
-            }"
-            @click="selected = r.index"
-          >
-            <td>{{ r.index }}</td>
-            <td>{{ r.frequency_cm.toFixed(2) }}</td>
-            <td>{{ r.ir_intensity?.toFixed(2) ?? "—" }}</td>
-            <td>{{ r.symmetry ?? "—" }}</td>
-            <td>{{ r.reduced_mass?.toFixed(3) ?? "—" }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <p v-if="!rows.length" class="fq-empty">无频率数据 — 该结果无频率块或模数为 0</p>
+    <template v-else>
+      <p class="fq-count mono" :class="{ 'fq-count--warn': imagCount > 0 }">
+        共 {{ rows.length }} 个频率 — 虚频 {{ imagCount }} 个
+      </p>
+      <div class="fq-chart-wrap">
+        <p v-if="!hasIr" class="fq-empty">无 IR 强度数据 — 仅列频率表</p>
+        <div v-else ref="el" class="fq-chart"></div>
+      </div>
+      <div class="fq-scroll">
+        <table class="fq-table mono">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>频率 cm⁻¹</th>
+              <th>IR km/mol</th>
+              <th>对称性</th>
+              <th>约化质量</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="r in rows"
+              :key="r.index"
+              :class="{
+                'fq-row--imag': r.imaginary,
+                'fq-row--sel': r.index === selected,
+              }"
+              @click="selected = r.index"
+            >
+              <td>{{ r.index }}</td>
+              <td>{{ r.frequency_cm.toFixed(2) }}</td>
+              <td>{{ r.ir_intensity?.toFixed(2) ?? "—" }}</td>
+              <td>{{ r.symmetry ?? "—" }}</td>
+              <td>{{ r.reduced_mass?.toFixed(3) ?? "—" }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -160,6 +179,14 @@ watch(
 }
 .fq-count--warn {
   color: var(--danger);
+}
+.fq-empty {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+.fq-chart-wrap {
+  display: flex;
 }
 .fq-chart {
   height: 180px;
