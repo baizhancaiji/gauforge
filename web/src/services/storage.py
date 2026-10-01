@@ -4,8 +4,10 @@
   清理**；无定时器、无后台任务（历史页加载与 history.appended 后拉取）；
 - total_bytes：run/ 下全部执行目录总占用（含输入/输出/scratch/chk/rwf/
   protected/cubes，目录条目计入 apparent size，与 du -sb 同口径）；
+  运行中执行目录与无执行行的孤儿目录一并计入（全态一致）；
 - entries[]：per-execution 明细（总量 + 可清理量），按 total_bytes 降序，
-  默认截断前 50 条（truncated/total_entries 标注）；
+  默认截断前 50 条（truncated/total_entries 标注）；含运行中条目
+  （reclaimable 恒 0），孤儿目录仅计入总量、不产生明细；
 - reclaimable_bytes 与 M1 清理边界单一实现（finalize.reclaimable_files，
   含「仅 succeeded 且超保留期的顶层 chk/rwf」与「保全快照计 0」口径）；
 - 只读：只 stat/遍历，不触碰、不移动任何文件；清理动作后统计即时反映；
@@ -40,27 +42,24 @@ def usage(now: datetime | None = None) -> dict:
     retention = int(settings().get("chk_rwf_retention_days"))
     warn_gb = int(settings().get("disk_usage_warn_gb"))
 
-    rows = _terminal_rows()
+    # total：run/ 目录整体 apparent size（du -sb run/ 全态同口径）——运行中
+    # 执行目录与无执行行的孤儿目录一并计入（§2.6「run/ 下全部执行目录」）
+    total_bytes = _dir_size(run_root) if run_root.is_dir() else 0
     entries = []
-    total_bytes = 0
     if run_root.is_dir():
-        # run 根目录条目计入 total（du -sb run/ 同口径）
-        try:
-            total_bytes += os.stat(run_root).st_size
-        except OSError:
-            pass
-    for row in rows:
-        run_d = run_root / str(row["id"])
-        if not run_d.is_dir():
-            continue  # 无执行目录（skipped 等）不计入占用明细
-        size = _dir_size(run_d)
-        total_bytes += size
-        reclaimable = sum(f.stat().st_size
-                          for f in finalize.reclaimable_files(
-                              run_d, row, retention, now))
-        entries.append({"execution_id": row["id"], "task_id": row["task_id"],
-                        "filename": row["filename"], "total_bytes": size,
-                        "reclaimable_bytes": reclaimable})
+        for child in run_root.iterdir():
+            if not child.is_dir() or not child.name.isdigit():
+                continue  # 非执行目录形态的杂项仅计入总量
+            row = executions().get(int(child.name))
+            if row is None:
+                continue  # 孤儿目录（无执行行）：task_id 不可得，无明细
+            size = _dir_size(child)
+            reclaimable = sum(f.stat().st_size
+                              for f in finalize.reclaimable_files(
+                                  child, row, retention, now))
+            entries.append({"execution_id": row["id"], "task_id": row["task_id"],
+                            "filename": row["filename"], "total_bytes": size,
+                            "reclaimable_bytes": reclaimable})
     entries.sort(key=lambda e: e["total_bytes"], reverse=True)
     return {"total_bytes": total_bytes,
             "threshold_bytes": warn_gb * 1024 ** 3,
@@ -68,14 +67,6 @@ def usage(now: datetime | None = None) -> dict:
             "entries": entries[:ENTRY_LIMIT],
             "total_entries": len(entries),
             "truncated": len(entries) > ENTRY_LIMIT}
-
-
-def _terminal_rows() -> list[dict]:
-    """全部终态行（三态合并；单机量级小，全量载入可忽略）。"""
-    rows: list[dict] = []
-    for state in ("succeeded", "failed", "skipped"):
-        rows.extend(executions().list_by_state(state))
-    return rows
 
 
 def _dir_size(path: Path) -> int:
@@ -89,7 +80,7 @@ def _dir_size(path: Path) -> int:
     for root, dirs, files in os.walk(path):
         for name in (*dirs, *files):
             try:
-                total += os.stat(os.path.join(root, name)).st_size
+                total += os.stat(Path(root) / name).st_size
             except OSError:
                 continue
     return total

@@ -1,6 +1,7 @@
 """空间占用统计测试（M3.7 B12，m3-plan §4.13/§5 test_storage_usage）。
 
 - 统计对照实测 du -sb 一致（含 protected/cubes 等子目录、目录条目 apparent size）；
+- 全态口径：运行中执行与孤儿目录计入 total（du -sb run/ 全态一致）；
 - per-execution 聚合与降序、entries 默认截断前 50 条（truncated/total_entries）；
 - reclaimable 口径：仅 succeeded 且超保留期的顶层 chk/rwf；未超期 0；
   failed 保全快照计 0（与 M1 清理边界单一实现）；
@@ -67,6 +68,29 @@ def test_usage_matches_du(tmp_path, monkeypatch):
     # 可清理量：succeeded 超保留期的顶层 chk（3000）；protected/ 与 failed 计 0
     assert by_id[e1]["reclaimable_bytes"] == 3000
     assert by_id[e2]["reclaimable_bytes"] == 0
+
+
+def test_running_and_orphan_dirs_counted(tmp_path, monkeypatch):
+    """全态口径：运行中执行与孤儿目录计入 total（du -sb run/ 全态一致）；
+    运行中条目进明细（reclaimable 恒 0），孤儿目录仅计总量不进明细。"""
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    tid = tasks().create_candidate("run.gjf", "imported")
+    eid = executions().create(task_id=tid, filename="run.gjf",
+                              resources={"nproc": {"value": 1, "defaulted": True},
+                                         "mem_gb": {"value": 1.0, "defaulted": True}})
+    touch(tmp_path / "run", eid, "input.log", 4000)
+    orphan = tmp_path / "run" / "424242"  # 无执行行的孤儿目录
+    (orphan / "scratch.d").mkdir(parents=True)
+    (orphan / "scratch.d" / "tmp.dat").write_bytes(b"x" * 900)
+    (tmp_path / "run" / "lost+found").write_bytes(b"y" * 7)  # 非目录杂项
+    out = storage_svc.usage()
+    du = subprocess.run(["du", "-sb", str(tmp_path / "run")],
+                        capture_output=True, text=True, check=True)
+    assert out["total_bytes"] == int(du.stdout.split()[0])
+    assert [e["execution_id"] for e in out["entries"]] == [eid]
+    assert out["entries"][0]["reclaimable_bytes"] == 0  # 运行中不可清理
+    assert out["total_entries"] == 1
+    assert out["total_bytes"] > out["entries"][0]["total_bytes"]  # 孤儿计入总量
 
 
 def test_entries_sorted_and_truncated(tmp_path, monkeypatch):
@@ -172,7 +196,6 @@ def test_thousand_dirs_p95_under_2s(tmp_path, monkeypatch):
     """千级执行目录构造基准：P95 < 2s（修订说明二）。"""
     monkeypatch.setattr(config, "HOME_DIR", tmp_path)
     run_root = tmp_path / "run"
-    tids = []
     for i in range(1100):
         tid = tasks().create_candidate(f"w{i}.gjf", "imported")
         eid = executions().create(
@@ -184,7 +207,6 @@ def test_thousand_dirs_p95_under_2s(tmp_path, monkeypatch):
         (run_root / str(eid)).mkdir(parents=True)
         (run_root / str(eid) / "input.log").write_bytes(b"x" * 100)
         (run_root / str(eid) / "input.gjf").write_bytes(b"y" * 50)
-        tids.append(eid)
     durations = []
     for _ in range(10):
         t0 = time.perf_counter()
