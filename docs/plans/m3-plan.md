@@ -75,6 +75,14 @@
    phenoxyls0/1 保留为 M1 进度解析计数回归样本）+ 16 份 `.fchk`
    （含现代闭壳层/开壳层小 fchk 各一，B4 cube 测试资产）。
 4. A1 契约 diff 经用户评审通过（文档先行，roadmap §4）。
+
+   > **沿革注记（2026-10-01 审核留痕）**：本闸门未先行——A1 契约 diff
+   > 落库先于用户评审，B1–B12 在评审前实施；事后复核即 2026-10-01 审核
+   > 批次，发现的口径偏差随审核批次修复回填（§2.1/§2.2/§2.3/§2.6 与
+   > openapi 侧同批对齐）。另登记：B3 功能提交曾漏交 parse 域超时原因
+   > 前缀常量，致该提交快照不可运行（AGENTS §5.1 违规，超时用例
+   > AttributeError 实证），随其后的补提交修复、HEAD 无此问题——历史
+   > 不改写，教训为跨文件引用的常量须随功能同批提交、不可拆补。
 5. roadmap §7 开放事项 5 处置已裁决（2026-09-30）：① 自动定时清理不引入、
    替代为 M3.7 占用统计与阈值告警；② 前端页面单测不引入——两项均随联合
    计划修订回填 roadmap（§7 开放事项 5 与 M3 段落）。
@@ -140,7 +148,7 @@ M4 波（A4–A5、B6–B11、C5–C7、D3–D4）另立 [m4-plan.md](m4-plan.md
 | A3 | 可视化与依赖离线化设计定稿 | §2.4/§2.5 定稿（分析视图信息架构、图表方案选型、3Dmol 交互、cubegen 参数治理、离线化方案） | 视图嵌入历史详情不单列页面；cubegen kind/npts 治理表定稿；`.out` 入口形态（含辅助方式）关闭；离线化含审计闸门方案；图表选型关闭 | A1 | M | M3.1/M3.3/M3.4/M3.5 |
 | B1 | cclib 引入与结果解析服务 | `uv pip install cclib`（项目 `.venv`，清华镜像）+ requirements.txt 冻结 + `web/src/parse/results.py` | 安装命令单行落档且仅进 `.venv`（`uv run python -c "import cclib"` 通过、全局 pip list 无 cclib）；金标准集（6 份，§2.2 更换记录）白名单属性提取单测全绿；异常输入降级不抛出 | A2 | L | M3.2/M3.3、用户补充要求① |
 | B2 | Result 落库与 finalize 接线 | finalize 管线追加解析步；`result_ref` 写入（analysis.json + history 条目置位） | succeeded 执行完成后 `run/<id>/analysis.json` 存在、`GET /history` 该条 `result_ref` 非 null；解析失败时 result_ref=null 且日志留痕、执行不受影响 | B1 | M | M3.2/M3.6 |
-| B3 | 分析端点集 | `routers/history.py` 扩展（概览/收敛/频率/轨道）+ 工作区 `.out` 分析端点 | 契约测试逐端点过；succeeded 才可读（异常条目 409 `ANALYSIS_UNAVAILABLE`）；工作区外路径 400 `WORKSPACE_PATH_OUTSIDE`；不存在的分析块 404 语义明确 | B2 | L | M3.1/M3.5 |
+| B3 | 分析端点集 | `routers/history.py` 扩展（概览/收敛/频率/轨道）+ 工作区 `.out` 分析端点 | 契约测试逐端点过；succeeded 才可读（异常条目 409 `ANALYSIS_UNAVAILABLE`）；工作区外路径 400 `WORKSPACE_PATH_OUTSIDE`；不存在的分析块 422 `ANALYSIS_PARSE_FAILED` 语义明确（§2.1 错误码表——A1 定稿同步，2026-10-01 审核回填） | B2 | L | M3.1/M3.5 |
 | B4 | cubegen 集成与 cube 端点 | POST/GET cube 两端点 + `services/cube.py`（子进程调用 `~/g16/cubegen`） | kind 白名单外 422；`npts` 越界 422；真机小 fchk 生成 cube 成功（MO 与 Potential 各一）；cubegen 缺失时 503 显式报错（不静默跳过） | A3, B2 | M | M3.4 |
 | B5 | 金标准回归与降级样例闸门 | `test_analysis_parse.py`/`test_analysis_api.py`/`test_cube_api.py` + 构造异常样例入库 fixtures | 金标准集（6 份）逐属性断言；截断/失败构造样例走通降级三分支；全量 `uv run pytest` 通过 | B1–B4 | M | §4 质量底线 |
 | B12 | 空间占用统计与告警（M3 波补录） | `services/storage.py` + `GET /storage/usage` 端点 + 运行级设置 `disk_usage_warn_gb` | 各执行占用与总占用统计对照 `du` 一致（可清理量口径与既有清理规则同源）；超总占用阈值 `over=true`、仅警告不自动清理；阈值 0=禁用；手动清理后统计即时反映；entries 截断前 50 条、千级执行目录基准 P95 < 2s | A1（契约 diff 随批）、M1 清理边界 | M | M3.7 |
@@ -186,7 +194,8 @@ C2 与 C3/C4 在 B3/B4 就绪后可并行；B12 在 A1 契约 diff 评审后即�
 Result:
   state: parsed | degraded            # degraded=至少一个请求块解析失败/缺失
   parser: { name: "cclib", version }
-  package: { name, version }          # cclib metadata.package / package_version
+  package: { name, version } | null   # cclib metadata.package / package_version；
+                                      # degraded/不可得时 null（2026-10-01 审核回填，与契约 nullable 对齐）
   method: string | null               # metadata.methods 摘要（如 b3lyp/6-31g(d)）
   summary:
     natom, nmo, nbasis: integer
@@ -226,7 +235,7 @@ Result:
 |---|---|---|
 | `ANALYSIS_UNAVAILABLE` | 409 | 非 succeeded 条目请求分析，或 analysis.json 缺失且重建失败 |
 | `ANALYSIS_PARSE_FAILED` | 422 | 请求的分析块数据不足**或解析超时**（如无频率任务请求 frequencies；超时 details 注明，§2.3——修订说明三⑨） |
-| `WORKSPACE_PATH_OUTSIDE` | 400 | `.out` 分析路径越出工作区（§2.3 路径守卫） |
+| `WORKSPACE_PATH_OUTSIDE` | 400 | `.out` 分析路径守卫失败（越出工作区/路径为空/后缀不符三态同码，§2.3 路径守卫——2026-10-01 审核回填对齐实现） |
 | `CUBE_GENERATION_FAILED` | 502 | cubegen 非零退出/超时（details 携带 stderr 尾部） |
 | `CUBE_EXECUTABLE_MISSING` | 503 | `g16_root/cubegen` 探测失败（显式，不静默） |
 
@@ -261,7 +270,11 @@ Result:
 
 - **降级链**（三分支，B5 逐一覆盖）：① cclib 解析抛异常 → `state=degraded`、
   `parse_error` 摘要、已可得块照常保留；② `metadata.success=false` → 同①并
-  附注；③ 个别属性缺失 → `missing[]` 登记、对应 block 置 false。三分支均不
+  附注；③ 个别属性缺失 → 对应 block 置 false、`state` 保持 parsed（缺失明细
+  由 `blocks=false` 承载；`missing[]` 口径为「degraded 时的缺失属性清单」
+  （§2.1），仅在①②等 degraded 场景登记——2026-10-01 审核回填，原
+  「`missing[]` 登记」字面与 A1 契约及 B1 实现口径不一，以契约为准）。
+  三分支均不
   阻断历史落库，`ANALYSIS_UNAVAILABLE` 语义仅在「analysis.json 文件缺失且
   重建失败」时出现（重建 = finalize 急解析失败后的惰性补跑一次，见 §8 决策点 2）。
 - **样本覆盖**：金标准回归沿用 m1 模式（`~/g16/tests/` 4 份 `.out` 真机样本，
@@ -296,7 +309,11 @@ Result:
     （非优化任务）。
   - **fixtures 构造方案定稿**（B5 入库，仅入库 `web/tests/fixtures/`）：
     ① freq 输出 Frequencies 表中段截断；② opt 输出去除 Normal termination
-    尾段；③ route 去 Pop 后无 MO 表输出。
+    尾段；③ route 去 Pop 后无 MO 表输出；④ 乱码/非输出格式文件（降级链①
+    解析异常样例，实施期补入——2026-10-01 审核回填）。金标准样本目录集中
+    配置为 `config.G16_SAMPLES_DIR`，环境变量 `G16WEB_G16_SAMPLES` 可覆盖
+    （默认 `~/g16/tests`；风险 7「样本引用路径集中配置」预案落点，
+    roadmap §2.5 启动级清单已登记——2026-10-01 审核回填）。
 - **样本更换记录（2026-10-01，用户裁决）**：金标准集更换为 CVL 实测
   现代输出（cclib 1.8.1 全量探针实证，67 份中 64 份 Gaussian 输出全部
   解析成功，最大 12.5MB 耗时 2.0s——60s 超时预算充裕）。新集 6 份
@@ -352,7 +369,9 @@ Result:
 - workspace-out 端点的路径守卫：`(workspace_root / path).resolve()` 后必须是
   `workspace_root.resolve()` 的子孙且后缀 ∈ {.out, .log}（`.log` 为 g16
   输出后缀两态的扩展，roadmap M3.5 已同批回填——修订说明二）；
-  越界/缺失/不可解析分别 400/404/422；解析超时 60s（沿用 §2.2 finalize
+  路径为空/越界/后缀不符一律 400 `WORKSPACE_PATH_OUTSIDE`、缺失 404、
+  不可解析 422（三态同码 400 为 2026-10-01 审核回填，对齐实现）；
+  解析超时 60s（沿用 §2.2 finalize
   同款），超时 422 `ANALYSIS_PARSE_FAILED`（details 注明 timeout——修订
   说明三⑨）。只读，绝不写工作区外
   （roadmap §2.4：工作区外一律只读）。
@@ -439,7 +458,10 @@ Result:
   - `total_bytes`：`run/` 下全部执行目录（含输入/输出/scratch/chk/rwf/
     protected/cubes）的总占用。
   - `entries[]`：per-execution 明细 `{execution_id, task_id, filename,
-    total_bytes, reclaimable_bytes}`，按 `total_bytes` 降序；`reclaimable_bytes`
+    total_bytes, reclaimable_bytes}`，按 `total_bytes` 降序；明细含运行中
+    条目（`reclaimable_bytes` 恒 0），无执行行的孤儿目录仅计入
+    `total_bytes`、不产生明细（2026-10-01 审核回填，对齐全态 `du -sb`
+    口径）；`reclaimable_bytes`
     = 按 M1 清理边界**可被手动清理入口移除的量**（口径与清理逻辑同源、
     单一实现——复用清理判定函数，不重复实现；非正常终止的保全快照计 0）。
   - 统计只读（只 stat/遍历，不触碰、不移动任何文件）；清理动作后统计
@@ -449,7 +471,7 @@ Result:
   （阈值判定见下；entries 按总占用降序**默认截断前 50 条**、`truncated`/
   `total_entries` 标注截断与总数——修订说明二定稿，随 A1 契约登记）。
 - **阈值与告警**：运行级设置 `disk_usage_warn_gb`（整数 GB；0=禁用告警；
-只读告警不涉执行语义、建议即时生效；默认值建议 50，评审定；**随 A1
+只读告警不涉执行语义、建议即时生效；默认 50（§8 决策点 5 关闭采纳）；**随 A1
 契约 diff 的 SettingItem 目录登记**）。判定：`threshold_bytes > 0 &&
 total_bytes ≥ threshold_bytes ⇒ over=true`。**仅警告不清理**。
 - **前端展示（C8）**：历史页清理区常驻占用面板——总占用读数 + 超阈琥珀
