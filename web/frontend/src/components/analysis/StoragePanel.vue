@@ -63,7 +63,7 @@ const overText = computed(() => {
       </table>
       <p class="st-foot mono">
         共 {{ usage.total_entries }} 项执行目录{{ usage.truncated ? "（仅列前 50）" : "" }}
-        · 可清理量为超保留期的 chk/rwf · 手动清理后此处即时反映
+        — 可清理量为超保留期的 chk/rwf，手动清理后此处即时反映
       </p>
     </div>
   </div>

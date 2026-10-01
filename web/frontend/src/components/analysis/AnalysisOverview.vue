@@ -57,7 +57,7 @@ const blocks: { key: keyof Result["blocks"]; label: string }[] = [
       <dd class="mono">
         {{ result.parser.name }} {{ result.parser.version }}
         <template v-if="result.package">
-          · {{ result.package.name }} {{ result.package.version }}
+          / {{ result.package.name }} {{ result.package.version }}
         </template>
       </dd>
     </dl>
@@ -102,7 +102,7 @@ const blocks: { key: keyof Result["blocks"]; label: string }[] = [
           class="blk mono"
           :class="result.blocks[b.key] ? 'blk--on' : 'blk--off'"
         >
-          {{ b.label }}{{ result.blocks[b.key] ? "" : " · 缺" }}
+          {{ b.label }}{{ result.blocks[b.key] ? "" : " — 缺" }}
         </span>
       </dd>
     </dl>

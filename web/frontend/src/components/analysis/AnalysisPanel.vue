@@ -253,7 +253,7 @@ function switchTab(t: (typeof tabs.value)[number]) {
         class="ws-tag mono"
         :title="wsPath"
       >
-        {{ wsPath }} · 只读不落库
+        {{ wsPath }} — 只读不落库
       </span>
       <div class="ws-entry">
         <input
@@ -304,7 +304,7 @@ function switchTab(t: (typeof tabs.value)[number]) {
           :title="t.disabled ? t.reason : undefined"
           @click="switchTab(t)"
         >
-          {{ TAB_LABELS[t.key] }}<template v-if="t.disabled"> · 缺</template>
+          {{ TAB_LABELS[t.key] }}<template v-if="t.disabled"> — 缺</template>
         </button>
       </div>
 

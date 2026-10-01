@@ -299,7 +299,7 @@ async function requeue() {
     actionNote.value = {
       ok: true,
       msg: data.normalized
-        ? `已入待执行队列 S${data.seat_id} · 输入已自动规范化（换行/空行）`
+        ? `已入待执行队列 S${data.seat_id} — 输入已自动规范化（换行/空行）`
         : `已入待执行队列 S${data.seat_id}`,
     };
   }
@@ -342,7 +342,7 @@ async function confirmCleanup() {
   cleanupLoading.value = false;
   cleanupOpen.value = false;
   if (data) {
-    cleanupNote.value = `清理完成 — 检查 ${data.checked} 项 · 移除 chk ${data.removed_chk} · rwf ${data.removed_rwf}`;
+    cleanupNote.value = `清理完成 — 检查 ${data.checked} 项 — 移除 chk ${data.removed_chk} — rwf ${data.removed_rwf}`;
   }
   loadUsage(); // 手动清理后统计即时反映（§2.6）
 }
@@ -363,11 +363,11 @@ async function confirmCleanup() {
       <label class="mono filter">
         <span>排序</span>
         <select v-model="sort" @change="resetPage">
-          <option value="submitted_desc">提交时间 · 新→旧</option>
-          <option value="finished_desc">完成时间 · 新→旧</option>
-          <option value="finished_asc">完成时间 · 旧→新</option>
-          <option value="filename_asc">文件名 · A→Z</option>
-          <option value="filename_desc">文件名 · Z→A</option>
+          <option value="submitted_desc">提交时间 / 新→旧</option>
+          <option value="finished_desc">完成时间 / 新→旧</option>
+          <option value="finished_asc">完成时间 / 旧→新</option>
+          <option value="filename_asc">文件名 / A→Z</option>
+          <option value="filename_desc">文件名 / Z→A</option>
         </select>
       </label>
 
@@ -531,14 +531,14 @@ async function confirmCleanup() {
         </dl>
         <dl class="cell">
           <dt class="mono">HQ 任务 / 出处</dt>
-          <dd class="mono">{{ selected.hq_job_id ?? "—" }} · {{ selected.queue_id ?? "直接提交" }}</dd>
+          <dd class="mono">{{ selected.hq_job_id ?? "—" }} / {{ selected.queue_id ?? "直接提交" }}</dd>
         </dl>
         <dl v-if="selected.monitor_summary" class="cell">
           <dt class="mono">监控峰值</dt>
           <dd class="mono">
             CPU {{ fmtPercent(selected.monitor_summary.cpu_peak_percent) }} / MEM
-            {{ fmtMemory(selected.monitor_summary.mem_peak_mb) }} · 停滞
-            {{ selected.monitor_summary.stall_alerts ?? 0 }} 次 · 累计
+            {{ fmtMemory(selected.monitor_summary.mem_peak_mb) }} / 停滞
+            {{ selected.monitor_summary.stall_alerts ?? 0 }} 次 / 累计
             {{ fmtDuration((selected.monitor_summary.stall_total_minutes ?? 0) * 60) }}
           </dd>
         </dl>
