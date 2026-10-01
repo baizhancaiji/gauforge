@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T14:09+08:00",
+  "updated": "2026-10-01T14:40+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -195,6 +195,13 @@
       "type": "fixed",
       "scope": "docs",
       "summary": "修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要改写为行为视角",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "M3 审核二轮补遗：§0.4 补记拆补模式二次发生与教训具体化、四处金标准份数同步现行 10 份、两处软换行断句重排；roadmap §2.5 样本目录登记拆句（仅环境变量覆盖、不进设置面板）",
       "breaking": false,
       "migration": null
     }
