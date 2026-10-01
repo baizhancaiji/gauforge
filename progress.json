@@ -1,217 +1,39 @@
 {
-  "updated": "2026-10-01T15:05+08:00",
+  "updated": "2026-10-01T15:27+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
-    {
-      "type": "added",
-      "scope": "docs",
-      "summary": "新增 M3/M4 联合执行计划：结果分析与工作流两波共 27 项任务的完整实施方案（含契约基线、测试矩阵与风险预案）",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 roadmap 开放事项 5 裁决：自动定时清理不引入，改为空间占用统计与阈值告警（仅警告、手动清理沿用既有入口）",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修订 M3/M4 联合计划（用户裁决落实）：新增工作流查询端点、续跑以符号引用关联原执行、补占用告警设计等 25 项",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 roadmap 二轮审查发现：SSE 事件数补注、crest 组合流提取豁免、工作区只读分析后缀扩为 .out/.log",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修订 M3/M4 联合计划二轮 15 项裁决：重入语义、契约口径、依赖关系、验收边界与占用统计基准等定稿落档",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修订 M3/M4 联合计划三轮 17 项裁决：组合流满员拒绝、关键路径更正、schema 迁移版本化与超时口径等定稿",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "将 M3/M4 联合计划拆分为两份独立计划（m3-plan/m4-plan），两波执行、两次发布，章节与交叉引用随之重排",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修复两计划独立审核发现的 9 项问题：拆分残留、外链与错误码口径、走查清单重排等全部闭环",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "docs",
-      "summary": "新增分析与存储契约：结果分析、cube 生成、工作区文件只读分析与空间占用共 8 端点，错误码扩至 29，设置登记占用告警阈值",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 A2/A3 设计定稿：金标准解析实证、样本版本缺口处置与前端渲染决策点全部关闭落档",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补充轨道响应契约自旋维度：开壳层计算按 α/β 双自旋组返回轨道，闭壳层不受影响",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "更换 M3 金标准集为可解析的现代实测输出：6 份覆盖各任务形态，旧样本保留作进度解析回归",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补充两份本机实测金标准：闭壳层与开壳层 Pop=Reg 输出，补齐轨道对称性等属性缺口",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增结果解析能力：正常结束的计算自动解析出能量收敛、频率、轨道与热化学数据，异常与超时降级留档不阻断收尾",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补齐金标准样本缺口：新增虚频、现代小 fchk 与极端降级样例，回归覆盖扩至 10 份输出与 16 份 fchk",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "web",
-      "summary": "修复个别数值字段（如虚频值）序列化后非纯数值的问题",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增分析结果入库：计算收尾即自动落盘分析数据并置位历史条目 result_ref，历史详情可直接读取；解析失败仅不写结果、不影响历史记录",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补充收敛迹线契约可空语义：迭代早期判据列以 null 占位，对齐实测数据",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增分析读取端点：历史条目可分别读取概览、能量收敛、频率、轨道四类分析数据（仅正常结束可读、缺失块明示）；工作区内 .out/.log 输出文件支持直接只读分析（不落库）；超长收敛数据自动抽稀",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增轨道/静电势 cube 生成与下载端点：按参数生成等值面文件并幂等复用，cubegen 缺失或生成失败显式报错并携带原因",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增解析回归闸门：金标准输出 10 份与构造异常样例 4 份常驻回归，覆盖解析异常、非正常结束、属性缺失三类降级路径",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "注记 roadmap 待确认事项 2 部分关闭：失败样例解析降级面已由常驻回归闸门覆盖",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增空间占用统计与告警：可查看总占用与各执行占用明细（可清理量单列），超过可配置阈值时仅警告不自动清理（阈值运行级可调、0 禁用）",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "web",
-      "summary": "修复工作区文件分析在解析超时时误报服务器错误的问题",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "web",
-      "summary": "修复空间占用统计口径偏差：运行中与孤儿执行目录计入总占用并纳入占用明细",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "api",
-      "summary": "补登记 cube 文件流 409 响应与工作区路径守卫三态语义，占用统计描述补全态口径",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 M3 审核口径：降级分支语义、错误码、可空字段与告警阈值默认值定稿，样本目录支持环境变量覆盖",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "docs",
-      "summary": "修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要改写为行为视角",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补记审核二轮发现：计划沿革留痕与金标准份数口径统一，roadmap 样本目录登记明确不进设置面板",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "落审核裁决两项：文档类变更记录补豁免口径，存储统计单遍历优化随占用面板任务实施",
-      "breaking": false,
-      "migration": null
-    }
+    {"type": "added", "scope": "docs", "summary": "新增 M3/M4 联合执行计划：结果分析与工作流两波共 27 项任务的完整实施方案（含契约基线、测试矩阵与风险预案）", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "回填 roadmap 开放事项 5 裁决：自动定时清理不引入，改为空间占用统计与阈值告警（仅警告、手动清理沿用既有入口）", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "修订 M3/M4 联合计划（用户裁决落实）：新增工作流查询端点、续跑以符号引用关联原执行、补占用告警设计等 25 项", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "回填 roadmap 二轮审查发现：SSE 事件数补注、crest 组合流提取豁免、工作区只读分析后缀扩为 .out/.log", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "修订 M3/M4 联合计划二轮 15 项裁决：重入语义、契约口径、依赖关系、验收边界与占用统计基准等定稿落档", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "修订 M3/M4 联合计划三轮 17 项裁决：组合流满员拒绝、关键路径更正、schema 迁移版本化与超时口径等定稿", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "将 M3/M4 联合计划拆分为两份独立计划（m3-plan/m4-plan），两波执行、两次发布，章节与交叉引用随之重排", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "修复两计划独立审核发现的 9 项问题：拆分残留、外链与错误码口径、走查清单重排等全部闭环", "breaking": false, "migration": null},
+    {"type": "added", "scope": "docs", "summary": "新增分析与存储契约：结果分析、cube 生成、工作区文件只读分析与空间占用共 8 端点，错误码扩至 29，设置登记占用告警阈值", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "回填 A2/A3 设计定稿：金标准解析实证、样本版本缺口处置与前端渲染决策点全部关闭落档", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "补充轨道响应契约自旋维度：开壳层计算按 α/β 双自旋组返回轨道，闭壳层不受影响", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "更换 M3 金标准集为可解析的现代实测输出：6 份覆盖各任务形态，旧样本保留作进度解析回归", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "补充两份本机实测金标准：闭壳层与开壳层 Pop=Reg 输出，补齐轨道对称性等属性缺口", "breaking": false, "migration": null},
+    {"type": "added", "scope": "web", "summary": "新增结果解析能力：正常结束的计算自动解析出能量收敛、频率、轨道与热化学数据，异常与超时降级留档不阻断收尾", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "补齐金标准样本缺口：新增虚频、现代小 fchk 与极端降级样例，回归覆盖扩至 10 份输出与 16 份 fchk", "breaking": false, "migration": null},
+    {"type": "fixed", "scope": "web", "summary": "修复个别数值字段（如虚频值）序列化后非纯数值的问题", "breaking": false, "migration": null},
+    {"type": "added", "scope": "web", "summary": "新增分析结果入库：计算收尾即自动落盘分析数据并置位历史条目 result_ref，历史详情可直接读取；解析失败仅不写结果、不影响历史记录", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "补充收敛迹线契约可空语义：迭代早期判据列以 null 占位，对齐实测数据", "breaking": false, "migration": null},
+    {"type": "added", "scope": "web", "summary": "新增分析读取端点：历史条目可分别读取概览、能量收敛、频率、轨道四类分析数据（仅正常结束可读、缺失块明示）；工作区内 .out/.log 输出文件支持直接只读分析（不落库）；超长收敛数据自动抽稀", "breaking": false, "migration": null},
+    {"type": "added", "scope": "web", "summary": "新增轨道/静电势 cube 生成与下载端点：按参数生成等值面文件并幂等复用，cubegen 缺失或生成失败显式报错并携带原因", "breaking": false, "migration": null},
+    {"type": "added", "scope": "web", "summary": "新增解析回归闸门：金标准输出 10 份与构造异常样例 4 份常驻回归，覆盖解析异常、非正常结束、属性缺失三类降级路径", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "注记 roadmap 待确认事项 2 部分关闭：失败样例解析降级面已由常驻回归闸门覆盖", "breaking": false, "migration": null},
+    {"type": "added", "scope": "web", "summary": "新增空间占用统计与告警：可查看总占用与各执行占用明细（可清理量单列），超过可配置阈值时仅警告不自动清理（阈值运行级可调、0 禁用）", "breaking": false, "migration": null},
+    {"type": "fixed", "scope": "web", "summary": "修复工作区文件分析在解析超时时误报服务器错误的问题", "breaking": false, "migration": null},
+    {"type": "fixed", "scope": "web", "summary": "修复空间占用统计口径偏差：运行中与孤儿执行目录计入总占用并纳入占用明细", "breaking": false, "migration": null},
+    {"type": "fixed", "scope": "api", "summary": "补登记 cube 文件流 409 响应与工作区路径守卫三态语义，占用统计描述补全态口径", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "回填 M3 审核口径：降级分支语义、错误码、可空字段与告警阈值默认值定稿，样本目录支持环境变量覆盖", "breaking": false, "migration": null},
+    {"type": "fixed", "scope": "docs", "summary": "修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要改写为行为视角", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "补记审核二轮发现：计划沿革留痕与金标准份数口径统一，roadmap 样本目录登记明确不进设置面板", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "落审核裁决两项：文档类变更记录补豁免口径，存储统计单遍历优化随占用面板任务实施", "breaking": false, "migration": null},
+    {"type": "changed", "scope": "docs", "summary": "回填 M3 计划三审口径：降级链补记 SCF 能量缺失降级分支，分析读取 404 口径校准（running/未知 id 无终态行）", "breaking": false, "migration": null},
+    {"type": "fixed", "scope": "docs", "summary": "修正进度登记瑕疵：未发布摘要收敛为行为视角短句，进度快照瘦身紧凑化", "breaking": false, "migration": null}
   ],
   "in_progress": {
     "task": "M3 结果解析与可视化",
@@ -219,12 +41,11 @@
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
-    "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
     "C 阶段按 m3-plan §6 提交序列推进：C1（3dmol/echarts 镜像源本地化+外链审计脚本）→C2/C3/C4/C8→D1 走查→D2 发布 2.2.0"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
-  "context": "2026-09-23 完成 M0 全部代码工作：阶段 A 契约（docs/api/ 四件套、决策点 1-11 定稿）、阶段 B 后端骨架（23 契约测试）、阶段 C 前端（六页/SSE 消费/设置面板）先后落库；随后对照 roadmap/m0-plan/m0-frontend-design 全面审查并修复 P1-P10（契约 nullable 写法、设置 key 漂移、SSE 重放语义、mock 剧本联演、前端快照/Toast/硬编码、文档对齐）。OpenAPI 用 3.0.3（$ref 与 nullable 不能同级，allOf 包裹 openapi-core 亦不合并，可空枚举字段需内联含 null）。2026-09-28 落盘版本标识与更新功能需求文档并完成评审修订（18 项口径对齐）：版本号现状四处硬编码（main.py/_VERSION、system.py health、openapi.yaml info.version、前端无展示）为第一块待拆基石，更新通道复用 package_release.sh 固定名附件与 update.sh 代理约定，httpx/packaging 已在依赖清单零新增。 2026-09-28 批次 A（契约文档 diff）落库：openapi.yaml 预告更新域四端点五错误码与 SettingItem.range 枚举结构（info.version 2.1.0），sse.md 增 update.progress/update.phase（事件全集 15 类、进度 500ms 合并窗口），mapping/roadmap/deployment 对齐更新卡映射、两参数登记与升级链 WebUI 主/CLI 兜底口径；两侧契约生成物（models.py/contract.ts）随契约再生，批次收口闸门通过。 2026-09-28 批次 B 落库：config.APP_VERSION 三级解析链与 bare_version 剥 v 单点、G16WEB_UPDATE_BASE/附件名/超时/默认代理等更新默认值、运行级 update_check_interval（枚举校验待 C1）；health 与 openapi info.version 改单一事实来源并动态覆盖（ssot 豁免定稿：剔除 info.version 严格比对+独立断言）；批次 B 收口全量 363 通过、gen:types 零 diff。 2026-09-28 批次 C/D 后端 update 域落库：C1 运行级枚举值域校验（range.enum 先于 min/max、不命中归 type 不扩词表）；D1 services/update.py 检查通道（packaging 严格更大比较含源码形态 git describe 后缀按基线 tag、探测四分支文案常量单一来源、.update-proxy 与 update.sh printf '%s' 互认、.update-check 失败保留上一份成功值）；D2 apply 流程（三守卫/同步预检两 502/流式下载 500ms 合并窗口/重试三次指数退避/sha256 中止/载荷移交 .update-payload.tar.gz/detached 拉起与 SIGTERM 自退/update-state 落盘与恢复三分支）；D3 四端点接入（apply 动态 202/200）；D4 自动检查调度（30s 轮询读最新设置、01:00 锚定窗口起点、到点与启动补查同口径、never 空转）；D5 SSE 事件登记 15 类全集断言。批次 E 落库：self_update.sh 接管脚本（等父退出与端口释放、解压覆盖、刷依赖、仅改 phase 置 done、根脚本 *.new 原子自更新、nohup 原上下文重启、--dry-run）与入包清单，验证包解包确认三脚本齐且与仓库源一致。实施中发现并修复 B1 埋下的 PROJECT_ROOT 错指 docs 目录（错误码静态闸门此前空转、hq 产物定位错位、伴生文件曾污染 docs/），测试环境以预置 never 隔离调度协程防长用例真实触网；闸门自匹配豁免与前端按码分支允许集（补登记 SEAT_WINDOW_LOCKED）同步修正。 2026-09-29 批次 F 前端落库：F1 侧栏版本行（health 带 v 形态直接渲染、重连重拉校对、语义化 button 去按钮化、accent 圆点 available 亮其余灭、导航区细分隔线分离）；F2 设置页更新卡（八态状态机 SSE 驱动、status 快照恢复不重查、置灰矩阵附 §3.5 文案、409 守卫本地文案兜底 phase 翻转即清、进度条左右布局 KB/s→MB/s、代理三选一与 update.sh 互认、更新说明链接尾六字替换防双写、启动级两列、枚举四选下拉、1080p 预算收敛）；F3 强刷机制（restarting 感知置位轮询资格、断线轮询 health 500ms/120s 三分支 reload/failed/继续、超时如实提示、版本基线 markAppVersion）。实施中发现源码形态自动检查补查落伴生文件于仓库根，gitignore 补五件防污染；走查截图两轮收敛（版本行长串截断 title 补全、枚举 hint 取值前缀、间距/hint 行高压缩）。F 批收口：pytest 452 passed、hq 产物在位、四校验脚本与 gen:types 零 diff 全绿。 2026-09-29 批次 G 落库：G1 本地端到端演练按 §4.5 全实证——部署目录 A（v2.0.9）+ 伪装 release（8402）+ G16WEB_UPDATE_BASE 演练口，主流程检查→available（文案链接逐字）→立即更新→detached self_update.sh 编排（update.log 留痕）→前端 restarting 感知后轮询强刷（access log 实证 GET / reload）→v2.1.1 更新完成、update-state 清理；反例 a running 409（fake_g16 真实链路）、b sha256 篡改（校验中止旧版未动）、c 关浏览器（detached 独立完成）、d 断电等效（update-state 中断恢复 failed 逐字文案，由首次演练布置错误真实触发——伪装 tar 顶层须为 gauforge/ 的布局教训写入附录）；另实证补查窗口双分支、代理拼接规则（迷你透传代理 access log）与 up_to_date/超时文案分支，A1–A6 逐条勾验过、截图三张入库 docs/plans/assets/version-update-drill/。G2 全量闸门：pytest 452 passed、hq 产物在位、validate_progress/check_tokens/check_contrast/gen_changelog_md --check 全 OK、gen:types 零 diff。 2026-09-29 安装链路镜像化：git fetch 镜像 gh-proxy.com 公网解析已指向 loopback 不可用，全局 insteadOf 换为 v4.gh-proxy.org（用户授权，push SSH 分工不变）；install.sh 的 uv 安装器（UV_INSTALLER_GITHUB_BASE_URL）与托管解释器（UV_PYTHON_INSTALL_MIRROR）下载源同改经 v4 代理（uv 文档 context7 查证变量名），GAUFORGE_GH_PROXY 可覆盖，两链路本地实测（uv 0.12.19 装出、cpython-3.13.15 5.5s 下载）；deployment/development 教程同步。 2026-09-29 计划外需求（配置持久化加固）落库：排查确认运行级设置与席位序列早已工作区 SQLite 持久化（本次补跨重启回归实证），真实缺口为排序规则（前端刷新即丢）与代理配置（.update-proxy 在部署目录，重装/换目录即丢）。方案：新增 ui-prefs 域（迁移 v2 ui_prefs 表 + UiPrefsRepo + GET/PUT /ui-preferences，键白名单 queues.sort/history.sort/archive.sort 值域整批校验 all-or-nothing、复用 INVALID_REQUEST 不扩错误码、不发 SSE）；代理配置 proxy_path 迁 G16WEB_HOME/.update-proxy，启动 migrate_proxy_to_workspace 一次性搬迁（幂等、工作区优先、遗留清理），update.sh CONF 同路径互认（${G16WEB_HOME:-$HOME/g16web}，mkdir -p）；前端 useSortPref 组合式（回填屏蔽 hydrating、失败静默、历史/归档同组件跨路由键切换重拉）。冒烟（隔离 8399/临时工作区）实证偏好与代理跨重启保持；冒烟 pkill 误停用户 8300 实例已如实登记。全量闸门 466 passed、四校验脚本与 gen:types 零 diff 全绿。"
+  "context": "M3 A/B 阶段（契约、解析、分析端点、cube、占用统计）已落库并经三轮审核修复；当前进行 C 阶段前端（C1 依赖本地化 → C2/C3/C4/C8 → D 走查发布）。关键口径：金标准集 ~/g16/tests/ 10 份 .out + 16 份 .fchk（G16WEB_G16_SAMPLES 可覆盖）；改 openapi.yaml 须同批重跑两侧契约生成器并过 test_openapi_ssot；计划与 roadmap 为口径单一事实来源，历史细节查 CHANGELOG.jsonl 与 git。"
 }
