@@ -41,6 +41,9 @@ function baseAxis(xName: string, yName: string, log: boolean) {
     xAxis: {
       type: "value" as const,
       name: xName,
+      // 轴名中置下挂：end 定位会被画布右缘裁剪（D1 走查缺陷①）
+      nameLocation: "middle" as const,
+      nameGap: 25,
       nameTextStyle: { color: t.textFaint },
       axisLine: { lineStyle: { color: t.textFaint } },
       axisLabel: { color: t.textFaint },
@@ -55,7 +58,7 @@ function baseAxis(xName: string, yName: string, log: boolean) {
       axisLabel: { color: t.textFaint },
       splitLine: { lineStyle: { color: t.gridLine } },
     },
-    grid: { left: 8, right: 30, top: 32, bottom: 28, containLabel: true },
+    grid: { left: 8, right: 30, top: 32, bottom: 46, containLabel: true },
     tooltip: { trigger: "axis" as const },
   };
 }
