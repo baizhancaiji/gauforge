@@ -1,95 +1,25 @@
 {
-  "updated": "2026-10-01T17:24+0800",
+  "updated": "2026-10-01T18:51:00+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
       "type": "added",
       "scope": "docs",
-      "summary": "新增 M3/M4 联合执行计划：结果分析与工作流两波共 27 项任务的完整实施方案（含契约基线、测试矩阵与风险预案）",
+      "summary": "新增 M3 执行计划与全套契约定稿：27 项任务实施方案，分析概览/收敛/频率/轨道、cube 生成、工作区只读分析与空间占用共 8 端点及 5 新错误码",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "回填 roadmap 开放事项 5 裁决：自动定时清理不引入，改为空间占用统计与阈值告警（仅警告、手动清理沿用既有入口）",
+      "summary": "修订并拆分 M3/M4 联合计划为两份独立计划：多轮审核裁决 25+15+17 项定稿落档，拆分残留与外链、错误码口径全部闭环",
       "breaking": false,
       "migration": null
     },
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "修订 M3/M4 联合计划（用户裁决落实）：新增工作流查询端点、续跑以符号引用关联原执行、补占用告警设计等 25 项",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 roadmap 二轮审查发现：SSE 事件数补注、crest 组合流提取豁免、工作区只读分析后缀扩为 .out/.log",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修订 M3/M4 联合计划二轮 15 项裁决：重入语义、契约口径、依赖关系、验收边界与占用统计基准等定稿落档",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修订 M3/M4 联合计划三轮 17 项裁决：组合流满员拒绝、关键路径更正、schema 迁移版本化与超时口径等定稿",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "将 M3/M4 联合计划拆分为两份独立计划（m3-plan/m4-plan），两波执行、两次发布，章节与交叉引用随之重排",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "修复两计划独立审核发现的 9 项问题：拆分残留、外链与错误码口径、走查清单重排等全部闭环",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "docs",
-      "summary": "新增分析与存储契约：结果分析、cube 生成、工作区文件只读分析与空间占用共 8 端点，错误码扩至 29，设置登记占用告警阈值",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 A2/A3 设计定稿：金标准解析实证、样本版本缺口处置与前端渲染决策点全部关闭落档",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补充轨道响应契约自旋维度：开壳层计算按 α/β 双自旋组返回轨道，闭壳层不受影响",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "更换 M3 金标准集为可解析的现代实测输出：6 份覆盖各任务形态，旧样本保留作进度解析回归",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补充两份本机实测金标准：闭壳层与开壳层 Pop=Reg 输出，补齐轨道对称性等属性缺口",
+      "summary": "回填 A2/A3 设计定稿与金标准补齐：可解析现代实测输出 10 份与 fchk 16 份，补轨道自旋维度、对称性与极端降级样例",
       "breaking": false,
       "migration": null
     },
@@ -101,44 +31,23 @@
       "migration": null
     },
     {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补齐金标准样本缺口：新增虚频、现代小 fchk 与极端降级样例，回归覆盖扩至 10 份输出与 16 份 fchk",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
+      "type": "added",
       "scope": "web",
-      "summary": "修复个别数值字段（如虚频值）序列化后非纯数值的问题",
+      "summary": "新增分析结果入库：计算收尾即自动落盘分析数据并置位历史条目 result_ref，历史详情可直接读取",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "web",
-      "summary": "新增分析结果入库：计算收尾即自动落盘分析数据并置位历史条目 result_ref，历史详情可直接读取；解析失败仅不写结果、不影响历史记录",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补充收敛迹线契约可空语义：迭代早期判据列以 null 占位，对齐实测数据",
+      "summary": "新增分析读取端点：历史条目可分别读取概览、能量收敛、频率、轨道四类分析数据（仅正常结束可读、缺失块明示），工作区内 .out/.log 可路径输入直接只读分析",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "web",
-      "summary": "新增分析读取端点：历史条目可分别读取概览、能量收敛、频率、轨道四类分析数据（仅正常结束可读、缺失块明示）；工作区内 .out/.log 输出文件支持直接只读分析（不落库）；超长收敛数据自动抽稀",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "added",
-      "scope": "web",
-      "summary": "新增轨道/静电势 cube 生成与下载端点：按参数生成等值面文件并幂等复用，cubegen 缺失或生成失败显式报错并携带原因",
+      "summary": "新增轨道/静电势 cube 生成与下载端点：按参数生成等值面文件并幂等复用，cubegen 缺失或生成失败显式报错并携带 stderr 尾部",
       "breaking": false,
       "migration": null
     },
@@ -150,30 +59,16 @@
       "migration": null
     },
     {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "注记 roadmap 待确认事项 2 部分关闭：失败样例解析降级面已由常驻回归闸门覆盖",
-      "breaking": false,
-      "migration": null
-    },
-    {
       "type": "added",
       "scope": "web",
-      "summary": "新增空间占用统计与告警：可查看总占用与各执行占用明细（可清理量单列），超过可配置阈值时仅警告不自动清理（阈值运行级可调、0 禁用）",
+      "summary": "新增空间占用统计与告警：总占用与各执行占用明细（可清理量单列），超过可配置阈值时仅警告不自动清理（运行级可调、0=禁用、即时生效）",
       "breaking": false,
       "migration": null
     },
     {
       "type": "fixed",
       "scope": "web",
-      "summary": "修复工作区文件分析在解析超时时误报服务器错误的问题",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "web",
-      "summary": "修复空间占用统计口径偏差：运行中与孤儿执行目录计入总占用并纳入占用明细",
+      "summary": "修复数值字段序列化非纯数值、工作区分析超时误报服务器错误、占用统计口径偏差（运行中与孤儿目录计入总占用与明细）三处问题",
       "breaking": false,
       "migration": null
     },
@@ -187,42 +82,14 @@
     {
       "type": "changed",
       "scope": "docs",
-      "summary": "回填 M3 审核口径：降级分支语义、错误码、可空字段与告警阈值默认值定稿，样本目录支持环境变量覆盖",
+      "summary": "回填 M3 审核口径：降级分支语义、错误码、可空字段与告警阈值默认值定稿，开放事项与待确认事项部分关闭注记，文档类变更记录豁免口径落档",
       "breaking": false,
       "migration": null
     },
     {
       "type": "fixed",
       "scope": "docs",
-      "summary": "修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要改写为行为视角",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "补记审核二轮发现：计划沿革留痕与金标准份数口径统一，roadmap 样本目录登记明确不进设置面板",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "落审核裁决两项：文档类变更记录补豁免口径，存储统计单遍历优化随占用面板任务实施",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "changed",
-      "scope": "docs",
-      "summary": "回填 M3 计划三审口径：降级链补记 SCF 能量缺失降级分支，分析读取 404 口径校准（running/未知 id 无终态行）",
-      "breaking": false,
-      "migration": null
-    },
-    {
-      "type": "fixed",
-      "scope": "docs",
-      "summary": "修正进度登记瑕疵：未发布摘要收敛为行为视角短句，进度快照瘦身紧凑化",
+      "summary": "修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要收敛为行为视角短句",
       "breaking": false,
       "migration": null
     },
@@ -250,7 +117,7 @@
     {
       "type": "added",
       "scope": "frontend",
-      "summary": "详情分析区新增轨道与静电势三维渲染：可选轨道生成等值面（正负双色、精细度可调）或静电势着色，3Dmol 经离线化副本本地打包零外链",
+      "summary": "详情分析区新增轨道与静电势三维渲染：可选轨道生成等值面（正负双色、精细度可调）或静电势着色，3Dmol 经离线化副本本地打包",
       "breaking": false,
       "migration": null
     },
@@ -267,6 +134,55 @@
       "summary": "历史页新增常驻空间占用面板：总占用读数、超阈琥珀警示与各执行占用明细可展开，手动清理后即时反映",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "回填 M3 计划三审口径：SCF 能量缺失降级分支补记，分析读取 404 口径校准（running/未知 id 无历史终态行返回 404）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "补全工作区文件分析的轨道能量清单展示（此前仅提示文案），等值面入口置灰并注明无 fchk；频率面板补无频率块与无 IR 强度两层空态占位，归档切换即时刷新占用读数",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "轨道面板组件卸载时显式释放 WebGL 上下文（WEBGL_lose_context），防连续切换执行累积上下文触浏览器上限",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "frontend",
+      "summary": "分析面板分块拉取状态打包为 useBlock 工厂并收敛判据系列公共形状，消除三处同形 loader 与逐字重复的参考线构建",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "分析区 UI 文案分隔符合规化（圆点改长破折号/斜杠），结果引用标签回正为真实值口径（B2 已落库非占位）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "存储统计路径拼接统一 pathlib（退役 os.path.join/relpath），单测口径不变全绿",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "二审终审修正收口：轨道面板 v-else-if 两分支加 key 强制重建释放 WebGL（同型组件合并承载首次实现）且工作区模式轨道能量清单改为可展开浏览（选择器不禁用、生成/等值面入口维持置灰）；亮色主题浅淡强调文本调深一档过 4.5:1 并扩展对比度闸门覆盖 bg-inset 底组合；历史页残留圆点分隔符补清（共 6 处）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
@@ -281,5 +197,5 @@
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
-  "context": "M3 A/B 阶段（契约、解析、分析端点、cube、占用统计）已落库并经三轮审核修复；当前进行 C 阶段前端（C1 依赖本地化 → C2/C3/C4/C8 → D 走查发布）。关键口径：金标准集 ~/g16/tests/ 10 份 .out + 16 份 .fchk（G16WEB_G16_SAMPLES 可覆盖）；改 openapi.yaml 须同批重跑两侧契约生成器并过 test_openapi_ssot；计划与 roadmap 为口径单一事实来源，历史细节查 CHANGELOG.jsonl 与 git。"
+  "context": "M3 C 阶段收口后三审修复：C1/C8 提交粒度拆分（12 笔重写零树差异）、workspace 轨道清单补全、分隔符/空态/WebGL 释放/去重等修复已落，D1 走查待启。"
 }
