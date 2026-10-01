@@ -53,8 +53,9 @@
 #     缺失且惰性重建失败（M3；重建 = finalize 急解析失败后端点首次访问补跑一次）
 #   - ANALYSIS_PARSE_FAILED — 422：请求的分析块数据不足或解析超时（如无频率
 #     任务请求 frequencies；workspace-out 解析超时 60s，details 注明 timeout；M3）
-#   - WORKSPACE_PATH_OUTSIDE — 400：工作区 .out/.log 分析路径越出工作区
-#     （§2.3 路径守卫：resolve 后须为 workspace_root 子孙且后缀 ∈ {.out,.log}；M3）
+#   - WORKSPACE_PATH_OUTSIDE — 400：工作区 .out/.log 分析路径守卫失败（越出
+#     工作区、路径为空、后缀不符三态同码。§2.3 路径守卫：resolve 后须为
+#     workspace_root 子孙且后缀 ∈ {.out,.log}；M3）
 #   - CUBE_GENERATION_FAILED — 502：cubegen 非零退出/超时 120s（details 携带
 #     stderr 尾部；fchk 产物缺失亦走此码、details 注明；M3）
 #   - CUBE_EXECUTABLE_MISSING — 503：g16_root/cubegen 探测失败（显式不静默；M3）
@@ -850,7 +851,8 @@ components:
       properties:
         total_bytes:
           type: integer
-          description: run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用
+          description: run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用；
+            运行中执行目录与无历史行的孤儿目录一并计入（与 du -sb run/ 全态同口径）
         threshold_bytes:
           type: integer
           description: disk_usage_warn_gb 换算字节数；0=禁用告警
@@ -859,6 +861,8 @@ components:
           description: threshold_bytes>0 且 total_bytes≥threshold_bytes
         entries:
           type: array
+          description: per-execution 占用明细（含运行中条目，reclaimable 恒 0；
+            无历史行的孤儿目录仅计入 total_bytes、不产生明细）
           items:
             type: object
             required: [execution_id, task_id, filename, total_bytes, reclaimable_bytes]
@@ -1017,7 +1021,7 @@ components:
         update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认
         weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装）
         与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50
-        待 A1 评审定；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅
+        ——A1 决策点 5 定稿；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅
         警告不自动清理，m3-plan §2.6）
       required: [startup, runtime]
       properties:
@@ -2234,13 +2238,15 @@ paths:
                 format: binary
         '404':
           $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
 
   /analysis/workspace-out:
     post:
       tags: [history]
       operationId: analyzeWorkspaceOut
-      summary: 工作区 .out/.log 只读分析（一次性四块合一；越出工作区 400，
-        缺失 404、不可解析/超时 422；不落库，M3）
+      summary: 工作区 .out/.log 只读分析（一次性四块合一；路径守卫失败
+        （越界/空路径/后缀不符）400、缺失 404、不可解析/超时 422；不落库，M3）
       requestBody:
         required: true
         content:

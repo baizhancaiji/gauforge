@@ -707,7 +707,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 工作区 .out/.log 只读分析（一次性四块合一；越出工作区 400， 缺失 404、不可解析/超时 422；不落库，M3） */
+        /** 工作区 .out/.log 只读分析（一次性四块合一；路径守卫失败 （越界/空路径/后缀不符）400、缺失 404、不可解析/超时 422；不落库，M3） */
         post: operations["analyzeWorkspaceOut"];
         delete?: never;
         options?: never;
@@ -1165,12 +1165,13 @@ export interface components {
         };
         /** @description 空间占用统计（M3.7，只读；entries 按总占用降序、默认截断前 50 条；纯拉取式无定时器，超阈仅警告不自动清理） */
         StorageUsage: {
-            /** @description run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用 */
+            /** @description run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用； 运行中执行目录与无历史行的孤儿目录一并计入（与 du -sb run/ 全态同口径） */
             total_bytes: number;
             /** @description disk_usage_warn_gb 换算字节数；0=禁用告警 */
             threshold_bytes: number;
             /** @description threshold_bytes>0 且 total_bytes≥threshold_bytes */
             over: boolean;
+            /** @description per-execution 占用明细（含运行中条目，reclaimable 恒 0； 无历史行的孤儿目录仅计入 total_bytes、不产生明细） */
             entries: {
                 execution_id: number;
                 task_id: number;
@@ -1240,7 +1241,7 @@ export interface components {
             env_var?: string | null;
             description?: string;
         };
-        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 待 A1 评审定；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6） */
+        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 ——A1 决策点 5 定稿；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6） */
         SettingsResponse: {
             startup: components["schemas"]["SettingItem"][];
             runtime: components["schemas"]["SettingItem"][];
@@ -2497,6 +2498,7 @@ export interface operations {
                 };
             };
             404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
         };
     };
     analyzeWorkspaceOut: {
