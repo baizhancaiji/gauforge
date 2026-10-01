@@ -68,8 +68,7 @@ def test_flagship_state_and_provenance(flagship):
     r = flagship["result"]
     assert r["state"] == "parsed" and r["parse_error"] is None
     assert r["parser"]["name"] == "cclib"
-    assert r["parser"]["version"] == pytest.approx(
-        _cclib_version(), abs=0) or r["parser"]["version"] == _cclib_version()
+    assert r["parser"]["version"] == _cclib_version()
     assert r["package"] == {"name": "Gaussian", "version": "2016+A.03"}
     assert r["method"] == "B3LYP/def2SVP"
     assert r["missing"] == []  # parsed 恒空（预期缺失由 blocks 承载）

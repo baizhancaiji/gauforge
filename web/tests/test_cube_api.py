@@ -21,6 +21,7 @@ from fastapi.testclient import TestClient
 
 from web.src import config
 from web.src.parse import results as results_parse
+from web.src.services import cube as cube_svc
 from web.src.store import executions, settings, tasks
 from .conftest import assert_contract_schema, load_spec
 from .test_analysis_api import _payload
@@ -28,9 +29,10 @@ from .test_analysis_api import _payload
 spec = load_spec()
 client = TestClient(__import__("web.src.main", fromlist=["app"]).app)
 
-G16_ROOT = Path("~/g16").expanduser()
-FCHK_CLOSED = G16_ROOT / "tests" / "h2o_optfreq_popreg.fchk"
-FCHK_OPEN = G16_ROOT / "tests" / "oh_doublet_popreg.fchk"
+G16_ROOT = Path("~/g16").expanduser()  # cubegen 二进制定位（g16_root 语义）
+# 样本引用走集中配置（config.G16_SAMPLES_DIR，风险 7 预案），不硬编码真机路径
+FCHK_CLOSED = config.G16_SAMPLES_DIR / "h2o_optfreq_popreg.fchk"
+FCHK_OPEN = config.G16_SAMPLES_DIR / "oh_doublet_popreg.fchk"
 
 SIMPLE = "#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\n"
 
@@ -97,7 +99,8 @@ def test_mo_orbital_bound_from_analysis(home):
     """orbital=nmo（19）通过、nmo+1 拒绝——上界取自 analysis.json。"""
     eid = seed_succeeded()
     ok = post_cube(eid, kind="MO", orbital=19)
-    assert ok.status_code in (200, 502, 503)  # 校验过（后续 502/503 属执行面）
+    # fixture 无 fchk：校验通过后确定走 502（fchk 缺失先于 cubegen 探测）
+    assert ok.status_code == 502
     bad = post_cube(eid, kind="MO", orbital=20)
     assert bad.status_code == 422
 
@@ -110,6 +113,17 @@ def test_non_succeeded_409(home):
     executions().finalize(execution_id=eid, state="failed",
                           finished_at="2026-01-01T00:00:00+08:00")
     assert post_cube(eid, kind="Potential").status_code == 409
+    # GET 文件流同语义（契约 409 已登记）
+    assert client.get(
+        f"/api/v1/history/{eid}/analysis/cube/{'0' * 64}").status_code == 409
+
+
+def test_kinds_match_contract_enum():
+    """KINDS 与契约 CubeRequest.kind 枚举同源（漂移守卫）。"""
+    import yaml
+    raw = yaml.safe_load(config.CONTRACT_PATH.read_text(encoding="utf-8"))
+    kind = raw["components"]["schemas"]["CubeRequest"]["properties"]["kind"]
+    assert kind["enum"] == list(cube_svc.KINDS)
 
 
 # ---------------- 执行面（502/503） ----------------
