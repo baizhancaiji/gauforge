@@ -16,6 +16,8 @@ import { computed, ref, watch } from "vue";
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 import AnalysisOverview from "@/components/analysis/AnalysisOverview.vue";
+import ConvergenceChart from "@/components/analysis/ConvergenceChart.vue";
+import FrequenciesPanel from "@/components/analysis/FrequenciesPanel.vue";
 
 type Result = components["schemas"]["Result"];
 type ConvergenceResponse = components["schemas"]["ConvergenceResponse"];
@@ -320,7 +322,7 @@ async function loadOrb() {
           <AnalysisOverview v-else-if="overview" :result="overview" />
         </template>
 
-        <!-- 能量收敛（图表组件随 C3 接入；本提交先打通数据链路与状态） -->
+        <!-- 能量收敛：三源切换 + 判据参考线（C3） -->
         <template v-else-if="activeTab === 'convergence'">
           <p v-if="convLoading" class="ana-hint mono">读取中 …</p>
           <p v-else-if="convError" class="ana-note mono note--bad" role="alert">
@@ -328,30 +330,29 @@ async function loadOrb() {
           </p>
           <template v-else-if="mode === 'workspace' && wsData">
             <p v-if="wsData.convergence.downsampled" class="ana-hint mono">
-              数据量超预算 — 已按步均匀抽稀
+              数据量超预算 — 已按步均匀抽稀（图形按抽稀后序列渲染）
             </p>
-            <p class="ana-hint mono">收敛数据已就绪 — 图表渲染组件接入中</p>
+            <ConvergenceChart :data="wsData.convergence" />
           </template>
           <template v-else-if="conv">
             <p v-if="conv.downsampled" class="ana-hint mono">
-              数据量超预算 — 已按步均匀抽稀
+              数据量超预算 — 已按步均匀抽稀（图形按抽稀后序列渲染）
             </p>
-            <p class="ana-hint mono">收敛数据已就绪 — 图表渲染组件接入中</p>
+            <ConvergenceChart :data="conv" />
           </template>
         </template>
 
-        <!-- 频率与 IR（同上，图表组件随 C3 接入） -->
+        <!-- 频率与 IR：棒图 + 表格联动（C3） -->
         <template v-else-if="activeTab === 'frequencies'">
           <p v-if="freqLoading" class="ana-hint mono">读取中 …</p>
           <p v-else-if="freqError" class="ana-note mono note--bad" role="alert">
             {{ freqError }}
           </p>
-          <p
-            v-else-if="mode === 'workspace' ? !!wsData : !!freq"
-            class="ana-hint mono"
-          >
-            频率与 IR 数据已就绪 — 图表渲染组件接入中
-          </p>
+          <FrequenciesPanel
+            v-else-if="mode === 'workspace' && wsData"
+            :data="wsData.frequencies"
+          />
+          <FrequenciesPanel v-else-if="freq" :data="freq" />
         </template>
 
         <!-- 轨道与静电势（轨道面板随 C4 接入；workspace 模式无 fchk 先行注记） -->
@@ -382,7 +383,7 @@ async function loadOrb() {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-2) var(--space-3);
 }
 .ana-title {
   font-size: var(--text-sm);
@@ -393,7 +394,7 @@ async function loadOrb() {
 .ws-tag {
   font-size: var(--text-xs);
   color: var(--accent);
-  max-width: 220px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -401,13 +402,17 @@ async function loadOrb() {
 .ws-entry {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  flex: 1;
-  min-width: 220px;
+  flex: 1 1 200px;
+  min-width: 0;
+}
+.ws-entry .btn {
+  white-space: nowrap;
 }
 .ws-input {
-  flex: 1;
-  min-width: 120px;
+  flex: 1 1 140px;
+  min-width: 100px;
   height: var(--control-height-sm);
   padding: 0 var(--space-2);
   font-size: var(--text-xs);

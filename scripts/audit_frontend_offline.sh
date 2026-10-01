@@ -28,6 +28,9 @@ ALLOW_PREFIXES=(
   "https://vuejs.org/"                       # Vue 运行时错误消息附带的文档链接（仅控制台文案）
   "https://github.com/baizhancaiji/gauforge" # 更新卡「查看更新说明」锚链接（用户主动点击外跳，非资源加载）
   "https://v4.gh-proxy.org"                  # 更新代理默认值（用户可配数据串，非构建期资源）
+  "https://github.com/ecomfe/"               # zrender/echarts 的 license 横幅文本
+                                             # （/*! */ 注释随 tree-shaking 保留在 chunk 中部，
+                                             #   文件头横幅剥离覆盖不到，C3 实证登记）
 )
 
 # 只豁免文件头部的 license 横幅（/*! ... */ 与 //! 行，打包器保留在产物
