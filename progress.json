@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T00:50:00+08:00",
+  "updated": "2026-10-02T02:04+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -195,6 +195,13 @@
       "type": "added",
       "scope": "docs",
       "summary": "登记 M3 D1 端到端走查记录：七条路径全过（真机 g16 全链路、强停失败样例抽查、result_ref 三态、占用面板越阈警示与清理即时反映、三处受控注入留痕）与 DoD 十条对照，缺陷一处随查随修",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "登记 M3 人工验收问题修复计划：历史页抽屉七项（分析板块按钮化并与预览互斥同区显示、预览窗贴可视区下缘、去抽屉单条导出、缺失块与 tab 去「缺」后缀改纯置灰、收敛图对数轴十的幂刻度与滑块底部布局、小尺寸下拉文字裁剪、轨道画布锚定视口左上）的问题概述、根因定位与修复方案落档",
       "breaking": false,
       "migration": null
     }
