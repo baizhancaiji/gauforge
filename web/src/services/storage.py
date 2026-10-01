@@ -11,6 +11,8 @@
 - reclaimable_bytes 与 M1 清理边界单一实现（finalize.reclaimable_files，
   含「仅 succeeded 且超保留期的顶层 chk/rwf」与「保全快照计 0」口径）；
 - 只读：只 stat/遍历，不触碰、不移动任何文件；清理动作后统计即时反映；
+- 统计为 run/ 整树单遍历（每条目一次 stat，total 与明细一遍完成）+
+  执行行一次全量缓存（C8 收敛，原 2× 遍历 + N+1 点查退役）；
 - 阈值：运行级设置 disk_usage_warn_gb（整数 GB，0=禁用，即时生效）；
   threshold_bytes > 0 且 total_bytes ≥ threshold_bytes ⇒ over=true。
 """
@@ -36,51 +38,62 @@ def over_state(total_bytes: int, warn_gb: int) -> bool:
 
 
 def usage(now: datetime | None = None) -> dict:
-    """GET /storage/usage 响应（契约 StorageUsage）。"""
+    """GET /storage/usage 响应（契约 StorageUsage）。
+
+    C8 单遍历收敛（§2.6 实现注记，2026-10-01 审核裁决）：run/ 整树
+    os.walk 一遍、每条目恰一次 stat，按顶层执行目录分桶累加（total 与
+    per-execution 明细一遍完成）；执行行一次取全量缓存，替代原
+    「2× 遍历 + N+1 点查」。口径不变：total 与 du -sb 同口径（含运行中
+    与孤儿目录），孤儿/杂项仅进总量不产生明细。
+    """
     now = now or datetime.fromisoformat(now_iso())
     run_root = config.HOME_DIR / "run"
     retention = int(settings().get("chk_rwf_retention_days"))
     warn_gb = int(settings().get("disk_usage_warn_gb"))
 
-    # total：run/ 目录整体 apparent size（du -sb run/ 全态同口径）——运行中
-    # 执行目录与无执行行的孤儿目录一并计入（§2.6「run/ 下全部执行目录」）
-    total_bytes = _dir_size(run_root) if run_root.is_dir() else 0
-    entries = []
+    rows = {r["id"]: r for r in executions().list_all()}
+    total = 0
+    per_exec: dict[int, int] = {}
     if run_root.is_dir():
-        for child in run_root.iterdir():
-            if not child.is_dir() or not child.name.isdigit():
-                continue  # 非执行目录形态的杂项仅计入总量
-            row = executions().get(int(child.name))
-            if row is None:
-                continue  # 孤儿目录（无执行行）：task_id 不可得，无明细
-            size = _dir_size(child)
-            reclaimable = sum(f.stat().st_size
-                              for f in finalize.reclaimable_files(
-                                  child, row, retention, now))
-            entries.append({"execution_id": row["id"], "task_id": row["task_id"],
-                            "filename": row["filename"], "total_bytes": size,
-                            "reclaimable_bytes": reclaimable})
+        try:
+            total += os.stat(run_root).st_size  # run 根自身条目（du -sb 含根）
+        except OSError:
+            return {"total_bytes": 0, "threshold_bytes": warn_gb * 1024 ** 3,
+                    "over": False, "entries": [], "total_entries": 0,
+                    "truncated": False}
+        for root_s, dirs, files in os.walk(run_root):
+            cur: int | None = None
+            rel = os.path.relpath(root_s, run_root)
+            if rel != ".":
+                head = rel.split(os.sep, 1)[0]
+                if head.isdigit() and int(head) in rows:
+                    cur = int(head)
+            for name in (*dirs, *files):
+                try:
+                    size = os.stat(os.path.join(root_s, name)).st_size
+                except OSError:
+                    continue  # 竞态消失的条目按 0 计
+                total += size
+                if cur is not None:
+                    per_exec[cur] += size
+                elif cur is None and rel == "." and name.isdigit() \
+                        and int(name) in rows:
+                    # 顶层执行目录条目自身归各自桶（目录 inode 尺寸）
+                    per_exec[int(name)] = per_exec.get(int(name), 0) + size
+
+    entries = []
+    for eid, size in per_exec.items():
+        row = rows[eid]
+        reclaimable = sum(f.stat().st_size
+                          for f in finalize.reclaimable_files(
+                              run_root / str(eid), row, retention, now))
+        entries.append({"execution_id": eid, "task_id": row["task_id"],
+                        "filename": row["filename"], "total_bytes": size,
+                        "reclaimable_bytes": reclaimable})
     entries.sort(key=lambda e: e["total_bytes"], reverse=True)
-    return {"total_bytes": total_bytes,
+    return {"total_bytes": total,
             "threshold_bytes": warn_gb * 1024 ** 3,
-            "over": over_state(total_bytes, warn_gb),
+            "over": over_state(total, warn_gb),
             "entries": entries[:ENTRY_LIMIT],
             "total_entries": len(entries),
             "truncated": len(entries) > ENTRY_LIMIT}
-
-
-def _dir_size(path: Path) -> int:
-    """目录 apparent size（自身条目 + 递归文件/子目录，与 du -sb 同口径）；
-    只读遍历，竞态消失的条目按 0 计。"""
-    total = 0
-    try:
-        total += os.stat(path).st_size  # 目录自身条目（os.walk 不含根）
-    except OSError:
-        return 0
-    for root, dirs, files in os.walk(path):
-        for name in (*dirs, *files):
-            try:
-                total += os.stat(Path(root) / name).st_size
-            except OSError:
-                continue
-    return total

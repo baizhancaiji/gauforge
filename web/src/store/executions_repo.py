@@ -29,6 +29,11 @@ class ExecutionsRepo:
             "SELECT * FROM executions WHERE state = ? ORDER BY id DESC", (state,))
         return [self._deserialize(r) for r in rows]  # type: ignore[misc]
 
+    def list_all(self) -> list[dict]:
+        """全部执行行（无状态过滤；storage 单遍历统计的行缓存源，C8）。"""
+        rows = self._db.query("SELECT * FROM executions ORDER BY id")
+        return [self._deserialize(r) for r in rows]  # type: ignore[misc]
+
     def list_by_task(self, task_id: int) -> list[dict]:
         """任务全部执行记录（id 正序，最近在后）。"""
         rows = self._db.query(
