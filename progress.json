@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T18:51:00+08:00",
+  "updated": "2026-10-02T00:50:00+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -183,19 +183,35 @@
       "summary": "二审终审修正收口：轨道面板 v-else-if 两分支加 key 强制重建释放 WebGL（同型组件合并承载首次实现）且工作区模式轨道能量清单改为可展开浏览（选择器不禁用、生成/等值面入口维持置灰）；亮色主题浅淡强调文本调深一档过 4.5:1 并扩展对比度闸门覆盖 bg-inset 底组合；历史页残留圆点分隔符补清（共 6 处）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "修复能量收敛图 x 轴名被画布右缘裁剪不可读（默认末端定位文本外溢），改中置下挂并预留轴名空间（D1 走查发现）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "登记 M3 D1 端到端走查记录：七条路径全过（真机 g16 全链路、强停失败样例抽查、result_ref 三态、占用面板越阈警示与清理即时反映、三处受控注入留痕）与 DoD 十条对照，缺陷一处随查随修",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 结果解析与可视化",
-    "note": "A/B/C 阶段全部落库（C1 依赖本地化、C2 分析视图、C3 图表、C4 3Dmol、C8 占用面板）；D 阶段走查（D1）与发布收口（D2 2.2.0）待开工"
+    "note": "D1 走查已收口（2026-10-02 接手续作）：七条路径全部通过（路径 1/2/4 GUI 待补项补齐、路径 3 经 API 层 stop 重做成功、路径 5/6/7 首验），缺陷一处随查随修（收敛图轴名裁剪），全量闸门通过（569 测试 + 五项脚本闸门 + hq 在位）。D2（2.2.0 冻结五步）按用户指示待用户完成真实验收后另行执行"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
-    "D1 端到端走查（真机 g16 freq 任务 + §7.2 路径清单，含 3Dmol 等值面成功态截图留痕——headless 冒烟环境无 WebGL）→ D2 发布 2.2.0"
+    "用户真实验收 M3（现场 /tmp/m3acc 保留、服务 127.0.0.1:8398；走查记录 docs/plans/m3-acceptance.md §3/§4 七路径与 DoD 对照可作验收清单）",
+    "D2 发布五步（#15，验收通过后执行）：冻结 2.2.0 → 追加空 unreleased → 清 progress.unreleased → 本地 tag v2.2.0（不推送远端，推送须当次授权）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
-    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
+    "全量 pytest 在受限沙箱下会 1 失败（test_extract_keywords regen 用例须写仓库外 ~/gaussian-kb/data/regen.txt 被拦截，环境权限非产品缺陷）；放行后复跑 569 通过（2026-10-01 22:44 实测）"
   ],
-  "context": "M3 C 阶段收口后三审修复：C1/C8 提交粒度拆分（12 笔重写零树差异）、workspace 轨道清单补全、分隔符/空态/WebGL 释放/去重等修复已落，D1 走查待启。"
+  "context": "M3 C 阶段收口后三审修复已落；D1 走查于 2026-10-02 接手收口（七路径全过、缺陷①轴名裁剪随查随修、受控注入三处均留痕并恢复），记录见 docs/plans/m3-acceptance.md；D2 发布 2.2.0 按用户指示待真实验收后执行。"
 }
