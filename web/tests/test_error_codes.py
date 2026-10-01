@@ -163,7 +163,21 @@ def test_import_parse_reason_aligned():
 # 前端按错误码分支的允许集（其余码走 error.message 逐字透传）：
 # - PENDING_CAPACITY_FULL：提交满员的定制引导（m0 实测口径）
 # - SEAT_WINDOW_LOCKED：席位窗口内移除的定制提示（M1 待执行页）
-FRONTEND_CODE_BRANCHES = {"PENDING_CAPACITY_FULL", "SEAT_WINDOW_LOCKED"}
+# - ANALYSIS_UNAVAILABLE / ANALYSIS_PARSE_FAILED：分析区不可用原因与
+#   块缺失文案（M3 C2 分析视图，§7.1-3 的 409/422 语义 UI 承载）
+# - CUBE_GENERATION_FAILED / CUBE_EXECUTABLE_MISSING：502/503 文案区分
+#   「生成失败」与「cubegen 不可用」（M3 C4 轨道面板，§4.12 失败态）
+# - WORKSPACE_PATH_OUTSIDE：工作区路径守卫三态同码的定制拒绝文案
+#   （M3 C2 workspace .out 入口，§2.3 语义 UI 承载）
+FRONTEND_CODE_BRANCHES = {
+    "PENDING_CAPACITY_FULL",
+    "SEAT_WINDOW_LOCKED",
+    "ANALYSIS_UNAVAILABLE",
+    "ANALYSIS_PARSE_FAILED",
+    "CUBE_GENERATION_FAILED",
+    "CUBE_EXECUTABLE_MISSING",
+    "WORKSPACE_PATH_OUTSIDE",
+}
 
 
 def test_frontend_branches_only_on_capacity_full():
