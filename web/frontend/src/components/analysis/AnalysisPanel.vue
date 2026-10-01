@@ -1,0 +1,482 @@
+<script setup lang="ts">
+/**
+ * 分析区（m3-plan §2.4/§4.10 C2）：历史详情抽屉内嵌四 tab 分析视图，
+ * 不单列路由页面（roadmap M3.1 硬约束）。两种形态同一组件：
+ * - 执行模式（executionId）：概览先行，收敛/频率/轨道按 tab 激活惰性拉取
+ *   （分块端点），blocks=false 的 tab 置灰并注明缺失原因；
+ * - 工作区文件模式（.out 打开入口，分析区头部）：POST /analysis/workspace-out
+ *   四块合一负载直接注入，不落库；轨道 tab 仅清单形态（cube 入口随 C4
+ *   置灰注明无 fchk）。
+ * 异常终态（failed/skipped）不进解析管道：本执行分析区置灰 + 不可分析
+ * 原因注记（409 ANALYSIS_UNAVAILABLE 语义的 UI 承载，§7.1-3），
+ * 工作区文件分析入口不受其影响。
+ */
+import { computed, ref, watch } from "vue";
+
+import { client } from "@/api/client";
+import type { components } from "@/api/contract";
+import AnalysisOverview from "@/components/analysis/AnalysisOverview.vue";
+
+type Result = components["schemas"]["Result"];
+type ConvergenceResponse = components["schemas"]["ConvergenceResponse"];
+type FrequenciesResponse = components["schemas"]["FrequenciesResponse"];
+type OrbitalsResponse = components["schemas"]["OrbitalsResponse"];
+type WorkspaceOutAnalysis = components["schemas"]["WorkspaceOutAnalysis"];
+
+const props = defineProps<{ executionId: number; entryState: string }>();
+
+type TabKey = "overview" | "convergence" | "frequencies" | "orbitals";
+const TAB_LABELS: Record<TabKey, string> = {
+  overview: "概览",
+  convergence: "能量收敛",
+  frequencies: "频率与 IR",
+  orbitals: "轨道与静电势",
+};
+
+/** 当前激活 tab。声明先行：immediate watch 回调内会重置它（TDZ 教训，
+ *  走查实测 ReferenceError 后数据链路全断）。 */
+const activeTab = ref<TabKey>("overview");
+
+// ---------- 本执行分析（执行模式） ----------
+const overview = ref<Result | null>(null);
+const overviewError = ref<string | null>(null);
+const overviewLoading = ref(false);
+const conv = ref<ConvergenceResponse | null>(null);
+const convError = ref<string | null>(null);
+const convLoading = ref(false);
+const freq = ref<FrequenciesResponse | null>(null);
+const freqError = ref<string | null>(null);
+const freqLoading = ref(false);
+const orb = ref<OrbitalsResponse | null>(null);
+const orbError = ref<string | null>(null);
+const orbLoading = ref(false);
+/** 惰性拉取的去重与换执行失效：数据归属的执行 id。 */
+const convFor = ref<number | null>(null);
+const freqFor = ref<number | null>(null);
+const orbFor = ref<number | null>(null);
+
+// ---------- 工作区文件分析（workspace-out，四块合一） ----------
+const wsInput = ref("");
+const wsLoading = ref(false);
+const wsError = ref<string | null>(null);
+const wsData = ref<WorkspaceOutAnalysis | null>(null);
+const wsPath = ref("");
+
+const mode = computed(() => (wsData.value ? "workspace" : "execution"));
+
+function errText(
+  error: unknown,
+  status: number | undefined,
+  kind: "entry" | "workspace",
+): string {
+  const body = error as { error?: { code?: string; message?: string } };
+  const code = body?.error?.code;
+  if (kind === "workspace") {
+    if (code === "WORKSPACE_PATH_OUTSIDE")
+      return "路径被拒绝 — 须为工作区内 .out/.log 文件（越界/空路径/后缀不符）";
+    if (status === 404) return "工作区内不存在该文件";
+    if (code === "ANALYSIS_PARSE_FAILED")
+      return body.error?.message ?? "输出不可解析（或解析超时，上限 60s）";
+    return body?.error?.message ?? "分析失败";
+  }
+  if (code === "ANALYSIS_UNAVAILABLE")
+    return "分析数据不可用（未生成且重建失败）";
+  if (code === "ANALYSIS_PARSE_FAILED") return "该数据块解析失败（数据不足）";
+  return body?.error?.message ?? "读取失败";
+}
+
+/** 概览先行：blocks 驱动 tab 可见性（§2.4）。 */
+async function loadOverview() {
+  overview.value = null;
+  overviewError.value = null;
+  conv.value = null;
+  convError.value = null;
+  convFor.value = null;
+  freq.value = null;
+  freqError.value = null;
+  freqFor.value = null;
+  orb.value = null;
+  orbError.value = null;
+  orbFor.value = null;
+  if (props.entryState !== "succeeded") return; // 异常终态不进解析管道
+  overviewLoading.value = true;
+  const { data, error, response } = await client.GET("/history/{id}/analysis", {
+    params: { path: { id: props.executionId } },
+  });
+  overviewLoading.value = false;
+  if (error || !data) {
+    overviewError.value = errText(error, response?.status, "entry");
+    return;
+  }
+  overview.value = data;
+}
+
+watch(
+  () => props.executionId,
+  () => {
+    wsData.value = null;
+    wsPath.value = "";
+    wsError.value = null;
+    activeTab.value = "overview";
+    void loadOverview();
+  },
+  { immediate: true },
+);
+
+// ---------- 工作区文件分析 ----------
+async function analyzeWs() {
+  const path = wsInput.value.trim();
+  if (!path || wsLoading.value) return;
+  wsLoading.value = true;
+  wsError.value = null;
+  const { data, error, response } = await client.POST("/analysis/workspace-out", {
+    body: { path },
+  });
+  wsLoading.value = false;
+  if (error || !data) {
+    wsError.value = errText(error, response?.status, "workspace");
+    return;
+  }
+  wsData.value = data;
+  wsPath.value = path;
+  activeTab.value = "overview";
+}
+
+function closeWs() {
+  wsData.value = null;
+  wsPath.value = "";
+  wsError.value = null;
+  activeTab.value = "overview";
+}
+
+// ---------- tab 定义与激活（blocks 驱动置灰，缺失原因 title 注明） ----------
+const blocks = computed<Result["blocks"] | null>(() => {
+  if (mode.value === "workspace") return wsData.value?.overview.blocks ?? null;
+  return overview.value?.blocks ?? null;
+});
+
+const tabs = computed(() => {
+  const b = blocks.value;
+  const reason = (ok: boolean | undefined, why: string) =>
+    ok ? "" : why;
+  return [
+    { key: "overview" as const, disabled: false, reason: "" },
+    {
+      key: "convergence" as const,
+      disabled: !b?.convergence,
+      reason: reason(b?.convergence, "无收敛数据（无 SCF 迹线或非优化任务）"),
+    },
+    {
+      key: "frequencies" as const,
+      disabled: !b?.frequencies,
+      reason: reason(b?.frequencies, "无频率数据（非频率任务）"),
+    },
+    {
+      key: "orbitals" as const,
+      disabled: !b?.orbitals,
+      reason: reason(b?.orbitals, "无轨道数据（输出无 MO 表 — 建议 route 加 Pop=Reg/Full）"),
+    },
+  ];
+});
+
+function switchTab(t: (typeof tabs.value)[number]) {
+  if (t.disabled) return;
+  activeTab.value = t.key;
+  // 执行模式：数据 tab 首次激活时惰性拉取（缓存至换执行）
+  if (mode.value === "execution") {
+    if (t.key === "convergence" && !conv.value && convFor.value !== props.executionId)
+      void loadConv();
+    if (t.key === "frequencies" && !freq.value && freqFor.value !== props.executionId)
+      void loadFreq();
+    if (t.key === "orbitals" && !orb.value && orbFor.value !== props.executionId)
+      void loadOrb();
+  }
+}
+
+async function loadConv() {
+  convLoading.value = true;
+  convError.value = null;
+  const { data, error, response } = await client.GET(
+    "/history/{id}/analysis/convergence",
+    { params: { path: { id: props.executionId } } },
+  );
+  convLoading.value = false;
+  if (error || !data) {
+    convError.value = errText(error, response?.status, "entry");
+    return;
+  }
+  conv.value = data;
+  convFor.value = props.executionId;
+}
+
+async function loadFreq() {
+  freqLoading.value = true;
+  freqError.value = null;
+  const { data, error, response } = await client.GET(
+    "/history/{id}/analysis/frequencies",
+    { params: { path: { id: props.executionId } } },
+  );
+  freqLoading.value = false;
+  if (error || !data) {
+    freqError.value = errText(error, response?.status, "entry");
+    return;
+  }
+  freq.value = data;
+  freqFor.value = props.executionId;
+}
+
+async function loadOrb() {
+  orbLoading.value = true;
+  orbError.value = null;
+  const { data, error, response } = await client.GET(
+    "/history/{id}/analysis/orbitals",
+    { params: { path: { id: props.executionId } } },
+  );
+  orbLoading.value = false;
+  if (error || !data) {
+    orbError.value = errText(error, response?.status, "entry");
+    return;
+  }
+  orb.value = data;
+  orbFor.value = props.executionId;
+}
+</script>
+
+<template>
+  <section class="ana">
+    <header class="ana-head">
+      <span class="ana-title mono">分析</span>
+      <span
+        v-if="mode === 'workspace' && wsData"
+        class="ws-tag mono"
+        :title="wsPath"
+      >
+        {{ wsPath }} · 只读不落库
+      </span>
+      <div class="ws-entry">
+        <input
+          v-model="wsInput"
+          class="ws-input mono"
+          type="text"
+          placeholder="工作区 .out/.log 相对路径"
+          aria-label="工作区输出文件路径"
+          @keydown.enter="analyzeWs"
+        />
+        <button
+          class="btn btn--secondary"
+          type="button"
+          :disabled="wsLoading || !wsInput.trim()"
+          @click="analyzeWs"
+        >
+          {{ wsLoading ? "分析中 …" : "分析文件" }}
+        </button>
+        <button
+          v-if="wsData"
+          class="btn btn--ghost"
+          type="button"
+          @click="closeWs"
+        >
+          返回本执行
+        </button>
+      </div>
+    </header>
+    <p v-if="wsError" class="ana-note mono note--bad" role="alert">{{ wsError }}</p>
+
+    <!-- 异常终态：本执行分析区置灰 + 不可分析原因注记（仅原文查看/导出） -->
+    <div v-if="entryState !== 'succeeded' && mode === 'execution'" class="ana-off">
+      <p class="mono">
+        异常结束的执行不进入解析管道 — 分析不可用，仅可查看 / 导出原文
+      </p>
+    </div>
+
+    <template v-else>
+      <div class="ana-tabs" role="tablist">
+        <button
+          v-for="t in tabs"
+          :key="t.key"
+          class="ana-tab mono"
+          :class="{ 'ana-tab--on': activeTab === t.key, 'ana-tab--off': t.disabled }"
+          role="tab"
+          :aria-selected="activeTab === t.key"
+          :disabled="t.disabled"
+          :title="t.disabled ? t.reason : undefined"
+          @click="switchTab(t)"
+        >
+          {{ TAB_LABELS[t.key] }}<template v-if="t.disabled"> · 缺</template>
+        </button>
+      </div>
+
+      <div class="ana-body" role="tabpanel">
+        <!-- 概览 -->
+        <template v-if="activeTab === 'overview'">
+          <p v-if="overviewLoading" class="ana-hint mono">读取中 …</p>
+          <p v-else-if="overviewError" class="ana-note mono note--bad" role="alert">
+            {{ overviewError }}
+          </p>
+          <AnalysisOverview
+            v-else-if="mode === 'workspace' && wsData"
+            :result="wsData.overview"
+          />
+          <AnalysisOverview v-else-if="overview" :result="overview" />
+        </template>
+
+        <!-- 能量收敛（图表组件随 C3 接入；本提交先打通数据链路与状态） -->
+        <template v-else-if="activeTab === 'convergence'">
+          <p v-if="convLoading" class="ana-hint mono">读取中 …</p>
+          <p v-else-if="convError" class="ana-note mono note--bad" role="alert">
+            {{ convError }}
+          </p>
+          <template v-else-if="mode === 'workspace' && wsData">
+            <p v-if="wsData.convergence.downsampled" class="ana-hint mono">
+              数据量超预算 — 已按步均匀抽稀
+            </p>
+            <p class="ana-hint mono">收敛数据已就绪 — 图表渲染组件接入中</p>
+          </template>
+          <template v-else-if="conv">
+            <p v-if="conv.downsampled" class="ana-hint mono">
+              数据量超预算 — 已按步均匀抽稀
+            </p>
+            <p class="ana-hint mono">收敛数据已就绪 — 图表渲染组件接入中</p>
+          </template>
+        </template>
+
+        <!-- 频率与 IR（同上，图表组件随 C3 接入） -->
+        <template v-else-if="activeTab === 'frequencies'">
+          <p v-if="freqLoading" class="ana-hint mono">读取中 …</p>
+          <p v-else-if="freqError" class="ana-note mono note--bad" role="alert">
+            {{ freqError }}
+          </p>
+          <p
+            v-else-if="mode === 'workspace' ? !!wsData : !!freq"
+            class="ana-hint mono"
+          >
+            频率与 IR 数据已就绪 — 图表渲染组件接入中
+          </p>
+        </template>
+
+        <!-- 轨道与静电势（轨道面板随 C4 接入；workspace 模式无 fchk 先行注记） -->
+        <template v-else>
+          <p v-if="orbLoading" class="ana-hint mono">读取中 …</p>
+          <p v-else-if="orbError" class="ana-note mono note--bad" role="alert">
+            {{ orbError }}
+          </p>
+          <template v-else-if="mode === 'workspace' && wsData">
+            <p class="ana-hint mono">
+              轨道清单已就绪 — 工作区文件无 fchk，等值面不可生成
+            </p>
+          </template>
+          <p v-else-if="orb" class="ana-hint mono">轨道面板组件接入中</p>
+        </template>
+      </div>
+    </template>
+  </section>
+</template>
+
+<style scoped>
+.ana {
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-strong);
+  padding-top: var(--space-3);
+}
+.ana-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.ana-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: var(--ls-micro);
+}
+.ws-tag {
+  font-size: var(--text-xs);
+  color: var(--accent);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  min-width: 220px;
+}
+.ws-input {
+  flex: 1;
+  min-width: 120px;
+  height: var(--control-height-sm);
+  padding: 0 var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  background: var(--bg-inset);
+  border: 1px solid var(--border-hair);
+  border-radius: var(--r-md);
+}
+.ws-input:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+}
+.ws-input::placeholder {
+  color: var(--text-faint);
+}
+.ana-note {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+}
+.note--bad {
+  color: var(--danger);
+}
+.ana-off {
+  margin-top: var(--space-2);
+  border: 1px dashed var(--border-hair);
+  border-radius: var(--r-md);
+  padding: var(--space-3);
+  background: var(--bg-inset);
+}
+.ana-off p {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+.ana-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  border-bottom: 1px solid var(--border-hair);
+}
+.ana-tab {
+  appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.ana-tab:hover:not(:disabled) {
+  color: var(--text-secondary);
+}
+.ana-tab--on {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+.ana-tab--off {
+  cursor: not-allowed;
+  color: var(--text-faint);
+  opacity: 0.55;
+}
+.ana-body {
+  padding: var(--space-3) 0 0;
+  min-height: 96px;
+}
+.ana-hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+}
+</style>

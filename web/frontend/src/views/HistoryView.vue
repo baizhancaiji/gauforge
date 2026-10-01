@@ -18,6 +18,7 @@ import { useRoute } from "vue-router";
 
 import { client, exportOutputs, getText } from "@/api/client";
 import type { components } from "@/api/contract";
+import AnalysisPanel from "@/components/analysis/AnalysisPanel.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
@@ -531,7 +532,7 @@ async function confirmCleanup() {
           </dd>
         </dl>
         <dl class="cell">
-          <dt class="mono">结果引用（M3 占位）</dt>
+          <dt class="mono">结果引用</dt>
           <dd class="mono">{{ selected.result_ref ?? "—" }}</dd>
         </dl>
 
@@ -575,6 +576,9 @@ async function confirmCleanup() {
           </template>
           <button class="btn btn--ghost" type="button" @click="selected = null">关闭</button>
         </div>
+
+        <!-- 分析区（M3.1：内嵌历史详情，不单列页面；异常条目由组件内置置灰态） -->
+        <AnalysisPanel :key="selected.id" :execution-id="selected.id" :entry-state="selected.state" />
 
         <div v-if="textView" ref="textViewEl" class="text-view">
           <header class="tv-head">
