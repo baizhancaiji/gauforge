@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T16:51+0800",
+  "updated": "2026-10-01T17:10+0800",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -244,6 +244,13 @@
       "type": "added",
       "scope": "frontend",
       "summary": "分析视图接入图表：能量收敛三数据源可切换曲线（判据阈值参考线）与频率红外棒图表格联动，虚频红色标注，配色随明暗主题",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "详情分析区新增轨道与静电势三维渲染：可选轨道生成等值面（正负双色、精细度可调）或静电势着色，3Dmol 经离线化副本本地打包零外链",
       "breaking": false,
       "migration": null
     }
