@@ -27,7 +27,8 @@ _OUT_SUFFIXES = (".out", ".log")
 
 
 def terminal_succeeded(execution_id: int) -> dict:
-    """历史终态行且 succeeded（cube 域复用；其余 409 语义同源）（其余 409：非 succeeded 条目请求分析）。"""
+    """历史终态行且 succeeded（分析与 cube 域同源）：非终态（含不存在）
+    404、终态非 succeeded 409。"""
     row = executions().get(execution_id)
     if row is None or row["state"] not in ("succeeded", "failed", "skipped"):
         raise not_found("history", execution_id)

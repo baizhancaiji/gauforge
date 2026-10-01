@@ -18,6 +18,8 @@ import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from ..parse import results as results_parse  # 常量单一来源（无循环依赖）
+
 _CHK_RE = re.compile(r"^%chk\s*=\s*(.+)$", re.IGNORECASE)
 # 保全/清理作用的瞬态文件扩展（小写比对）；其余（.out/.log/输入）永不触碰
 TRANSIENT_EXTS = (".chk", ".rwf")
@@ -25,7 +27,8 @@ TRANSIENT_EXTS = (".chk", ".rwf")
 _PROTECTED_DIR = "protected"
 
 ANALYSIS_NAME = "analysis.json"
-ANALYSIS_TIMEOUT_S = 60
+# 解析超时预算与 workspace-out 同款 60s（单一来源：parse/results）
+ANALYSIS_TIMEOUT_S = results_parse.PARSE_TIMEOUT_S
 
 
 def write_analysis(run_dir: Path, *,
@@ -39,7 +42,6 @@ def write_analysis(run_dir: Path, *,
       （沿用 formchk「失败不阻断」先例）；
     - 返回 result_ref 值："analysis.json"（落盘成功，含 degraded）| None。
     """
-    from ..parse import results as results_parse
     try:
         payload = results_parse.parse_output(run_dir / "input.log",
                                              timeout_s=timeout_s)

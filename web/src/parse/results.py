@@ -288,10 +288,14 @@ def _blocks_data(data: object, blocks_flag: dict) -> dict:
             "thermochemistry": _thermo_block(data)}
 
 
+def _empty_convergence() -> dict:
+    """收敛块空形（降级全空形与块不可得共用单一实现）。"""
+    return {"downsampled": False, "scf_trace": [], "scf_targets": [],
+            "geo_trace": [], "geo_targets": [], "energy_series": []}
+
+
 def _empty_blocks() -> dict:
-    return {"convergence": {"downsampled": False, "scf_trace": [],
-                            "scf_targets": [], "geo_trace": [], "geo_targets": [],
-                            "energy_series": []},
+    return {"convergence": _empty_convergence(),
             "frequencies": {"frequencies": []},
             "orbitals": {"nmo": 0, "nbasis": 0, "homos": [], "orbitals": []},
             "thermochemistry": None}
@@ -299,8 +303,7 @@ def _empty_blocks() -> dict:
 
 def _convergence_block(data: object, available: bool) -> dict:
     if not available:
-        return {"downsampled": False, "scf_trace": [], "scf_targets": [],
-                "geo_trace": [], "geo_targets": [], "energy_series": []}
+        return _empty_convergence()
     scfvalues = getattr(data, "scfvalues", None)
     scf_trace = [{"geometry_step": i + 1, "cycles": _native(step.tolist())}
                  for i, step in enumerate([] if scfvalues is None else scfvalues)]

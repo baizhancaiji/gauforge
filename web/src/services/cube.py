@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 import subprocess
 import sys
@@ -59,7 +60,7 @@ def generate(execution_id: int, kind: object, orbital: object,
                   {"reason": "fchk_missing", "fchk": "input.fchk"}, http=502)
     g16_root = Path(str(settings().get("g16_root"))).expanduser()
     cubegen = g16_root / "cubegen"
-    if not (cubegen.is_file() and os_access(cubegen)):
+    if not (cubegen.is_file() and _is_executable(cubegen)):
         raise err("CUBE_EXECUTABLE_MISSING",
                   "cubegen 可执行探测失败（g16_root 配置或发行不完整）",
                   {"g16_root": str(g16_root)}, http=503)
@@ -90,7 +91,7 @@ def generate(execution_id: int, kind: object, orbital: object,
 
 def load(execution_id: int, cube_id: str) -> bytes:
     """GET /history/{id}/analysis/cube/{cube_id}：cube 文件流。"""
-    analysis_svc.terminal_succeeded(execution_id)  # 404 语义前置（非终态 404）
+    analysis_svc.terminal_succeeded(execution_id)  # 非 succeeded 409、未知 id 404（与 POST 同源）
     if not isinstance(cube_id, str) or not _CUBE_ID_RE.match(cube_id):
         raise not_found("cube", cube_id)  # 形态非法按不存在（防路径穿越）
     path = analysis_svc.run_dir(execution_id) / "cubes" / f"{cube_id}.cube"
@@ -145,6 +146,5 @@ def _cube_id(kind: str, orbital: object, npts: int) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def os_access(path: Path) -> bool:
-    import os
+def _is_executable(path: Path) -> bool:
     return os.access(path, os.X_OK)
