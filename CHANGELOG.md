@@ -8,12 +8,12 @@
 
 - 【docs】新增 M3+M4 联合执行计划（m3-m4-plan.md）：结果分析（cclib 白名单解析/cubegen 轨道与静电势/cclib 入 venv 与 3Dmol 离线本地化）与工作流（chk 符号引用依赖链/断点续跑/CREST 组合流与能量表）两波 27 任务 WBS、依赖流程图、契约 diff 基线、测试矩阵、DoD 与风险预案
 - 【docs】A1 Result 与分析/存储契约 diff 落库：Result 字段全集一次定死（blocks 以 ResultBlocks 独立组件避免生成撞名），新增 8 端点（分析概览/收敛/频率/轨道、cube 生成与文件流、workspace-out 只读分析、storage/usage），错误码全集 24→29，HistoryEntry.result_ref 口径改写（succeeded 且 analysis.json 落盘含 degraded 置位），SettingItem 登记 disk_usage_warn_gb（0=禁用、默认 50），mapping 增行历史详情分析区四 tab/归档分析区/.out 入口/占用面板（48 操作无孤儿），sse.md 补 M3 无新增事件断言，两侧契约生成物再生与 test_error_codes 闸门同步
-- 【web】B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过
-- 【web】B2 Result 落库与 finalize 接线落库：finalize.write_analysis 原子写 analysis.json（degraded 亦落盘、失败记日志不阻断），dispatcher formchk 步后接线并随终态冻结同事务写 result_ref（reconcile 单点全覆盖、SSE 时序不受扰），executions_repo.finalize 增 result_ref，test_finalize_result 10 例集成断言，全量 pytest 507 通过
-- 【web】B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过
-- 【web】B4 cubegen 集成与 cube 端点落库：services/cube.py kind 白名单+参数治理（上界取 analysis.json）、sha256 幂等留存 run/<id>/cubes/（不入保留期清理）、120s 超时与 stderr 尾部、探测缺失 503 显式、fchk 缺失 502，POST/GET 两端点（chemical/x-cube 流），test_cube_api 20 例含真机 MO=1/Potential=SCF 与开壳层 fchk 演练，全量 pytest 550 通过
-- 【web】B5 金标准回归与降级样例闸门落库：test_analysis_parse 扩终态 10 份矩阵（mosyms 有值/开壳层双自旋/虚频标红/零块极端降级），构造异常样例四份入库 fixtures（42KB 内机器无关）覆盖降级三分支（解析异常/success 假已得块保留/属性缺失不降级），全量 pytest 558 通过
-- 【web】B12 空间占用统计与告警落库：GET /storage/usage（du -sb 同口径只读统计、明细降序截断前 50、reclaimable 与 M1 清理边界单一实现、保全快照计 0）、disk_usage_warn_gb 运行级设置（默认 50、0=禁用、即时生效）、超阈仅警告不自动清理无定时器，test_storage_usage 9 例含千级目录 P95<2s 基准，全量 pytest 567 通过
+- 【web】新增结果解析能力：正常结束的计算自动解析出能量收敛、频率、轨道与热化学分析数据；解析异常、超时与非正常结束一律降级留档、不阻断收尾；引入 cclib==1.8.1（.venv 冻结），金标准回归 17 例
+- 【web】新增分析结果入库：计算收尾即自动落盘分析数据并置位历史条目 result_ref，历史详情可直接读取；解析失败仅不写结果、不影响历史记录
+- 【web】新增分析读取端点：历史条目可分别读取概览、能量收敛、频率、轨道四类分析数据（仅正常结束可读、缺失块明示）；工作区内 .out/.log 输出文件支持直接只读分析（不落库）；超长收敛数据自动抽稀
+- 【web】新增轨道/静电势 cube 生成与下载端点：按参数生成等值面文件并幂等复用，cubegen 缺失或生成失败显式报错并携带原因
+- 【web】新增解析回归闸门：金标准输出 10 份与构造异常样例 4 份常驻回归，覆盖解析异常、非正常结束、属性缺失三类降级路径
+- 【web】新增空间占用统计与告警：可查看总占用与各执行占用明细（可清理量单列），超过可配置阈值时仅警告不自动清理（阈值运行级可调、0 禁用）
 
 ### 变更
 
@@ -31,11 +31,15 @@
 - 【docs】M3 金标准剩余三缺口补齐（金标准集 10 份 .out + 16 份 .fchk）：线性水 freq 样本实证 -2045.3 cm⁻¹ 二重简并虚频（imaginary 路径关闭）；本机 formchk 产出现代闭壳层/开壳层小 fchk 各一（cubegen MO=1 与 Potential=SCF 冒烟通过，B4 测试资产）；c8b_qst2_error 实证 success=false 且零分析块的极端降级；澄清 Nosymm 抑制轨道对称性打印（mosyms 恒缺根因，symmetry 按 nullable 兼容）
 - 【docs】scf_trace.cycles 内层补 nullable 契约补丁：cclib scfvalues 判据列迭代早期未更新为 NaN（真机 CVL 链路实证），null 保列对齐语义，两侧契约生成物再生
 - 【docs】roadmap §7 待确认事项 2 注记 M3 B5 部分关闭：失败/中断样例解析降级面由真机降级三态金标准与构造 fixtures 常驻闸门覆盖，不同方法/任务类型缺口顺延后续里程碑
+- 【docs】M3 审核回填计划口径：降级分支③缺失清单语义、B3 验收块缺失 422、Result.package nullable、告警阈值默认值定稿、异常样例第四份与样本目录环境覆盖登记、开工闸门事后复核留痕；roadmap §2.5 补登记 G16WEB_G16_SAMPLES
 
 ### 修复
 
-- 【web】parse 原生化补漏：_native 精确 type 判定使 np.float64 等 float/int/bool 内建子类统一落成纯原生类型（新金标准 h2o_linear 虚频值实测）
-- 【web】补提交 parse TIMEOUT_PREFIX 超时原因常量（B3 分析域 422 details 判定单一来源，随 B3 遗漏提交）
+- 【web】修复个别数值字段（如虚频值）序列化后非纯数值的问题
+- 【web】修复工作区文件分析在解析超时时误报服务器错误的问题
+- 【web】修复空间占用统计运行期口径偏差：运行中执行目录与孤儿目录计入总占用（与 du -sb 全态一致），占用明细纳入运行中条目
+- 【api】补登记 cube 文件流端点 409 响应与 workspace-out 路径守卫三态语义（契约与实现对齐），StorageUsage 描述补全态口径并去除悬置评审措辞
+- 【docs】修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要改写为行为视角
 
 ## v2.1.0（2026-09-29T17:25+08:00 发布，minor）
 

@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T02:30+08:00",
+  "updated": "2026-10-01T14:09+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -96,7 +96,7 @@
     {
       "type": "added",
       "scope": "web",
-      "summary": "B1 cclib 引入与结果解析服务落库：requirements.txt 冻结 cclib==1.8.1 依赖链（仅 .venv、安装命令落档 development.md），parse/results.py 白名单解析→契约 JSON（异常/60s 超时/success 假三路 degraded 已得块保留、DV 垫片旧格式容错、numpy 原生化、opt_converged 三态），config.G16_SAMPLES_DIR 集中配置，金标准单测 17 例（新集 6 份逐属性+构造异常+超时注入），全量 pytest 498 通过",
+      "summary": "新增结果解析能力：正常结束的计算自动解析出能量收敛、频率、轨道与热化学分析数据；解析异常、超时与非正常结束一律降级留档、不阻断收尾；引入 cclib==1.8.1（.venv 冻结），金标准回归 17 例",
       "breaking": false,
       "migration": null
     },
@@ -110,14 +110,14 @@
     {
       "type": "fixed",
       "scope": "web",
-      "summary": "parse 原生化补漏：_native 精确 type 判定使 np.float64 等 float/int/bool 内建子类统一落成纯原生类型（新金标准 h2o_linear 虚频值实测）",
+      "summary": "修复个别数值字段（如虚频值）序列化后非纯数值的问题",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "web",
-      "summary": "B2 Result 落库与 finalize 接线落库：finalize.write_analysis 原子写 analysis.json（degraded 亦落盘、失败记日志不阻断），dispatcher formchk 步后接线并随终态冻结同事务写 result_ref（reconcile 单点全覆盖、SSE 时序不受扰），executions_repo.finalize 增 result_ref，test_finalize_result 10 例集成断言，全量 pytest 507 通过",
+      "summary": "新增分析结果入库：计算收尾即自动落盘分析数据并置位历史条目 result_ref，历史详情可直接读取；解析失败仅不写结果、不影响历史记录",
       "breaking": false,
       "migration": null
     },
@@ -131,21 +131,21 @@
     {
       "type": "added",
       "scope": "web",
-      "summary": "B3 分析端点集落库：概览/收敛/频率/轨道四端点（非 succeeded 409、块缺失 422、analysis.json 缺失/损坏惰性重建一次后判 409）、workspace-out 只读分析（子孙+后缀守卫 400/404/422、超时 422 注明timeout、不落库）、收敛端点 2MB 预算均匀抽稀 downsampled，test_analysis_api 23 例含真机全链与越界七态，全量 pytest 530 通过",
+      "summary": "新增分析读取端点：历史条目可分别读取概览、能量收敛、频率、轨道四类分析数据（仅正常结束可读、缺失块明示）；工作区内 .out/.log 输出文件支持直接只读分析（不落库）；超长收敛数据自动抽稀",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "web",
-      "summary": "B4 cubegen 集成与 cube 端点落库：services/cube.py kind 白名单+参数治理（上界取 analysis.json）、sha256 幂等留存 run/<id>/cubes/（不入保留期清理）、120s 超时与 stderr 尾部、探测缺失 503 显式、fchk 缺失 502，POST/GET 两端点（chemical/x-cube 流），test_cube_api 20 例含真机 MO=1/Potential=SCF 与开壳层 fchk 演练，全量 pytest 550 通过",
+      "summary": "新增轨道/静电势 cube 生成与下载端点：按参数生成等值面文件并幂等复用，cubegen 缺失或生成失败显式报错并携带原因",
       "breaking": false,
       "migration": null
     },
     {
       "type": "added",
       "scope": "web",
-      "summary": "B5 金标准回归与降级样例闸门落库：test_analysis_parse 扩终态 10 份矩阵（mosyms 有值/开壳层双自旋/虚频标红/零块极端降级），构造异常样例四份入库 fixtures（42KB 内机器无关）覆盖降级三分支（解析异常/success 假已得块保留/属性缺失不降级），全量 pytest 558 通过",
+      "summary": "新增解析回归闸门：金标准输出 10 份与构造异常样例 4 份常驻回归，覆盖解析异常、非正常结束、属性缺失三类降级路径",
       "breaking": false,
       "migration": null
     },
@@ -159,19 +159,50 @@
     {
       "type": "added",
       "scope": "web",
-      "summary": "B12 空间占用统计与告警落库：GET /storage/usage（du -sb 同口径只读统计、明细降序截断前 50、reclaimable 与 M1 清理边界单一实现、保全快照计 0）、disk_usage_warn_gb 运行级设置（默认 50、0=禁用、即时生效）、超阈仅警告不自动清理无定时器，test_storage_usage 9 例含千级目录 P95<2s 基准，全量 pytest 567 通过",
+      "summary": "新增空间占用统计与告警：可查看总占用与各执行占用明细（可清理量单列），超过可配置阈值时仅警告不自动清理（阈值运行级可调、0 禁用）",
       "breaking": false,
       "migration": null
     },
     {
       "type": "fixed",
       "scope": "web",
-      "summary": "补提交 parse TIMEOUT_PREFIX 超时原因常量（B3 分析域 422 details 判定单一来源，随 B3 遗漏提交）",
+      "summary": "修复工作区文件分析在解析超时时误报服务器错误的问题",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复空间占用统计运行期口径偏差：运行中执行目录与孤儿目录计入总占用（与 du -sb 全态一致），占用明细纳入运行中条目",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "api",
+      "summary": "补登记 cube 文件流端点 409 响应与 workspace-out 路径守卫三态语义（契约与实现对齐），StorageUsage 描述补全态口径并去除悬置评审措辞",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "M3 审核回填计划口径：降级分支③缺失清单语义、B3 验收块缺失 422、Result.package nullable、告警阈值默认值定稿、异常样例第四份与样本目录环境覆盖登记、开工闸门事后复核留痕；roadmap §2.5 补登记 G16WEB_G16_SAMPLES",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "docs",
+      "summary": "修正进度登记瑕疵：in_progress 恢复对象形态并加固类型校验，历史摘要改写为行为视角",
       "breaking": false,
       "migration": null
     }
   ],
-  "in_progress": {"task": "M3 结果解析与可视化", "note": "A/B 阶段全部落库（含审核修复批次）；C 阶段前端（C1 依赖本地化/C2 分析视图/C3 图表/C4 3Dmol/C8 占用面板）与 D 阶段走查发布待开工"},
+  "in_progress": {
+    "task": "M3 结果解析与可视化",
+    "note": "A/B 阶段全部落库（含审核修复批次）；C 阶段前端（C1 依赖本地化/C2 分析视图/C3 图表/C4 3Dmol/C8 占用面板）与 D 阶段走查发布待开工"
+  },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
