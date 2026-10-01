@@ -60,10 +60,52 @@ function baseAxis(xName: string, yName: string, log: boolean) {
   };
 }
 
+/** log 轴判据图公共框架（SCF/几何两源共用）：字体栈 + 轴 + 缩放条。 */
+function logCvFrame(xName: string, yName: string) {
+  const t = tokens.value;
+  return {
+    // 根级字体栈：canvas 文本不继承 DOM，中文须显式 Web 字体（豆腐块教训）
+    textStyle: { fontFamily: t.fontSans },
+    ...baseAxis(xName, yName, true),
+    dataZoom: [{ type: "slider", height: 14, bottom: 2 }],
+  };
+}
+
+/**
+ * 判据系列公共形状（SCF/几何两源共用，审查裁决去重）：按列循环取色、
+ * connectNulls 保持连续；c=0 系列挂 targets 判据虚线参考线。
+ */
+function criteriaSeries(
+  cols: { name: string; data: (number | null)[] }[],
+  targets: number[],
+  symbol: "none" | "circle",
+) {
+  const t = tokens.value;
+  return cols.map((col, c) => ({
+    name: col.name,
+    type: "line" as const,
+    data: col.data,
+    symbol,
+    symbolSize: symbol === "circle" ? 4 : undefined,
+    connectNulls: true,
+    lineStyle: { color: t.viz[c % t.viz.length], width: 1.2 },
+    itemStyle: { color: t.viz[c % t.viz.length] },
+    markLine:
+      c === 0
+        ? {
+            silent: true,
+            symbol: "none",
+            label: { show: false },
+            lineStyle: { color: t.warn, type: "dashed" as const, width: 1 },
+            data: targets.map((v) => ({ yAxis: v })),
+          }
+        : undefined,
+  }));
+}
+
 /** SCF 迹线：逐几何步的迭代判据行拉平为全局迭代序；早期判据未更新为
  *  null（契约 nullable），connectNulls 保持迹线连续。 */
 function scfOption() {
-  const t = tokens.value;
   const ncol = props.data.scf_targets.length;
   // 判据列拉平：x 取数据序（即跨几何步累计迭代序，1 起）
   const cols: (number | null)[][] = Array.from({ length: ncol }, () => []);
@@ -74,63 +116,29 @@ function scfOption() {
       for (let c = 0; c < ncol; c++) cols[c].push(row[c] ?? null);
     }
   }
-  const series = cols.map((values, c) => ({
-    name: `判据 ${c + 1}`,
-    type: "line" as const,
-    data: values,
-    symbol: "none",
-    connectNulls: true,
-    lineStyle: { color: t.viz[c % t.viz.length], width: 1.2 },
-    itemStyle: { color: t.viz[c % t.viz.length] },
-    markLine:
-      c === 0
-        ? {
-            silent: true,
-            symbol: "none",
-            label: { show: false },
-            lineStyle: { color: t.warn, type: "dashed" as const, width: 1 },
-            data: props.data.scf_targets.map((v) => ({ yAxis: v })),
-          }
-        : undefined,
-  }));
   return {
-    // 根级字体栈：canvas 文本不继承 DOM，中文须显式 Web 字体（豆腐块教训）
-    textStyle: { fontFamily: t.fontSans },
-    ...baseAxis("SCF 迭代（跨几何步累计）", "判据值（log）", true),
-    dataZoom: [{ type: "slider", height: 14, bottom: 2 }],
-    series,
+    ...logCvFrame("SCF 迭代（跨几何步累计）", "判据值（log）"),
+    series: criteriaSeries(
+      cols.map((values, c) => ({ name: `判据 ${c + 1}`, data: values })),
+      props.data.scf_targets,
+      "none",
+    ),
   };
 }
 
 /** 几何收敛：四判据列 vs 各自阈值虚线（log 轴看收敛趋紧）。 */
 function geoOption() {
-  const t = tokens.value;
   const ncol = props.data.geo_targets.length;
-  const series = Array.from({ length: ncol }, (_, c) => ({
-    name: `判据 ${c + 1}`,
-    type: "line" as const,
-    data: props.data.geo_trace.map((g) => g.values[c] ?? null),
-    symbol: "circle",
-    symbolSize: 4,
-    connectNulls: true,
-    lineStyle: { color: t.viz[c % t.viz.length], width: 1.2 },
-    itemStyle: { color: t.viz[c % t.viz.length] },
-    markLine:
-      c === 0
-        ? {
-            silent: true,
-            symbol: "none",
-            label: { show: false },
-            lineStyle: { color: t.warn, type: "dashed" as const, width: 1 },
-            data: props.data.geo_targets.map((v) => ({ yAxis: v })),
-          }
-        : undefined,
-  }));
   return {
-    textStyle: { fontFamily: t.fontSans },
-    ...baseAxis("几何步", "判据值（log）", true),
-    dataZoom: [{ type: "slider", height: 14, bottom: 2 }],
-    series,
+    ...logCvFrame("几何步", "判据值（log）"),
+    series: criteriaSeries(
+      Array.from({ length: ncol }, (_, c) => ({
+        name: `判据 ${c + 1}`,
+        data: props.data.geo_trace.map((g) => g.values[c] ?? null),
+      })),
+      props.data.geo_targets,
+      "circle",
+    ),
   };
 }
 
