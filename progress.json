@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01T17:10+0800",
+  "updated": "2026-10-01T17:24+0800",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -253,15 +253,29 @@
       "summary": "详情分析区新增轨道与静电势三维渲染：可选轨道生成等值面（正负双色、精细度可调）或静电势着色，3Dmol 经离线化副本本地打包零外链",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "空间占用统计收敛为目录树单遍历加执行行缓存，千级执行目录下统计耗时降至毫秒级且口径不变",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "历史页新增常驻空间占用面板：总占用读数、超阈琥珀警示与各执行占用明细可展开，手动清理后即时反映",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 结果解析与可视化",
-    "note": "A/B 阶段全部落库（含审核修复批次）；C 阶段前端（C1 依赖本地化/C2 分析视图/C3 图表/C4 3Dmol/C8 占用面板）与 D 阶段走查发布待开工"
+    "note": "A/B/C 阶段全部落库（C1 依赖本地化、C2 分析视图、C3 图表、C4 3Dmol、C8 占用面板）；D 阶段走查（D1）与发布收口（D2 2.2.0）待开工"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
-    "C 阶段按 m3-plan §6 提交序列推进：C1（3dmol/echarts 镜像源本地化+外链审计脚本）→C2/C3/C4/C8→D1 走查→D2 发布 2.2.0"
+    "D1 端到端走查（真机 g16 freq 任务 + §7.2 路径清单，含 3Dmol 等值面成功态截图留痕——headless 冒烟环境无 WebGL）→ D2 发布 2.2.0"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
