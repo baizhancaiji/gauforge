@@ -8,6 +8,8 @@
 - 徽标响亮档 12% 底 = color-mix(in srgb, 状态色 12%, 透明) 叠于
   --bg-raised 之上，按 sRGB 通道线性混合（与 CSS color-mix 一致）；
 - 安静档状态色直接对 --bg-raised 计算。
+底组合覆盖三层：--bg-base / --bg-raised / --bg-inset（深耕面板如轨道
+等值面控制区与占用面板明细均落 inset 底，圆点禁令语境一并纳入）。
 
 用法（项目根）：uv run python scripts/check_contrast.py
 """
@@ -87,6 +89,7 @@ def main() -> int:
     for theme, vars_ in themes.items():
         bg_base = _hex(vars_["--bg-base"])
         bg_raised = _hex(vars_["--bg-raised"])
+        bg_inset = _hex(vars_["--bg-inset"])
         rows.append(f"—— {theme}（--bg-base / --bg-raised 底）——")
         check("text-primary / bg-base", "--text-primary", bg_base, theme)
         check("text-secondary / bg-base", "--text-secondary", bg_base, theme)
@@ -109,6 +112,11 @@ def main() -> int:
                 failures.append(f"{theme} 安静档 {s} = {r:.3f} < 4.5")
         check("primary 按钮 ink / accent 底", "--accent-ink",
               _hex(vars_["--accent"]), theme)
+        # 深耕面板底（轨道等值面控制区/占用面板明细等落 inset）：文本三档全测
+        rows.append(f"—— {theme}（--bg-inset 底）——")
+        check("text-primary / bg-inset", "--text-primary", bg_inset, theme)
+        check("text-secondary / bg-inset", "--text-secondary", bg_inset, theme)
+        check("text-faint / bg-inset", "--text-faint", bg_inset, theme)
 
     print("\n".join(rows))
     if failures:
