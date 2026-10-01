@@ -18,6 +18,7 @@ import type { components } from "@/api/contract";
 import AnalysisOverview from "@/components/analysis/AnalysisOverview.vue";
 import ConvergenceChart from "@/components/analysis/ConvergenceChart.vue";
 import FrequenciesPanel from "@/components/analysis/FrequenciesPanel.vue";
+import OrbitalsPanel from "@/components/analysis/OrbitalsPanel.vue";
 
 type Result = components["schemas"]["Result"];
 type ConvergenceResponse = components["schemas"]["ConvergenceResponse"];
@@ -355,7 +356,7 @@ async function loadOrb() {
           <FrequenciesPanel v-else-if="freq" :data="freq" />
         </template>
 
-        <!-- 轨道与静电势（轨道面板随 C4 接入；workspace 模式无 fchk 先行注记） -->
+        <!-- 轨道与静电势：轨道面板（执行模式，fchk 由 M1 formchk 产出） -->
         <template v-else>
           <p v-if="orbLoading" class="ana-hint mono">读取中 …</p>
           <p v-else-if="orbError" class="ana-note mono note--bad" role="alert">
@@ -366,7 +367,11 @@ async function loadOrb() {
               轨道清单已就绪 — 工作区文件无 fchk，等值面不可生成
             </p>
           </template>
-          <p v-else-if="orb" class="ana-hint mono">轨道面板组件接入中</p>
+          <OrbitalsPanel
+            v-else-if="orb"
+            :execution-id="executionId"
+            :data="orb"
+          />
         </template>
       </div>
     </template>

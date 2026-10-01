@@ -14,6 +14,9 @@ export interface VizTokens {
   /** 根级 textStyle 用：canvas 不继承 DOM 字体栈，须显式给 Web 字体
    *  （WSL2 最小环境无系统 CJK 字体时，默认 sans-serif 渲染豆腐块）。 */
   fontSans: string;
+  /** 3Dmol viewer 背景实色（不认 "transparent"，传非法色名会连锁
+   *  WebGL 初始化失败——C4 冒烟实证）。 */
+  bgInset: string;
 }
 
 const VIZ_VARS = ["--viz-1", "--viz-2", "--viz-3", "--viz-4", "--viz-5"];
@@ -28,6 +31,7 @@ function readTokens(): VizTokens {
     warn: v("--warn"),
     danger: v("--danger"),
     fontSans: v("--font-sans"),
+    bgInset: v("--bg-inset"),
   };
 }
 
