@@ -78,6 +78,14 @@ def validate_progress(errors: list[str], changelog_rows: list[dict]) -> None:
     for field in PROGRESS_FIELDS:
         if field not in progress:
             errors.append(f"progress.json 缺字段: {field}")
+    in_progress = progress.get("in_progress")
+    if in_progress is not None and (
+            not isinstance(in_progress, dict)
+            or set(in_progress) != {"task", "note"}
+            or not all(isinstance(v, str) and v for v in in_progress.values())):
+        errors.append(
+            'progress.json 的 in_progress 应为 null 或 {"task","note"}'
+            "（均为非空字符串）")
     if not isinstance(progress.get("unreleased"), list):
         errors.append("progress.json 的 unreleased 应为数组")
         return

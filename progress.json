@@ -171,7 +171,7 @@
       "migration": null
     }
   ],
-  "in_progress": "M3 结果解析与可视化（A/B 阶段全部落库；C 阶段前端（C1 依赖本地化/C2 分析视图/C3 图表/C4 3Dmol/C8 占用面板）与 D 阶段走查发布待开工）",
+  "in_progress": {"task": "M3 结果解析与可视化", "note": "A/B 阶段全部落库（含审核修复批次）；C 阶段前端（C1 依赖本地化/C2 分析视图/C3 图表/C4 3Dmol/C8 占用面板）与 D 阶段走查发布待开工"},
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "M3 A1 契约 diff 已按计划落库，用户评审确认随 A/B 执行指令事后复核（m3-plan §0.4-4）",
