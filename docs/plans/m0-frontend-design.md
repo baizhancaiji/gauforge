@@ -110,11 +110,14 @@
 |---|---|---|
 | `--text-primary` / `--bg-base` | 15.13:1 | 13.39:1 |
 | `--text-secondary` / `--bg-base` | 8.68:1 | 5.93:1 |
-| `--text-faint` / `--bg-base` | 5.68:1 | 4.66:1 |
+| `--text-faint` / `--bg-base` | 5.68:1 | 5.22:1 |
 | running 徽标文字 / 响亮档 12% 底 | 7.67:1 | 4.89:1 |
 | failed 徽标文字 / 响亮档 12% 底 | 4.71:1 | 4.72:1 |
 | 安静档状态色 / `--bg-raised` | 4.65–8.07:1 | 5.57–6.15:1 |
 | primary 按钮 ink / accent 底 | 9.25:1 | 5.81:1 |
+| `--text-primary` / `--bg-inset` | 15.45:1 | 12.58:1 |
+| `--text-secondary` / `--bg-inset` | 8.86:1 | 5.57:1 |
+| `--text-faint` / `--bg-inset` | 5.80:1 | 4.90:1 |
 
 **accent 使用纪律**（语义优先级：信号 > 交互 > 禁止装饰）。允许的完整清单：
 running 信号（发光/呼吸/彩底）、侧栏电源灯、primary 按钮（每视图 ≤1）、
@@ -139,7 +142,7 @@ html[data-theme="light"]{
   --bg-base:#f2f5f7; --bg-raised:#ffffff; --bg-overlay:#ffffff; --bg-inset:#eaeef2;
   --bg-side:#ffffff;          /* 侧栏亮色取白，与主区纸底分层 */
   --border-hair:#dbe2e8; --border-strong:#aebcc8;
-  --text-primary:#1c2a35; --text-secondary:#4d6072; --text-faint:#5f7080;
+  --text-primary:#1c2a35; --text-secondary:#4d6072; --text-faint:#58687a;
   --accent:#0a7266; --accent-hover:#096a5f; --accent-dim:#085c52; --accent-ink:#ffffff;
   --state-staged:#526778; --state-running:#0a7266; --state-succeeded:#177246;
   --state-failed:#bd352b; --state-skipped:#7d5c19; --state-archived:#5b6a76;
