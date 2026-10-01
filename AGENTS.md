@@ -133,7 +133,9 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 `scripts/validate_progress.py`、`uv run pytest`、`scripts/check_tokens.py`——
 设计令牌逐变量一致性、`scripts/check_contrast.py`——WCAG 对比度全组合
 ≥ 4.5:1、`scripts/gen_changelog_md.py --check`——CHANGELOG.md 与 jsonl
-一致性；涉及前端视觉或派发链路的改动另见 §6.1 第 4 条 hq 产物检查。）
+一致性、`scripts/audit_frontend_offline.sh`——前端构建产物零外链资源引用
+（M3 C1 起，前端改动批次与 D1 收口必跑，白名单仅非资源引用）；涉及前端视觉或
+派发链路的改动另见 §6.1 第 4 条 hq 产物检查。）
 
 ## 七、长程脚本规范
 

@@ -45,8 +45,13 @@ numpy/scipy/periodictable 依赖链），随上表首行命令一并装入项目
 ### 1.3 前端构建
 
 ```bash
-cd web/frontend && npm install && npm run build && cd ../..   # 产出 web/frontend/dist
+cd web/frontend && npm install --registry=https://registry.npmmirror.com && npm run build && cd ../..   # 产出 web/frontend/dist
 ```
+
+依赖（含 M3 引入的 `3dmol`/`echarts`）一律经 npmmirror 镜像安装、随
+Vite 本地打包，**禁止 CDN/在线引用**；构建后须过外链审计闸门
+`scripts/audit_frontend_offline.sh`（扫描 `dist/` 产物 http(s) 资源引用，
+命中即非零退出——m3-plan §2.5，前端改动批次与 D1 收口必跑）。
 
 ### 1.4 G16 与冒烟
 
