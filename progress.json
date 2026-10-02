@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T11:52+08:00",
+  "updated": "2026-10-02T12:05+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -281,11 +281,18 @@
       "summary": "设置页文案只留必要解释（13+2 项描述去生效语义括注与内部注记），页面去英文参数名与环境变量展示，重启提示条改显中文参数名",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "待执行页席位重排迁移指针跟手动效（与队列编辑框一致）：拖拽组合式扩展变高行前缀和定位与逐行锁定门控，HTML5 DnD 组合式随唯一使用方迁移退役",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "提交 10 两笔（A-11 文案裁剪 + 设置页去 env/key）已落地；进行至提交 11（A-12 待执行页迁移 usePointerSort）"
+    "note": "两批十二项代码修复全部落地（提交 1-11，实机走查逐项通过）；收尾中：走查留痕回填 m3-acceptance.md 与计划状态列、进度同步收尾"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
