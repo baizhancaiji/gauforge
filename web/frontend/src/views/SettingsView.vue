@@ -58,9 +58,9 @@ const seatLimitItem = computed(() =>
   runtime.value.find((s) => s.key === "pending_seat_limit"),
 );
 
+/** 数值范围提示；枚举型不返回文本（下拉已示可选值，hint 行不再重复）。 */
 function rangeText(s: SettingItem): string {
-  if (!s.range) return "";
-  if (s.range.enum?.length) return s.range.enum.join(" / ");
+  if (!s.range || s.range.enum?.length) return "";
   const min = s.range.min ?? "—";
   const max = s.range.max ?? "—";
   return `${min}–${max}`;
@@ -208,7 +208,7 @@ const restartLabels = computed(() =>
               :step="s.value_type === 'number' ? 'any' : '1'"
             />
             <p class="hint">
-              <span v-if="rangeText(s)" class="range">{{ enumOf(s).length ? "取值" : "范围" }} {{ rangeText(s) }}</span>
+              <span v-if="rangeText(s)" class="range">范围 {{ rangeText(s) }}</span>
               <!-- 生效语义：中性 plain 徽标（§4.6）并入 hint 行（1080p 一屏预算） -->
               <span class="eff mono">{{ effectLabel[s.effect] }}</span>
             </p>
