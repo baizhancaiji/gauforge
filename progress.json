@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T12:05+08:00",
+  "updated": "2026-10-02T12:20+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -288,15 +288,22 @@
       "summary": "待执行页席位重排迁移指针跟手动效（与队列编辑框一致）：拖拽组合式扩展变高行前缀和定位与逐行锁定门控，HTML5 DnD 组合式随唯一使用方迁移退役",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复设置页重启提示条永不出现（保存响应先收敛表单致变更对比恒等），对比提前至表单收敛前，提示条显中文参数名（走查随查随修）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "两批十二项代码修复全部落地（提交 1-11，实机走查逐项通过）；收尾中：走查留痕回填 m3-acceptance.md 与计划状态列、进度同步收尾"
+    "note": "已全部完成（2026-10-02）：两批十二项逐项独立提交并实机走查通过，走查中发现缺陷②（重启提示条永不出现）随查随修；留痕见 docs/plans/m3-acceptance.md §5 与 m3-acceptance-fix-plan.md 状态列"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
-    "用户真实验收 M3（现场 /tmp/m3acc 保留、服务 127.0.0.1:8398；走查记录 docs/plans/m3-acceptance.md §3/§4 七路径与 DoD 对照可作验收清单）",
+    "用户真实验收两批修复（服务 127.0.0.1:8398 已重启加载新后端；走查记录 docs/plans/m3-acceptance.md §5 可作验收清单）",
     "D2 发布五步（#15，验收通过后执行）：冻结 2.2.0 → 追加空 unreleased → 清 progress.unreleased → 本地 tag v2.2.0（不推送远端，推送须当次授权）"
   ],
   "known_issues": [
@@ -304,5 +311,5 @@
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
     "全量 pytest 在受限沙箱下会 1 失败（test_extract_keywords regen 用例须写仓库外 ~/gaussian-kb/data/regen.txt 被拦截，环境权限非产品缺陷）；放行后复跑 569 通过（2026-10-01 22:44 实测）"
   ],
-  "context": "M3 C 阶段收口后三审修复已落；D1 走查于 2026-10-02 接手收口（七路径全过、缺陷①轴名裁剪随查随修、受控注入三处均留痕并恢复），记录见 docs/plans/m3-acceptance.md；D2 发布 2.2.0 按用户指示待真实验收后执行。"
+  "context": "M3 D1 走查收口后，人工验收两批十二项修复（A-1~A-12）于 2026-10-02 执行完毕：逐项独立提交 13+ 笔、全量闸门每笔通过（569 测试 + 五项脚本）、实机走查逐项留痕（含 A-8 断流重连、A-10 整树口径 du 对照、A-12 拖拽门控与队列编辑框回归），缺陷②重启提示条随查随修；D2 发布 2.2.0 仍待用户真实验收后执行。"
 }
