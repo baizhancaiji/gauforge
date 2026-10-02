@@ -93,6 +93,7 @@ watch(
       }
       restarting.value = false;
       restartConfirm.value = false;
+      restartKeys.value = []; // 重启完成，待生效参数已全部生效
       saved.value = { ok: true, msg: "服务已重启" };
     }
   },
