@@ -6,8 +6,11 @@
  * 亦不可移除；其后为等待区（分隔注记），支持拖拽重排（PUT /pending/order
  * 全量原子，锁定席位保持原下标即放行）与整席/席位内未执行成员移除（二次
  * 确认）。数据源：SSE pending.snapshot 驱动 events store；首帧回落 REST。
+ * 席位重排动效（A-12，2026-10-02）：迁移 usePointerSort 指针跟手画布式
+ * （与队列编辑框一致）——变高行前缀和定位（子表展开行高可变）、逐行门控
+ * （锁定席位不可作拖源/落点）；与队列页队列框同一动效纪律。
  */
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
@@ -16,7 +19,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { fmtDateTime, fmtDeclaredRes, fmtTaskId } from "@/utils/format";
 import { useEventsStore } from "@/stores/events";
-import { useDragSort } from "@/composables/useDragSort";
+import { usePointerSort } from "@/composables/usePointerSort";
 
 type PendingResponse = components["schemas"]["PendingResponse"];
 type PendingSeat = components["schemas"]["PendingSeat"];
@@ -52,35 +55,32 @@ function toggle(seatId: number) {
   expanded[seatId] = !expanded[seatId];
 }
 
-// ---------- 拖拽重排（PUT /pending/order 全量原子；锁定席位不可作拖源/落点，
-// 等待区可拖；提交 order 保证锁定席位下标不变，越界本地拒绝并提示。
-// 拖拽状态管理与移动计算走公共组合式 useDragSort——队列编辑对话框已于
-// 2026-09-27 改走 usePointerSort 指针跟手动效（§4.6），本页席位行高可变
-// （子表展开），保留 HTML5 DnD） ----------
-const drag = useDragSort();
+// ---------- 席位重排（指针跟手画布式 usePointerSort，A-12 迁移） ----------
+// PUT /pending/order 全量原子；提交 order 保证锁定席位下标不变，越界本地
+// 拒绝并提示。逐行门控：锁定席位不可作拖源（enabledAt），落点解析跳过
+// 锁定槽位取最近可落槽。等待区注记非行元素（rowSelector 过滤），按前缀和
+// 绝对定位在锁定区与等待区间隙。
+const rootEl = ref<HTMLElement | null>(null);
+const canvasEl = ref<HTMLElement | null>(null);
+const scrollerEl = ref<HTMLElement | null>(null);
 const orderError = ref<string | null>(null);
+
+/** 首个未锁定席位下标（无锁定时 -1）：等待区注记锚点。 */
+const firstUnlocked = computed(() => {
+  if (!anyLocked.value) return -1;
+  return seats.value.findIndex((s) => !s.locked);
+});
 
 const canDrag = (s: PendingSeat) => !s.locked;
 
-function onDragStart(s: PendingSeat, e: DragEvent) {
-  if (!canDrag(s)) return;
-  orderError.value = null;
-  drag.start(s.seat_id, e);
-}
-function onDragOver(s: PendingSeat, e: DragEvent) {
-  drag.over(s.seat_id, e, canDrag(s));
-}
-async function onDrop(s: PendingSeat) {
-  const from = drag.dragId.value;
-  drag.end();
-  if (from == null || from === s.seat_id) return;
-  if (s.locked) {
-    orderError.value = "重排越界 — 锁定席位不可作落点";
-    return;
-  }
+/** 提交链路（与迁移前一致）：本地锁定不变式校验 → PUT /pending/order →
+ *  applySnapshot。校验失败不发请求（拖拽行由视觉归位弹回）。 */
+async function reorder(from: number, to: number) {
   const before = seats.value.map((x) => x.seat_id);
-  const ids = drag.move(before, from, s.seat_id);
-  if (!ids) return;
+  const ids = [...before];
+  const [movedId] = ids.splice(from, 1);
+  if (movedId == null) return;
+  ids.splice(to, 0, movedId);
   // 后端语义（锁定席位保持原下标即放行，c6a0906e3）：本地先校验，越界不发请求
   const movedLocked = seats.value.some(
     (x) => x.locked && ids.indexOf(x.seat_id) !== before.indexOf(x.seat_id),
@@ -97,6 +97,32 @@ async function onDrop(s: PendingSeat) {
     return;
   }
   if (data) applySnapshot(data);
+}
+
+const sort = usePointerSort({
+  count: () => seats.value.length,
+  enabled: () => seats.value.length > 1,
+  enabledAt: (i) => canDrag(seats.value[i] as PendingSeat),
+  canvas: canvasEl,
+  scroller: scrollerEl,
+  rowSelector: ".seat", // 等待区注记非行元素，不进行高量测
+  commit: (from, to) => void reorder(from, to),
+});
+
+onMounted(() => {
+  // 滚动容器为页面内容列（触边自动滚屏的判定基准），就近查找不硬编码层级
+  scrollerEl.value = rootEl.value?.closest(".content") ?? null;
+  void nextTick(() => sort.measure());
+});
+
+// 席位集变化（SSE 快照/重排提交）与子表展开收起 → 行高重测（前缀和定位）
+watch(seats, () => void nextTick(() => sort.measure()));
+watch(expanded, () => void nextTick(() => sort.measure()));
+
+/** 席位行点击（队列席位展开/收起）：拖拽后的 click 不作切换。 */
+function onSeatLineClick(s: PendingSeat) {
+  if (sort.moved.value) return;
+  if (s.kind === "queue") toggle(s.seat_id);
 }
 
 // ---------- 整席移除 / 席位内成员移除（二次确认） ----------
@@ -142,7 +168,7 @@ async function confirmRemove() {
 <template>
   <div v-if="!pending" class="loading mono">读取待执行队列 …</div>
 
-  <div v-else class="pending">
+  <div v-else ref="rootEl" class="pending">
     <!-- 在途席位容量仪表（§4.5）：内嵌读数槽；超限段琥珀示警（在跑不追溯） -->
     <div class="gauge mono" aria-label="在途容量">
       <span class="g-label">OCCUPIED 在途席位</span>
@@ -165,109 +191,119 @@ async function confirmRemove() {
 
     <p v-if="orderError" class="op-error mono" role="alert">{{ orderError }}</p>
 
-    <section class="seats">
-      <div v-if="!seats.length" class="empty-wrap">
+    <section v-if="!seats.length" class="seats">
+      <div class="empty-wrap">
         <EmptyState glyph="▯" text="席位空置 — 在候选页提交任务后在此排队" />
       </div>
+    </section>
 
-      <template v-for="(s, i) in seats" :key="s.seat_id">
-        <!-- 窗口边界注记：首个未触及席位前（§4.5 样板 divider-note） -->
-        <div
-          v-if="anyLocked && !s.locked && seats[i - 1]?.locked"
-          class="divider-note mono"
-        >▼ 等待区 · 窗口未触及，可重排 / 移除</div>
+    <!-- 席位画布（指针跟手拖拽，A-12）：行 absolute + transform 定位，
+         画布定高由组合式按逐行前缀和给出 -->
+    <section
+      v-else
+      ref="canvasEl"
+      class="seats seats--canvas"
+      :class="{ 'seats--live': seats.length > 1 }"
+      :style="sort.canvasStyle.value"
+    >
+      <div
+        v-for="(s, i) in seats"
+        :key="s.seat_id"
+        class="seat"
+        :class="{
+          'seat--locked': s.locked,
+          'seat--dragging': sort.dragIndex.value === i,
+        }"
+        :style="sort.styleFor(i)"
+        @pointerdown="sort.onDown($event, i)"
+        @pointermove="sort.onMove($event)"
+        @pointerup="sort.onUp"
+        @pointercancel="sort.onUp"
+      >
+        <span class="seat-no mono">S{{ String(s.seat_id).padStart(2, "0") }}</span>
 
-        <div
-          class="seat"
-          :class="{
-            'seat--locked': s.locked,
-            'seat--dragging': drag.dragId.value === s.seat_id,
-            'seat--over': drag.overId.value === s.seat_id && drag.dragId.value !== s.seat_id,
-          }"
-          :draggable="canDrag(s)"
-          @dragstart="onDragStart(s, $event)"
-          @dragover.prevent="onDragOver(s, $event)"
-          @dragleave="drag.leave(s.seat_id)"
-          @drop.prevent="onDrop(s)"
-        >
-          <span class="seat-no mono">S{{ String(s.seat_id).padStart(2, "0") }}</span>
-
-          <div class="seat-body">
-            <div class="seat-line" @click="s.kind === 'queue' && toggle(s.seat_id)">
-              <span class="kind mono">{{ s.kind === "queue" ? "QUEUE" : "TASK" }}</span>
-              <span
-                class="mono seat-name"
-                :title="s.kind === 'queue' ? (s.queue_id ?? undefined) : s.members[0]?.filename"
-              >
-                {{
-                  s.kind === "queue"
-                    ? (s.queue_name ?? s.queue_id)
-                    : s.members[0]?.filename ?? "—"
-                }}
-              </span>
-              <span v-if="s.kind === 'queue'" class="mono seat-meta">
-                {{ s.members.length }} 个任务
-              </span>
-              <span class="mono seat-meta dim">{{ fmtDateTime(s.submitted_at) }}</span>
-              <span v-if="s.kind === 'task' && s.members[0]" class="state-slot">
-                <StateChip
-                  :state="s.members[0].state"
-                  :label="s.members[0].state === 'staged' ? '等待' : undefined"
-                />
-              </span>
-              <span v-if="s.locked" class="win-tag mono">在途</span>
-              <span
-                v-else-if="s.kind === 'queue'"
-                class="expand mono"
-                :class="{ open: expanded[s.seat_id] }"
-                aria-hidden="true"
-              >▸</span>
-            </div>
-
-            <!-- 队列席位展开成员子表（§4.5）：序号/任务id/文件名/标题/资源/状态，
-                 未执行成员可移除 -->
-            <div v-if="s.kind === 'queue' && expanded[s.seat_id]" class="sub">
-              <div class="sub-row sub-head mono" aria-hidden="true">
-                <span>#</span>
-                <span>ID</span>
-                <span>文件名</span>
-                <span>标题</span>
-                <span>资源</span>
-                <span>状态</span>
-                <span></span>
-              </div>
-              <div v-for="(m, mi) in s.members" :key="m.task_id" class="sub-row">
-                <span class="mono m-idx">{{ (m.position ?? mi) + 1 }}</span>
-                <span class="mono m-id">{{ fmtTaskId(m.task_id) }}</span>
-                <span class="mono m-file" :title="m.filename">{{ m.filename }}</span>
-                <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
-                <span class="mono m-res">{{ fmtDeclaredRes(m.resources) }}</span>
-                <StateChip
-                  :state="m.state"
-                  :label="m.state === 'staged' ? '等待' : undefined"
-                />
-                <button
-                  v-if="m.state === 'staged'"
-                  class="btn btn--ghost m-remove"
-                  type="button"
-                  @click="removing = { seat: s, task_id: m.task_id }"
-                >
-                  移除
-                </button>
-              </div>
-            </div>
+        <div class="seat-body">
+          <!-- 窗口边界注记（§4.5 样板 divider-note）：并入等待区首行——
+               画布行距 8px 放不下独立注记行（居中必与上下卡片重叠），
+               行内渲染使高度自然计入前缀和 -->
+          <div
+            v-if="i === firstUnlocked"
+            class="divider-note mono"
+          >▼ 等待区 · 窗口未触及，可重排 / 移除</div>
+          <div class="seat-line" @click="onSeatLineClick(s)">
+            <span class="kind mono">{{ s.kind === "queue" ? "QUEUE" : "TASK" }}</span>
+            <span
+              class="mono seat-name"
+              :title="s.kind === 'queue' ? (s.queue_id ?? undefined) : s.members[0]?.filename"
+            >
+              {{
+                s.kind === "queue"
+                  ? (s.queue_name ?? s.queue_id)
+                  : s.members[0]?.filename ?? "—"
+              }}
+            </span>
+            <span v-if="s.kind === 'queue'" class="mono seat-meta">
+              {{ s.members.length }} 个任务
+            </span>
+            <span class="mono seat-meta dim">{{ fmtDateTime(s.submitted_at) }}</span>
+            <span v-if="s.kind === 'task' && s.members[0]" class="state-slot">
+              <StateChip
+                :state="s.members[0].state"
+                :label="s.members[0].state === 'staged' ? '等待' : undefined"
+              />
+            </span>
+            <span v-if="s.locked" class="win-tag mono">在途</span>
+            <span
+              v-else-if="s.kind === 'queue'"
+              class="expand mono"
+              :class="{ open: expanded[s.seat_id] }"
+              aria-hidden="true"
+            >▸</span>
           </div>
 
-          <button
-            v-if="!s.locked"
-            class="btn btn--ghost"
-            type="button"
-            @click="removing = { seat: s }"
-          >
-            移除席位
-          </button>
+          <!-- 队列席位展开成员子表（§4.5）：序号/任务id/文件名/标题/资源/状态，
+               未执行成员可移除 -->
+          <div v-if="s.kind === 'queue' && expanded[s.seat_id]" class="sub">
+            <div class="sub-row sub-head mono" aria-hidden="true">
+              <span>#</span>
+              <span>ID</span>
+              <span>文件名</span>
+              <span>标题</span>
+              <span>资源</span>
+              <span>状态</span>
+              <span></span>
+            </div>
+            <div v-for="(m, mi) in s.members" :key="m.task_id" class="sub-row">
+              <span class="mono m-idx">{{ (m.position ?? mi) + 1 }}</span>
+              <span class="mono m-id">{{ fmtTaskId(m.task_id) }}</span>
+              <span class="mono m-file" :title="m.filename">{{ m.filename }}</span>
+              <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
+              <span class="mono m-res">{{ fmtDeclaredRes(m.resources) }}</span>
+              <StateChip
+                :state="m.state"
+                :label="m.state === 'staged' ? '等待' : undefined"
+              />
+              <button
+                v-if="m.state === 'staged'"
+                class="btn btn--ghost m-remove"
+                type="button"
+                @click="removing = { seat: s, task_id: m.task_id }"
+              >
+                移除
+              </button>
+            </div>
+          </div>
         </div>
-      </template>
+
+        <button
+          v-if="!s.locked"
+          class="btn btn--ghost"
+          type="button"
+          @click="removing = { seat: s }"
+        >
+          移除席位
+        </button>
+      </div>
     </section>
 
     <!-- 移除二次确认（危险确认模态） -->
@@ -360,15 +396,21 @@ async function confirmRemove() {
   font-size: var(--text-sm);
   color: var(--danger);
 }
+/* 席位画布（指针跟手拖拽，A-12）：relative + grid gap（供行距量测），
+   行 absolute + transform 定位，画布定高由组合式前缀和给出 */
 .seats {
+  position: relative;
   display: grid;
   gap: var(--space-2);
+}
+.seats--live .seat:not(.seat--locked) {
+  cursor: grab;
 }
 .empty-wrap {
   padding: var(--space-4);
 }
 .divider-note {
-  margin: var(--space-2) 0;
+  margin: 0 0 var(--space-2);
   font-size: var(--text-sm); /* 文案含中文（等待区注记）：不加字距 */
   color: var(--text-faint);
   display: flex;
@@ -383,6 +425,10 @@ async function confirmRemove() {
   background: var(--border-hair);
 }
 .seat {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: grid;
   grid-template-columns: 44px 1fr auto;
   gap: var(--space-4);
@@ -401,11 +447,14 @@ async function confirmRemove() {
   border-left: 2px solid var(--accent);
   box-shadow: var(--glow-running);
 }
+/* 拿起态：accent 描边 + 浮起投影（与队列编辑框同款，令牌组合） */
 .seat--dragging {
-  opacity: 0.5;
-}
-.seat--over {
+  z-index: 1;
   border-color: var(--accent);
+  box-shadow: var(--shadow-pop);
+}
+.seats--live .seat--dragging {
+  cursor: grabbing;
 }
 .seat-no {
   color: var(--text-faint);
