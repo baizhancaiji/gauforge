@@ -368,6 +368,9 @@ onBeforeUnmount(() => {
   word-break: break-all;
 }
 .orb-viewer {
+  /* vendored 3dmol canvas 为 absolute 定位，容器须自建定位上下文，
+     否则画布锚到最近定位祖先（全屏 scrim）落视口左上 */
+  position: relative;
   height: 260px;
   width: 100%;
   border: 1px solid var(--border-hair);
