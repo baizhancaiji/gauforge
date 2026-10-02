@@ -92,7 +92,9 @@ def update_channel(tmp_path, monkeypatch):
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)
         if url.endswith("/VERSION"):
-            return httpx.Response(200, content=b"v2.1.1")
+            # 必然比本地新（tag 后基线上移不翻转前提，conftest helper）
+            from .conftest import newer_version
+            return httpx.Response(200, content=newer_version().encode())
         if url.endswith(".sha256"):
             return httpx.Response(200, content=sha)
         return httpx.Response(200, content=tar,

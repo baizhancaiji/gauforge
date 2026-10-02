@@ -230,15 +230,17 @@ def test_record_check_failure_from_scratch_keeps_nulls():
 # ---------------- run_check（手动/自动共用入口） ----------------
 
 def test_run_check_available():
-    client = _client_with(content=b"v2.1.1\n")
+    from .conftest import newer_version
+    latest = newer_version()
+    client = _client_with(content=f"{latest}\n".encode())
     st = upd.get_service().run_check(client)
     assert st["phase"] == "available"
-    assert st["message"] == "发现新版本 v2.1.1！查看更新说明"
-    assert st["latest_version"] == "v2.1.1"
+    assert st["message"] == f"发现新版本 {latest}！查看更新说明"
+    assert st["latest_version"] == latest
     assert st["last_checked_at"] is not None
     phases = _phases()
     assert [p["phase"] for p in phases] == ["checking", "available"]
-    assert phases[1]["version"] == "v2.1.1"
+    assert phases[1]["version"] == latest
     assert all("ts" in p for p in phases)
 
 

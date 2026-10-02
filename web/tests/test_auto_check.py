@@ -160,7 +160,11 @@ def test_should_run_corrupt_checked_at_treated_unchecked():
 
 # ---------------- 到点只发现不安装 ----------------
 
-def _mock_release(monkeypatch, version=b"v2.1.1", exc=None):
+def _mock_release(monkeypatch, version: bytes | None = None, exc=None):
+    if version is None:  # 缺省即「必然比本地新」：tag 后基线上移不翻转前提
+        from .conftest import newer_version
+        version = newer_version().encode()
+
     def handler(request: httpx.Request) -> httpx.Response:
         if exc is not None:
             raise exc

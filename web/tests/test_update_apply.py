@@ -72,7 +72,10 @@ def no_sleep(monkeypatch):
 class FakeRelease:
     """本地伪装 release：VERSION / .sha256 / 固定名包三附件按路径响应。"""
 
-    def __init__(self, version: bytes = b"v2.1.1", tar: bytes = b"PAYLOAD"):
+    def __init__(self, version: bytes | None = None, tar: bytes = b"PAYLOAD"):
+        if version is None:  # 缺省即「必然比本地新」：tag 后基线上移不翻转前提
+            from .conftest import newer_version
+            version = newer_version().encode()
         self.version = version
         self.tar = tar
         self.tar_chunks: list[bytes] | None = None  # 流式分块（进度测试用）
@@ -228,7 +231,7 @@ def test_apply_accepted_full_pipeline(deploy_root, no_launch):
     assert st["phase"] == "downloading"
     state = json.loads(
         (deploy_root / "update-state").read_text(encoding="utf-8"))
-    assert state["target_version"] == "v2.1.1"
+    assert state["target_version"] == release.version.decode()
     assert state["phase"] == "downloading"
     assert state["started_at"]
     asyncio.run(svc.run_pending())
@@ -239,7 +242,7 @@ def test_apply_accepted_full_pipeline(deploy_root, no_launch):
             if e["event"] == "update.phase"]
     assert tail == ["downloading", "installing", "restarting"]
     progress = _progress()
-    assert progress[-1]["version"] == "v2.1.1"
+    assert progress[-1]["version"] == release.version.decode()
     assert progress[-1]["percent"] == 100
     assert all("speed_bps" in p and "ts" in p for p in progress)
     # detached 拉起参数：列表参数、部署目录 cwd、脱离进程组、日志重定向
@@ -360,11 +363,12 @@ def test_progress_throttle_within_window():
 def test_progress_emits_per_window():
     """0.6s 步进（>500ms 窗口）→ 每 chunk 一条 + 终值收口。"""
     svc = upd.get_service()
-    progress = _run_with_clock(FakeRelease(), svc,
+    release = FakeRelease()
+    progress = _run_with_clock(release, svc,
                                ticks=[0.0, 0.6, 1.2, 1.8, 2.4, 3.0],
                                chunk_bytes=[bytes(25)] * 4)
     assert [p["percent"] for p in progress] == [25, 50, 75, 100, 100]
-    assert all(p["version"] == "v2.1.1" for p in progress)
+    assert all(p["version"] == release.version.decode() for p in progress)
 
 
 # ---------------- update-state 恢复（§3.4 三分支） ----------------

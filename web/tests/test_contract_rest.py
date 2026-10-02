@@ -273,8 +273,12 @@ def update_env(tmp_path, monkeypatch):
     get_state().event_history.clear()
 
 
-def _mock_release(monkeypatch, version=b"v2.1.1", version_exc=None,
+def _mock_release(monkeypatch, version: bytes | None = None, version_exc=None,
                   sha_status=200):
+    if version is None:  # 缺省即「必然比本地新」：tag 后基线上移不翻转前提
+        from .conftest import newer_version
+        version = newer_version().encode()
+
     def handler(request: httpx.Request) -> httpx.Response:
         url = str(request.url)
         if url.endswith("/VERSION"):
@@ -319,13 +323,15 @@ def test_update_status_source_form_unsupported(monkeypatch):
 
 
 def test_update_check_available(update_env, monkeypatch):
-    _mock_release(monkeypatch, version=b"v2.1.1")
+    from .conftest import newer_version
+    latest = newer_version()
+    _mock_release(monkeypatch, version=latest.encode())
     r = client.post("/api/v1/update/check")
     assert r.status_code == 200
     body = r.json()
     assert body["phase"] == "available"
-    assert body["latest_version"] == "v2.1.1"
-    assert body["message"] == "发现新版本 v2.1.1！查看更新说明"
+    assert body["latest_version"] == latest
+    assert body["message"] == f"发现新版本 {latest}！查看更新说明"
     assert_contract_schema(spec, "POST", "/update/check", 200, body)
 
 
@@ -388,12 +394,13 @@ def test_update_apply_precheck_check_failed_502(update_env, monkeypatch):
 
 
 def test_update_apply_accepted_202(update_env, monkeypatch):
-    _mock_release(monkeypatch, version=b"v2.1.1")
+    from .conftest import newer_version
+    _mock_release(monkeypatch, version=newer_version().encode())
     r = client.post("/api/v1/update/apply")
     assert r.status_code == 202
     body = r.json()
     assert body["phase"] == "downloading"
-    assert body["latest_version"] == "v2.1.1"
+    assert body["latest_version"] == newer_version()
     assert_contract_schema(spec, "POST", "/update/apply", 202, body)
 
 
