@@ -39,3 +39,4 @@ web/data/
 .update-payload.tar.gz
 update-state
 update.log
+restart.log
