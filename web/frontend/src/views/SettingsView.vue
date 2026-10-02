@@ -146,14 +146,17 @@ async function doSave() {
     }
     return;
   }
+  // 实际变更且 on_restart 的项须在 initForm 收敛响应前对比（原实现放在
+  // initForm 之后——form/original 已被响应值同化，对比恒等致提示条永不
+  // 出现，2026-10-02 人工验收批走查发现随查随修）。
+  const changedRestartKeys = runtime.value
+    .filter((s) => s.effect === "on_restart" && form.value[s.key] !== original.value[s.key])
+    .map((s) => s.key);
   if (data) {
     settings.value = data;
     initForm(data.runtime);
   }
-  // 实际变更且 on_restart 的项（保存前对比原始值）→ 重启提示条。
-  restartKeys.value = runtime.value
-    .filter((s) => s.effect === "on_restart" && form.value[s.key] !== original.value[s.key])
-    .map((s) => s.key);
+  restartKeys.value = changedRestartKeys;
   saved.value = { ok: true, msg: "设置已保存" };
 }
 
