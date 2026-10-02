@@ -1,6 +1,8 @@
 # M3 人工验收问题修复计划（第一批：历史页抽屉七项 · 第二批：部署反馈五项）
 
-> 状态：待执行。第一批来源：M3 完成后人工验收（2026-10-02，用户实机走查 + 截图），
+> 状态：已执行完毕（2026-10-02，两批十二项全部落地，逐项验收留痕见
+> [m3-acceptance.md](m3-acceptance.md) §5；走查中发现缺陷②「重启提示条
+> 永不出现」随查随修）。第一批来源：M3 完成后人工验收（2026-10-02，用户实机走查 + 截图），
 > 其中问题 4 的处置口径已于同日由用户更新为「正常置灰」（原「隐藏不显示」作废）。
 > 第二批来源：v2.1.0 实际部署使用反馈（2026-10-02，用户提出五项：执行页监控读数
 > 卡死、结果引用行、占用统计口径、设置页文案、待执行页拖拽动效）。
@@ -46,14 +48,14 @@ vendored 3Dmol 画布定位）+ Playwright 实机复核（127.0.0.1:8398，视�
 
 | # | 问题概述 | 根因定位 | 修复方案 | 验收 | 状态 |
 |---|---|---|---|---|---|
-| A-1 | 分析板块常驻抽屉，挤压预览与滚动 | `HistoryView.vue:598-599` 无条件渲染 `<AnalysisPanel>`，无开关状态 | 动作行加「分析」按钮（与输入/输出同级，置于原「导出 .out」位）：`anaOpen` 默认 false，点击展开/再点收起；与预览互斥（开一边关另一边）；分析板块渲染于与预览同一展示区（见 §2） | 打开抽屉默认仅字段+动作行；「分析」开合正常；分析展开时点「输入/输出」则分析收起，反之亦然 | 待执行 |
-| A-2 | 输入/输出预览高度不足、不贴可视区下缘 | `HistoryView.vue:904-913` `.tv-body` 限高 `var(--peek-max-height)`（300px，`tokens.css:66`）；`.text-view` 非 flex 拉伸，被常驻分析板块推到折叠线下 | 预览改为展示区本体：`flex: 1`（`min-height: 300px` 兜底防上游内容超高时被压没）+ `.tv-body` 去限高、`flex: 1` 内部滚动；抽屉 100% 高不变 | 预览上缘位于「输入/输出」按钮正下方（二者互斥已保证），下缘贴可视区底缘；上游内容超高时保底 300px 可滚 | 待执行 |
-| A-3 | 抽屉「导出 .out」被工具条批量导出取代，多余 | `HistoryView.vue:564` 锚点 + `:264-267` `outputUrl` computed | 删除该锚点与 computed（工具条批量导出 `:377-384` 不动）；空出位由 A-1「分析」按钮顶替 | 抽屉内无单条导出入口；工具条批量导出功能不受影响 | 待执行 |
-| A-4 | tab 与「可用数据块」的「— 缺」后缀丑 | tab：`AnalysisPanel.vue:307` 模板后缀；块：`AnalysisOverview.vue:105` 后缀。置灰样式两处已有（`.ana-tab--off` / `.blk--off`） | 两处均仅删「— 缺」文案，保留置灰与缺失原因 title/既有类（2026-10-02 用户口径：块不隐藏、正常置灰，与 tab 同行为） | 缺失 tab/数据块呈纯置灰态，无「— 缺」字样；title 仍注明缺失原因 | 待执行 |
-| A-5a | 对数纵轴 `1/0.1/0.001…` 刻度不专业 | `ConvergenceChart.vue:52-60` log 轴 axisLabel 用默认十进制标签 | log 轴（SCF/几何共用的 `logCvFrame :67-75`）axisLabel 加 formatter：十的幂科学计数（rich text：`{base|10}{exp|n}`，指数小字号上移模拟上标；v=1 显示 `1`）。不用 Unicode 上标字符（U+207B 在 mono 栈有 tofu 风险）；横轴当前无 log 场景，formatter 仅挂 log 轴 | 纵轴刻度显示 10⁰/10⁻¹/10⁻²…（实拍留痕）；字号/颜色走设计令牌 | 待执行 |
-| A-5b | 图下滑块及左右数字下半截被裁 | `ConvergenceChart.vue:61` grid `bottom: 46` + `containLabel: true`（只含刻度标签，不含轴名 nameGap 25 与 dataZoom `bottom: 2 / height: 14`，`:73`）——底部需 ≈69px 实留 46px，滑块与轴名区重叠并被画布下缘裁切 | 底部预留一次给足：`grid.bottom` 46→约 84，`.cv-chart` 高 240→280 补偿绘图区；具体数值实现时按走查校准 | 滑块完整可见、与轴名无重叠、两端数字可见；轴名中文无 tofu（本次实拍疑似单字异常，低清存疑，走查确认） | 待执行 |
-| A-6 | 「类型」「轨道」下拉未展开时文字下缘被遮 | `base.css:64-73` 全局 `input/select/textarea` 设 `padding: 6px 8px`，`OrbitalsPanel.vue:310-318` `.ctl select` 限高 24px 未覆写 padding → 内容盒 ≈10px < 12px 中文行盒 | `.ctl select` 补 `padding: 0 var(--space-2)`（对齐 `.ws-input` 既有修法）。同类全量排查：`UpdateCard.vue:329-333` `.proxy-input`（input，24px 定高未覆写 padding）同中招，一并修 | 两下拉文字完整显示、展开正常；设置页代理输入框文字完整 | 待执行 |
-| A-7 | 「生成并渲染」的 3D 图出现在工作台左上角 | vendored `3dmol.es6.js:21590-21596` canvas 写死 `position: absolute; top: 0; left: 0`（第三方，不改）；`OrbitalsPanel.vue:370-377` `.orb-viewer` 无 position → 最近定位祖先是全屏 `.scrim`（`HistoryView.vue:799-806`，fixed inset 0），canvas 锚到视口左上 | `.orb-viewer` 补 `position: relative`（一行；`overflow: hidden` 已有即裁回容器） | 渲染 MO/静电势后 3D 图位于轨道页画布区内；缩放/清除/连续切换无残留；抽屉滚动无错位 | 待执行 |
+| A-1 | 分析板块常驻抽屉，挤压预览与滚动 | `HistoryView.vue:598-599` 无条件渲染 `<AnalysisPanel>`，无开关状态 | 动作行加「分析」按钮（与输入/输出同级，置于原「导出 .out」位）：`anaOpen` 默认 false，点击展开/再点收起；与预览互斥（开一边关另一边）；分析板块渲染于与预览同一展示区（见 §2） | 打开抽屉默认仅字段+动作行；「分析」开合正常；分析展开时点「输入/输出」则分析收起，反之亦然 | 已修复（71a4af16 分析按钮化互斥同区展示，惰性挂载） |
+| A-2 | 输入/输出预览高度不足、不贴可视区下缘 | `HistoryView.vue:904-913` `.tv-body` 限高 `var(--peek-max-height)`（300px，`tokens.css:66`）；`.text-view` 非 flex 拉伸，被常驻分析板块推到折叠线下 | 预览改为展示区本体：`flex: 1`（`min-height: 300px` 兜底防上游内容超高时被压没）+ `.tv-body` 去限高、`flex: 1` 内部滚动；抽屉 100% 高不变 | 预览上缘位于「输入/输出」按钮正下方（二者互斥已保证），下缘贴可视区底缘；上游内容超高时保底 300px 可滚 | 已修复（71a4af16 展示区本体拉伸贴底下缘，tv-body 内部滚动） |
+| A-3 | 抽屉「导出 .out」被工具条批量导出取代，多余 | `HistoryView.vue:564` 锚点 + `:264-267` `outputUrl` computed | 删除该锚点与 computed（工具条批量导出 `:377-384` 不动）；空出位由 A-1「分析」按钮顶替 | 抽屉内无单条导出入口；工具条批量导出功能不受影响 | 已修复（71a4af16 删锚点与 computed，批量导出不受影响） |
+| A-4 | tab 与「可用数据块」的「— 缺」后缀丑 | tab：`AnalysisPanel.vue:307` 模板后缀；块：`AnalysisOverview.vue:105` 后缀。置灰样式两处已有（`.ana-tab--off` / `.blk--off`） | 两处均仅删「— 缺」文案，保留置灰与缺失原因 title/既有类（2026-10-02 用户口径：块不隐藏、正常置灰，与 tab 同行为） | 缺失 tab/数据块呈纯置灰态，无「— 缺」字样；title 仍注明缺失原因 | 已修复（38431dee 两文件去后缀保留置灰与 title） |
+| A-5a | 对数纵轴 `1/0.1/0.001…` 刻度不专业 | `ConvergenceChart.vue:52-60` log 轴 axisLabel 用默认十进制标签 | log 轴（SCF/几何共用的 `logCvFrame :67-75`）axisLabel 加 formatter：十的幂科学计数（rich text：`{base|10}{exp|n}`，指数小字号上移模拟上标；v=1 显示 `1`）。不用 Unicode 上标字符（U+207B 在 mono 栈有 tofu 风险）；横轴当前无 log 场景，formatter 仅挂 log 轴 | 纵轴刻度显示 10⁰/10⁻¹/10⁻²…（实拍留痕）；字号/颜色走设计令牌 | 已修复（b4ea721c 对数轴科学计数上标，字号颜色走令牌） |
+| A-5b | 图下滑块及左右数字下半截被裁 | `ConvergenceChart.vue:61` grid `bottom: 46` + `containLabel: true`（只含刻度标签，不含轴名 nameGap 25 与 dataZoom `bottom: 2 / height: 14`，`:73`）——底部需 ≈69px 实留 46px，滑块与轴名区重叠并被画布下缘裁切 | 底部预留一次给足：`grid.bottom` 46→约 84，`.cv-chart` 高 240→280 补偿绘图区；具体数值实现时按走查校准 | 滑块完整可见、与轴名无重叠、两端数字可见；轴名中文无 tofu（本次实拍疑似单字异常，低清存疑，走查确认） | 已修复（b4ea721c grid.bottom 84/画布 280/dataZoom 内缩并显式开两端数值） |
+| A-6 | 「类型」「轨道」下拉未展开时文字下缘被遮 | `base.css:64-73` 全局 `input/select/textarea` 设 `padding: 6px 8px`，`OrbitalsPanel.vue:310-318` `.ctl select` 限高 24px 未覆写 padding → 内容盒 ≈10px < 12px 中文行盒 | `.ctl select` 补 `padding: 0 var(--space-2)`（对齐 `.ws-input` 既有修法）。同类全量排查：`UpdateCard.vue:329-333` `.proxy-input`（input，24px 定高未覆写 padding）同中招，一并修 | 两下拉文字完整显示、展开正常；设置页代理输入框文字完整 | 已修复（b32122a4 两处补水平 padding；同类定高控件全量排查无遗漏） |
+| A-7 | 「生成并渲染」的 3D 图出现在工作台左上角 | vendored `3dmol.es6.js:21590-21596` canvas 写死 `position: absolute; top: 0; left: 0`（第三方，不改）；`OrbitalsPanel.vue:370-377` `.orb-viewer` 无 position → 最近定位祖先是全屏 `.scrim`（`HistoryView.vue:799-806`，fixed inset 0），canvas 锚到视口左上 | `.orb-viewer` 补 `position: relative`（一行；`overflow: hidden` 已有即裁回容器） | 渲染 MO/静电势后 3D 图位于轨道页画布区内；缩放/清除/连续切换无残留；抽屉滚动无错位 | 已修复（f1594716 画布容器自建定位上下文；CSS 侧实机断言过，3D 视觉复验留待 WebGL 环境） |
 
 > 备注：A-7 画布 `id="undefined"` 系 GLViewer 以容器 id 命名所致（我们传的是元素
 > 非 id），无功能影响，不处理。
@@ -83,11 +85,11 @@ vendored 3Dmol 画布定位）+ Playwright 实机复核（127.0.0.1:8398，视�
 
 | # | 问题概述 | 根因定位 | 修复方案 | 验收 | 状态 |
 |---|---|---|---|---|---|
-| A-8 | 执行中页 CPU/内存读数长时间挂机后冻结，刷新才恢复 | `events.ts:385-387` 看门狗 60s 无帧主动 `controller.abort()`；`events.ts:439` `finally` 判定 `controller.signal.aborted` 命中「主动关闭：不重连」分支——自 abort 与用户 stop 无法区分，断流后永不重连且 `connection` 仍显 open（无断连提示）；WSL2 部署 Windows 睡眠唤醒/网络静默后 TCP 半开即触发 | `finally` 判定收窄为 `if (closedByUs)`（`stop()` 恒先置 `closedByUs`，语义不变）；看门狗 abort 后自然流入重连分支（显示 reconnecting → 退避重连 → 快照重建基线） | 模拟断流（断后端/杀流）60s 内自动重连、指示灯经历 reconnecting→open、读数恢复，无需手动刷新；正常 stop 路径回归不变 | 待执行 |
-| A-9 | 抽屉「结果引用」恒显 analysis.json，无用户信息量 | `HistoryView.vue:552-555`；字段含义见下方答疑①——值域仅 `analysis.json`/null，UI 呈现无信息量 | 删除抽屉该行；后端字段与契约保留（DB 仍记录出处，排障可用） | 抽屉无「结果引用」行；契约与后端零改动 | 待执行 |
-| A-10 | 「占用 77MB」口径疑问：期望总占用 | 见下方答疑②——现为 run/ 产物树整树（`services/storage.py` `usage()`，du -sb 同口径），非单任务；run/ 之外（db/hq 状态/inputs）未计入 | 口径扩为工作区根（G16WEB_HOME）整树：单遍历保持，total=整树 apparent size，per-execution 明细桶仍按 run/<id> 分桶、其余计入总量；契约描述同步修订（`openapi.yaml:852-855`）；UI 明细脚注注明口径 | 与 `du -sb <工作区根>` 对照一致（条目竞态容差）；明细与可清理量不变；over 阈值判定按新 total 生效 | 待执行 |
-| A-11 | 设置页提示含括号补充、英文参数名、开发者向行为说明 | 文案定义在 `config.py:54-112`（12 运行级 + 2 启动级 description）；前端另展示参数名与 env 变量（`SettingsView.vue:176/178/204`），重启提示条直出 key（`:229`） | 按「只留必要解释」逐条裁剪（清单见下方答疑③）：去全部生效语义括注（徽标已表达）、范围说明、`M3 M3.7` 类内部注记；保留「凌晨 1:00 锚定」「0=禁用告警」；前端去参数名/env 展示（含只读区），重启提示条改显中文参数名 | 设置页无英文参数名/env 名；逐条对照裁剪清单走查；必要解释保留 | 待执行 |
-| A-12 | 待执行页拖拽仍是旧动效（无跟手让位） | `PendingView.vue:60` 用旧 `useDragSort`（HTML5 DnD）；新动效 `usePointerSort` 仅队列编辑框使用（当初因席位行高可变未迁） | 迁移 PendingView 席位重排至 `usePointerSort`，组合式扩展变高行支持（要点见下方④）；锁定席位门控语义保持；迁移后删除 `useDragSort.ts`（唯一使用方消失） | 跟手动效与队列编辑框一致；锁定席位门控回归走查（锁定原位放行、越界本地拒绝、后端 409 提示）；子表展开/收起后拖拽量测正确；队列编辑框动效不回归 | 待执行 |
+| A-8 | 执行中页 CPU/内存读数长时间挂机后冻结，刷新才恢复 | `events.ts:385-387` 看门狗 60s 无帧主动 `controller.abort()`；`events.ts:439` `finally` 判定 `controller.signal.aborted` 命中「主动关闭：不重连」分支——自 abort 与用户 stop 无法区分，断流后永不重连且 `connection` 仍显 open（无断连提示）；WSL2 部署 Windows 睡眠唤醒/网络静默后 TCP 半开即触发 | `finally` 判定收窄为 `if (closedByUs)`（`stop()` 恒先置 `closedByUs`，语义不变）；看门狗 abort 后自然流入重连分支（显示 reconnecting → 退避重连 → 快照重建基线） | 模拟断流（断后端/杀流）60s 内自动重连、指示灯经历 reconnecting→open、读数恢复，无需手动刷新；正常 stop 路径回归不变 | 已修复（6fa13202 finally 判定收窄为 closedByUs；断流走查 open→reconnecting→open 留痕） |
+| A-9 | 抽屉「结果引用」恒显 analysis.json，无用户信息量 | `HistoryView.vue:552-555`；字段含义见下方答疑①——值域仅 `analysis.json`/null，UI 呈现无信息量 | 删除抽屉该行；后端字段与契约保留（DB 仍记录出处，排障可用） | 抽屉无「结果引用」行；契约与后端零改动 | 已修复（79b6927 删抽屉行，契约后端零改动） |
+| A-10 | 「占用 77MB」口径疑问：期望总占用 | 见下方答疑②——现为 run/ 产物树整树（`services/storage.py` `usage()`，du -sb 同口径），非单任务；run/ 之外（db/hq 状态/inputs）未计入 | 口径扩为工作区根（G16WEB_HOME）整树：单遍历保持，total=整树 apparent size，per-execution 明细桶仍按 run/<id> 分桶、其余计入总量；契约描述同步修订（`openapi.yaml:852-855`）；UI 明细脚注注明口径 | 与 `du -sb <工作区根>` 对照一致（条目竞态容差）；明细与可清理量不变；over 阈值判定按新 total 生效 | 已修复（249af02f 契约描述 + b92b2332 整树实现与脚注；du 对照差 41KB 归因观测自扰） |
+| A-11 | 设置页提示含括号补充、英文参数名、开发者向行为说明 | 文案定义在 `config.py:54-112`（12 运行级 + 2 启动级 description）；前端另展示参数名与 env 变量（`SettingsView.vue:176/178/204`），重启提示条直出 key（`:229`） | 按「只留必要解释」逐条裁剪（清单见下方答疑③）：去全部生效语义括注（徽标已表达）、范围说明、`M3 M3.7` 类内部注记；保留「凌晨 1:00 锚定」「0=禁用告警」；前端去参数名/env 展示（含只读区），重启提示条改显中文参数名 | 设置页无英文参数名/env 名；逐条对照裁剪清单走查；必要解释保留 | 已修复（4ff6fb9c 文案裁剪 + d9c1d457 去 env/key 展示 + c6a6afb4 走查缺陷②重启提示条修复） |
+| A-12 | 待执行页拖拽仍是旧动效（无跟手让位） | `PendingView.vue:60` 用旧 `useDragSort`（HTML5 DnD）；新动效 `usePointerSort` 仅队列编辑框使用（当初因席位行高可变未迁） | 迁移 PendingView 席位重排至 `usePointerSort`，组合式扩展变高行支持（要点见下方④）；锁定席位门控语义保持；迁移后删除 `useDragSort.ts`（唯一使用方消失） | 跟手动效与队列编辑框一致；锁定席位门控回归走查（锁定原位放行、越界本地拒绝、后端 409 提示）；子表展开/收起后拖拽量测正确；队列编辑框动效不回归 | 已修复（be8eea80 变高行前缀和 + 逐行门控迁移，删 useDragSort；互换/门控/展开/回归走查过） |
 
 ### 答疑与要点
 
