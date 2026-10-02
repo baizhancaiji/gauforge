@@ -53,7 +53,7 @@ install -d "$pkg/crates"
 install -m 644 crates/LICENSE "$pkg/crates/LICENSE"   # 保持 crates/ 路径：与根 LICENSE 基本名冲突
 install -m 755 target/release/hq "$pkg/bin/hq"
 install -m 755 scripts/deploy/install.sh scripts/deploy/update.sh \
-  scripts/deploy/self_update.sh "$pkg/"
+  scripts/deploy/self_update.sh scripts/deploy/restart_g16web.sh "$pkg/"
 printf '%s\n' "$version" > "$pkg/VERSION"
 
 mkdir -p "$out"
