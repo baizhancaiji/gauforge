@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T10:22+08:00",
+  "updated": "2026-10-02T11:05+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -211,11 +211,46 @@
       "summary": "登记 M3 人工验收第二批修复计划（v2.1.0 部署反馈五项）：执行页监控读数卡死（SSE 看门狗自 abort 误判不重连）、抽屉去结果引用行、占用统计扩为工作区根整树口径（含契约描述修订）、设置页文案只留必要解释并去英文参数名、待执行页拖拽迁移 usePointerSort 跟手动效（含变高行扩展），逐项根因定位与修复方案落档",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "轨道画布容器自建定位上下文，渲染 MO/静电势的 3D 图不再锚到视口左上（vendored 3dmol 绝对定位画布改锚 .orb-viewer 自身）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "小尺寸下拉与代理输入框补水平 padding，24px 定高下中文下缘不再被裁（轨道面板类型/轨道下拉与设置页代理输入，同类定高控件全量排查无遗漏）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "缺失分析 tab 与可用数据块去「缺」后缀改纯置灰态，置灰样式与缺失原因悬浮说明保留",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "收敛图对数纵轴改十的幂科学计数刻度（上标模拟、字号颜色走设计令牌）并修复滑块带底部布局（预留 dataZoom 与轴名空间、两端窗口数值可见，暗底文本色走令牌）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "历史详情抽屉动作行重组：分析板块改按钮开合与输入/输出预览互斥同区显示（默认收起、惰性挂载），预览改展示区本体拉伸贴抽屉下缘内部滚动，移除抽屉单条导出入口（工具条批量导出不变）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "按 docs/plans/m3-acceptance-fix-plan.md 执行：第一批抽屉七项（A-1~A-7）+ 第二批部署反馈五项（A-8~A-12），共 13 笔提交（逐项独立 + 走查留痕 + 进度收尾）；当前自提交 1（A-7）开始"
+    "note": "第一批抽屉七项（A-1~A-7）已全部落地并实机走查通过（提交 1-5）；自提交 6（A-8 SSE 看门狗）进入第二批"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
