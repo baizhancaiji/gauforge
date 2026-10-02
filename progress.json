@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T12:20+08:00",
+  "updated": "2026-10-02T15:25+0800",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -295,12 +295,16 @@
       "summary": "修复设置页重启提示条永不出现（保存响应先收敛表单致变更对比恒等），对比提前至表单收敛前，提示条显中文参数名（走查随查随修）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "去除设置页枚举参数下方与下拉可选值重复的「取值」提示行，数值型范围提示保留",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": {
-    "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "已全部完成（2026-10-02）：两批十二项逐项独立提交并实机走查通过，走查中发现缺陷②（重启提示条永不出现）随查随修；留痕见 docs/plans/m3-acceptance.md §5 与 m3-acceptance-fix-plan.md 状态列"
-  },
+  "in_progress": null,
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
     "用户真实验收两批修复（服务 127.0.0.1:8398 已重启加载新后端；走查记录 docs/plans/m3-acceptance.md §5 可作验收清单）",
