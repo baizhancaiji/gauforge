@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T11:12+08:00",
+  "updated": "2026-10-02T11:16+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -253,11 +253,18 @@
       "summary": "SSE 断流自愈：重连判定收窄为仅认主动关闭标志，看门狗超时自中止后自动退避重连并重建快照基线，执行页监控读数不再冻结需手动刷新",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "历史详情抽屉移除恒为 analysis.json 的结果引用行，后端字段与契约保留（排障/审计用）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "提交 6（A-8 SSE 看门狗重连）已落地；第二批进行至 A-9（抽屉去结果引用行）"
+    "note": "提交 7（A-9 结果引用行移除）已落地；进行至 A-10（占用统计口径扩为工作区根整树，先契约后实现两笔）"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
