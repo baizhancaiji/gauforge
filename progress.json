@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T11:16+08:00",
+  "updated": "2026-10-02T11:24+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -260,11 +260,18 @@
       "summary": "历史详情抽屉移除恒为 analysis.json 的结果引用行，后端字段与契约保留（排障/审计用）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "占用统计契约口径描述修订：total_bytes 由 run/ 产物树扩为工作区根整树 apparent size，重跑两侧生成物",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "提交 7（A-9 结果引用行移除）已落地；进行至 A-10（占用统计口径扩为工作区根整树，先契约后实现两笔）"
+    "note": "提交 8（A-10 契约修订）已落地；进行至提交 9（A-10 实现：storage.py 整树口径 + 前端脚注）"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
