@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system/restart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 触发服务重启（异步；危险操作需前端二次确认）
+         * @description 受理后 detached 拉起重启脚本（先快照当前进程 cmdline/environ/cwd 与 监听端口），服务 SIGTERM 优雅自退（不杀 HQ，§8.7：计算任务不受 WebUI 重启影响），脚本等进程退出与端口释放后按快照原命令/环境/工作 目录重新拉起并探活 /system/health；期间 SSE 断开由客户端看门狗重连。 与更新流程互斥：进行中 409 UPDATE_IN_PROGRESS（复用既有码）。 前端须二次确认且在存在运行中执行时改用长按确认（不新增错误码， 运行中执行的分级确认属前端交互语义，后端不据此拦截）。
+         */
+        post: operations["restartSystem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings": {
         parameters: {
             query?: never;
@@ -1356,6 +1376,39 @@ export interface operations {
                 };
             };
             default: components["responses"]["Error"];
+        };
+    };
+    restartSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已受理（服务即将优雅重启） */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status: "restarting";
+                        message: string;
+                    };
+                };
+            };
+            /** @description 守卫拒绝（UPDATE_IN_PROGRESS） */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     getSettings: {
