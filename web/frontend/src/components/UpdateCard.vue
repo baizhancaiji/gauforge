@@ -329,6 +329,8 @@ onMounted(async () => {
 .proxy-input {
   width: 220px;
   height: var(--control-height-sm);
+  /* 覆写全局 6px 垂直 padding：24px 定高下内容盒仅剩 ≈10px，中文行盒 12px 被裁 */
+  padding: 0 var(--space-2);
 }
 .proxy-err {
   font-size: var(--text-sm);
