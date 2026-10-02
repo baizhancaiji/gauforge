@@ -8,6 +8,18 @@
       "summary": "修复测试基建 HQ 进程残留：stop 关闭补 watchdog 竞态消除与 SIGKILL 兜底，测试会话收尾对全部存活实例强制回收，pytest 退出后零僵尸进程",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "候选页空态文案补 .com 扩展名，导入本就支持 .gjf/.com 而文案漏列"
+    },
+    {
+      "type": "fixed",
+      "summary": "待执行页 locked（在途）席位不再渲染 RUNNING 状态 chip，消除与「在途」标记的语义重复"
+    },
+    {
+      "type": "fixed",
+      "summary": "执行中页出分行去圆点分隔回归文案纪律，队列/提交左对齐、启动右对齐含日期，已运行独立行左对齐"
     }
   ],
   "in_progress": null,
