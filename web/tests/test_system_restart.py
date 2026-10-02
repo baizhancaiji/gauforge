@@ -28,6 +28,9 @@ def test_restart_accepted(monkeypatch, tmp_path) -> None:
                         lambda: calls.append("launch"))
     monkeypatch.setattr(restart_svc, "schedule_self_terminate",
                         lambda: calls.append("terminate"))
+    # 守卫取数不依赖全局更新单例（update 系测试会残留 in-flight 相）
+    monkeypatch.setattr(update_svc, "get_service",
+                        lambda: type("FakeSvc", (), {"phase": "idle"})())
     r = TestClient(app).post("/api/v1/system/restart")
     assert r.status_code == 202
     body = r.json()
