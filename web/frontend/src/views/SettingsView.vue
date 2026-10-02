@@ -7,11 +7,12 @@
  * 映射）；席位上限调小弹「将自队尾挤出」确认（挤出语义：只挤窗口未触及
  * 席位、在跑不追溯）。参数名/env 名不展示（A-11：面向用户只留必要解释）。
  */
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
+import LongPressButton from "@/components/LongPressButton.vue";
 import UpdateCard from "@/components/UpdateCard.vue";
 import { useEventsStore } from "@/stores/events";
 
@@ -51,6 +52,55 @@ const effectLabel: Record<EffectKind, string> = {
   new_submissions: "新任务生效",
   on_restart: "重启生效",
 };
+
+// ---------- 服务重启（危险操作常驻入口；用户验收反馈：一键重启） ----------
+// 二次确认；有运行中执行时确认按钮改长按 3 秒（LongPressButton）。
+// 受理后模态锁定「重启中」：SSE 断开经看门狗重连（A-8），connection 恢复
+// open 即关闭模态；45s 未恢复按失败提示（不阻塞页面）。
+const RESTART_TIMEOUT_MS = 45000;
+const restartConfirm = ref(false);
+const restarting = ref(false);
+const runningCount = computed(() => events.lamps.running);
+let restartTimer: number | null = null;
+
+function askRestart() {
+  restartConfirm.value = true;
+}
+
+async function doRestart() {
+  if (restarting.value) return;
+  restarting.value = true;
+  const { error } = await client.POST("/system/restart");
+  if (error) {
+    restarting.value = false;
+    saved.value = { ok: false, msg: "重启未被受理（服务端拒绝）" };
+    return;
+  }
+  restartTimer = window.setTimeout(() => {
+    restarting.value = false;
+    restartConfirm.value = false;
+    saved.value = { ok: false, msg: "重启超时：未检测到服务恢复，请检查服务日志" };
+  }, RESTART_TIMEOUT_MS);
+}
+
+watch(
+  () => events.connection,
+  (conn) => {
+    if (conn === "open" && restarting.value) {
+      if (restartTimer !== null) {
+        clearTimeout(restartTimer);
+        restartTimer = null;
+      }
+      restarting.value = false;
+      restartConfirm.value = false;
+      saved.value = { ok: true, msg: "服务已重启" };
+    }
+  },
+);
+
+onBeforeUnmount(() => {
+  if (restartTimer !== null) clearTimeout(restartTimer);
+});
 
 const runtime = computed(() => settings.value?.runtime ?? []);
 const startup = computed(() => settings.value?.startup ?? []);
@@ -230,11 +280,26 @@ const restartLabels = computed(() =>
         <span v-if="saved" class="saved mono" :class="saved.ok ? 'ok' : 'bad'">
           {{ saved.msg }}
         </span>
-        <!-- 重启提示条（琥珀纪律：保存条重启提示；仅实际变更项，显中文参数名） -->
+        <!-- 重启提示条（琥珀纪律：保存条重启提示；仅实际变更项，显中文参数名；
+             不代询问是否重启，重启由用户经下方常驻入口手动触发） -->
         <span v-if="restartKeys.length" class="restart mono">
           ⚠ 以下修改需重启 g16web 后生效：{{ restartLabels.join("、") }}
         </span>
       </div>
+
+      <!-- 服务重启（危险操作常驻入口，独立卡片）：计算任务由 HQ 独立执行
+           不受 WebUI 重启影响（§8.7），文案按实际语义 -->
+      <section class="group">
+        <h2 class="group-title mono">服务重启</h2>
+        <div class="restart-row">
+          <span class="restart-note">
+            重启 WebUI 服务使待生效参数立即应用；重启期间页面短暂失联并自动恢复，计算任务由 HQ 独立执行、不受影响
+          </span>
+          <button class="btn btn--danger" type="button" @click="askRestart">
+            重启服务 …
+          </button>
+        </div>
+      </section>
     </div>
     <p v-else class="loading mono">读取设置 …</p>
 
@@ -258,6 +323,47 @@ const restartLabels = computed(() =>
           — 当前在途席位未超新上限，暂不挤出席位（此后超出时自队尾挤出，窗口触及席位除外，在跑不追溯）
         </template>
       </p>
+    </ConfirmModal>
+
+    <!-- 服务重启二次确认（危险操作）：有运行中执行时确认按钮改长按 3 秒；
+         受理后模态锁定「重启中」，connection 恢复自动关闭 -->
+    <ConfirmModal
+      :open="restartConfirm"
+      title="重启服务"
+      danger
+      :loading="restarting"
+      @close="restartConfirm = false"
+    >
+      <template v-if="!restarting">
+        <p class="confirm-line">
+          即将重启 GauForge WebUI 服务，页面将短暂失联数秒并自动恢复。
+        </p>
+        <p class="confirm-line">
+          <template v-if="runningCount > 0">
+            当前有 <span class="mono strong">{{ runningCount }}</span>
+            个执行正在运行：计算任务由 HQ 独立执行、<span class="strong">不会因此中断</span>，重启完成后自动恢复监控与状态对账。
+          </template>
+          <template v-else>当前无运行中执行。</template>
+        </p>
+        <p class="confirm-line">重启将使「重启生效」类参数立即应用。</p>
+      </template>
+      <p v-else class="confirm-line mono">服务重启中，等待恢复 …</p>
+      <template #foot>
+        <template v-if="!restarting">
+          <button class="btn btn--ghost" type="button" @click="restartConfirm = false">
+            取消
+          </button>
+          <LongPressButton
+            v-if="runningCount > 0"
+            label="长按 3 秒确认重启"
+            @pressed="doRestart"
+          />
+          <button v-else class="btn btn--danger" type="button" @click="doRestart">
+            确认重启
+          </button>
+        </template>
+        <span v-else class="restart-wait mono">恢复中 …</span>
+      </template>
     </ConfirmModal>
   </div>
 </template>
@@ -382,5 +488,19 @@ const restartLabels = computed(() =>
 }
 .confirm-line .strong {
   color: var(--text-primary);
+}
+.restart-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.restart-note {
+  flex: 1;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.restart-wait {
+  font-size: var(--text-sm);
+  color: var(--text-faint);
 }
 </style>
