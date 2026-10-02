@@ -1,12 +1,17 @@
 """空间占用统计测试（M3.7 B12，m3-plan §4.13/§5 test_storage_usage）。
 
-- 统计对照实测 du -sb 一致（含 protected/cubes 等子目录、目录条目 apparent size）；
-- 全态口径：运行中执行与孤儿目录计入 total（du -sb run/ 全态一致）；
+- 统计对照实测 du -sb 一致（整树口径：与 du -sb <工作区根> 对照；含
+  protected/cubes 等子目录、目录条目 apparent size）；
+- 全态口径：运行中执行与孤儿目录计入 total；per-execution 明细仍按
+  run/<id> 分桶、桶外仅进总量（A-10 扩面后口径）；
 - per-execution 聚合与降序、entries 默认截断前 50 条（truncated/total_entries）；
 - reclaimable 口径：仅 succeeded 且超保留期的顶层 chk/rwf；未超期 0；
   failed 保全快照计 0（与 M1 清理边界单一实现）；
 - 阈值判定：超阈 over=true、阈值 0 恒 false、阈值即时生效；
 - 手动清理后统计即时反映；千级执行目录基准 P95 < 2s。
+
+工作区根用 tmp_path/"ws" 子目录（与 autouse fixture 落在 tmp_path 根的
+isolated.db 分离）：整树遍历不扫测试库，du -sb 对照不受 WAL 波动竞态。
 """
 from __future__ import annotations
 
@@ -31,6 +36,14 @@ OLD = (datetime.now().astimezone()
 FRESH = datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def make_home(tmp_path: Path, monkeypatch) -> Path:
+    """注入隔离工作区根（tmp_path/"ws"），返回之。"""
+    home = tmp_path / "ws"
+    home.mkdir()
+    monkeypatch.setattr(config, "HOME_DIR", home)
+    return home
+
+
 def seed_exec(state: str, finished_at: str, filename: str = "h2o.gjf") -> int:
     tid = tasks().create_candidate(filename, "imported")
     eid = executions().create(task_id=tid, filename=filename,
@@ -48,21 +61,25 @@ def touch(run_root: Path, eid: int, rel: str, size: int) -> None:
 
 
 def test_usage_matches_du(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     e1 = seed_exec("succeeded", OLD)
     e2 = seed_exec("failed", OLD)
-    touch(tmp_path / "run", e1, "input.log", 5000)
-    touch(tmp_path / "run", e1, "input.chk", 3000)
-    touch(tmp_path / "run", e1, "protected/keep.chk", 700)
-    touch(tmp_path / "run", e1, "cubes/abc.cube", 1200)
-    touch(tmp_path / "run", e2, "input.log", 800)
-    touch(tmp_path / "run", e2, "protected/snap.chk", 400)
+    touch(home / "run", e1, "input.log", 5000)
+    touch(home / "run", e1, "input.chk", 3000)
+    touch(home / "run", e1, "protected/keep.chk", 700)
+    touch(home / "run", e1, "cubes/abc.cube", 1200)
+    touch(home / "run", e2, "input.log", 800)
+    touch(home / "run", e2, "protected/snap.chk", 400)
+    # run/ 外内容（A-10 扩面）：inputs/ 与散文件计入总量、不产生明细
+    (home / "inputs").mkdir()
+    (home / "inputs" / "a.gjf").write_bytes(b"z" * 250)
+    (home / "loose.bin").write_bytes(b"z" * 111)
     out = storage_svc.usage()
-    du = subprocess.run(["du", "-sb", str(tmp_path / "run")],
+    du = subprocess.run(["du", "-sb", str(home)],
                         capture_output=True, text=True, check=True)
     assert out["total_bytes"] == int(du.stdout.split()[0])
     by_id = {e["execution_id"]: e for e in out["entries"]}
-    du_e1 = subprocess.run(["du", "-sb", str(tmp_path / "run" / str(e1))],
+    du_e1 = subprocess.run(["du", "-sb", str(home / "run" / str(e1))],
                            capture_output=True, text=True, check=True)
     assert by_id[e1]["total_bytes"] == int(du_e1.stdout.split()[0])
     # 可清理量：succeeded 超保留期的顶层 chk（3000）；protected/ 与 failed 计 0
@@ -71,20 +88,20 @@ def test_usage_matches_du(tmp_path, monkeypatch):
 
 
 def test_running_and_orphan_dirs_counted(tmp_path, monkeypatch):
-    """全态口径：运行中执行与孤儿目录计入 total（du -sb run/ 全态一致）；
+    """全态口径：运行中执行与孤儿目录计入 total（du -sb 工作区根一致）；
     运行中条目进明细（reclaimable 恒 0），孤儿目录仅计总量不进明细。"""
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     tid = tasks().create_candidate("run.gjf", "imported")
     eid = executions().create(task_id=tid, filename="run.gjf",
                               resources={"nproc": {"value": 1, "defaulted": True},
                                          "mem_gb": {"value": 1.0, "defaulted": True}})
-    touch(tmp_path / "run", eid, "input.log", 4000)
-    orphan = tmp_path / "run" / "424242"  # 无执行行的孤儿目录
+    touch(home / "run", eid, "input.log", 4000)
+    orphan = home / "run" / "424242"  # 无执行行的孤儿目录
     (orphan / "scratch.d").mkdir(parents=True)
     (orphan / "scratch.d" / "tmp.dat").write_bytes(b"x" * 900)
-    (tmp_path / "run" / "lost+found").write_bytes(b"y" * 7)  # 非目录杂项
+    (home / "run" / "lost+found").write_bytes(b"y" * 7)  # 非目录杂项
     out = storage_svc.usage()
-    du = subprocess.run(["du", "-sb", str(tmp_path / "run")],
+    du = subprocess.run(["du", "-sb", str(home)],
                         capture_output=True, text=True, check=True)
     assert out["total_bytes"] == int(du.stdout.split()[0])
     assert [e["execution_id"] for e in out["entries"]] == [eid]
@@ -94,11 +111,11 @@ def test_running_and_orphan_dirs_counted(tmp_path, monkeypatch):
 
 
 def test_entries_sorted_and_truncated(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     sizes = [10, 500, 300, 100]
     eids = [seed_exec("succeeded", FRESH) for _ in sizes]
     for eid, size in zip(eids, sizes):
-        touch(tmp_path / "run", eid, "input.log", size)
+        touch(home / "run", eid, "input.log", size)
     out = storage_svc.usage()
     totals = [e["total_bytes"] for e in out["entries"]]
     assert totals == sorted(totals, reverse=True)
@@ -108,7 +125,7 @@ def test_entries_sorted_and_truncated(tmp_path, monkeypatch):
     # 超 50 条 → 截断标注
     for i in range(55):
         eid = seed_exec("succeeded", FRESH)
-        touch(tmp_path / "run", eid, "input.log", i)
+        touch(home / "run", eid, "input.log", i)
     out = storage_svc.usage()
     assert len(out["entries"]) == 50
     assert out["total_entries"] == 59
@@ -117,9 +134,9 @@ def test_entries_sorted_and_truncated(tmp_path, monkeypatch):
 
 
 def test_threshold_semantics(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     eid = seed_exec("succeeded", FRESH)
-    touch(tmp_path / "run", eid, "input.log", 4096)
+    touch(home / "run", eid, "input.log", 4096)
     # 默认阈值 50GB：未超
     assert storage_svc.usage()["over"] is False
     # 阈值 0 = 禁用：恒 false
@@ -138,14 +155,14 @@ def test_threshold_semantics(tmp_path, monkeypatch):
 
 
 def test_cleanup_reflects_immediately(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     eid = seed_exec("succeeded", OLD)
-    touch(tmp_path / "run", eid, "input.chk", 2000)
-    touch(tmp_path / "run", eid, "input.rwf", 1000)
+    touch(home / "run", eid, "input.chk", 2000)
+    touch(home / "run", eid, "input.rwf", 1000)
     out = storage_svc.usage()
     assert out["entries"][0]["reclaimable_bytes"] == 3000
     stats = finalize.cleanup_expired(
-        executions().list_by_state("succeeded"), tmp_path / "run", 7,
+        executions().list_by_state("succeeded"), home / "run", 7,
         datetime.now().astimezone())
     assert stats == {"checked": 1, "removed_chk": 1, "removed_rwf": 1}
     out = storage_svc.usage()
@@ -154,24 +171,25 @@ def test_cleanup_reflects_immediately(tmp_path, monkeypatch):
 
 
 def test_reclaimable_fresh_succeeded_is_zero(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     eid = seed_exec("succeeded", FRESH)
-    touch(tmp_path / "run", eid, "input.chk", 2000)
+    touch(home / "run", eid, "input.chk", 2000)
     assert storage_svc.usage()["entries"][0]["reclaimable_bytes"] == 0
 
 
 def test_skipped_without_run_dir_excluded(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     seed_exec("skipped", FRESH)
     out = storage_svc.usage()
     assert out["entries"] == [] and out["total_entries"] == 0
-    assert out["total_bytes"] == 0
+    # 整树口径：无 run 数据时 total 仅含工作区根自身条目（du -sb 含根）
+    assert out["total_bytes"] == home.stat().st_size
 
 
 def test_storage_usage_contract(tmp_path, monkeypatch):
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    home = make_home(tmp_path, monkeypatch)
     eid = seed_exec("succeeded", FRESH)
-    touch(tmp_path / "run", eid, "input.log", 100)
+    touch(home / "run", eid, "input.log", 100)
     r = client.get("/api/v1/storage/usage")
     assert r.status_code == 200
     body = r.json()
@@ -182,6 +200,7 @@ def test_storage_usage_contract(tmp_path, monkeypatch):
 
 def test_setting_registered_and_validated(tmp_path, monkeypatch):
     """disk_usage_warn_gb 登记运行级目录：默认 50、0 合法、负值 422。"""
+    make_home(tmp_path, monkeypatch)
     r = client.get("/api/v1/settings")
     items = {i["key"]: i for i in r.json()["runtime"]}
     assert items["disk_usage_warn_gb"]["effect"] == "immediate"
@@ -194,8 +213,8 @@ def test_setting_registered_and_validated(tmp_path, monkeypatch):
 
 def test_thousand_dirs_p95_under_2s(tmp_path, monkeypatch):
     """千级执行目录构造基准：P95 < 2s（修订说明二）。"""
-    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
-    run_root = tmp_path / "run"
+    home = make_home(tmp_path, monkeypatch)
+    run_root = home / "run"
     for i in range(1100):
         tid = tasks().create_candidate(f"w{i}.gjf", "imported")
         eid = executions().create(
