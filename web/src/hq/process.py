@@ -11,6 +11,7 @@ from __future__ import annotations
 import subprocess
 import threading
 import time
+import weakref
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -19,6 +20,10 @@ from .gateway import GatewayError
 
 
 class HqProcessManager:
+    #: 全部存活实例（弱引用）：测试会话收尾兜底清理用（conftest
+    #: pytest_sessionfinish），任何未走 stop() 的路径由此强制回收。
+    _instances: "weakref.WeakSet[HqProcessManager]" = weakref.WeakSet()
+
     def __init__(self, hq_path: str, workspace: Path,
                  http_port: int | None = None):
         self.hq_path = hq_path
@@ -33,6 +38,7 @@ class HqProcessManager:
         # 本次生命周期内 spawn server 的时刻（复用已有实例则保持 None）：
         # S3 对账判据③的依据——server 比 job 新 ⇒ journal 恢复重跑。
         self.server_spawn_ts: str | None = None
+        HqProcessManager._instances.add(self)
 
     # ---------- 存活探测 ----------
     def server_alive(self) -> bool:
@@ -140,14 +146,38 @@ class HqProcessManager:
 
     # ---------- 关闭（仅测试/显式运维用） ----------
     def stop(self) -> None:
+        """关闭全部 spawn 的 HQ 进程（幂等）。
+
+        顺序：停 watchdog 并等待线程退出（消除「stop 期间 watchdog 正在
+        重启 spawn」的竞态）→ `hq server stop` 命令优雅关闭 → 对句柄内
+        进程 SIGTERM 并等待退出（5s 超时 SIGKILL 兜底）。不等待兜底的话，
+        优雅关闭慢或卡住（如 worker 在跑任务）时进程会跨测试会话残留。"""
         self._stop.set()
+        if self._watchdog is not None and self._watchdog.is_alive():
+            self._watchdog.join(timeout=2.0)
         try:
             subprocess.run(self._base_cmd() + ["server", "stop"],
                            capture_output=True, timeout=10)
         except (OSError, subprocess.TimeoutExpired):
             pass
         for proc in [*self._worker_procs, self._server_proc]:
-            if proc is not None and proc.poll() is None:
-                proc.terminate()
+            self._terminate(proc)
         self._server_proc = None
         self._worker_procs = []
+
+    @staticmethod
+    def _terminate(proc: subprocess.Popen | None) -> None:
+        """SIGTERM → wait 5s → SIGKILL；已退出或空句柄跳过。"""
+        if proc is None or proc.poll() is not None:
+            return
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+            return
+        except subprocess.TimeoutExpired:
+            pass
+        proc.kill()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass

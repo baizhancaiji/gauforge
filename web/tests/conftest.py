@@ -7,6 +7,7 @@ urljoin(host_url, path) 语义）。
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -41,9 +42,36 @@ def _isolated_db(tmp_path, monkeypatch):
     store.reset_db()
 
 
+def pytest_sessionfinish(session, exitstatus) -> None:
+    """会话收尾兜底：强停一切仍存活的 HqProcessManager。
+
+    HqProcessManager 以 start_new_session 脱离进程组 spawn（§8.7 复用
+    语义），未走 stop() 的路径（异常中断、竞态遗漏）会让 HQ server/worker
+    在 pytest 退出后永久残留；此处对全部存活实例统一 stop（内含 SIGKILL
+    兜底），保证测试会话零残留。"""
+    from web.src.hq.process import HqProcessManager
+    for mgr in list(HqProcessManager._instances):
+        try:
+            mgr.stop()
+        except Exception:  # noqa: BLE001 — 收尾清理尽力而为，不掩盖退出状态
+            pass
+
+
 def load_spec() -> OpenAPI:
     with config.CONTRACT_PATH.open(encoding="utf-8") as fh:
         return OpenAPI.from_dict(yaml.safe_load(fh))
+
+
+def newer_version() -> str:
+    """必然大于本地当前版本的测试版本串（v2.9.9 段内自增基线）。
+
+    update 域用例此前硬编码「远端 v2.1.1 比本地新」，tag v2.2.0 后本地
+    基线上移、前提翻转致 15 用例失败（2026-10-02 实测）。比较口径剥
+    git describe 后缀（update._comparable），故 v2.9.9 系列对任何
+    v2.x 基线恒为「有更新」，后续 tag 不再翻转。"""
+    m = re.match(r"v2\.(\d+)\.(\d+)", config.APP_VERSION)
+    minor = int(m.group(2)) if m else 0
+    return f"v2.9.{minor + 1}"
 
 
 class FakeRequest:
