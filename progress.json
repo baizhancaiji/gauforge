@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T16:14+0800",
+  "updated": "2026-10-02T16:30+0800",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -323,6 +323,20 @@
       "summary": "设置页新增服务重启常驻入口：二次确认模态显示运行中执行说明，有执行时确认按钮改长按 3 秒（useLongPress 进度反馈、--veil-press 新令牌），重启期间锁定等待并随 SSE 恢复自动关闭，完成后清空待生效参数提示条",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增全服务一键停止脚本 stop_all.sh：按端口停 WebUI 并按命令行特征停 HQ worker 与 server（先 WebUI 后 HQ 避免重拉与重连风暴），逐进程优雅停止兜底强杀，随发布包落位部署根",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "frontend",
+      "summary": "设置页重启入口按钮文案精简为「重启服务」（去尾缀省略号）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": null,
@@ -336,5 +350,5 @@
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
     "全量 pytest 在受限沙箱下会 1 失败（test_extract_keywords regen 用例须写仓库外 ~/gaussian-kb/data/regen.txt 被拦截，环境权限非产品缺陷）；放行后复跑 569 通过（2026-10-01 22:44 实测）"
   ],
-  "context": "人工验收驱动修复（枚举提示行去除）与一键重启功能于 2026-10-02 落地：重启端点 + 复原式脚本 + 设置页长按确认入口实机走查通过（端点真重启两轮、进程替换与探活、SSE 重连、提示条随重启清空）；长按分支待真实运行任务场景验收；D2 发布 2.2.0 仍待用户真实验收后执行。"
+  "context": "人工验收驱动修复（枚举提示行、重启按钮文案）与一键重启/全停运维能力于 2026-10-02 落地：重启端点 + 复原式脚本 + 设置页长按确认入口实机走查通过（端点真重启两轮、SSE 重连、提示条随重启清空），stop_all.sh 实测一键清停 WebUI 与 85 个进程（含 pytest 遗留 HQ 全量）；长按分支待真实运行任务场景验收；D2 发布 2.2.0 仍待用户真实验收后执行。"
 }
