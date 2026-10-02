@@ -1,16 +1,15 @@
 {
-  "updated": "2026-10-02T16:43+0800",
+  "updated": "2026-10-02T16:51+0800",
   "latest_released_version": "2.2.0",
   "unreleased": [],
   "in_progress": null,
   "next_steps": [
-    "上传 v2.2.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.2.0 --upload",
-    "推送 v2.2.0 与分支至远端须用户当次明确授权（git push 含 --tags）"
+    "观察 v2.2.0 部署反馈，问题按验收修复流程另立计划"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
     "全量 pytest 在受限沙箱下会 1 失败（test_extract_keywords regen 用例须写仓库外 ~/gaussian-kb/data/regen.txt 被拦截，环境权限非产品缺陷）；放行后复跑 569 通过（2026-10-01 22:44 实测）"
   ],
-  "context": "v2.2.0 已于 2026-10-02 冻结发布（M3 结果分析 + 人工验收两批修复 + 一键重启/全停运维能力，48 条变更），本地 tag v2.2.0；推送远端与 Release 附件上传待用户授权。"
+  "context": "v2.2.0 已发布（2026-10-02）：本地冻结 tag v2.2.0 并推送远端（分支 g16-webui 与 tag 同步推送），Release 附件 5 个经直连真实 API IP 上传完成（gh CLI 受 /etc/hosts GitHub 屏蔽限制，token 实际有效）；推送与外发均经用户当次授权。"
 }
