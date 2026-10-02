@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-02T11:24+08:00",
+  "updated": "2026-10-02T11:38+08:00",
   "latest_released_version": "2.1.0",
   "unreleased": [
     {
@@ -267,11 +267,18 @@
       "summary": "占用统计契约口径描述修订：total_bytes 由 run/ 产物树扩为工作区根整树 apparent size，重跑两侧生成物",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "空间占用总读数口径扩为工作区根整树（含数据库与 hq 状态等非执行文件），执行明细分桶不变，占用面板注明口径；与 du -sb 工作区根对照一致",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M3 人工验收问题修复（两批十二项）",
-    "note": "提交 8（A-10 契约修订）已落地；进行至提交 9（A-10 实现：storage.py 整树口径 + 前端脚注）"
+    "note": "提交 9（A-10 整树实现）已落地（含 569 全量闸门与 du 对照实测）；进行至提交 10（A-11 设置文案裁剪）"
   },
   "next_steps": [
     "上传 v2.1.0 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v2.1.0 --upload",
