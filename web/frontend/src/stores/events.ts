@@ -436,7 +436,10 @@ export const useEventsStore = defineStore("events", () => {
         window.clearInterval(watchdogId);
         watchdogId = null;
       }
-      if (closedByUs || !controller?.signal || controller.signal.aborted) {
+      // 主动关闭判定只认 closedByUs（stop() 恒先置位）：看门狗超时自 abort
+      // 同样置 signal.aborted，并入判定会被误判为主动关闭——不重连且指示
+      // 灯滞留 open（WSL2 睡眠唤醒后 TCP 半开即触发，部署反馈 A-8）
+      if (closedByUs) {
         /* 主动关闭：不重连 */
       } else if (updateRestartSeen.value && !updateTimeout.value) {
         // 更新重启上下文中的断线：转轮询等待服务恢复（§3.4 强刷机制）
