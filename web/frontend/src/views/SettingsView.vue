@@ -297,7 +297,7 @@ const restartLabels = computed(() =>
             重启 WebUI 服务使待生效参数立即应用；重启期间页面短暂失联并自动恢复，计算任务由 HQ 独立执行、不受影响
           </span>
           <button class="btn btn--danger" type="button" @click="askRestart">
-            重启服务 …
+            重启服务
           </button>
         </div>
       </section>
