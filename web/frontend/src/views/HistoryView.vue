@@ -8,9 +8,11 @@
  * 状态徽标与筛选下拉中文显示（taskStateLabel 单一来源，与队列页同纪律，
  * 2026-09-27 验收修正）；
  * 行点击（普通点击）→ 详情抽屉：终态冻结全字段以单行键值行呈现（dt 左/值右，
- * 2026-09-29 紧凑化，抽屉宽 --drawer-width 520px）+ 输入查看 / 输出预览
- * （限高滚动，打开后滚入视野）与 ?download=true 单条导出（<stem>.out 命名）
- * + 归档 + failed/skipped 重新排队与退回候选（409 提示）+ 清理入口（统计回显）。
+ * 2026-09-29 紧凑化，抽屉宽 --drawer-width 520px）+ 输入查看 / 输出预览与
+ * 分析板块共占展示区（按钮开合互斥：分析默认收起，展开时点输入/输出则
+ * 分析收起，反之亦然；展示区拉伸贴抽屉下缘，上游超高保底 300px 依赖抽屉
+ * 滚动）+ 归档 + failed/skipped 重新排队与退回候选（409 提示）+ 清理入口
+ * （统计回显）。批量导出走工具条（单条导出入口已移除）。
  * 归档管理视图承载 archived=true（独立路由 /archive，决策点 10），仅保留查看动作。
  */
 import { computed, nextTick, ref, watch } from "vue";
@@ -56,6 +58,8 @@ const sort = useSortPref(
   ["submitted_desc", "finished_desc", "finished_asc", "filename_asc", "filename_desc"]);
 const selected = ref<HistoryEntry | null>(null);
 const textView = ref<{ kind: "input" | "output"; content: string; error: string | null } | null>(null);
+/** 分析板块开合（A-1：默认收起，与预览互斥，同占展示区）。 */
+const anaOpen = ref(false);
 const textViewEl = ref<HTMLElement | null>(null);
 const actionNote = ref<{ ok: boolean; msg: string } | null>(null);
 
@@ -128,6 +132,7 @@ loadUsage();
 async function open(e: HistoryEntry) {
   selected.value = e;
   textView.value = null;
+  anaOpen.value = false;
   actionNote.value = null;
   const { data } = await client.GET("/history/{id}", { params: { path: { id: e.id } } });
   if (data) selected.value = data;
@@ -238,10 +243,11 @@ async function exportSelected() {
   URL.revokeObjectURL(url);
 }
 
-// ---------- 输入查看 / 输出预览与导出（?download=true） ----------
+// ---------- 输入查看 / 输出预览（展示区拉伸贴底，内部滚动） ----------
 async function viewText(kind: "input" | "output") {
   const e = selected.value;
   if (!e) return;
+  anaOpen.value = false; // 与分析板块互斥：开一边关另一边
   textView.value = { kind, content: "", error: null };
   // 两端点契约均为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
   const res =
@@ -257,14 +263,16 @@ async function viewText(kind: "input" | "output") {
   } else {
     textView.value = { kind, content: (res.data as unknown as string) ?? "", error: null };
   }
-  // 预览区位于抽屉底部，内容超高时可能在视口外——渲染后滚入视野
+  // 上游字段超高时展示区在视口外——渲染后滚入视野
   await nextTick();
   textViewEl.value?.scrollIntoView({ block: "end" });
 }
 
-const outputUrl = computed(() =>
-  selected.value ? `/api/v1/history/${selected.value.id}/output?download=true` : "",
-);
+/** 分析板块开合（与预览互斥）：展开时收起预览。 */
+function toggleAna() {
+  anaOpen.value = !anaOpen.value;
+  if (anaOpen.value) textView.value = null;
+}
 
 // ---------- 归档（冻结后唯一可变操作） ----------
 const archiveLoading = ref(false);
@@ -561,7 +569,15 @@ async function confirmCleanup() {
         <div class="actions">
           <button class="btn btn--secondary" type="button" @click="viewText('input')">输入</button>
           <button class="btn btn--secondary" type="button" @click="viewText('output')">输出</button>
-          <a class="btn btn--ghost" :href="outputUrl">导出 .out</a>
+          <button
+            class="btn btn--secondary ana-toggle"
+            :class="{ 'ana-toggle--on': anaOpen }"
+            type="button"
+            :aria-expanded="anaOpen"
+            @click="toggleAna"
+          >
+            分析
+          </button>
           <template v-if="!archived">
             <button
               v-if="canRequeue"
@@ -595,10 +611,14 @@ async function confirmCleanup() {
           <button class="btn btn--ghost" type="button" @click="selected = null">关闭</button>
         </div>
 
-        <!-- 分析区（M3.1：内嵌历史详情，不单列页面；异常条目由组件内置置灰态） -->
-        <AnalysisPanel :key="selected.id" :execution-id="selected.id" :entry-state="selected.state" />
-
-        <div v-if="textView" ref="textViewEl" class="text-view">
+        <!-- 展示区（输入/输出预览与分析互斥，同占动作行以下剩余高度：
+             上游字段放得下时拉伸贴抽屉下缘，放不下保底 300px 依赖抽屉滚动） -->
+        <div v-if="anaOpen" class="sub-region">
+          <!-- 分析区（M3.1：内嵌历史详情，不单列页面；异常条目由组件内置置灰态；
+               惰性挂载——首次展开才发起概览请求） -->
+          <AnalysisPanel :key="selected.id" :execution-id="selected.id" :entry-state="selected.state" />
+        </div>
+        <div v-else-if="textView" ref="textViewEl" class="text-view">
           <header class="tv-head">
             <span class="mono">{{ textView.kind === "input" ? "输入原文" : "输出预览" }}</span>
             <button class="btn btn--ghost" type="button" @click="textView = null">×</button>
@@ -879,13 +899,27 @@ tbody tr.row--checked:hover {
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
+/* 分析开合按钮展开态：accent 描边（同 .preset--on 语义） */
+.ana-toggle--on {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+/* 展示区（预览/分析互斥共用）：拉伸吃动作行以下剩余高度贴抽屉下缘，
+   上游内容超高时保底 300px 依赖抽屉滚动 */
+.sub-region,
+.text-view {
+  flex: 1 1 auto;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-3);
+}
 .archived-tag {
   font-size: var(--text-sm);
   color: var(--state-archived);
   align-self: center;
 }
 .text-view {
-  margin-top: var(--space-3);
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-inset);
@@ -900,7 +934,7 @@ tbody tr.row--checked:hover {
   font-size: var(--text-sm); /* 文案含中文（输入原文/输出预览） */
   color: var(--text-faint);
 }
-/* 输出预览限高滚动（C6） */
+/* 预览体拉伸内部滚动（去限高：展示区本体已限底） */
 .tv-body {
   margin: 0;
   padding: var(--space-3);
@@ -908,7 +942,8 @@ tbody tr.row--checked:hover {
   color: var(--text-secondary);
   white-space: pre-wrap;
   word-break: break-word;
-  max-height: var(--peek-max-height);
+  flex: 1;
+  min-height: 0;
   overflow: auto;
 }
 .confirm-line {
