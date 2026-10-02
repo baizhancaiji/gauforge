@@ -98,7 +98,7 @@ for item in (open(f"{tmp}/environ", "rb").read().rstrip(b"\0")
     if "=" in item:
         key, _, val = item.partition("=")
         env[key] = val
-cwd = open(f"{tmp}/cwd", encoding="utf-8").read()
+cwd = open(f"{tmp}/cwd", encoding="utf-8").read().rstrip("\n")
 with open(os.environ["RESTART_LOG"], "ab") as fh:
     subprocess.Popen(cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL,
                      stdout=fh, stderr=fh, start_new_session=True)
