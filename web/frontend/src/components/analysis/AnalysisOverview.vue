@@ -102,7 +102,7 @@ const blocks: { key: keyof Result["blocks"]; label: string }[] = [
           class="blk mono"
           :class="result.blocks[b.key] ? 'blk--on' : 'blk--off'"
         >
-          {{ b.label }}{{ result.blocks[b.key] ? "" : " — 缺" }}
+          {{ b.label }}
         </span>
       </dd>
     </dl>

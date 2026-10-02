@@ -304,7 +304,7 @@ function switchTab(t: (typeof tabs.value)[number]) {
           :title="t.disabled ? t.reason : undefined"
           @click="switchTab(t)"
         >
-          {{ TAB_LABELS[t.key] }}<template v-if="t.disabled"> — 缺</template>
+          {{ TAB_LABELS[t.key] }}
         </button>
       </div>
 
