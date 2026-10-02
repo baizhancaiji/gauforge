@@ -1,10 +1,11 @@
 <script setup lang="ts">
 /**
  * 06 设置（m0-frontend-design §5 · 表单型限宽 880px；m1-plan C7 真实化）
- * 启动级只读区（锁定 + 值 mono + 环境变量）在上，运行级分组表单在下；
+ * 启动级只读区（锁定 + 值 mono）在上，运行级分组表单在下；
  * 每项带中性生效语义徽标（§4.6：即时/即时且追溯/新任务生效/重启生效，plain 档）；
- * 保存后按实际变更提示（on_restart 项琥珀提示条）；席位上限调小弹
- * 「将自队尾挤出」确认（挤出语义：只挤窗口未触及席位、在跑不追溯）。
+ * 保存后按实际变更提示（on_restart 项琥珀提示条，中文名经 key→description
+ * 映射）；席位上限调小弹「将自队尾挤出」确认（挤出语义：只挤窗口未触及
+ * 席位、在跑不追溯）。参数名/env 名不展示（A-11：面向用户只留必要解释）。
  */
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -155,6 +156,12 @@ async function doSave() {
     .map((s) => s.key);
   saved.value = { ok: true, msg: "设置已保存" };
 }
+
+/** 重启提示条显示中文参数名（key→description 映射，A-11）。 */
+const restartLabels = computed(() =>
+  restartKeys.value.map(
+    (k) => runtime.value.find((s) => s.key === k)?.description ?? k,
+  ));
 </script>
 
 <template>
@@ -163,7 +170,7 @@ async function doSave() {
       <!-- 更新卡（§3.2）：置顶，无标题，左内容右按钮 -->
       <UpdateCard />
 
-      <!-- 启动级只读（锁定 + 值 mono + 环境变量；§3.7 两项水平一行两列） -->
+      <!-- 启动级只读（锁定 + 值 mono；§3.7 两项水平一行两列） -->
       <section class="group">
         <h2 class="group-title mono">启动级参数</h2>
         <div class="reads">
@@ -172,10 +179,7 @@ async function doSave() {
               <span class="lock" aria-hidden="true">▪</span>
               {{ s.description }}
             </dt>
-            <dd class="mono val">
-              {{ s.value }}<span class="env mono">{{ s.env_var }}</span>
-            </dd>
-            <dd class="note mono">{{ s.key }}</dd>
+            <dd class="mono val">{{ s.value }}</dd>
           </dl>
         </div>
       </section>
@@ -201,7 +205,6 @@ async function doSave() {
               :step="s.value_type === 'number' ? 'any' : '1'"
             />
             <p class="hint">
-              <span class="key mono">{{ s.key }}</span>
               <span v-if="rangeText(s)" class="range">{{ enumOf(s).length ? "取值" : "范围" }} {{ rangeText(s) }}</span>
               <!-- 生效语义：中性 plain 徽标（§4.6）并入 hint 行（1080p 一屏预算） -->
               <span class="eff mono">{{ effectLabel[s.effect] }}</span>
@@ -224,9 +227,9 @@ async function doSave() {
         <span v-if="saved" class="saved mono" :class="saved.ok ? 'ok' : 'bad'">
           {{ saved.msg }}
         </span>
-        <!-- 重启提示条（琥珀纪律：保存条重启提示；仅实际变更项） -->
+        <!-- 重启提示条（琥珀纪律：保存条重启提示；仅实际变更项，显中文参数名） -->
         <span v-if="restartKeys.length" class="restart mono">
-          ⚠ 以下修改需重启 g16web 后生效：{{ restartKeys.join("、") }}
+          ⚠ 以下修改需重启 g16web 后生效：{{ restartLabels.join("、") }}
         </span>
       </div>
     </div>
@@ -302,15 +305,6 @@ async function doSave() {
   gap: var(--space-3);
   margin-top: 2px;
 }
-.read .env {
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-}
-.read .note {
-  font-size: var(--text-xs); /* 参数名小字注释（纯拉丁，微标签档） */
-  color: var(--text-faint);
-  margin-top: 2px;
-}
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -337,10 +331,6 @@ async function doSave() {
   align-items: baseline;
   gap: var(--space-2);
   flex-wrap: wrap;
-}
-.hint .key {
-  font-size: var(--text-xs); /* 参数名小字注释（纯拉丁，微标签档） */
-  color: var(--text-faint);
 }
 .hint .range {
   color: var(--text-faint);
