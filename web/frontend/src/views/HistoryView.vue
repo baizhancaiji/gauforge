@@ -557,10 +557,6 @@ async function confirmCleanup() {
             }}{{ selected.chk_snapshot.location ? ` — ${selected.chk_snapshot.location}` : "" }}
           </dd>
         </dl>
-        <dl class="cell">
-          <dt class="mono">结果引用</dt>
-          <dd class="mono">{{ selected.result_ref ?? "—" }}</dd>
-        </dl>
 
         <p v-if="actionNote" class="note mono" :class="actionNote.ok ? 'note--ok' : 'note--bad'">
           {{ actionNote.msg }}
