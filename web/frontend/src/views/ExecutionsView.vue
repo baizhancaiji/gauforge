@@ -17,7 +17,7 @@ import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import StateChip from "@/components/StateChip.vue";
 import { useEventsStore, type LiveExecution } from "@/stores/events";
-import { fmtClock, fmtDuration, fmtMemory, fmtPercent } from "@/utils/format";
+import { fmtDateTime, fmtDuration, fmtMemory, fmtPercent } from "@/utils/format";
 
 interface CardView {
   exec: LiveExecution;
@@ -170,10 +170,17 @@ async function confirmStop() {
         </header>
 
         <p class="file mono" :title="card.exec.filename">{{ card.exec.filename }}</p>
+        <!-- 出处分两行排布：上行「队列/提交」左对齐、「启动」右对齐；
+             下行「已运行」独立左对齐（无圆点分隔，文案纪律） -->
         <p class="meta mono">
-          <template v-if="card.exec.queue_id">队列 {{ card.exec.queue_id }} · </template>
-          提交 {{ fmtClock(card.exec.submitted_at) }} · 启动 {{ fmtClock(card.exec.started_at) }} ·
-          已运行 {{ fmtDuration(elapsed(card.exec)) }}
+          <span class="meta-row">
+            <span class="meta-l">
+              <span v-if="card.exec.queue_id" class="q">队列 {{ card.exec.queue_id }}</span>
+              <span>提交 {{ fmtDateTime(card.exec.submitted_at) }}</span>
+            </span>
+            <span>启动 {{ fmtDateTime(card.exec.started_at) }}</span>
+          </span>
+          <span class="meta-row">已运行 {{ fmtDuration(elapsed(card.exec)) }}</span>
         </p>
 
         <div class="readouts" :class="{ 'readouts--stale': stale }" aria-live="off">
@@ -325,6 +332,20 @@ async function confirmStop() {
   font-size: var(--text-sm);
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
+}
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+.meta-row + .meta-row {
+  margin-top: var(--space-1);
+}
+.meta-l {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
 }
 .readouts {
   display: grid;

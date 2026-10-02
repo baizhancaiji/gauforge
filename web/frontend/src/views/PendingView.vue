@@ -246,7 +246,8 @@ async function confirmRemove() {
               {{ s.members.length }} 个任务
             </span>
             <span class="mono seat-meta dim">{{ fmtDateTime(s.submitted_at) }}</span>
-            <span v-if="s.kind === 'task' && s.members[0]" class="state-slot">
+            <!-- locked（在途）席位不渲染状态 chip：与「在途」标记语义重复 -->
+            <span v-if="s.kind === 'task' && s.members[0] && !s.locked" class="state-slot">
               <StateChip
                 :state="s.members[0].state"
                 :label="s.members[0].state === 'staged' ? '等待' : undefined"

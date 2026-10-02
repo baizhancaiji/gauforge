@@ -480,7 +480,7 @@ function onQueueClosed() {
         </div>
 
         <div v-else-if="!list.length" class="empty-wrap">
-          <EmptyState glyph="▯" text="暂无候选任务 — 导入 .gjf 文件后显示于此" />
+          <EmptyState glyph="▯" text="暂无候选任务 — 导入 .gjf/.com 文件后显示于此" />
         </div>
 
         <template v-else>
