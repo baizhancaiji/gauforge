@@ -55,11 +55,36 @@ function baseAxis(xName: string, yName: string, log: boolean) {
       scale: !log, // 能量轴不强制包含 0（收敛末段微变化可见）
       nameTextStyle: { color: t.textFaint },
       axisLine: { show: false },
-      axisLabel: { color: t.textFaint },
+      axisLabel: log
+        ? { color: t.textFaint, formatter: logTickLabel, rich: logTickRich(t) }
+        : { color: t.textFaint },
       splitLine: { lineStyle: { color: t.gridLine } },
     },
-    grid: { left: 8, right: 30, top: 32, bottom: 46, containLabel: true },
+    // bottom 一次给足：dataZoom（bottom 2 + height 14）+ 轴名 nameGap 25
+    // + 轴名行高——46 时滑块带与轴名区重叠并被画布下缘裁切
+    grid: { left: 8, right: 30, top: 32, bottom: 84, containLabel: true },
     tooltip: { trigger: "axis" as const },
+  };
+}
+
+/** log 轴刻度标签：十的幂科学计数（rich 文本 exp 顶对齐小字号模拟上标，
+ *  字号/颜色走令牌；不用 Unicode 上标字符——mono 栈有 tofu 风险），
+ *  v=1（10⁰）显示 1。仅挂 log 轴，横轴当前无 log 场景。 */
+function logTickLabel(v: number) {
+  const exp = Math.round(Math.log10(v));
+  if (exp === 0) return "1";
+  return `{base|10}{exp|${exp}}`;
+}
+
+function logTickRich(t: { textXs: number; text2xs: number; textFaint: string }) {
+  return {
+    base: { fontSize: t.textXs, color: t.textFaint },
+    exp: {
+      fontSize: t.text2xs,
+      color: t.textFaint,
+      verticalAlign: "top" as const,
+      padding: [0, 0, 2, 0] as [number, number, number, number],
+    },
   };
 }
 
@@ -70,7 +95,22 @@ function logCvFrame(xName: string, yName: string) {
     // 根级字体栈：canvas 文本不继承 DOM，中文须显式 Web 字体（豆腐块教训）
     textStyle: { fontFamily: t.fontSans },
     ...baseAxis(xName, yName, true),
-    dataZoom: [{ type: "slider", height: 14, bottom: 2 }],
+    // 左右内缩 52：两端窗口值 label 渲染在滑块带外侧（约 7 字符 45px 宽），
+    // 全宽贴边时被画布左右缘裁掉；bottom 12 避免贴底拥挤；showDetail +
+    // handleLabel.show 均须显式开启（value 轴默认不算两端文本、handleLabel
+    // 默认隐形），文本色走令牌——ECharts 默认深字在暗底不可见
+    dataZoom: [
+      {
+        type: "slider",
+        height: 14,
+        bottom: 12,
+        left: 52,
+        right: 52,
+        showDetail: true,
+        handleLabel: { show: true },
+        textStyle: { color: t.textFaint, fontSize: t.text2xs },
+      },
+    ],
   };
 }
 
@@ -258,7 +298,8 @@ watch([() => props.data, source, tokens], rebuild);
   opacity: 0.5;
 }
 .cv-chart {
-  height: 240px;
+  /* 240→280：grid.bottom 46→84 底部预留补偿，绘图区高度不缩 */
+  height: 280px;
   width: 100%;
 }
 .cv-empty {

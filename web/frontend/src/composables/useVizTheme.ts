@@ -17,6 +17,9 @@ export interface VizTokens {
   /** 3Dmol viewer 背景实色（不认 "transparent"，传非法色名会连锁
    *  WebGL 初始化失败——C4 冒烟实证）。 */
   bgInset: string;
+  /** rich 文本字号（px 数值）：--text-xs / --text-2xs（刻度/装饰符号档）。 */
+  textXs: number;
+  text2xs: number;
 }
 
 const VIZ_VARS = ["--viz-1", "--viz-2", "--viz-3", "--viz-4", "--viz-5"];
@@ -32,6 +35,8 @@ function readTokens(): VizTokens {
     danger: v("--danger"),
     fontSans: v("--font-sans"),
     bgInset: v("--bg-inset"),
+    textXs: parseFloat(v("--text-xs")),
+    text2xs: parseFloat(v("--text-2xs")),
   };
 }
 
