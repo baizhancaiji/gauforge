@@ -1165,7 +1165,7 @@ export interface components {
         };
         /** @description 空间占用统计（M3.7，只读；entries 按总占用降序、默认截断前 50 条；纯拉取式无定时器，超阈仅警告不自动清理） */
         StorageUsage: {
-            /** @description run/ 下全部执行目录（含输入/输出/scratch/chk/rwf/protected/cubes）总占用； 运行中执行目录与无历史行的孤儿目录一并计入（与 du -sb run/ 全态同口径） */
+            /** @description 工作区根（G16WEB_HOME）整树 apparent size——run/ 产物树、 数据库及 hq 状态、inputs 等全部内容计入（与 du -sb <工作区根> 同 口径，并发落盘下允许条目竞态容差）；运行中执行目录与无历史行的 孤儿目录一并计入；per-execution 明细仍按 run/<id> 分桶，桶外内容 仅计入总量 */
             total_bytes: number;
             /** @description disk_usage_warn_gb 换算字节数；0=禁用告警 */
             threshold_bytes: number;
