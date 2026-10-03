@@ -20,6 +20,10 @@
     {
       "type": "fixed",
       "summary": "执行中页出分行去圆点分隔回归文案纪律，队列/提交左对齐、启动右对齐含日期，已运行独立行左对齐"
+    },
+    {
+      "type": "changed",
+      "summary": "默认主题改为亮色，主题选择经 localStorage 持久化并由 index.html 首帧预设，刷新不再闪暗色"
     }
   ],
   "in_progress": null,

@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+### 变更
+
+- 默认主题改为亮色，主题选择经 localStorage 持久化并由 index.html 首帧预设，刷新不再闪暗色
+
 ### 修复
 
 - 【web】修复测试基建 HQ 进程残留：stop 关闭补 watchdog 竞态消除与 SIGKILL 兜底，测试会话收尾对全部存活实例强制回收，pytest 退出后零僵尸进程
