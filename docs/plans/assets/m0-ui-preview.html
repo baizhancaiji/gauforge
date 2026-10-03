@@ -837,14 +837,14 @@ tbody tr.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shad
 <div class="toasts" id="toasts"></div>
 
 <script>
-// ===== 主题切换（默认暗色，localStorage 记忆） =====
+// ===== 主题切换（默认亮色，localStorage 记忆） =====
 const themeBtn = document.getElementById("themeBtn");
 function applyTheme(t){
   document.documentElement.dataset.theme = t;
   themeBtn.textContent = t === "light" ? "◑ 暗色" : "◐ 亮色";
   try{ localStorage.setItem("g16web-theme", t); }catch(e){}
 }
-applyTheme((()=>{ try{ return localStorage.getItem("g16web-theme") || "dark"; }catch(e){ return "dark"; } })());
+applyTheme((()=>{ try{ return localStorage.getItem("g16web-theme") || "light"; }catch(e){ return "light"; } })());
 themeBtn.addEventListener("click", () => {
   applyTheme(document.documentElement.dataset.theme === "light" ? "dark" : "light");
 });
