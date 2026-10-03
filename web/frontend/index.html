@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,6 +8,12 @@
     <link rel="icon" href="data:," />
     <title>Gaussian 16 管理工作台</title>
     <!-- 字体由 fontsource 构建期自托管（main.ts 内 import），不再引入 Google Fonts CDN -->
+    <script>
+      // 主题首帧预设（m0-frontend-design §3）：默认亮色，localStorage 记忆。
+      // 在 CSS 解析前同步执行，刷新时直接落上次主题，不闪暗色。
+      document.documentElement.dataset.theme =
+        localStorage.getItem("g16web-theme") === "dark" ? "dark" : "light";
+    </script>
   </head>
   <body>
     <div id="app"></div>

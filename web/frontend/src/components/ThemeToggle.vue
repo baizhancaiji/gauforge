@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 
-// 明暗主题切换（§3）：默认暗色，localStorage 记忆；瞬时切换、无过渡（§6）。
+// 明暗主题切换（§3）：默认亮色（index.html 已首帧预设），localStorage 记忆；
+// 瞬时切换、无过渡（§6）。
 const root = document.documentElement;
-const isLight = ref(localStorage.getItem("g16web-theme") === "light");
+const isLight = ref(localStorage.getItem("g16web-theme") !== "dark");
 
 function apply() {
   root.dataset.theme = isLight.value ? "light" : "dark";
