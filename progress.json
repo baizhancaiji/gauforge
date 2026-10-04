@@ -27,7 +27,7 @@
       "migration": null
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "server_spawn_ts 记账时机收紧", "note": "wait_alive 成功且 server-dir 出现新编号子目录（ServerDir::create 每 spawn 新建）后才记账"},
   "next_steps": [
     "server_spawn_ts 记账时机收紧：process.start() 在 spawn 发起后立即记账，探测抖动误报死亡时记账虚假 spawn（消费端判据③交叉验证已在 3.0.0/3.0.1 兜底，生产端仍产生误值）；修法方向：确认新 server 真正起来（新 server-dir 子目录/journal mtime 佐证）后再记账",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据"
