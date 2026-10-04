@@ -198,6 +198,12 @@ def delete_queue(queue_id: str) -> dict:
             tasks().detach_finished(m["id"])
     else:  # unsubmitted / submitted
         for m in tasks().list_queue_members(queue_id):
+            if executions().list_by_task(m["id"]):
+                # 已执行过（含手动停止标 skipped 的未启动成员）：不退回，
+                # 只留历史（roadmap §2.4）——退回候选会带着执行记录，候选
+                # 删除时撞 executions.task_id 外键形成幽灵行
+                tasks().detach_finished(m["id"])
+                continue
             tasks().return_to_candidate(m["id"], "returned_unrun")
             action["moved_in"].append(m["id"])
     if state == "submitted":

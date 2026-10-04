@@ -97,6 +97,41 @@ def test_delete_completed_keeps_members_in_history_only():
     assert tasks().count_by_form("candidate") == 0  # 不生成新候选
 
 
+def _seed_execution(tid: int, qid: str, state: str, cause: str) -> None:
+    """终态执行行（与引擎终态管线同形：running 建行 → finalize）。"""
+    eid = executions().create(
+        task_id=tid, filename=tasks().get(tid)["filename"],
+        resources={"nproc": {"value": 1, "defaulted": False},
+                   "mem_gb": {"value": 1.0, "defaulted": False}},
+        queue_id=qid)
+    executions().finalize(execution_id=eid, state=state,
+                          finished_at="2026-10-04T12:00:00+00:00", cause=cause)
+
+
+def test_delete_rolled_back_queue_keeps_executed_members_in_history():
+    """手动停止回退的队列删除（roadmap §2.4）：已执行过（含手动停止时
+    标 skipped 的未启动成员）只留历史不退回；未执行成员退回候选。
+
+    回归背景：删除队列曾无条件回退全部成员，带执行记录的候选删除时
+    撞 executions.task_id 外键（先删文件后删行失败）→ 文件已失、行残留
+    的幽灵候选（2026-10-04 客户端 3.0.0 实测）。"""
+    ids = _mk_queue(3, qid="QQ0005")  # 队列回退后 state=unsubmitted
+    failed_id, skipped_id, unrun_id = ids
+    _seed_execution(failed_id, "QQ0005", "failed", "manually_stopped")
+    _seed_execution(skipped_id, "QQ0005", "skipped", "queue_manually_stopped")
+
+    out = queues_svc.delete_queue("QQ0005")
+    assert out["moved_in"] == [unrun_id]  # 仅未执行成员退回
+    assert tasks().get(failed_id)["form"] == "finished"
+    assert tasks().get(skipped_id)["form"] == "finished"
+    assert executions().list_by_task(failed_id)  # 历史保留
+    assert executions().list_by_task(skipped_id)
+    # 退回候选可正常删除（无执行记录，不撞外键）
+    from web.src.services.candidates import delete_candidate
+    delete_candidate(unrun_id)
+    assert tasks().get(unrun_id) is None
+
+
 def test_delete_missing_404():
     with pytest.raises(ApiError) as ei:
         queues_svc.delete_queue("NOPE00")
