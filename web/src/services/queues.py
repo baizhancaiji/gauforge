@@ -8,7 +8,7 @@ roadmap §2.1「编辑与移除边界」、§2.4 删除队列退回规则。
 from __future__ import annotations
 
 from ..errors import ApiError, err, not_found, validation_failed
-from .candidates import copy_execution_input, default_inputs_dir
+from .candidates import copy_execution_input, default_inputs_dir, resolve_title
 from ..store import executions, queues, seats, tasks
 
 _MEMBER_FIELDS = ("name", "skip_failed", "member_ids")
@@ -113,10 +113,14 @@ def create_queue_from_candidates(name: str, member_ids: list[int]) -> str:
 
 
 def queue_view(row: dict) -> dict:
-    """契约 Queue 视图：聚合 member_ids（position 序）+ last_failure 反序列化
-    （库行存 JSON 文本）+ SQLite 整数布尔还原。"""
+    """契约 Queue 视图：聚合 member_ids（position 序）与成员明细 members
+    （filename 库行 + title 实时解析，契约队列页/编辑对话框名称来源）+
+    last_failure 反序列化（库行存 JSON 文本）+ SQLite 整数布尔还原。"""
     row = dict(row)
-    row["member_ids"] = [m["id"] for m in tasks().list_queue_members(row["id"])]
+    members = tasks().list_queue_members(row["id"])
+    row["member_ids"] = [m["id"] for m in members]
+    row["members"] = [{"task_id": m["id"], "filename": m["filename"],
+                       "title": resolve_title(m["id"])} for m in members]
     row["skip_failed"] = bool(row.get("skip_failed"))
     row["rollback_flag"] = bool(row.get("rollback_flag"))
     lf = row.get("last_failure")

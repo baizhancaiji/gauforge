@@ -71,6 +71,33 @@ def test_queues_response_carries_member_ids():
     assert_contract_schema(spec, "GET", "/api/v1/queues", 200, rows)
 
 
+def test_queue_response_carries_member_details(tmp_path, monkeypatch):
+    """契约 Queue.members（2.3.0 客户端缺陷回归）：unsubmitted 队列无席位、
+    无 last_failure 可交叉，队列页成员概览与编辑对话框的成员名称只能来自
+    响应自带明细——filename 取库行、title 实时解析（不落库，缺失为 null）。"""
+    (tmp_path / "inputs").mkdir()
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    from web.src.services.candidates import import_files
+    data = (b"%mem=1GB\n%nprocshared=4\n#p opt\n\nh2o title\n\n0 1\n"
+            b"O\nH 1 0.96\nH 1 0.96 2 1.0\n")
+    out = import_files([("h2o.gjf", data), ("h2o-2.gjf", data)],
+                       inputs_dir=tmp_path / "inputs")
+    ids = [r["id"] for r in out]
+    r = client.post("/api/v1/queues", json={
+        "name": "q", "member_ids": ids, "skip_failed": False})
+    assert r.status_code == 201
+    rows = client.get("/api/v1/queues").json()
+    row = next(q for q in rows if q["member_ids"] == ids)
+    assert row["members"] == [
+        {"task_id": ids[0], "filename": "h2o.gjf", "title": "h2o title"},
+        {"task_id": ids[1], "filename": "h2o-2.gjf", "title": "h2o title"},
+    ]
+    one = client.get(f"/api/v1/queues/{row['id']}").json()
+    assert one["members"] == row["members"]
+    assert_contract_schema(spec, "GET", "/api/v1/queues", 200, rows)
+    assert_contract_schema(spec, "POST", "/queues", 201, r.json())
+
+
 def test_settings_two_groups():
     r = client.get("/api/v1/settings")
     body = r.json()
