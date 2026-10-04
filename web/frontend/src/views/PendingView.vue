@@ -9,11 +9,11 @@
  * 席位重排动效（A-12，2026-10-02）：迁移 usePointerSort 指针跟手画布式
  * （与队列编辑框一致）——变高行前缀和定位（子表展开行高可变）、逐行门控
  * （锁定席位不可作拖源/落点）；与队列页队列框同一动效纪律。
- * 队列席位成员重排（2026-10-04）：子表行内 ↑/↓ 相邻交换，PATCH
- * /queues/{id} member_ids 全量有序（m2 分级矩阵：submitted 可重排、
- * executing 409——锁定席位不渲染按钮；已执行/在途成员为既定历史，
- * 仅 staged 成员参与交换）。子表行嵌于席位拖拽行内，行高小、命中难，
- * 用按钮而非嵌套拖拽画布。
+ * 队列席位成员重排（2026-10-04）：展开子表抽为 PendingSeatMembers 组件，
+ * 成员拖拽复用既有 usePointerSort（与席位行同一动效纪律，子组件行
+ * pointerdown 阻断冒泡防误触席位拖拽）；门控按 m2 分级矩阵定稿——
+ * 执行中席位不可拖、仅 staged 成员可作拖源/落点，提交 PATCH
+ * /queues/{id} member_ids 全量有序原子。
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
@@ -21,8 +21,9 @@ import { client } from "@/api/client";
 import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import PendingSeatMembers from "@/components/PendingSeatMembers.vue";
 import StateChip from "@/components/StateChip.vue";
-import { fmtDateTime, fmtDeclaredRes, fmtTaskId } from "@/utils/format";
+import { fmtDateTime, fmtTaskId } from "@/utils/format";
 import { useEventsStore } from "@/stores/events";
 import { usePointerSort } from "@/composables/usePointerSort";
 
@@ -128,43 +129,6 @@ watch(expanded, () => void nextTick(() => sort.measure()));
 function onSeatLineClick(s: PendingSeat) {
   if (sort.moved.value) return;
   if (s.kind === "queue") toggle(s.seat_id);
-}
-
-// ---------- 队列席位成员重排（子表行内 ↑/↓ 相邻交换） ----------
-const moveBusy = ref(false);
-
-/** ↑/↓ 渲染门控：锁定席位（执行中）不可重排（m2 分级矩阵 409）；
- *  仅相邻两行均 staged 才可交换（正在执行/已完成成员为既定历史）。 */
-function canMove(s: PendingSeat, index: number, dir: -1 | 1): boolean {
-  if (s.locked) return false;
-  const members = s.members ?? [];
-  const j = index + dir;
-  return j >= 0 && j < members.length
-    && members[index]?.state === "staged"
-    && members[j]?.state === "staged";
-}
-
-/** 提交走 PATCH /queues/{id} member_ids 全量有序原子（契约 #15）。 */
-async function moveMember(s: PendingSeat, index: number, dir: -1 | 1) {
-  if (!canMove(s, index, dir)) return;
-  const ids = (s.members ?? []).map((m) => m.task_id);
-  [ids[index], ids[index + dir]] = [ids[index + dir] as number, ids[index] as number];
-  moveBusy.value = true;
-  orderError.value = null;
-  const { error } = await client.PATCH("/queues/{id}", {
-    params: { path: { id: s.queue_id ?? "" } },
-    body: { member_ids: ids as number[] },
-  });
-  moveBusy.value = false;
-  if (error) {
-    const body = error as unknown as { error?: { code?: string; message?: string } };
-    orderError.value =
-      body.error?.code === "QUEUE_STATE_CONFLICT"
-        ? "队列已在执行，成员顺序不可调整"
-        : (body.error?.message ?? "重排被拒绝");
-    return;
-  }
-  load(); // SSE pending.snapshot 随后同值到达，此处兜底即时刷新
 }
 
 // ---------- 整席移除 / 席位内成员移除（二次确认） ----------
@@ -304,60 +268,15 @@ async function confirmRemove() {
             >▸</span>
           </div>
 
-          <!-- 队列席位展开成员子表（§4.5）：序号/任务id/文件名/标题/资源/状态，
-               未执行成员可移除 -->
-          <div v-if="s.kind === 'queue' && expanded[s.seat_id]" class="sub">
-            <div class="sub-row sub-head mono" aria-hidden="true">
-              <span>#</span>
-              <span>ID</span>
-              <span>文件名</span>
-              <span>标题</span>
-              <span>资源</span>
-              <span>状态</span>
-              <span></span>
-            </div>
-            <div v-for="(m, mi) in s.members" :key="m.task_id" class="sub-row">
-              <span class="mono m-idx">{{ (m.position ?? mi) + 1 }}</span>
-              <span class="mono m-id">{{ fmtTaskId(m.task_id) }}</span>
-              <span class="mono m-file" :title="m.filename">{{ m.filename }}</span>
-              <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
-              <span class="mono m-res">{{ fmtDeclaredRes(m.resources) }}</span>
-              <StateChip
-                :state="m.state"
-                :label="m.state === 'staged' ? '等待' : undefined"
-              />
-              <span class="m-ops">
-                <button
-                  v-if="canMove(s, mi, -1)"
-                  class="btn btn--ghost m-move"
-                  type="button"
-                  :title="`上移 ${m.filename}`"
-                  :disabled="moveBusy"
-                  @click="moveMember(s, mi, -1)"
-                >
-                  ↑
-                </button>
-                <button
-                  v-if="canMove(s, mi, 1)"
-                  class="btn btn--ghost m-move"
-                  type="button"
-                  :title="`下移 ${m.filename}`"
-                  :disabled="moveBusy"
-                  @click="moveMember(s, mi, 1)"
-                >
-                  ↓
-                </button>
-                <button
-                  v-if="m.state === 'staged'"
-                  class="btn btn--ghost m-remove"
-                  type="button"
-                  @click="removing = { seat: s, task_id: m.task_id }"
-                >
-                  移除
-                </button>
-              </span>
-            </div>
-          </div>
+          <!-- 队列席位展开成员子表（PendingSeatMembers）：明细 + 未执行
+               成员移除 + 拖拽重排（usePointerSort，每席位独立排序器） -->
+          <PendingSeatMembers
+            v-if="s.kind === 'queue' && expanded[s.seat_id]"
+            :seat="s"
+            @remove="(tid) => (removing = { seat: s, task_id: tid })"
+            @changed="load"
+            @error="(msg) => (orderError = msg)"
+          />
         </div>
 
         <button
@@ -587,77 +506,6 @@ async function confirmRemove() {
 }
 .expand.open {
   transform: rotate(90deg);
-}
-.sub {
-  margin-top: var(--space-2);
-  border-top: 1px solid var(--border-hair);
-  padding-top: var(--space-2);
-  display: grid;
-  gap: var(--space-1);
-}
-.sub-row {
-  display: grid;
-  /* 序号/id 列 minmax 收窄但不截断：id ≥ 1000 时自然加宽（034 为显示下宽）；
-     状态/操作列定宽——表头与数据行是两个独立 grid，auto 轨随内容宽漂移会错位
-     （操作列 120px 容 ↑/↓/移除 三按钮） */
-  grid-template-columns:
-    20px minmax(36px, auto) minmax(0, 1.2fr) minmax(0, 1fr) 108px 72px 120px;
-  gap: var(--space-3);
-  align-items: center;
-  font-size: var(--text-sm);
-}
-.sub-head {
-  color: var(--text-faint);
-  font-size: var(--text-xs); /* 表头含中文（文件名等）：不加字距 */
-}
-.m-idx {
-  color: var(--text-faint);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-}
-.m-id {
-  color: var(--text-faint);
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-}
-.m-file {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.m-title {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.m-res {
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-.m-file {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.m-remove {
-  height: var(--control-height-sm);
-  font-size: var(--text-sm); /* 文案含中文（移除） */
-}
-/* 成员重排按钮组（↑/↓/移除）：行尾右对齐、小方钮 */
-.m-ops {
-  display: flex;
-  gap: var(--space-1);
-  justify-content: flex-end;
-}
-.m-move {
-  width: 26px;
-  padding: 0;
-  height: var(--control-height-sm);
-  font-size: var(--text-sm);
-  line-height: 1;
 }
 .confirm-line {
   font-size: var(--text-sm);
