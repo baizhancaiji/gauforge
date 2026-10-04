@@ -2102,7 +2102,20 @@ paths:
     post:
       tags: [history]
       operationId: cleanupTransients
-      summary: 手动触发过期 chk/rwf 清理（返回清理统计，M1 实施）
+      summary: 手动触发 chk 清理（返回清理统计，M1 实施）
+      description: |
+        双档清理（scope）：expired（默认）仅删除「正常结束且超保留期」执行的
+        顶层 .chk；all 无视保留期立即删除所有「正常结束」执行的顶层 .chk。
+        两档均不触碰失败任务的保全 chk（protected/）与 .out/.log/输入；
+        rwf/Gau-* 瞬态残留已于异常终止时自动收尸，不在本端点范围。
+      parameters:
+        - name: scope
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [expired, all]
+            default: expired
       responses:
         '200':
           description: 清理统计
@@ -2110,14 +2123,14 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [checked, removed_chk, removed_rwf]
+                required: [checked, removed_chk]
                 properties:
                   checked:
                     type: integer
                   removed_chk:
                     type: integer
-                  removed_rwf:
-                    type: integer
+        '400':
+          $ref: '#/components/responses/Error'
 
   /history/export:
     post:
