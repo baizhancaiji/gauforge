@@ -889,6 +889,15 @@ export interface components {
             name: string;
             /** @description C/T；有序成员（创建校验 2–10；此后只减不增、≥1) */
             member_ids: number[];
+            /** @description T；成员明细，与 member_ids 同序（队列页成员概览与编辑对话框的名称来源）——filename 取库行；title 实时解析不落库（同候选口径），文件缺失/解码失败/缺节为 null */
+            members?: {
+                /** @description T；同 member_ids 对应位 */
+                task_id: number;
+                /** @description T；库行文件名 */
+                filename: string;
+                /** @description T；实时解析，不落库 */
+                title: string | null;
+            }[];
             /** @description C/T；跳过失败任务开关 */
             skip_failed: boolean;
             state: components["schemas"]["QueueState"];
