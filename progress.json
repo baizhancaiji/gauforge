@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-04T15:45+08:00",
+  "updated": "2026-10-04T16:20+08:00",
   "latest_released_version": "2.3.0",
   "unreleased": [
     {
@@ -21,6 +21,12 @@
       "summary": "历史页手动清理拆双档：「清理 chk」默认档仅删成功且超保留期的顶层 chk，「清理所有」无视保留期清所有成功任务的 chk（失败任务的保全 chk 两档均保留）；POST /history/cleanup 新增 scope 参数（expired|all，缺省 expired），响应统计移除 removed_rwf 仅留 checked/removed_chk；前端清理入口改 split button（默认清理 chk，「清理所有」藏下拉）并配悬停提示区分两档，可清理量统计口径同步收窄为 chk",
       "breaking": true,
       "migration": "依赖 /history/cleanup 响应 removed_rwf 字段的外部调用方：该字段已移除；scope 缺省 expired 与原超期档为同一边界，但 rwf 不再属于清理范围（异常终止时自动收尸）"
+    },
+    {
+      "type": "fixed",
+      "summary": "修复历史页占用明细浮层无限高：明细超过可视窗口时底部条目不可达——浮层限高 max-height 略低于可视窗口（100vh − 8rem）超出内部滚动，表头粘性钉住（separate 边框模型同历史页表格手法），容器上下留白移交表头/脚注以保 sticky 贴滚动口",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": null,
