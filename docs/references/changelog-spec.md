@@ -139,7 +139,7 @@ Get-Content CHANGELOG.jsonl | ForEach-Object { $_ | ConvertFrom-Json | Out-Null 
 
 - **开始一个任务**：更新 `in_progress`。
 - **完成一次变更（准备提交）**：向 `unreleased` 追加摘要，同步更新 `next_steps`、`known_issues`。
-- **发布**：清空 `unreleased`，更新 `latest_released_version`，`in_progress` 若无任务置 null。
+- **发布**：清空 `unreleased`，更新 `latest_released_version`，`in_progress` 若无任务置 null；**刷新 `context`（最新已发布版本号必须出现其中）并复核 `next_steps`、`known_issues` 与现状一致**——快照滞留旧状态即失修（2026-10-04 实测：context 停留 v2.2.1 横跨三次发布、next_steps 停留 m1 时代，规范缺触发点与闸门缺新鲜度校验为双重根因）。
 
 ### 2.4 与 CHANGELOG.jsonl 的关系
 
@@ -149,7 +149,7 @@ Get-Content CHANGELOG.jsonl | ForEach-Object { $_ | ConvertFrom-Json | Out-Null 
 ### 2.5 原则
 
 - 覆盖写、保持精简、只写「当前需要知道的事」。
-- 随项目推进及时清理过期的 `context` 与 `known_issues`，防止无限增长。
+- `context` 只描述当前状态：发布时必须刷新，`scripts/validate_progress.py` 校验最新已发布版本号必须出现其中；`known_issues` 随问题解决即时清理，防止无限增长。
 
 ### 2.6 完整示例
 
