@@ -7,7 +7,6 @@ urljoin(host_url, path) 语义）。
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -63,15 +62,15 @@ def load_spec() -> OpenAPI:
 
 
 def newer_version() -> str:
-    """必然大于本地当前版本的测试版本串（v2.9.9 段内自增基线）。
+    """必然大于本地当前版本的测试版本串（v999.0.0 恒定基线）。
 
     update 域用例此前硬编码「远端 v2.1.1 比本地新」，tag v2.2.0 后本地
-    基线上移、前提翻转致 15 用例失败（2026-10-02 实测）。比较口径剥
-    git describe 后缀（update._comparable），故 v2.9.9 系列对任何
-    v2.x 基线恒为「有更新」，后续 tag 不再翻转。"""
-    m = re.match(r"v2\.(\d+)\.(\d+)", config.APP_VERSION)
-    minor = int(m.group(2)) if m else 0
-    return f"v2.9.{minor + 1}"
+    基线上移、前提翻转致 15 用例失败（2026-10-02 实测），改为 v2.x 段内
+    自增；tag v3.0.0 跨 major 后 v2.x 段整体落后本地、前提再度翻转
+    （2026-10-04 实测 16 用例失败）——段内自增依赖「本地永远停在 v2.x」
+    的假设不可靠，改恒定远段 v999.0.0：对任何现实 tag 恒为「有更新」，
+    后续 tag 不再翻转。比较口径剥 git describe 后缀（update._comparable）。"""
+    return "v999.0.0"
 
 
 class FakeRequest:
