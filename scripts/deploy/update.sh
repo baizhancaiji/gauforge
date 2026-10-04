@@ -73,6 +73,17 @@ install -m 644 "$src/crates/LICENSE" crates/LICENSE   # 保持 crates/ 路径：
 install -d bin
 install -m 755 "$src/bin/hq" bin/hq
 
+# 补装部署目录缺失的根脚本（update.sh 自身除外：运行中不可自覆盖）。
+# 遍历而非枚举固定名单：此后新增根脚本随包自动补装（v2.2.0 起的
+# restart_g16web.sh/stop_all.sh 即此场景）；已有脚本的修复仍按既定
+# 行为随 WebUI 更新或重新安装触达（见 deployment.md §4.1）。
+for f in "$src"/*.sh; do
+  name="$(basename "$f")"
+  if [ -f "$f" ] && [ "$name" != "update.sh" ] && [ ! -f "./$name" ]; then
+    install -m 755 "$f" "./$name"
+  fi
+done
+
 [ -d .venv ] || { echo "[update] 未发现 .venv，请先运行 ./install.sh" >&2; exit 1; }
 echo "[update] 差量刷新依赖…"
 uv pip install --python .venv/bin/python -r requirements.txt \

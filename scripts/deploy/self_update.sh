@@ -12,9 +12,9 @@
 #   4. 解压 .update-payload.tar.gz（后端已 sha256 校验的载荷）覆盖
 #   5. 差量刷依赖（同 update.sh：uv pip，镜像可 GAUFORGE_PIP_INDEX 覆盖）
 #   6. update-state 置 phase=done（仅改 phase、保留 target_version/started_at）
-#   7. 根脚本自更新：install.sh/update.sh/self_update.sh 先落 *.new，
-#      重启前原子 mv 覆盖（运行中 bash 持旧 inode，不影响本次执行；
-#      仓库源文件不动，仅部署副本刷新）
+#   7. 根脚本全量同步：包内全部 *.sh 先落 *.new，重启前原子 mv 覆盖
+#      （运行中 bash 持旧 inode，不影响本次执行；遍历而非枚举固定名单，
+#      新增根脚本借此对旧部署目录自动补装；仓库源文件不动，仅部署副本刷新）
 #   8. nohup 按原上下文重启服务（cwd=本目录、命令同 install.sh 提示）
 #
 # 全程不杀任何进程；日志一律追加 update.log。--dry-run 只打印编排步骤，
@@ -40,7 +40,7 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "  4. 解压 $PAYLOAD → 覆盖 web/docs/requirements/VERSION/README/CHANGELOG/LICENSE/crates/bin"
   echo "  5. 差量刷依赖（uv pip，镜像 \${GAUFORGE_PIP_INDEX:-清华}）"
   echo "  6. $STATE_FILE 置 phase=done（仅改 phase）"
-  echo "  7. 根脚本自更新（install.sh/update.sh/self_update.sh 经 *.new 原子 mv）"
+  echo "  7. 根脚本全量同步（包内全部 *.sh 经 *.new 原子 mv，新增脚本自动补装）"
   echo "  8. nohup 按原上下文重启（uv run python -m web.src.main，日志追加 $LOG）"
   exit 0
 fi
@@ -108,10 +108,15 @@ install -d bin
 install -m 755 "$src/bin/hq" bin/hq
 log "解压覆盖完成（版本 $(cat VERSION)）"
 
-# 根脚本自更新第一步：新包脚本先落 *.new（此刻仍在临时目录生命周期内）
-for f in install.sh update.sh self_update.sh; do
-  if [ -f "$src/$f" ]; then
-    install -m 755 "$src/$f" "./$f.new"
+# 根脚本同步第一步：包内全部 *.sh 先落 *.new（此刻仍在临时目录生命周期内）。
+# 清单记入 SCRIPT_LIST，供第 7 步在临时目录删除后回放；统一走 *.new 避免
+# 直接覆盖并发运行中的脚本，新增根脚本对旧部署目录即补装。
+SCRIPT_LIST=""
+for f in "$src"/*.sh; do
+  if [ -f "$f" ]; then
+    name="$(basename "$f")"
+    install -m 755 "$f" "./$name.new"
+    SCRIPT_LIST="$SCRIPT_LIST $name"
   fi
 done
 rm -rf "$tmp"
@@ -138,8 +143,8 @@ print(st['target_version'])
 ")"
 log "update-state 置 phase=done（目标 $TARGET）"
 
-# ---------- 7. 重启前原子覆盖根脚本 ----------
-for f in install.sh update.sh self_update.sh; do
+# ---------- 7. 重启前原子覆盖根脚本（含补装的新增脚本） ----------
+for f in $SCRIPT_LIST; do
   if [ -f "./$f.new" ]; then
     mv -f "./$f.new" "./$f"
   fi
