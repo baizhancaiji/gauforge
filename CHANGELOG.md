@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.0.1（2026-10-04T21:32+0800 发布，patch）
+
 ### 修复
 
 - 修复 GUI 升级通道在 systemd 托管下升级后服务死透：接管脚本依赖刷新步骤按 PATH 调用 uv，而 unit 环境的 PATH 不含 uv 安装目录，uv not found 使编排中止——WebUI 不再拉回、update-state 卡 restarting（2026-10-04 客户端 2.3.0→3.0.0 升级事故）；现 uv 经 PATH 与常见安装位（~/.local/bin 等）依次定位，不可得或刷新失败均警告跳过（包体已落位，服务拉回不被阻断），nohup 回退拉起改直启 .venv/bin/python 与 unit ExecStart 同构、回退彻底免 uv
