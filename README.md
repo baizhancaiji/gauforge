@@ -1,7 +1,7 @@
 # GauForge · Gaussian 16 管理工作台
 
 GauForge 是以 [HyperQueue](https://github.com/It4innovations/hyperqueue)为执行内核的 Gaussian 16 计算化学工作台，为 WSL2 单机工作流打造，以「输入 → 计算」为完整闭环。
-当前版本 **v2.2.1**：M0–M2（契约骨架、候选入口与队列执行、输入工程）已全部完成，构成完整产品；结果分析（M3）及以后为后续功能更新。完整发布历史见 [CHANGELOG.md](CHANGELOG.md)，后续发布见 [Releases](https://github.com/baizhancaiji/gauforge/releases)。
+当前版本 **v2.3.0**：M0–M2（契约骨架、候选入口与队列执行、输入工程）已全部完成，构成完整产品；结果分析（M3）及以后为后续功能更新。完整发布历史见 [CHANGELOG.md](CHANGELOG.md)，后续发布见 [Releases](https://github.com/baizhancaiji/gauforge/releases)。
 工作分支：`g16-webui`。
 
 ```
