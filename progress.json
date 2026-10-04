@@ -15,7 +15,7 @@
       "migration": null
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "回退队列重新提交后成员状态刷新", "note": "pending._member_view 成员 state 判定按席位本周期过滤"},
   "next_steps": [
     "回退队列重新提交后成员状态刷新（2026-10-04 用户报障，非阻塞）：待执行页成员展示态混杂 running/skipped。归因：pending._member_view 读跨周期全量执行历史（any running 优先，否则最近终态，否则 staged）——重提交后未派发成员读到上一周期的 skipped 终态。修法方向：成员 state 判定按席位本周期过滤（席位 submitted_at 之后的执行行才算数，本周期无执行行即 staged）",
     "运行中对账缺口：对账仅在 web 启动时跑一次（dispatcher._reconciled 闩），web 不重启时 HQ server/worker 意外断连、watchdog 重起后 journal 恢复重跑完全无感知（计时器/进度静默错乱）；修法方向：watchdog 重起 server 成功后触发一次对账或 S3 判据接入运行中路径",
