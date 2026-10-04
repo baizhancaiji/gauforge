@@ -10,6 +10,9 @@
 - 成员移除：未执行者退候选；已执行（存在任何执行记录）409
   TASK_EXECUTED_IMMUTABLE；未开始队列至多移除至剩 1 个（409
   QUEUE_MEMBER_FLOOR）；执行中队列可清至只剩在跑成员。
+- 成员展示态：按席位本周期执行行判定（席位提交时刻起、含临界秒），
+  回退重新提交后未派发成员即 staged，上一周期终态不泄漏（跨周期全量
+  执行历史归历史页所有）。
 - 上限调小挤出：自队尾、只挤窗口未触及席位、在跑不追溯（可临时超限）。
 
 事件（candidates.changed(moved_in)/pending.snapshot/queue.status）由路由层
@@ -73,12 +76,17 @@ def _parse_extra(task_id: int) -> dict:
                           "mem_gb": resolved["mem_gb"]}}
 
 
-def _member_view(m: dict) -> dict:
-    exs = executions().list_by_task(m["id"])
+def _member_view(m: dict, since: str) -> dict:
+    """成员展示态：执行行只认席位本周期的（提交时刻 since 起、含临界秒，
+    提交同秒的即时派发归属本周期）——回退重新提交后未派发成员不再读到
+    上一周期的 running/skipped 终态（2026-10-04 报障修复）；本周期无执行
+    行即 staged，跨周期全量执行历史归历史页所有。"""
+    exs = [e for e in executions().list_by_task(m["id"])
+           if (e["submitted_at"] or "") >= since]
     if any(e["state"] == "running" for e in exs):
         state = "running"
     elif exs:
-        state = exs[-1]["state"]  # 最近一次终态
+        state = exs[-1]["state"]  # 本周期最近一次终态
     else:
         state = "staged"
     return {"task_id": m["id"], "filename": m["filename"], "state": state,
@@ -93,10 +101,10 @@ def snapshot() -> dict:
     for s in seats().list_by_position():
         if s["kind"] == "task":
             row = tasks().get(s["task_id"])
-            members = [_member_view(row)] if row else []
+            members = ([_member_view(row, s["created_at"])] if row else [])
             queue_name = None
         else:
-            members = [_member_view(m)
+            members = [_member_view(m, s["created_at"])
                        for m in tasks().list_queue_members(s["queue_id"])]
             q = queues().get(s["queue_id"])
             queue_name = q["name"] if q else None

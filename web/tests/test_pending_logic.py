@@ -304,3 +304,55 @@ def test_snapshot_member_states():
     snap = pending.snapshot()
     states = {m["task_id"]: m["state"] for m in snap["seats"][0]["members"]}
     assert states[m0] == "failed"
+
+
+# ---------------- 回退重提交后成员状态按席位本周期刷新（2026-10-04 报障） ----------------
+
+def _backdate_submitted(execution_id: int, submitted_at: str) -> None:
+    """上一周期执行行倒填旧提交时刻（真实场景跨周期间隔远大于秒级）。"""
+    executions()._db.run(
+        "UPDATE executions SET submitted_at = ? WHERE id = ?",
+        (submitted_at, execution_id))
+
+
+def test_resubmitted_queue_member_states_refresh_per_cycle():
+    """重提交后未派发成员为 staged：上一周期终态（failed/skipped）不再泄漏。"""
+    qid = _queue("qb", 3)
+    m0, m1, m2 = [m["id"] for m in tasks().list_queue_members(qid)]
+    sid1 = pending.append_queue(qid)
+    ex0 = _run(m0, qid)
+    executions().finalize(execution_id=ex0, state="failed",
+                          finished_at="2026-01-01T00:00:00+08:00",
+                          cause="program_error")
+    ex1 = executions().create(task_id=m1, filename=f"t{m1}.gjf",
+                              resources={"nproc": 4, "mem_gb": 8},
+                              queue_id=qid, state="skipped")
+    pending.remove_seat(sid1)  # 回退整席
+    sid2 = pending.append_queue(qid)  # 重新提交（新周期）
+    for eid in (ex0, ex1):
+        _backdate_submitted(eid, "2026-01-01T00:00:00+00:00")
+    snap = pending.snapshot()
+    assert snap["seats"][0]["seat_id"] == sid2
+    states = {m["task_id"]: m["state"] for m in snap["seats"][0]["members"]}
+    assert states == {m0: "staged", m1: "staged", m2: "staged"}
+    # 本周期派发即时可见：执行行与席位提交同秒（created_at 粒度）也归属本周期
+    _run(m0, qid)
+    snap = pending.snapshot()
+    states = {m["task_id"]: m["state"] for m in snap["seats"][0]["members"]}
+    assert states == {m0: "running", m1: "staged", m2: "staged"}
+
+
+def test_resubmitted_task_seat_state_refresh():
+    """单任务席位同理：回退重提交后不再读到上一周期终态。"""
+    t = _cand("solo.gjf")
+    sid1 = pending.append_task(t)
+    ex = _run(t)
+    executions().finalize(execution_id=ex, state="failed",
+                          finished_at="2026-01-01T00:00:00+08:00",
+                          cause="program_error")
+    pending.remove_seat(sid1)  # 回退退候选
+    assert tasks().get(t)["form"] == "candidate"
+    pending.append_task(t)  # 重新提交
+    _backdate_submitted(ex, "2026-01-01T00:00:00+00:00")
+    snap = pending.snapshot()
+    assert snap["seats"][0]["members"][0]["state"] == "staged"
