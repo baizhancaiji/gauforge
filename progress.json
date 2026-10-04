@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-04T22:25+0800",
+  "updated": "2026-10-05T01:14+0800",
   "latest_released_version": "3.0.1",
   "unreleased": [
     {
@@ -7,11 +7,16 @@
       "summary": "发布流程新增 progress.json context 刷新要求:发布时 context 必须提及最新已发布版本号并复核 next_steps/known_issues,validate_progress 闸门同步新增内容新鲜度校验(context 缺最新版本号、两清单类型不符即失败)——2026-10-04 实测 context 滞留 v2.2.1 横跨三次发布、next_steps 停留 m1 时代而闸门全绿,规范缺触发点与闸门缺校验为失修双重根因",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "GUI 升级接管自举缺口修复：apply 流水线在拉起接管脚本前先从 sha256 校验通过的载荷内提取新版 self_update.sh 原子覆盖部署目录旧版（晋升失败即中止、不回退旧版不拉起不自退）——接管脚本执行者恒为新版，旧脚本缺陷不再横跨一次升级（3.0.0→3.0.1 升级 uv not found 中止、服务死透事故根修；生效起点为本次发布后的下一次升级）",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": {"task": "升级接管自举缺口修复", "note": "apply 流水线拉起前先落盘载荷内新版 self_update.sh，执行者必须新版"},
+  "in_progress": null,
   "next_steps": [
-    "升级接管自举缺口（2026-10-04 确认立项）：GUI 升级执行的是当前部署的旧 self_update.sh，修复「服务拉回」的版本要等升级完成才落位——3.0.0→3.0.1 这次升级仍被旧脚本坑死（uv not found 中止、服务死透，客户端已手动恢复）。修法：apply 流水线在拉起接管脚本前先把载荷内的新版脚本落盘，脚本执行者必须是新版",
     "回退队列重新提交后成员状态刷新（2026-10-04 用户报障，非阻塞）：待执行页成员展示态混杂 running/skipped。归因：pending._member_view 读跨周期全量执行历史（any running 优先，否则最近终态，否则 staged）——重提交后未派发成员读到上一周期的 skipped 终态。修法方向：成员 state 判定按席位本周期过滤（席位 submitted_at 之后的执行行才算数，本周期无执行行即 staged）",
     "运行中对账缺口：对账仅在 web 启动时跑一次（dispatcher._reconciled 闩），web 不重启时 HQ server/worker 意外断连、watchdog 重起后 journal 恢复重跑完全无感知（计时器/进度静默错乱）；修法方向：watchdog 重起 server 成功后触发一次对账或 S3 判据接入运行中路径",
     "server_spawn_ts 记账时机收紧：process.start() 在 spawn 发起后立即记账，探测抖动误报死亡时记账虚假 spawn（消费端判据③交叉验证已在 3.0.0/3.0.1 兜底，生产端仍产生误值）；修法方向：确认新 server 真正起来（新 server-dir 子目录/journal mtime 佐证）后再记账",
