@@ -254,3 +254,61 @@ def test_http_gateway_submit_error_raises():
             gw.submit([])
     finally:
         gw.close()
+
+
+# ---------------- spawn_ts 记账后置（2026-10-04 误记 spawn 收紧） ----------------
+
+def _mgr_with_dir(tmp_path: Path, existing: str = "001") -> HqProcessManager:
+    pm = HqProcessManager("hq", tmp_path / "ws")
+    (pm.server_dir / existing).mkdir(parents=True)
+    return pm
+
+
+def test_start_records_spawn_ts_on_new_server_dir(tmp_path, monkeypatch):
+    """真 spawn：新编号子目录出现（新 server 真起来的证据）→ 记账。"""
+    pm = _mgr_with_dir(tmp_path)
+    state = {"alive": False, "spawned": 0}
+
+    def probe() -> bool:
+        return state["alive"]
+
+    def spawn(name, args):
+        state["alive"] = True  # 新 server 先建子目录、再应答探活
+        (pm.server_dir / "002").mkdir()
+        state["spawned"] += 1
+        return object()
+
+    monkeypatch.setattr(pm, "server_alive", probe)
+    monkeypatch.setattr(pm, "_spawn", spawn)
+    monkeypatch.setattr(pm, "_ensure_watchdog", lambda: None)
+    assert pm.start() is True
+    assert state["spawned"] == 1
+    assert pm.server_spawn_ts is not None
+
+
+def test_start_skips_spawn_ts_when_old_server_answers(tmp_path, monkeypatch):
+    """探测抖动误报死亡：旧实例应答探活、无新子目录 → 不记账 spawn_ts。"""
+    pm = _mgr_with_dir(tmp_path)
+    calls = {"n": 0}
+
+    def probe() -> bool:
+        calls["n"] += 1
+        return calls["n"] >= 2  # 首探误报死亡，其后旧实例应答
+
+    monkeypatch.setattr(pm, "server_alive", probe)
+    monkeypatch.setattr(pm, "_spawn", lambda name, args: object())
+    monkeypatch.setattr(pm, "_ensure_watchdog", lambda: None)
+    assert pm.start(wait_timeout=0.3) is True  # 小超时快速等满宽限
+    assert pm.server_spawn_ts is None
+
+
+@skip_no_hq
+def test_spawn_ts_recorded_on_real_start(hq_env):
+    assert hq_env["mgr"].server_spawn_ts is not None
+
+
+@skip_no_hq
+def test_spawn_ts_none_on_reuse(hq_env):
+    second = HqProcessManager(HQ, hq_env["ws"])
+    assert second.start() is False
+    assert second.server_spawn_ts is None  # 复用不记账（S3 判据③语义）

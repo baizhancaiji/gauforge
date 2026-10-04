@@ -53,6 +53,28 @@ class HqProcessManager:
         except GatewayError:
             return False
 
+    def _server_dir_ids(self) -> set[str]:
+        """server-dir 下已存在的编号子目录名（001/002/…；上游
+        ServerDir::create 每次 spawn 新建一个，先于客户端 RPC 可达）。"""
+        if not self.server_dir.is_dir():
+            return set()
+        return {p.name for p in self.server_dir.iterdir()
+                if p.is_dir() and p.name.isdigit()}
+
+    def _wait_new_server_dir(self, known: set[str], timeout: float) -> bool:
+        """等待出现新编号子目录（新 server 真正起来的落盘证据）。
+
+        真 spawn 路径下子目录先于探活成功出现（即时命中零等待）；探活
+        由旧实例应答（探测抖动误报死亡）时新子目录不会出现，等满超时
+        返回 False。"""
+        deadline = time.monotonic() + timeout
+        while True:
+            if self._server_dir_ids() - known:
+                return True
+            if time.monotonic() >= deadline:
+                return False
+            time.sleep(0.25)
+
     # ---------- 内部辅助 ----------
     def _base_cmd(self) -> list[str]:
         return [self.hq_path, "--server-dir", str(self.server_dir)]
@@ -78,21 +100,32 @@ class HqProcessManager:
 
     # ---------- 启动 ----------
     def start(self, wait_timeout: float = 10.0) -> bool:
-        """启动 server；已有实例则复用。返回是否新起了进程。"""
+        """启动 server；已有实例则复用。返回是否新起了进程。
+
+        spawn_ts 记账后置（2026-10-04 误记 spawn 收紧）：``_wait_alive``
+        成功且 server-dir 出现新编号子目录（新 server 真正起来的落盘证据）
+        才记录——探测抖动误报死亡时旧 server 应答探活、新 spawn 实际失败
+        （无新子目录），不再产生虚假 spawn 证据（消费端判据③交叉验证
+        3.0.0/3.0.1 已兜底，本修收紧生产端）。"""
         self.server_dir.mkdir(parents=True, exist_ok=True)
         if self.server_alive():  # 已有实例：复用不新起
             self._ensure_watchdog()
             return False
+        known = self._server_dir_ids()
         if self._server_proc is None:
             args = ["server", "start", "--journal", str(self.journal_path)]
             if self.http_port is not None:
                 args += ["--http-port", str(self.http_port)]
             self._server_proc = self._spawn("server", args)
+        self._wait_alive(self.server_alive, wait_timeout, "server")
+        if self._wait_new_server_dir(known, wait_timeout):
             # 与 store.db.now_iso 同格式（UTC ISO，秒精度），供 S3 判据③
             # 与 executions.started_at 直接字符串比较
             self.server_spawn_ts = datetime.now(timezone.utc).isoformat(
                 timespec="seconds")
-        self._wait_alive(self.server_alive, wait_timeout, "server")
+        else:
+            print("[hq] spawn 后未见新 server 子目录，不记账 spawn_ts"
+                  "（探活应答者疑为旧实例）", file=sys.stderr)
         self._ensure_watchdog()
         return True
 
