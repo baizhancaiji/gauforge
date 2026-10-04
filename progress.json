@@ -9,7 +9,7 @@
       "migration": null
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "升级接管自举缺口修复", "note": "apply 流水线拉起前先落盘载荷内新版 self_update.sh，执行者必须新版"},
   "next_steps": [
     "升级接管自举缺口（2026-10-04 确认立项）：GUI 升级执行的是当前部署的旧 self_update.sh，修复「服务拉回」的版本要等升级完成才落位——3.0.0→3.0.1 这次升级仍被旧脚本坑死（uv not found 中止、服务死透，客户端已手动恢复）。修法：apply 流水线在拉起接管脚本前先把载荷内的新版脚本落盘，脚本执行者必须是新版",
     "回退队列重新提交后成员状态刷新（2026-10-04 用户报障，非阻塞）：待执行页成员展示态混杂 running/skipped。归因：pending._member_view 读跨周期全量执行历史（any running 优先，否则最近终态，否则 staged）——重提交后未派发成员读到上一周期的 skipped 终态。修法方向：成员 state 判定按席位本周期过滤（席位 submitted_at 之后的执行行才算数，本周期无执行行即 staged）",
