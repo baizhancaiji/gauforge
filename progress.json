@@ -19,11 +19,16 @@
       "summary": "待执行页成员展示态按席位本周期判定：成员 state 只认席位提交时刻（含临界秒，同秒即时派发归属本周期）之后的执行行，回退重新提交后未派发成员即 staged——原全量执行历史判定（any running 优先、否则最近终态）让重提交成员读到上一周期 running/skipped 终态（2026-10-04 用户报障），跨周期全量执行历史归历史页所有",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "运行中对账缺口修复：watchdog 运行中重起 server 成功即触发一次对账（on_server_restart 回调复位对账闩、刷新 S3 判据③ server_spawn_ts，引擎线程串行重跑）——对账原先仅在 web 启动时跑一次，web 不重启时 HQ server/worker 意外断连、重起后 journal 恢复重跑完全无感知（计时器/进度静默错乱）",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": {"task": "运行中对账缺口修复", "note": "watchdog 重起 server 成功后复位对账闩并刷新 server_spawn_ts，引擎线程串行重跑对账"},
+  "in_progress": null,
   "next_steps": [
-    "运行中对账缺口：对账仅在 web 启动时跑一次（dispatcher._reconciled 闩），web 不重启时 HQ server/worker 意外断连、watchdog 重起后 journal 恢复重跑完全无感知（计时器/进度静默错乱）；修法方向：watchdog 重起 server 成功后触发一次对账或 S3 判据接入运行中路径",
     "server_spawn_ts 记账时机收紧：process.start() 在 spawn 发起后立即记账，探测抖动误报死亡时记账虚假 spawn（消费端判据③交叉验证已在 3.0.0/3.0.1 兜底，生产端仍产生误值）；修法方向：确认新 server 真正起来（新 server-dir 子目录/journal mtime 佐证）后再记账",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据"
   ],
