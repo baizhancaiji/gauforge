@@ -28,6 +28,20 @@ nohup uv run python -m web.src.main >>/tmp/g16web-8300.log 2>&1 &
 
 浏览器访问 `http://127.0.0.1:8300`（Windows 宿主浏览器经 WSL2 localhost转发直接可用）。首次启动自动拉起 HQ server/worker；数据（SQLite、journal、任务产物）都在工作区 `~/g16web`，与部署目录分离。
 
+### 2.1 systemd 托管（可选）
+
+WSL2 已启用 systemd 时（`systemctl --user status` 可验证；未启用则 `/etc/wsl.conf` 配 `[boot]` 下 `systemd=true` 后重启 WSL），可在部署目录执行：
+
+```bash
+./systemd_install.sh            # 生成用户级 unit 并 enable --now
+```
+
+- 服务以部署目录 `.venv/bin/python -m web.src.main` 直启（与 `uv run` 等效，SIGTERM 直达服务优雅退出），`PATH` 预置 `.venv/bin` 保证内核 `hq` 可发现；日志进 journald：`journalctl --user -u gauforge -f`。
+- **停 WebUI 不杀计算任务的语义保持**：unit 用 `KillMode=process`，停/重启只作用于 WebUI 主进程，HQ server/worker 不受影响，重启后由引擎对账接管。
+- WebUI 重启按钮、更新自动重启与 `stop_all.sh` 在托管下自动委托 `systemctl --user`（进程环境含 `G16WEB_SERVICE_UNIT` 即判定为托管），不会与 `Restart=on-failure` 抢杀；委托失败自动回退原手动路径。
+- 免登录自启需 linger：安装脚本自动尝试，失败时按提示执行 `sudo loginctl enable-linger <用户名>`。
+- 自定义工作区（`G16WEB_HOME`）在安装时写入 unit；卸载：`./systemd_install.sh --remove`（不动工作区数据）。
+
 ## 3. 工作区与 G16 接入
 
 ### 3.1 工作区目录结构
