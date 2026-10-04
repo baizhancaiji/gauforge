@@ -187,3 +187,30 @@ def test_delete_only_candidate_form(ind):
     with pytest.raises(ApiError):
         delete_candidate(tid, inputs_dir=ind)
     assert (ind / str(tid)).exists()
+
+
+def test_delete_candidate_with_history_detaches_not_deletes(ind):
+    """携带执行记录的候选删除：转 finished 离开候选列表，行与文件保留
+    （executions.task_id 外键下删行必失败，先删文件会留幽灵候选——
+    2026-10-04 客户端 3.0.0 实测）；再次删除按非候选形态 404。"""
+    from web.src.store import executions
+
+    (out,) = import_files([("h2o.gjf", VALID)], inputs_dir=ind)
+    tid = out["id"]
+    eid = executions().create(
+        task_id=tid, filename="h2o.gjf",
+        resources={"nproc": {"value": 1, "defaulted": False},
+                   "mem_gb": {"value": 1.0, "defaulted": False}},
+        state="skipped")
+    executions().finalize(execution_id=eid, state="skipped",
+                          finished_at="2026-10-04T12:00:00+00:00",
+                          cause="queue_manually_stopped")
+
+    delete_candidate(tid, inputs_dir=ind)
+    row = tasks().get(tid)
+    assert row is not None and row["form"] == "finished"  # 归历史所有
+    assert (ind / str(tid)).exists()  # 输入副本保留
+    assert executions().list_by_task(tid)  # 历史保留
+    with pytest.raises(ApiError) as ei:
+        delete_candidate(tid, inputs_dir=ind)
+    assert ei.value.body()["error"]["code"] == "NOT_FOUND"

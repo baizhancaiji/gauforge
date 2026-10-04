@@ -30,7 +30,7 @@ from ..engine.workspace import _cpu_list_count
 from ..errors import ApiError, err, not_found, validation_failed
 from ..parse.blocks import is_editable_section, parse_input, reassemble
 from ..parse.keywords import check_route_spelling
-from ..store import get_db, tasks
+from ..store import executions, get_db, tasks
 
 log = logging.getLogger(__name__)
 
@@ -160,13 +160,20 @@ def delete_candidate(task_id: int, inputs_dir: Path | None = None) -> None:
     """剔除候选：删 inputs/<id> 与记录（删除任务实体唯一入口）。
 
     仅 candidate 形态可删（roadmap §2.4）；其余形态按不存在处理。
+    携带执行记录的候选（停止回退后删除队列等路径误退回的历史遗留）
+    不删行——executions.task_id 外键约束下删行必失败，且先删文件会留下
+    文件已失、行仍可见的幽灵候选；转 finished 离开候选列表，任务实体
+    归历史所有（同删除队列「已执行成员只留历史」，roadmap §2.4）。
     """
     ind = inputs_dir if inputs_dir is not None else default_inputs_dir()
     row = tasks().get(task_id)
     if row is None or row["form"] != "candidate":
         raise not_found("candidate", task_id)
-    (ind / str(task_id)).unlink(missing_ok=True)
+    if executions().list_by_task(task_id):
+        tasks().detach_finished(task_id)
+        return
     tasks().delete(task_id)
+    (ind / str(task_id)).unlink(missing_ok=True)
 
 
 def resolve_title(task_id: int, inputs_dir: Path | None = None) -> str | None:
