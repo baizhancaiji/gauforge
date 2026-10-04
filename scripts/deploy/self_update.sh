@@ -15,7 +15,9 @@
 #   7. 根脚本全量同步：包内全部 *.sh 先落 *.new，重启前原子 mv 覆盖
 #      （运行中 bash 持旧 inode，不影响本次执行；遍历而非枚举固定名单，
 #      新增根脚本借此对旧部署目录自动补装；仓库源文件不动，仅部署副本刷新）
-#   8. nohup 按原上下文重启服务（cwd=本目录、命令同 install.sh 提示）
+#   8. 重启服务：systemd 托管（env 含 G16WEB_SERVICE_UNIT，随 Popen 继承）
+#      下委托 systemctl --user restart，否则 nohup 按原上下文重启
+#      （cwd=本目录、命令同 install.sh 提示）
 #
 # 全程不杀任何进程；日志一律追加 update.log。--dry-run 只打印编排步骤，
 # 不动任何文件（演练与测试用）。
@@ -41,7 +43,7 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "  5. 差量刷依赖（uv pip，镜像 \${GAUFORGE_PIP_INDEX:-清华}）"
   echo "  6. $STATE_FILE 置 phase=done（仅改 phase）"
   echo "  7. 根脚本全量同步（包内全部 *.sh 经 *.new 原子 mv，新增脚本自动补装）"
-  echo "  8. nohup 按原上下文重启（uv run python -m web.src.main，日志追加 $LOG）"
+  echo "  8. 重启（systemd 托管下委托 systemctl restart，否则 nohup 按原上下文，日志追加 $LOG）"
   exit 0
 fi
 
@@ -151,6 +153,17 @@ for f in $SCRIPT_LIST; do
 done
 
 # ---------- 8. 按原上下文重启（env 已继承沿用，cwd=本目录） ----------
-log "重启服务（uv run python -m web.src.main）"
-nohup uv run python -m web.src.main >> "$LOG" 2>&1 &
+# systemd 托管下（G16WEB_SERVICE_UNIT 随 Popen 继承）委托 systemctl，
+# 避免与 Restart=on-failure 抢杀；失败回退 nohup 复原。
+UNIT="${G16WEB_SERVICE_UNIT:-}"
+if [ -n "$UNIT" ] && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+    systemctl --user restart "$UNIT" 2>>"$LOG"; then
+  log "已委托 systemd 重启（unit=$UNIT）"
+else
+  if [ -n "$UNIT" ]; then
+    log "systemctl --user restart 失败，回退 nohup 复原"
+  fi
+  log "重启服务（uv run python -m web.src.main）"
+  nohup uv run python -m web.src.main >> "$LOG" 2>&1 &
+fi
 log "接管完成"

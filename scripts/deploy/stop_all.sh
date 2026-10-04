@@ -62,7 +62,16 @@ stop_pattern() {
 echo "[stop-all] 1/3 停止 WebUI（端口 $PORT）"
 WEBUI_PID="$(ss -tlnp "sport = :$PORT" 2>/dev/null | grep -oP 'pid=\K[0-9]+' | head -1 || true)"
 if [ -n "$WEBUI_PID" ]; then
-  stop_one "$WEBUI_PID" "webui"
+  # systemd 托管进程：直接 TERM 会被 Restart=on-failure 立即拉起，须委托 stop
+  UNIT="$(tr '\0' '\n' < "/proc/$WEBUI_PID/environ" 2>/dev/null \
+    | sed -n 's/^G16WEB_SERVICE_UNIT=//p' | head -1)" || UNIT=""
+  if [ -n "$UNIT" ] && command -v systemctl >/dev/null 2>&1 \
+      && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+         systemctl --user stop "$UNIT" 2>/dev/null; then
+    echo "  [webui] 已委托 systemd 停止（unit=$UNIT）"
+  else
+    stop_one "$WEBUI_PID" "webui"
+  fi
 else
   echo "  [webui] 端口 $PORT 无监听进程，跳过"
 fi

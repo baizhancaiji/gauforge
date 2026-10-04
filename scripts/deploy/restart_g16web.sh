@@ -9,10 +9,12 @@
 #   1. 定位目标进程（--pid 优先；否则按 --port 经 ss 定位监听进程）
 #   2. 快照 /proc/<pid> 的 cmdline/environ 原文（NUL 分隔，参数可含空格换行）
 #      与 cwd、实际监听端口——SIGTERM 后 /proc 不可读，复原依据必须先取
+#   2.5 systemd 托管（快照环境含 G16WEB_SERVICE_UNIT）：委托
+#      systemctl --user restart，跳过 3-5；失败回退手动路径
 #   3. SIGTERM 优雅停止（uv run 父进程随子进程退出；上限 30s，兜底 SIGKILL）
 #   4. 等待端口释放（上限 30s）
 #   5. 按快照原命令/环境/工作目录重新拉起（脱离会话，日志追加；内联 python
-#      处理 NUL 分隔，免 shell 转义歧义）
+#      处理 NUL 分隔，免 shell 转义歧义）——非 systemd 托管时执行
 #   6. 探活 /api/v1/system/health（上限 60s），成败均记日志
 set -euo pipefail
 
@@ -57,6 +59,24 @@ readlink "/proc/$PID/cwd" > "$TMP/cwd"
 PORT="$(ss -tlnp 2>/dev/null | grep "pid=$PID," | grep -oP ':\K[0-9]+' | head -1 || true)"
 log "快照完成（pid=$PID port=${PORT:-?} cwd=$(cat "$TMP/cwd")）"
 
+# ---------- 2.5 systemd 托管检测（快照环境含 G16WEB_SERVICE_UNIT 即委托） ----------
+# 委托后跳过手动停/拉起（systemd 负责进程生命周期，KillMode=process 下 HQ
+# 不受影响）；systemctl 失败则回退快照复原路径。探活照旧（第 6 步）。
+UNIT="$(tr '\0' '\n' < "$TMP/environ" 2>/dev/null \
+  | sed -n 's/^G16WEB_SERVICE_UNIT=//p' | head -1)" || UNIT=""
+DELEGATED=0
+if [ -n "$UNIT" ] && command -v systemctl >/dev/null 2>&1; then
+  log "检测到 systemd 托管（unit=$UNIT），委托 systemctl restart"
+  if XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+      systemctl --user restart "$UNIT" 2>>"$LOG"; then
+    DELEGATED=1
+    log "已委托 systemd 重启（unit=$UNIT）"
+  else
+    log "systemctl --user restart 失败，回退快照复原"
+  fi
+fi
+
+if [ "$DELEGATED" -eq 0 ]; then
 # ---------- 3. 优雅停止（端点拉起场景由本脚本负责 TERM） ----------
 kill -TERM "$PID" 2>/dev/null || true
 waited=0
@@ -105,6 +125,7 @@ with open(os.environ["RESTART_LOG"], "ab") as fh:
 print(f"[restart] 已按原上下文拉起（{len(cmd)} 段命令，cwd={cwd}）", flush=True)
 PYEOF
 log "服务已重新拉起（cwd=$(cat "$TMP/cwd")）"
+fi
 
 # ---------- 6. 探活 ----------
 waited=0

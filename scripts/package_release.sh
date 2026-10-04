@@ -54,7 +54,7 @@ install -m 644 crates/LICENSE "$pkg/crates/LICENSE"   # 保持 crates/ 路径：
 install -m 755 target/release/hq "$pkg/bin/hq"
 install -m 755 scripts/deploy/install.sh scripts/deploy/update.sh \
   scripts/deploy/self_update.sh scripts/deploy/restart_g16web.sh \
-  scripts/deploy/stop_all.sh "$pkg/"
+  scripts/deploy/stop_all.sh scripts/deploy/systemd_install.sh "$pkg/"
 printf '%s\n' "$version" > "$pkg/VERSION"
 
 mkdir -p "$out"
