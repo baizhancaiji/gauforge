@@ -4,7 +4,8 @@
 同步预检两 502（不进异步）、状态机全流转（downloading→installing→restarting）、
 进度节流（时钟序列注入）、sha256 失败中止（现有文件分毫未动）、下载重试
 （丢弃重试 / 重试上限 / 4xx 不重试）、update-state 落盘与恢复三分支及消费
-清理、detached 拉起调用参数（monkeypatch Popen / 自退）。
+清理、detached 拉起调用参数（monkeypatch Popen / 自退）、接管脚本晋升
+（自举缺口 spec §5 D8：拉起前载荷内新版覆盖部署目录旧版，失败不拉起）。
 
 文案断言逐字引用 services/update.py 模块常量（单一来源防漂移，全角标点）。
 """
@@ -12,8 +13,11 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import io
 import json
+import math
 import subprocess
+import tarfile
 
 import httpx
 import pytest
@@ -69,17 +73,39 @@ def no_sleep(monkeypatch):
     yield sleeps
 
 
-class FakeRelease:
-    """本地伪装 release：VERSION / .sha256 / 固定名包三附件按路径响应。"""
+NEW_SCRIPT = "#!/usr/bin/env bash\n# 载荷内新版接管脚本（晋升标记）\n"
+OLD_SCRIPT = "#!/usr/bin/env bash\n# 部署目录旧版接管脚本\n"
 
-    def __init__(self, version: bytes | None = None, tar: bytes = b"PAYLOAD"):
+
+def _pkg_tar(script: str | None = NEW_SCRIPT) -> bytes:
+    """最小升级载荷（成员名同 package_release.sh 产物：gauforge/ 根）。
+
+    script=None 时不出 self_update.sh 成员（载荷结构异常场景）。"""
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tf:
+        if script is not None:
+            data = script.encode("utf-8")
+            info = tarfile.TarInfo(upd.PKG_SCRIPT_MEMBER)
+            info.size = len(data)
+            info.mode = 0o755
+            tf.addfile(info, io.BytesIO(data))
+    return buf.getvalue()
+
+
+class FakeRelease:
+    """本地伪装 release：VERSION / .sha256 / 固定名包三附件按路径响应。
+
+    tar 缺省为含 self_update.sh 成员的最小真 tar 包（接管脚本晋升流程
+    需真实解包），特殊场景经参数注入任意字节。"""
+
+    def __init__(self, version: bytes | None = None, tar: bytes | None = None):
         if version is None:  # 缺省即「必然比本地新」：tag 后基线上移不翻转前提
             from .conftest import newer_version
             version = newer_version().encode()
         self.version = version
-        self.tar = tar
+        self.tar = _pkg_tar() if tar is None else tar
         self.tar_chunks: list[bytes] | None = None  # 流式分块（进度测试用）
-        self.sha_line = (f"{hashlib.sha256(tar).hexdigest()}  "
+        self.sha_line = (f"{hashlib.sha256(self.tar).hexdigest()}  "
                          f"{config.UPDATE_ASSET}\n").encode()
         self.calls: list[str] = []
         self.version_exc: Exception | None = None
@@ -254,7 +280,7 @@ def test_apply_accepted_full_pipeline(deploy_root, no_launch):
     assert popen["kwargs"]["stdout"] is not None
     assert no_launch["terminate"] == 1
     # 校验通过的载荷已移交部署目录伴生文件（脚本解压覆盖后清理）
-    assert (deploy_root / upd.PAYLOAD_NAME).read_bytes() == b"PAYLOAD"
+    assert (deploy_root / upd.PAYLOAD_NAME).read_bytes() == release.tar
     # 流水线结束后 update-state 翻至 restarting（done 由脚本收尾置写）
     state = json.loads(
         (deploy_root / "update-state").read_text(encoding="utf-8"))
@@ -328,22 +354,108 @@ def test_apply_retry_recovers(deploy_root, no_sleep):
     assert no_sleep == [1.0, 2.0]
 
 
+# ---------------- 接管脚本晋升（自举缺口，spec §5 D8） ----------------
+
+def test_apply_promotes_payload_takeover_script(deploy_root, no_launch):
+    """拉起前部署目录 self_update.sh 已被载荷内新版原子覆盖（执行者必须新版）。"""
+    (deploy_root / "self_update.sh").write_text(OLD_SCRIPT, encoding="utf-8")
+    release = FakeRelease()
+    svc = upd.get_service()
+    svc.apply(release.client())
+    asyncio.run(svc.run_pending())
+    script = deploy_root / "self_update.sh"
+    assert script.read_text(encoding="utf-8") == NEW_SCRIPT
+    assert script.stat().st_mode & 0o777 == 0o755
+    # 拉起路径不变：同一路径、内容已是新版
+    assert no_launch["popen"]["args"] == ["bash", str(script)]
+    assert no_launch["terminate"] == 1
+    # 晋升临时文件无残留
+    assert not (deploy_root / (upd.TAKEOVER_SCRIPT
+                               + upd.PROMOTE_TMP_SUFFIX)).exists()
+    # 流水线照常走完
+    assert [p["phase"] for p in _phases()] == \
+        ["downloading", "installing", "restarting"]
+
+
+def test_apply_promote_missing_member_aborts_before_launch(deploy_root,
+                                                           no_launch):
+    """载荷缺 self_update.sh 成员 → phase=failed、旧脚本不动、不拉起不自退。"""
+    (deploy_root / "self_update.sh").write_text(OLD_SCRIPT, encoding="utf-8")
+    release = FakeRelease(tar=_pkg_tar(script=None))
+    svc = upd.get_service()
+    svc.apply(release.client())
+    asyncio.run(svc.run_pending())
+    assert svc.phase == "failed"
+    assert [p["phase"] for p in _phases()] == ["downloading", "installing",
+                                               "failed"]
+    failed = [p for p in _phases() if p["phase"] == "failed"][-1]
+    assert failed["message"] == upd.MSG_SCRIPT_PROMOTE_FAILED
+    assert (deploy_root / "self_update.sh").read_text(encoding="utf-8") \
+        == OLD_SCRIPT
+    assert no_launch["popen"] is None
+    assert no_launch["terminate"] == 0
+
+
+def test_apply_promote_corrupt_payload_aborts_before_launch(deploy_root,
+                                                            no_launch):
+    """sha256 与载荷自洽但内容非 tar（校验防不了格式坏）→ 中止不拉起。"""
+    (deploy_root / "self_update.sh").write_text(OLD_SCRIPT, encoding="utf-8")
+    release = FakeRelease(tar=b"not-a-tarball")
+    svc = upd.get_service()
+    svc.apply(release.client())
+    asyncio.run(svc.run_pending())
+    assert svc.phase == "failed"
+    failed = [p for p in _phases() if p["phase"] == "failed"][-1]
+    assert failed["message"] == upd.MSG_SCRIPT_PROMOTE_FAILED
+    assert (deploy_root / "self_update.sh").read_text(encoding="utf-8") \
+        == OLD_SCRIPT
+    assert no_launch["popen"] is None
+    assert no_launch["terminate"] == 0
+
+
+def test_promote_takeover_script_unit(deploy_root):
+    """晋升函数直测：覆盖替换、755 权限、失败路径旧脚本分毫未动且无临时残留。"""
+    payload = deploy_root / upd.PAYLOAD_NAME
+    payload.write_bytes(_pkg_tar())
+    (deploy_root / "self_update.sh").write_text(OLD_SCRIPT, encoding="utf-8")
+    upd.promote_takeover_script(deploy_root)
+    script = deploy_root / "self_update.sh"
+    assert script.read_text(encoding="utf-8") == NEW_SCRIPT
+    assert script.stat().st_mode & 0o777 == 0o755
+    assert not (deploy_root / (upd.TAKEOVER_SCRIPT
+                               + upd.PROMOTE_TMP_SUFFIX)).exists()
+
+    # 缺成员：抛 KeyError，旧脚本不动、无临时残留
+    payload.write_bytes(_pkg_tar(script=None))
+    with pytest.raises(KeyError):
+        upd.promote_takeover_script(deploy_root)
+    assert script.read_text(encoding="utf-8") == NEW_SCRIPT  # 上一步已晋升
+    (deploy_root / "self_update.sh").write_text(OLD_SCRIPT, encoding="utf-8")
+    with pytest.raises(KeyError):
+        upd.promote_takeover_script(deploy_root)
+    assert (deploy_root / "self_update.sh").read_text(encoding="utf-8") \
+        == OLD_SCRIPT
+    assert not (deploy_root / (upd.TAKEOVER_SCRIPT
+                               + upd.PROMOTE_TMP_SUFFIX)).exists()
+
+
 # ---------------- 进度节流（时钟序列注入） ----------------
 
 def _run_with_clock(release: FakeRelease, svc: upd.UpdateService,
-                    ticks: list[float], chunk_bytes: list[bytes]) -> list[dict]:
+                    ticks: list[float], chunk_size: int = 25) -> list[dict]:
     """注入预设单调时钟序列与分块流；_consume_stream 依次消费
-    （起点 + 每 chunk + 终值各消耗一个时钟值）。"""
-    tar = b"".join(chunk_bytes)
-    release.tar = tar
-    release.tar_chunks = chunk_bytes  # 保证 iter_bytes 逐块 yield
+    （起点 + 每 chunk + 终值各消耗一个时钟值）。分块=真 tar 包按
+    chunk_size 切分（晋升步骤需可解包的载荷）。"""
+    tar = release.tar
+    release.tar_chunks = [tar[i:i + chunk_size]
+                          for i in range(0, len(tar), chunk_size)]
     release.sha_line = (f"{hashlib.sha256(tar).hexdigest()}  "
                         f"{config.UPDATE_ASSET}\n").encode()
     seq = iter(ticks)
     real = upd._monotonic
     upd._monotonic = lambda: next(seq)  # type: ignore[assignment]
     try:
-        svc.apply(release.client(), chunk_size=25)
+        svc.apply(release.client(), chunk_size=chunk_size)
         asyncio.run(svc.run_pending())
     finally:
         upd._monotonic = real  # type: ignore[assignment]
@@ -351,11 +463,14 @@ def _run_with_clock(release: FakeRelease, svc: upd.UpdateService,
 
 
 def test_progress_throttle_within_window():
-    """窗口内多条推最新：0.1s 步进（<500ms 窗口）→ 循环内不推、仅终值一条。"""
+    """窗口内多条推最新：步进取 0.4s/n（累计 <500ms 窗口）→ 循环内不推、
+    仅终值一条。"""
     svc = upd.get_service()
-    progress = _run_with_clock(FakeRelease(), svc,
-                               ticks=[0.0, 0.1, 0.2, 0.3, 0.4, 0.45],
-                               chunk_bytes=[bytes(25)] * 4)
+    release = FakeRelease()
+    n_chunks = math.ceil(len(release.tar) / 25)
+    step = 0.4 / n_chunks
+    ticks = [0.0] + [step * (i + 1) for i in range(n_chunks)] + [0.45]
+    progress = _run_with_clock(release, svc, ticks)
     assert len(progress) == 1
     assert progress[0]["percent"] == 100
 
@@ -364,10 +479,17 @@ def test_progress_emits_per_window():
     """0.6s 步进（>500ms 窗口）→ 每 chunk 一条 + 终值收口。"""
     svc = upd.get_service()
     release = FakeRelease()
-    progress = _run_with_clock(release, svc,
-                               ticks=[0.0, 0.6, 1.2, 1.8, 2.4, 3.0],
-                               chunk_bytes=[bytes(25)] * 4)
-    assert [p["percent"] for p in progress] == [25, 50, 75, 100, 100]
+    tar = release.tar
+    n_chunks = math.ceil(len(tar) / 25)
+    ticks = [0.0] + [0.6 * (i + 1) for i in range(n_chunks)] \
+        + [0.6 * (n_chunks + 1)]
+    progress = _run_with_clock(release, svc, ticks)
+    cum, expected = 0, []
+    for i in range(n_chunks):
+        cum += min(25, len(tar) - i * 25)
+        expected.append(round(cum * 100 / len(tar), 1))
+    expected.append(100)  # 终值必推一条
+    assert [p["percent"] for p in progress] == expected
     assert all(p["version"] == release.version.decode() for p in progress)
 
 

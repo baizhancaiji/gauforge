@@ -15,9 +15,11 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import io
 import json
 import subprocess
 import sys
+import tarfile
 import time
 
 import httpx
@@ -85,7 +87,15 @@ def update_channel(tmp_path, monkeypatch):
     (tmp_path / "bin").mkdir()
     (tmp_path / "bin" / "hq").write_bytes(b"\x7fELF")
     monkeypatch.setattr(config, "PROJECT_ROOT", tmp_path)
-    tar = b"GAUFORGE-FAKE-TAR"
+    # 最小真 tar 包：apply 流水线晋升接管脚本需从载荷真实解包（spec §5 D8）
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tf:
+        script = b"#!/usr/bin/env bash\n"
+        info = tarfile.TarInfo("gauforge/self_update.sh")
+        info.size = len(script)
+        info.mode = 0o755
+        tf.addfile(info, io.BytesIO(script))
+    tar = buf.getvalue()
     sha = (f"{hashlib.sha256(tar).hexdigest()}  "
            f"{config.UPDATE_ASSET}\n").encode()
 

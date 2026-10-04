@@ -26,6 +26,7 @@ import re as _re
 import shutil
 import signal
 import subprocess
+import tarfile
 import tempfile
 import threading
 import time
@@ -57,6 +58,7 @@ MSG_IN_PROGRESS = "更新流程进行中，请勿重复触发"
 MSG_RECOVER_FAILED = ("更新流程曾中断（目标版本 {target} 未达成），"
                       "请重新执行更新或通过 CLI update.sh 恢复")
 MSG_ABORTED = "更新流程异常中止，请重试"
+MSG_SCRIPT_PROMOTE_FAILED = "新版接管脚本落盘失败，已中止（现有版本未受影响）"
 
 # 下载重试（D2）：网络类与 5xx 重试 ≤3 次、指数退避（1s/2s/4s），4xx 不重试。
 DOWNLOAD_MAX_RETRY = 3
@@ -206,6 +208,34 @@ def record_check(*, success: bool, latest_version: str | None = None,
 # 更新载荷伴生文件：校验通过后由流水线移交部署目录，self_update.sh
 # 解压覆盖后清理（不进契约；deployment.md 伴生文件族补充）。
 PAYLOAD_NAME = ".update-payload.tar.gz"
+
+# 接管脚本晋升（spec §5 D8，2026-10-04 立项的自举缺口修复）：apply 拉起
+# 接管脚本前，先把载荷内新版 self_update.sh 原子覆盖部署目录旧版——
+# 执行者必须新版，旧脚本缺陷不得横跨一次升级（3.0.0→3.0.1 升级事故）。
+TAKEOVER_SCRIPT = "self_update.sh"
+PKG_SCRIPT_MEMBER = "gauforge/self_update.sh"
+PROMOTE_TMP_SUFFIX = ".promote-tmp"
+
+
+def promote_takeover_script(project_root: Path) -> None:
+    """从载荷提取新版接管脚本，原子覆盖部署目录同名脚本（spec §5 D8）。
+
+    载荷即 sha256 校验通过的伴生 tar 包；先落 ``<脚本>.promote-tmp``
+    临时文件再 os.replace 原子替换，任何失败路径临时文件均清理、旧脚本
+    分毫未动。载荷缺脚本成员或解包失败原样抛异常，由流水线转 failed
+    中止——不回退执行旧版脚本、不拉起不自退。"""
+    tmp = project_root / (TAKEOVER_SCRIPT + PROMOTE_TMP_SUFFIX)
+    try:
+        with tarfile.open(project_root / PAYLOAD_NAME, "r:gz") as tf:
+            fh = tf.extractfile(PKG_SCRIPT_MEMBER)
+            if fh is None:  # 成员为目录/链接等非普通文件
+                raise KeyError(PKG_SCRIPT_MEMBER)
+            data = fh.read()
+        tmp.write_bytes(data)
+        tmp.chmod(0o755)
+        os.replace(tmp, project_root / TAKEOVER_SCRIPT)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 # ---------------- update-state（apply 流程标记，§3.4 落盘规则） ----------------
 
@@ -493,10 +523,12 @@ class UpdateService:
 
     def _pipeline(self, target: str, client: httpx.Client | None,
                   proxy: str | None, chunk_size: int = 65536) -> None:
-        """下载（mktemp，不落部署目录）→ sha256 校验 → 拉起脚本 + 自退。
+        """下载（mktemp，不落部署目录）→ sha256 校验 → 晋升接管脚本 → 拉起自退。
 
         校验通过后 tar 移交部署目录伴生文件 ``.update-payload.tar.gz``
-        （self_update.sh 解压覆盖后清理）；下载临时目录在移交后清空。"""
+        （self_update.sh 解压覆盖后清理）；下载临时目录在移交后清空。
+        拉起前先晋升载荷内新版接管脚本（自举缺口，spec §5 D8）；晋升失败
+        即 phase=failed 中止——不回退执行旧版脚本、不拉起不自退。"""
         tmp_dir = Path(tempfile.mkdtemp(prefix="g16web-update-"))
         try:
             sha_bytes = fetch_asset_bytes(
@@ -517,6 +549,12 @@ class UpdateService:
         finally:
             shutil.rmtree(tmp_dir, ignore_errors=True)
         self.transition("installing")
+        try:
+            promote_takeover_script(config.PROJECT_ROOT)
+        except Exception:
+            logger.exception("新版接管脚本晋升失败（载荷 %s）", PAYLOAD_NAME)
+            self.transition("failed", message=MSG_SCRIPT_PROMOTE_FAILED)
+            return
         self._launch_script()
 
     def _download_with_retry(self, target: str, proxy: str | None,
@@ -604,6 +642,9 @@ class UpdateService:
 
     def _launch_script(self) -> None:
         """detached 拉起 self_update.sh + SIGTERM 优雅自退（D6 编排）。
+
+        所拉起的脚本已经 :func:`promote_takeover_script` 晋升为载荷内新版
+        （同一路径，内容已替换）；晋升失败不会走到这里。
 
         - 先推 update.phase(restarting)（SSE 断开前最后一条，前端转轮询）；
         - Popen 列表参数、start_new_session 脱离进程组、stdout/stderr 追加
