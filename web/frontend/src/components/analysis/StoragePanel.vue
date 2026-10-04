@@ -101,7 +101,9 @@ const overText = computed(() => {
   color: var(--warn);
   white-space: nowrap;
 }
-/* 明细为下拉浮层：不占工具条 flex 流（展开把筛选/导出挤成竖排的教训） */
+/* 明细为下拉浮层：不占工具条 flex 流（展开把筛选/导出挤成竖排的教训）。
+   限高略低于可视窗口（顶部工具条弹出 + 底部留白），超出内部滚动；
+   容器上下不留 padding，表头 sticky 才能贴滚动口（foot 自带底距） */
 .st-detail {
   position: absolute;
   right: 0;
@@ -109,11 +111,13 @@ const overText = computed(() => {
   z-index: var(--z-dropdown);
   width: 420px;
   max-width: 90vw;
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
   background: var(--bg-overlay);
   box-shadow: var(--shadow-pop);
-  padding: var(--space-2) var(--space-3);
+  padding: 0 var(--space-3);
 }
 .st-table {
   width: 100%;
@@ -127,6 +131,11 @@ const overText = computed(() => {
   color: var(--text-faint);
   padding: var(--space-1) var(--space-2);
   border-bottom: 1px solid var(--border-hair);
+  /* 表体滚动时表头钉住（separate 边框模型配套，同历史页表格手法） */
+  position: sticky;
+  top: 0;
+  background: var(--bg-overlay);
+  z-index: 1;
 }
 .st-table td {
   text-align: right;
@@ -153,6 +162,7 @@ const overText = computed(() => {
 }
 .st-foot {
   margin: var(--space-2) 0 0;
+  padding-bottom: var(--space-2);
   font-size: var(--text-xs);
   color: var(--text-faint);
 }
