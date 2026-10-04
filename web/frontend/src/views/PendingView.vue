@@ -14,6 +14,11 @@
  * pointerdown 阻断冒泡防误触席位拖拽）；门控按 m2 分级矩阵定稿——
  * 执行中席位不可拖、仅 staged 成员可作拖源/落点，提交 PATCH
  * /queues/{id} member_ids 全量有序原子。
+ * 席位展开切换修复（2026-10-04）：等待席位可拖——onDown 的
+ * setPointerCapture + preventDefault 使后续 click 不再派发，点击行无法
+ * 展开子表（锁定席位反而可展开）；切换改由 .seat 行 pointerup 统一判定
+ * （按压起于 .seat-line 且未发生实质拖动才切换），.seat-line 的 click
+ * 绑定移除，等待/在途席位行为一致且不误触子表与行内按钮。
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
@@ -125,10 +130,41 @@ onMounted(() => {
 watch(seats, () => void nextTick(() => sort.measure()));
 watch(expanded, () => void nextTick(() => sort.measure()));
 
-/** 席位行点击（队列席位展开/收起）：拖拽后的 click 不作切换。 */
-function onSeatLineClick(s: PendingSeat) {
+/** 席位展开切换（pointerup 统一判定）：捕获期间 pointerup 被重定向到
+ *  .seat 行、target 无法回查按下位置，故在按下时记录本次按压档案；组件级
+ *  单按压记录——子表成员行 pointerdown 带 .stop 不经过此处，且 pointerup
+ *  时 seat_id/pointerId 不符即忽略，子表内点击不会误触席位展开。 */
+let press: { onLine: boolean; seatId: number; pointerId: number } | null = null;
+
+function onSeatDown(e: PointerEvent, s: PendingSeat, i: number) {
+  const t = e.target as HTMLElement | null;
+  press = {
+    onLine:
+      !(e.pointerType === "mouse" && e.button !== 0) && // 只认左键/非鼠标
+      t != null &&
+      t.closest(".seat-line") != null && // 仅主行触发，子表/注记不算
+      t.closest("button") == null, // 行内按钮不劫持（与 onDown 同门控）
+    seatId: s.seat_id,
+    pointerId: e.pointerId,
+  };
+  sort.onDown(e, i);
+}
+
+/** 松手：排序器收尾（拖拽归位提交）在前；本次按压始于 .seat-line 且未
+ *  发生实质拖动（moved，既有「拖后的点击不作切换」语义）才展开/收起。 */
+function onSeatUp(e: PointerEvent, s: PendingSeat) {
+  void sort.onUp();
+  const p = press;
+  press = null;
+  if (!p || !p.onLine || p.seatId !== s.seat_id || e.pointerId !== p.pointerId) return;
   if (sort.moved.value) return;
   if (s.kind === "queue") toggle(s.seat_id);
+}
+
+/** 取消（滚动手势接管等）：不视作点击，丢弃按压档案并照常复位排序器。 */
+function onSeatCancel() {
+  press = null;
+  void sort.onUp();
 }
 
 // ---------- 整席移除 / 席位内成员移除（二次确认） ----------
@@ -221,10 +257,10 @@ async function confirmRemove() {
           'seat--dragging': sort.dragIndex.value === i,
         }"
         :style="sort.styleFor(i)"
-        @pointerdown="sort.onDown($event, i)"
+        @pointerdown="onSeatDown($event, s, i)"
         @pointermove="sort.onMove($event)"
-        @pointerup="sort.onUp"
-        @pointercancel="sort.onUp"
+        @pointerup="onSeatUp($event, s)"
+        @pointercancel="onSeatCancel"
       >
         <span class="seat-no mono">S{{ String(s.seat_id).padStart(2, "0") }}</span>
 
@@ -236,7 +272,8 @@ async function confirmRemove() {
             v-if="i === firstUnlocked"
             class="divider-note mono"
           >▼ 等待区 · 窗口未触及，可重排 / 移除</div>
-          <div class="seat-line" @click="onSeatLineClick(s)">
+          <!-- 展开/收起由 .seat 行的 pointerup 统一判定（见 script 说明） -->
+          <div class="seat-line">
             <span class="kind mono">{{ s.kind === "queue" ? "QUEUE" : "TASK" }}</span>
             <span
               class="mono seat-name"
