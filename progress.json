@@ -21,7 +21,7 @@
       "migration": null
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "运行中对账缺口修复", "note": "watchdog 重起 server 成功后复位对账闩并刷新 server_spawn_ts，引擎线程串行重跑对账"},
   "next_steps": [
     "运行中对账缺口：对账仅在 web 启动时跑一次（dispatcher._reconciled 闩），web 不重启时 HQ server/worker 意外断连、watchdog 重起后 journal 恢复重跑完全无感知（计时器/进度静默错乱）；修法方向：watchdog 重起 server 成功后触发一次对账或 S3 判据接入运行中路径",
     "server_spawn_ts 记账时机收紧：process.start() 在 spawn 发起后立即记账，探测抖动误报死亡时记账虚假 spawn（消费端判据③交叉验证已在 3.0.0/3.0.1 兜底，生产端仍产生误值）；修法方向：确认新 server 真正起来（新 server-dir 子目录/journal mtime 佐证）后再记账",
