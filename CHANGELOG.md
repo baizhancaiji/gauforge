@@ -7,6 +7,7 @@
 ### 新增
 
 - 【scripts】升级路径自动补装新增根脚本：CLI update.sh 对部署目录缺失的根脚本补装（自身除外），WebUI self_update.sh 经 *.new 原子 mv 全量同步包内根脚本，旧目录原位升级不再缺 restart_g16web.sh/stop_all.sh（v2.2.0 起新增）
+- 【scripts】新增 systemd 用户级托管：systemd_install.sh 生成 unit（.venv/bin/python 直启、PATH 预置 .venv/bin 保证 hq 可发现、KillMode=process 保持停 WebUI 不杀 HQ），restart_g16web.sh/self_update.sh/stop_all.sh 检测 G16WEB_SERVICE_UNIT 自动委托 systemctl，失败回退手动路径
 
 ## v2.2.1（2026-10-03T11:08+0800 发布，patch）
 
