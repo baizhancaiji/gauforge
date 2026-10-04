@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+### 新增
+
+- 待执行页队列席位成员重排：展开子表行内新增 ↑/↓ 相邻交换（PATCH /queues/{id} member_ids 全量有序原子，SSE pending.snapshot 即时刷新）；门控按 m2 分级矩阵定稿——未开跑席位可重排、执行中席位不渲染按钮（后端 409 QUEUE_STATE_CONFLICT 兜底定制提示），仅 staged 成员参与交换（正在执行/已完成成员为既定历史）；错误码分支登记 FRONTEND_CODE_BRANCHES 白名单
+
 ### 变更
 
 - 【engine】清理边界修订定稿：异常终止仅保全 chk 入 protected/（rwf 无续跑消费价值，不再保全），Gau-* 瞬态 scratch（rwf/int/d2e/skr/inp 等）与任意命名 .rwf 即终收尸删除（failed 终态管线与 S3 重定向同口径），帮 g16 收尸不留垃圾

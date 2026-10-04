@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-04T16:20+08:00",
+  "updated": "2026-10-04T16:55+08:00",
   "latest_released_version": "2.3.0",
   "unreleased": [
     {
@@ -25,6 +25,12 @@
     {
       "type": "fixed",
       "summary": "修复历史页占用明细浮层无限高：明细超过可视窗口时底部条目不可达——浮层限高 max-height 略低于可视窗口（100vh − 8rem）超出内部滚动，表头粘性钉住（separate 边框模型同历史页表格手法），容器上下留白移交表头/脚注以保 sticky 贴滚动口",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "summary": "待执行页队列席位成员重排：展开子表行内新增 ↑/↓ 相邻交换（PATCH /queues/{id} member_ids 全量有序原子，SSE pending.snapshot 即时刷新）；门控按 m2 分级矩阵定稿——未开跑席位可重排、执行中席位不渲染按钮（后端 409 QUEUE_STATE_CONFLICT 兜底定制提示），仅 staged 成员参与交换（正在执行/已完成成员为既定历史）；错误码分支登记 FRONTEND_CODE_BRANCHES 白名单",
       "breaking": false,
       "migration": null
     }
