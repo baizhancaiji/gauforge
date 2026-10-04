@@ -78,7 +78,7 @@ RUNTIME_SETTINGS: list[dict] = [
     {"key": "chk_rwf_retention_days", "value_type": "integer",
      "range": {"min": 1, "max": 365},
      "editable": True, "effect": "new_submissions", "env_var": None,
-     "description": "chk/rwf 保留天数"},
+     "description": "chk 保留天数"},
     {"key": "stall_threshold_minutes", "value_type": "integer",
      "range": {"min": 1, "max": 1440},
      "editable": True, "effect": "new_submissions", "env_var": None,

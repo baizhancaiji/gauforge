@@ -11,7 +11,7 @@
   非零退出/超时 502 CUBE_GENERATION_FAILED；fchk 取执行目录内 input.fchk
   （M1 formchk 产物，不读用户源文件），缺失亦 502（details 注明）；
 - cube 目录不入保留期清理（决策点 3：派生物可再生，与执行目录同生命周期；
-  既有清理仅作用 run/<id>/ 顶层 .chk/.rwf，天然不触 cubes/）。
+  既有清理仅作用 run/<id>/ 顶层 .chk，天然不触 cubes/）。
 """
 from __future__ import annotations
 

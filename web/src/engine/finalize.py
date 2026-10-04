@@ -1,14 +1,21 @@
-"""终态文件管线（m1-plan §4.3 B9）：formchk、保全快照、过期清理。
+"""终态文件管线（m1-plan §4.3 B9；清理边界 2026-10-04 修订定稿）：
+formchk、保全快照、异常收尸、过期/全量清理。
 
 - formchk：succeeded 后以 <g16_root>/formchk 将 chk 转 .fchk 留在
   run/<id>/；chk 路径取实际执行副本 Link0 %Chk（相对值相对 run/<id>/），
   无声明回落 input.chk（g16 无 %Chk 不产 chk，转换失败记日志不阻断）；
 - 保全快照：非正常终止（failed，含程序报错/外部中断/手动停止）时
-  run/<id>/ 顶层 chk/rwf 改名移入 protected/ 并落库 chk_snapshot
-  （M1 落地保全，M4 断点续跑与 B10 重定向消费）；
-- 清理：POST /history/cleanup 手动触发——仅删「正常结束（succeeded）且
-  超保留期」的 run/<id>/ 顶层 .chk/.rwf，**永不触碰 .out/.log/输入**；
-  protected/ 仅用户经文件系统手动清（m1-plan §8 决策点 11）。
+  run/<id>/ 顶层 chk 改名移入 protected/ 并落库 chk_snapshot
+  （M1 落地保全，M4 断点续跑消费）——保全仅 chk（rwf 无续跑消费
+  价值，不再纳入保全）；
+- 收尸：异常终止时立即删除顶层 Gau-* 瞬态 scratch 与任意命名 .rwf
+  （g16 异常死亡来不及自清的草稿件，不留垃圾）；protected/ 与
+  .out/.log/输入永不触碰；
+- 清理：POST /history/cleanup 手动触发，双档——expired（默认）仅删
+  「正常结束（succeeded）且超保留期」的顶层 .chk；all（「清理所有」）
+  无视保留期删所有 succeeded 顶层 .chk；两档均不触碰 failed 的保全
+  chk（protected/），**永不触碰 .out/.log/输入**；protected/ 仅用户经
+  文件系统手动清（m1-plan §8 决策点 11）。
 """
 from __future__ import annotations
 
@@ -21,8 +28,12 @@ from pathlib import Path
 from ..parse import results as results_parse  # 常量单一来源（无循环依赖）
 
 _CHK_RE = re.compile(r"^%chk\s*=\s*(.+)$", re.IGNORECASE)
-# 保全/清理作用的瞬态文件扩展（小写比对）；其余（.out/.log/输入）永不触碰
-TRANSIENT_EXTS = (".chk", ".rwf")
+# 保全边界：仅 chk（修订定稿：rwf/Gau-* 即终收尸，不再保全）
+PROTECT_SUFFIX = ".chk"
+# 收尸边界：Gau-<pid>.rwf/int/d2e/skr/inp 等 g16 瞬态 scratch + 任意命名
+# .rwf；.out/.log/输入永不触碰
+REAP_PREFIX = "gau-"
+REAP_SUFFIX = ".rwf"
 
 _PROTECTED_DIR = "protected"
 
@@ -114,7 +125,7 @@ def make_fchk(run_dir: Path, g16_root: Path) -> Path | None:
 
 
 def protect_transient(run_dir: Path) -> dict:
-    """非正常终止保全：run/<id>/ 顶层 chk/rwf 移入 protected/。
+    """非正常终止保全：run/<id>/ 顶层 chk 移入 protected/（仅 chk）。
 
     返回 chk_snapshot：{"protected": 是否有文件被保全,
     "location": "protected" | None}（契约：正常结束/无可保全时 location
@@ -124,7 +135,7 @@ def protect_transient(run_dir: Path) -> dict:
         return {"protected": False, "location": None}
     moved = 0
     for f in sorted(run_dir.iterdir()):
-        if not f.is_file() or f.suffix.casefold() not in TRANSIENT_EXTS:
+        if not f.is_file() or f.suffix.casefold() != PROTECT_SUFFIX:
             continue
         prot = run_dir / _PROTECTED_DIR
         prot.mkdir(exist_ok=True)
@@ -137,12 +148,43 @@ def protect_transient(run_dir: Path) -> dict:
             "location": _PROTECTED_DIR if moved else None}
 
 
+def reap_scratch(run_dir: Path) -> int:
+    """异常终止收尸：删除 run/<id>/ 顶层 Gau-* 瞬态 scratch 与任意命名
+    .rwf，帮 g16 收尸不留垃圾。
+
+    返回删除数；单个文件删除失败记日志继续（不阻断终态管线，沿用
+    formchk「失败不阻断」先例）。protected/ 与 .out/.log/输入永不触碰。
+    """
+    if not run_dir.is_dir():
+        return 0
+    reaped = 0
+    for f in sorted(run_dir.iterdir()):
+        if not f.is_file():
+            continue
+        if not (f.name.casefold().startswith(REAP_PREFIX)
+                or f.suffix.casefold() == REAP_SUFFIX):
+            continue
+        try:
+            f.unlink()
+        except OSError as exc:
+            print(f"[finalize] 收尸失败：{f.name} {exc}", file=sys.stderr)
+            continue
+        reaped += 1
+    return reaped
+
+
+def _top_level_chk(run_d: Path) -> list[Path]:
+    """run/<id>/ 顶层 .chk 文件清单（两档清理共用）。"""
+    return [f for f in sorted(run_d.iterdir())
+            if f.is_file() and f.suffix.casefold() == PROTECT_SUFFIX]
+
+
 def reclaimable_files(run_d: Path, row: dict, retention_days: int,
                       now: datetime) -> list[Path]:
-    """M1 清理边界判定（单一实现，m3-plan §2.6）：succeeded 且 finished_at
-    超保留期的 run/<id>/ 顶层 .chk/.rwf 文件清单。
+    """清理边界判定（单一实现，m3-plan §2.6）：succeeded 且 finished_at
+    超保留期的 run/<id>/ 顶层 .chk 文件清单。
 
-    cleanup_expired（本模块清理动作）与 storage.usage（M3.7 可清理量统计）
+    cleanup_expired（「清理 chk」默认档）与 storage.usage（可清理量统计）
     共用，保证 reclaimable_bytes 与清理逻辑口径同源；failed 的保全快照
     （protected/）不在边界内（计 0），.out/.log/输入永不触碰。
     """
@@ -151,29 +193,46 @@ def reclaimable_files(run_d: Path, row: dict, retention_days: int,
     finished = row.get("finished_at")
     if not finished or _iso(finished) > now - timedelta(days=retention_days):
         return []
-    return [f for f in sorted(run_d.iterdir())
-            if f.is_file() and f.suffix.casefold() in TRANSIENT_EXTS]
+    return _top_level_chk(run_d)
+
+
+def _sweep(entries: list[dict], run_root: Path,
+           retention_days: int | None, now: datetime | None) -> dict:
+    """清理动作（两档共用）：遍历 succeeded 执行删顶层 .chk。
+
+    retention_days/now 非 None 为超期档（reclaimable_files 边界），
+    None 为「清理所有」档（无视保留期）。
+    """
+    stats = {"checked": 0, "removed_chk": 0}
+    for row in entries:
+        run_d = run_root / str(row["id"])
+        if row.get("state") != "succeeded" or not run_d.is_dir():
+            continue  # failed 的 chk 由 protected/ 保全，不属清理范围
+        stats["checked"] += 1
+        files = (reclaimable_files(run_d, row, retention_days, now)
+                 if retention_days is not None else _top_level_chk(run_d))
+        for f in files:
+            f.unlink()
+            stats["removed_chk"] += 1
+    return stats
 
 
 def cleanup_expired(entries: list[dict], run_root: Path,
                     retention_days: int, now: datetime) -> dict:
-    """手动清理：仅删「succeeded 且超保留期」的 run/<id>/
-    顶层 .chk/.rwf（边界判定见 reclaimable_files）。protected/ 子目录与
+    """「清理 chk」默认档：仅删「succeeded 且超保留期」的 run/<id>/
+    顶层 .chk（边界判定见 reclaimable_files）。protected/ 子目录与
     其余文件永不触碰。
 
-    返回 {"checked", "removed_chk", "removed_rwf"}；checked = 检查的
-    正常结束执行数（run 目录存在者）。
+    返回 {"checked", "removed_chk"}；checked = 检查的正常结束执行数
+    （run 目录存在者）。
     """
-    stats = {"checked": 0, "removed_chk": 0, "removed_rwf": 0}
-    for row in entries:
-        run_d = run_root / str(row["id"])
-        if row.get("state") != "succeeded" or not run_d.is_dir():
-            continue  # failed 的瞬态件由 protected/ 保全，不属清理范围
-        stats["checked"] += 1
-        for f in reclaimable_files(run_d, row, retention_days, now):
-            f.unlink()
-            if f.suffix.casefold() == ".chk":
-                stats["removed_chk"] += 1
-            else:
-                stats["removed_rwf"] += 1
-    return stats
+    return _sweep(entries, run_root, retention_days, now)
+
+
+def cleanup_all(entries: list[dict], run_root: Path) -> dict:
+    """「清理所有」档：无视保留期立即删所有 succeeded 执行的顶层 .chk；
+    failed 的 chk（含 protected/ 保全）依旧保留。
+
+    返回 {"checked", "removed_chk"}，口径同 cleanup_expired。
+    """
+    return _sweep(entries, run_root, None, None)

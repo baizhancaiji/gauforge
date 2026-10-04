@@ -174,18 +174,20 @@ def test_s3_rerun_with_chk_redirects(gw, rec):
     row = seed_running(gw, d1)
     run_d = config.HOME_DIR / "run" / str(row["id"])
     (run_d / "w.chk").write_bytes(b"checkpoint")  # 中断残留 chk
+    (run_d / "Gau-24843.rwf").write_bytes(b"scratch")  # 中断残留瞬态
     gw.set_state(str(row["hq_job_id"]), "running")  # HQ 侧重跑中
 
     rec2: list[tuple[str, dict]] = []
     probe = lambda r, p: True  # noqa: E731 - 注入重跑特征（H4 实测前可替换）
     restarted(gw, rec2, probe).reconcile()
 
-    # 原执行：外部中断落历史 + chk 保全
+    # 原执行：外部中断落历史 + chk 保全（rwf/Gau-* 即终收尸）
     old = executions().get(row["id"])
     assert old["state"] == "failed"
     assert old["cause"] == "external_interrupt"
     assert old["chk_snapshot"] == {"protected": True, "location": "protected"}
     assert (run_d / "protected" / "w.chk").is_file()
+    assert not (run_d / "Gau-24843.rwf").exists()  # 收尸不留垃圾
     # 重定向：新执行目录原样重提交（同一任务、同输入哈希、同声明资源）
     new = [e for e in executions().list_by_state("running")]
     assert len(new) == 1

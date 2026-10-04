@@ -12,7 +12,8 @@
   （#30），事件 pending.snapshot 由路由层发；
 - return-candidate：三来源分流 + 内容源回落 + 新 id（#31），事件
   candidates.changed(created)；
-- cleanup：仅清 succeeded 超期顶层 chk/rwf，统计契约（#32）。
+- cleanup：双档（expired 超期 / all 无视保留期）仅清 succeeded 顶层 chk，
+  统计契约与非法 scope 400（#32）。
 
 隔离：conftest autouse 隔离 SQLite；home fixture 重定向 config.HOME_DIR
 （inputs/ 与 run/ 均不触真实工作区）。
@@ -395,7 +396,7 @@ def test_cleanup_endpoint_stats_and_scope(home):
     frs, _ = seed_terminal("succeeded", with_run=True)  # 未超期
     seed_terminal("failed", cause="program_error", with_run=True)
     seed_terminal("skipped", cause="predecessor_failed")
-    # expired：顶层瞬态件 + protected/ + .out/.log/输入
+    # expired：顶层 .chk + rwf + protected/ + .out/.log/输入
     rd = config.HOME_DIR / "run" / str(exp)
     (rd / "input.chk").write_bytes(b"c")
     (rd / "input.rwf").write_bytes(b"r")
@@ -407,12 +408,44 @@ def test_cleanup_endpoint_stats_and_scope(home):
     r = client.post("/api/v1/history/cleanup")
     assert r.status_code == 200
     stats = r.json()
-    assert stats == {"checked": 2, "removed_chk": 1, "removed_rwf": 1}
-    assert not (rd / "input.chk").exists() and not (rd / "input.rwf").exists()
+    assert stats == {"checked": 2, "removed_chk": 1}
+    assert not (rd / "input.chk").exists()
+    assert (rd / "input.rwf").is_file()  # rwf 不属清理（异常终止时收尸）
     assert (rd / "input.out").is_file()  # .out 永不触碰
     assert (rd / "input.log").is_file() and (rd / "input.gjf").is_file()
     assert (rd / "protected" / "keep.chk").is_file()  # protected/ 不触碰
     assert (rd2 / "input.chk").is_file()  # 未超期不动
+
+
+def test_cleanup_scope_all_ignores_retention(home):
+    """「清理所有」档：无视保留期清所有 succeeded 顶层 .chk；
+    failed 的 chk（含 protected/）依旧保留。"""
+    old = (datetime.now().astimezone()
+           - timedelta(days=30)).isoformat(timespec="seconds")
+    exp, _ = seed_terminal("succeeded", finished_at=old, with_run=True)
+    frs, _ = seed_terminal("succeeded", with_run=True)
+    fail, _ = seed_terminal("failed", cause="program_error", with_run=True)
+    rd = config.HOME_DIR / "run" / str(exp)
+    (rd / "input.chk").write_bytes(b"c")
+    rd2 = config.HOME_DIR / "run" / str(frs)
+    (rd2 / "input.chk").write_bytes(b"c")
+    rd3 = config.HOME_DIR / "run" / str(fail)
+    (rd3 / "stray.chk").write_bytes(b"c")
+    (rd3 / "protected").mkdir()
+    (rd3 / "protected" / "s.chk").write_bytes(b"s")
+    r = client.post("/api/v1/history/cleanup?scope=all")
+    assert r.status_code == 200
+    assert r.json() == {"checked": 2, "removed_chk": 2}
+    assert not (rd / "input.chk").exists() and not (rd2 / "input.chk").exists()
+    assert (rd3 / "stray.chk").is_file()  # failed 的 chk 保留
+    assert (rd3 / "protected" / "s.chk").is_file()
+
+
+def test_cleanup_invalid_scope_400(home):
+    seed_terminal("succeeded", with_run=True)
+    r = client.post("/api/v1/history/cleanup?scope=bogus")
+    assert r.status_code == 400
+    assert r.json()["error"]["code"] == "INVALID_REQUEST"
 
 
 # ---------------- 排序（openapi HistorySort；跨页全局有序） ----------------

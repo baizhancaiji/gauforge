@@ -8,7 +8,7 @@
 |---|---|---|
 | S1 g16web 重启，HQ 活着、job 在跑 | job 非终态且非重跑 | 接管：started_at 缺失则回填；监视器按库内 started_at 重新播种（进程树重定位/位点重扫由 monitor/progress 首轮 catch-up 自然完成），不落历史 |
 | S2 重启期间 job 已终态 | job ∈ 终态映射表 | 幂等冻结：按 §8.7 归因映射落历史，monitor_summary 置空（监视器内存态已丢失） |
-| S3 WSL2 整体重启，journal 恢复重跑 | job 非终态且重跑特征成立 | run/<id>/ 存在 chk → 取消语义下保全（chk/rwf 入 protected/）、原执行归因 external_interrupt 落历史、以新执行目录**原样重提交**（重定向，防 g16 重写 %CHK；断点续跑注入属 M4）；无 chk → 接管跟踪重跑（结局即原执行结局） |
+| S3 WSL2 整体重启，journal 恢复重跑 | job 非终态且重跑特征成立 | run/<id>/ 存在 chk → 取消语义下保全（chk 入 protected/、rwf/Gau-* 收尸）、原执行归因 external_interrupt 落历史、以新执行目录**原样重提交**（重定向，防 g16 重写 %CHK；断点续跑注入属 M4）；无 chk → 接管跟踪重跑（结局即原执行结局） |
 | S4 HQ server 丢失 / journal 缺失 | 本地 running 无对应 job（含无 hq_job_id 的僵尸行） | 归因 external_interrupt 落历史（chk 若在则保全），终态管线照常（席位释放/队列分流） |
 | S5 worker 失联自动重试 | job 中途失联又 Running | 不中途落历史（与 S1 同为接管），仅最终终态入历史 |
 
@@ -151,10 +151,12 @@ class Reconciler:
                              monitor_summary=None)
 
     def _s3_redirect(self, row: dict) -> None:
-        """S3：chk 保全 → 原执行归因外部中断 → 新执行目录原样重提交。"""
+        """S3：chk 保全（rwf/Gau-* 收尸）→ 原执行归因外部中断 →
+        新执行目录原样重提交。"""
         d = self._d
         run_d = d._run_root / str(row["id"])
         snap = finalize.protect_transient(run_d)
+        finalize.reap_scratch(run_d)
         # 原执行冻结但不离席（release=False：席位/队列由新执行延续）
         d._on_terminal(row, "failed", "external_interrupt",
                        monitor_summary=None, chk_snapshot=snap, release=False)

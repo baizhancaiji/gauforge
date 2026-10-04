@@ -39,8 +39,12 @@ def list_history(state: str | None = None, queue_id: str | None = None,
 
 
 @router.post("/history/cleanup")
-def cleanup_transients() -> dict:
-    return history_svc.cleanup()
+def cleanup_transients(scope: str = "expired") -> dict:
+    """双档 chk 清理（openapi /history/cleanup）：expired 超期档 /
+    all 无视保留期档；failed 的保全 chk 两档均不触碰。"""
+    if scope not in ("expired", "all"):
+        raise err("INVALID_REQUEST", "scope 取值不合法", http=400)
+    return history_svc.cleanup(scope)
 
 
 @router.post("/history/export")

@@ -12,7 +12,9 @@
   等无执行目录者回落任务输入副本），来源标记按终态分流——succeeded→
   returned_succeeded、failed→returned_failed(附归因)、skipped→
   returned_unrun（roadmap §2.1）；
-- 清理：仅删「正常结束且超保留期」的 chk/rwf（engine/finalize）。
+- 清理：双档仅删正常结束执行的顶层 chk——expired（超保留期）/ all
+  （无视保留期，「清理所有」），failed 的保全 chk 不受影响
+  （engine/finalize）。
 """
 from __future__ import annotations
 
@@ -205,10 +207,17 @@ def return_candidate(execution_id: int) -> dict:
             "title": candidates_svc.resolve_title(new_id)}
 
 
-def cleanup() -> dict:
-    """手动触发过期 chk/rwf 清理（自动定时延后启用，m1-plan §8 决策点 11）。"""
+def cleanup(scope: str = "expired") -> dict:
+    """手动 chk 清理双档（自动定时延后启用，m1-plan §8 决策点 11）：
+    expired（默认）仅删「正常结束且超保留期」的顶层 .chk；all（「清理
+    所有」）无视保留期删所有正常结束执行的顶层 .chk；failed 的保全
+    chk 两档均不受影响（engine/finalize）。"""
+    run_root = config.HOME_DIR / "run"
+    succeeded = executions().list_by_state("succeeded")
+    if scope == "all":
+        return finalize_files.cleanup_all(succeeded, run_root)
     return finalize_files.cleanup_expired(
-        executions().list_by_state("succeeded"), config.HOME_DIR / "run",
+        succeeded, run_root,
         int(settings().get("chk_rwf_retention_days")), _iso(now_iso()))
 
 

@@ -5,8 +5,8 @@
 - 全态口径：运行中执行与孤儿目录计入 total；per-execution 明细仍按
   run/<id> 分桶、桶外仅进总量（A-10 扩面后口径）；
 - per-execution 聚合与降序、entries 默认截断前 50 条（truncated/total_entries）；
-- reclaimable 口径：仅 succeeded 且超保留期的顶层 chk/rwf；未超期 0；
-  failed 保全快照计 0（与 M1 清理边界单一实现）；
+- reclaimable 口径：仅 succeeded 且超保留期的顶层 chk；未超期 0；
+  failed 保全快照计 0（与清理边界单一实现）；
 - 阈值判定：超阈 over=true、阈值 0 恒 false、阈值即时生效；
 - 手动清理后统计即时反映；千级执行目录基准 P95 < 2s。
 
@@ -160,11 +160,11 @@ def test_cleanup_reflects_immediately(tmp_path, monkeypatch):
     touch(home / "run", eid, "input.chk", 2000)
     touch(home / "run", eid, "input.rwf", 1000)
     out = storage_svc.usage()
-    assert out["entries"][0]["reclaimable_bytes"] == 3000
+    assert out["entries"][0]["reclaimable_bytes"] == 2000  # 口径收窄：仅 chk
     stats = finalize.cleanup_expired(
         executions().list_by_state("succeeded"), home / "run", 7,
         datetime.now().astimezone())
-    assert stats == {"checked": 1, "removed_chk": 1, "removed_rwf": 1}
+    assert stats == {"checked": 1, "removed_chk": 1}
     out = storage_svc.usage()
     assert out["entries"][0]["reclaimable_bytes"] == 0  # 清理后即时反映
     assert out["entries"][0]["total_bytes"] > 0         # 其余文件不动

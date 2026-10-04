@@ -374,8 +374,9 @@ class Dispatcher:
                 print(f"[finalize] analysis 步异常：{exc}", file=sys.stderr)
                 result_ref = None
         elif state == "failed" and snap is _SUMMARY_AUTO:
-            # ③ 保全快照：非正常终止 chk/rwf 移入 protected/
+            # ③ 保全仅 chk 入 protected/；Gau-*/rwf 瞬态即终收尸
             snap = finalize.protect_transient(run_d)
+            finalize.reap_scratch(run_d)
         if monitor_summary is _SUMMARY_AUTO:
             monitor_summary = self._monitor.summary(eid) \
                 if state == "succeeded" else None

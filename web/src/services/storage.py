@@ -9,8 +9,8 @@
 - entries[]：per-execution 明细（总量 + 可清理量），仍按 run/<id> 分桶，
   桶外内容仅计入总量、不产生明细；按 total_bytes 降序，默认截断前 50 条
   （truncated/total_entries 标注）；含运行中条目（reclaimable 恒 0）；
-- reclaimable_bytes 与 M1 清理边界单一实现（finalize.reclaimable_files，
-  含「仅 succeeded 且超保留期的顶层 chk/rwf」与「保全快照计 0」口径）；
+- reclaimable_bytes 与清理边界单一实现（finalize.reclaimable_files，
+  含「仅 succeeded 且超保留期的顶层 chk」与「保全快照计 0」口径）；
 - 只读：只 stat/遍历，不触碰、不移动任何文件；清理动作后统计即时反映；
 - 统计为工作区根整树单遍历（每条目一次 stat，total 与明细一遍完成）+
   执行行一次全量缓存（C8 收敛，原 2× 遍历 + N+1 点查退役）；
