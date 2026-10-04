@@ -83,6 +83,17 @@ class CliGateway(Gateway):
             })
         return jobs
 
+    def job_submitted_at(self, job_id: str) -> str | None:
+        """job 提交时刻：`job info <id>` 数组元素顶层 started_at
+        （= server 侧 submission_date）。详情缺失/不可达 → None。"""
+        try:
+            out = self._run("job", "info", str(job_id))
+        except GatewayError:
+            return None
+        if isinstance(out, list) and out:
+            return out[0].get("started_at")
+        return None
+
     def workers(self) -> list[dict]:
         out = self._run("worker", "list", "--all") or []
         workers = []

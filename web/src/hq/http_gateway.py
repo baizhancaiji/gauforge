@@ -106,6 +106,18 @@ class HttpGateway(Gateway):
             })
         return jobs
 
+    def job_submitted_at(self, job_id: str) -> str | None:
+        """job 提交时刻：GET /jobs/{id} 详情对象顶层 started_at
+        （= server 侧 submission_date，与 `hq job info` 同形状，但
+        HTTP 为单对象、CLI 为数组）。404/不可达 → None。"""
+        try:
+            out = self._request("GET", f"/jobs/{job_id}")
+        except GatewayError:
+            return None
+        if isinstance(out, dict):
+            return out.get("started_at")
+        return None
+
     def workers(self) -> list[dict]:
         out = self._request("GET", "/workers") or []
         workers = []

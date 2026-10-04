@@ -255,6 +255,94 @@ def test_s3_server_respawn_signature_redirects(gw, rec):
     assert len(executions().list_by_state("running")) == 1  # 新执行重提交
 
 
+def test_s3_spawn_misrecord_vetoed_by_submitted_at(gw, rec):
+    """判据③交叉验证（误记 spawn 事故）：HQ 侧 submitted_at 晚于
+    server_spawn_ts → 该 spawn 为误记（server_alive 误报、spawn 实际
+    失败仍记账，job 一直在旧 server 上存活）→ ③ 否决，S1 接管。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    started = datetime.fromisoformat(row["started_at"])
+    gw.set_state(str(row["hq_job_id"]), "running")
+
+    rec2: list[tuple[str, dict]] = []
+    d2 = restarted(gw, rec2, probe=lambda r, p: False)
+    d2.server_spawn_ts = (started + timedelta(seconds=1)).isoformat()
+    gw.set_submitted_at(str(row["hq_job_id"]),
+                        (started + timedelta(seconds=2)).isoformat())
+    d2.reconcile()
+
+    after = executions().get(row["id"])
+    assert after["state"] == "running"  # ③ 否决 → S1 接管
+    assert after["started_at"] == row["started_at"]
+    assert executions().list_terminal()[1] == 0  # 不落历史
+    assert len(gw.submitted) == 1  # 不重提交
+
+
+def test_s3_spawn_confirmed_by_earlier_submitted_at(gw, rec):
+    """判据③交叉验证同向：submitted_at 早于 spawn_ts（journal 恢复重跑
+    的提交先于 server 死亡）→ ③ 成立，S3 重定向。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    started = datetime.fromisoformat(row["started_at"])
+    run_d = config.HOME_DIR / "run" / str(row["id"])
+    (run_d / "w.chk").write_bytes(b"checkpoint")
+    gw.set_state(str(row["hq_job_id"]), "running")
+
+    rec2: list[tuple[str, dict]] = []
+    d2 = restarted(gw, rec2, probe=lambda r, p: False)
+    d2.server_spawn_ts = (started + timedelta(seconds=1)).isoformat()
+    gw.set_submitted_at(str(row["hq_job_id"]),
+                        (started - timedelta(seconds=60)).isoformat())
+    d2.reconcile()
+
+    old = executions().get(row["id"])
+    assert old["state"] == "failed"
+    assert old["cause"] == "external_interrupt"  # 原执行归因外部中断
+    assert len(executions().list_by_state("running")) == 1  # 新执行重提交
+
+
+def test_s3_spawn_crosscheck_without_submitted_at(gw, rec):
+    """submitted_at 字段缺失 → 不否决，维持原判据③行为（与上一用例同向）。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    started = datetime.fromisoformat(row["started_at"])
+    run_d = config.HOME_DIR / "run" / str(row["id"])
+    (run_d / "w.chk").write_bytes(b"checkpoint")
+    gw.set_state(str(row["hq_job_id"]), "running")
+
+    rec2: list[tuple[str, dict]] = []
+    d2 = restarted(gw, rec2, probe=lambda r, p: False)
+    d2.server_spawn_ts = (started + timedelta(seconds=1)).isoformat()
+    gw._jobs[str(row["hq_job_id"])].pop("submitted_at")  # 字段整体缺失
+    d2.reconcile()
+
+    old = executions().get(row["id"])
+    assert old["state"] == "failed"
+    assert old["cause"] == "external_interrupt"
+    assert len(executions().list_by_state("running")) == 1
+
+
+def test_s3_spawn_crosscheck_unparseable_submitted_at(gw, rec):
+    """submitted_at 不可解析 → 回退不否决（不因字段异常改变既有判定）。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    started = datetime.fromisoformat(row["started_at"])
+    run_d = config.HOME_DIR / "run" / str(row["id"])
+    (run_d / "w.chk").write_bytes(b"checkpoint")
+    gw.set_state(str(row["hq_job_id"]), "running")
+
+    rec2: list[tuple[str, dict]] = []
+    d2 = restarted(gw, rec2, probe=lambda r, p: False)
+    d2.server_spawn_ts = (started + timedelta(seconds=1)).isoformat()
+    gw.set_submitted_at(str(row["hq_job_id"]), "not-a-timestamp")
+    d2.reconcile()
+
+    old = executions().get(row["id"])
+    assert old["state"] == "failed"
+    assert old["cause"] == "external_interrupt"
+    assert len(executions().list_by_state("running")) == 1
+
+
 def test_s1_not_flagged_when_server_reused(gw, rec):
     """server 复用（未重 spawn）时判据③不得触发：S1 保持接管语义。"""
     d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))

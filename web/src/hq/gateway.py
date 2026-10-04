@@ -92,5 +92,14 @@ class Gateway(ABC):
                    "state": str, "prev_state": str | None}。
         """
 
+    def job_submitted_at(self, job_id: str) -> str | None:
+        """作业提交时刻（HQ 侧 ISO 8601）；不可得返回 None。
+
+        概览接口（`job list` / GET /jobs）不含提交时刻，须单查详情
+        （`job info <id>` / GET /jobs/{id}）；默认 None 供无此需求的
+        实现复用（对账判据③对 None 不否决）。
+        """
+        return None
+
     def close(self) -> None:  # noqa: B027 - 可选释放
         """释放底层资源（CLI 实现无常驻资源，HTTP 实现关连接）。"""

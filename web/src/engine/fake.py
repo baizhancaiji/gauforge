@@ -32,6 +32,10 @@ class FakeGateway(Gateway):
         job = self._jobs[job_id]
         job["state"] = state
 
+    def set_submitted_at(self, job_id: str, submitted_at: str | None) -> None:
+        """注入 HQ 侧 submitted_at（None = 字段缺失：判据③交叉验证不否决）。"""
+        self._jobs[str(job_id)]["submitted_at"] = submitted_at
+
     def fail_worker(self) -> None:
         """模拟 HQ 不可达（workers/jobs 抛 GatewayError → 引擎停等）。"""
         self._unreachable = True
@@ -50,7 +54,8 @@ class FakeGateway(Gateway):
         jid = str(self._next_id)
         self._next_id += 1
         self._jobs[jid] = {"id": int(jid), "state": "waiting",
-                           "task_stats": {}, "name": name}
+                           "task_stats": {}, "name": name,
+                           "submitted_at": None}
         self.submitted.append({"command": list(command), "cwd": cwd,
                                "name": name, "resources": resources,
                                "time_limit_s": time_limit_s, "env": env})

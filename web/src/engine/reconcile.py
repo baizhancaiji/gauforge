@@ -18,14 +18,17 @@ started_at（journal 恢复后任务回退 waiting、worker 重连后从头重�
 （> RERUN_TOLERANCE_S）——回 running 后的佐证；③ server 本次生命周期
 被重新 spawn 且本地 started_at 早于 server spawn（GUI 走查实测加固：
 worker 快速重连时 ①② 可被对账时点双双错过，③ 由 server spawn 时刻
-给出确定性判定）。任一成立即 S3。
+给出确定性判定）。任一成立即 S3。③ 另经 HQ 侧 submitted_at 交叉验证：
+误记 spawn（server_alive 误报死亡、spawn 实际失败仍记账）时 job 提交
+必晚于误记时刻，submitted_at 不早于 spawn_ts → ③ 否决按 S1 接管。
 
 对账完成发 system.snapshot(server_restarted=true) 供前端全量重建。
 """
 from __future__ import annotations
 
+import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import finalize
@@ -36,6 +39,26 @@ from ..store import executions, queues, seats, settings, tasks
 from ..store.db import now_iso
 
 RERUN_TOLERANCE_S = 120.0  # 进程 create_time 晚于本地 started_at 的判定容差
+
+# 小数秒片段（纳秒截断到微秒用；Python 3.10 fromisoformat 仅接受 6 位）
+_FRACTION_RE = re.compile(r"\.(\d+)")
+
+
+def _parse_utc(text: str) -> datetime:
+    """ISO 时刻统一解析为 aware datetime。
+
+    HQ 侧（RFC3339「Z」后缀 + 纳秒精度）与 now_iso（UTC 带偏移、秒精度）
+    格式不同，禁止字符串直比；Python 3.10 fromisoformat 不认「Z」且小数
+    仅接受 6 位，故先归一化再解析。非 ISO 形状抛 ValueError（调用方回退）。
+    """
+    t = text.strip()
+    if t.endswith(("Z", "z")):
+        t = t[:-1] + "+00:00"
+    m = _FRACTION_RE.search(t)
+    if m and len(m.group(1)) > 6:
+        t = t[:m.start(1) + 6] + t[m.end(1):]
+    dt = datetime.fromisoformat(t)
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 def detect_rerun(execution: dict, run_dir: Path, *,
@@ -106,10 +129,12 @@ class Reconciler:
                 # 周期被重新 spawn 且本地 started_at 早于 server spawn——
                 # journal 恢复重跑的确定性证据（前两者可能被对账时点错过：
                 # GUI 走查实测 worker 快速重连时 waiting 相位与进程证据均缺席）。
+                # ③ 须经 HQ 侧 submitted_at 交叉验证（误记 spawn 事故）。
                 spawn_ts = self._d.server_spawn_ts
-                rerun = (spawn_ts is not None
-                         and bool(row.get("started_at"))
-                         and row["started_at"] < spawn_ts) \
+                by_spawn = (spawn_ts is not None
+                            and bool(row.get("started_at"))
+                            and row["started_at"] < spawn_ts)
+                rerun = (by_spawn and not self._spawn_vetoed(job, spawn_ts)) \
                     or (job["state"] == "waiting"
                         and bool(row.get("started_at"))) \
                     or self._d._rerun_probe(row, run_d)
@@ -125,6 +150,25 @@ class Reconciler:
         return summary
 
     # ---------------- 各场景处置 ----------------
+
+    def _spawn_vetoed(self, job: dict, spawn_ts: str) -> bool:
+        """判据③交叉验证：journal 恢复重跑的 job 提交必早于新 server 的
+        spawn（提交先于 server 死亡，恢复后才被重跑）；若 HQ 侧
+        submitted_at 不早于 spawn_ts，则 spawn_ts 为误记（server_alive
+        误报死亡后 spawn 实际失败仍记账，旧 server 上的 job 提交晚于
+        误记时刻）→ 判据③否决，按 S1 接管。submitted_at 缺失或解析失败
+        → 不否决（不因字段缺失改变既有判定）。"""
+        raw = job.get("submitted_at")
+        if not raw:
+            raw = self._d._gw.job_submitted_at(str(job["id"]))
+        if not raw or not isinstance(raw, str):
+            return False
+        try:
+            submitted = _parse_utc(raw)
+            spawn = _parse_utc(spawn_ts)
+        except ValueError:
+            return False
+        return submitted >= spawn
 
     def _takeover(self, row: dict, job: dict) -> None:
         """S1/S5：接管在跑执行；started_at 缺失且 job 已在跑时回填。
