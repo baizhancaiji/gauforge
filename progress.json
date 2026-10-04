@@ -33,6 +33,18 @@
       "summary": "待执行页队列席位成员拖拽重排：展开子表抽为 PendingSeatMembers 组件，成员行复用既有 usePointerSort 指针跟手拖拽（与席位行/队列编辑框同一动效纪律，子表行 pointerdown 阻断冒泡不误触席位拖拽），提交 PATCH /queues/{id} member_ids 全量有序原子（契约 #15），SSE pending.snapshot 即时刷新；门控按 m2 分级矩阵定稿——执行中席位（locked）整体不可拖、仅 staged 成员可作拖源/落点（正在执行/已完成成员为既定历史），后端 409 QUEUE_STATE_CONFLICT 兜底定制提示；错误码分支登记 FRONTEND_CODE_BRANCHES 白名单",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "修复对账 S3 判据③误触发：更新窗口 web 拉起时 server_alive 探测抖动误报 HQ server 死亡，spawn 实际失败（旧 server 在线，新实例探测到后退出）仍记账 server_spawn_ts，判据③（started_at 早于 spawn_ts）随之误成立，把 journal 从未恢复重跑、job 一直存活的在跑执行误落历史为外部中断并原样重提交；判据③现以 HQ 侧提交时刻交叉验证——journal 恢复的 job 提交必早于新 server spawn，提交时刻不早于 spawn_ts 即否决判据③按 S1 接管；Gateway 增 job_submitted_at（CLI job info / HTTP GET /jobs/{id} 按需单查，概览列表无此字段），字段缺失或解析失败不否决（向后兼容）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "修复待执行页等待席位点击行无法展开队列成员子表：可拖席位的拖拽按下处理 preventDefault 使后续 click 不再派发（锁定席位跳过拖拽处理反而可展开，两者行为倒挂），展开切换改由席位行 pointerup 统一判定——按压起于行主体、非行内按钮且未发生实质拖动才切换，成员子表内操作不误触席位展开，等待/在途席位行为一致",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": null,

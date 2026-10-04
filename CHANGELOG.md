@@ -18,6 +18,8 @@
 
 - 修复保存为队列后成员名称不显示：队列契约 Queue 增补成员明细 members（task_id/filename，title 实时解析不落库）并由队列视图聚合填充，队列页成员概览与编辑对话框改接契约来源（未提交队列原先无名称来源只能显 —）
 - 修复历史页占用明细浮层无限高：明细超过可视窗口时底部条目不可达——浮层限高 max-height 略低于可视窗口（100vh − 8rem）超出内部滚动，表头粘性钉住（separate 边框模型同历史页表格手法），容器上下留白移交表头/脚注以保 sticky 贴滚动口
+- 修复对账 S3 判据③误触发：更新窗口 web 拉起时 server_alive 探测抖动误报 HQ server 死亡，spawn 实际失败（旧 server 在线，新实例探测到后退出）仍记账 server_spawn_ts，判据③（started_at 早于 spawn_ts）随之误成立，把 journal 从未恢复重跑、job 一直存活的在跑执行误落历史为外部中断并原样重提交；判据③现以 HQ 侧提交时刻交叉验证——journal 恢复的 job 提交必早于新 server spawn，提交时刻不早于 spawn_ts 即否决判据③按 S1 接管；Gateway 增 job_submitted_at（CLI job info / HTTP GET /jobs/{id} 按需单查，概览列表无此字段），字段缺失或解析失败不否决（向后兼容）
+- 修复待执行页等待席位点击行无法展开队列成员子表：可拖席位的拖拽按下处理 preventDefault 使后续 click 不再派发（锁定席位跳过拖拽处理反而可展开，两者行为倒挂），展开切换改由席位行 pointerup 统一判定——按压起于行主体、非行内按钮且未发生实质拖动才切换，成员子表内操作不误触席位展开，等待/在途席位行为一致
 
 ## v2.3.0（2026-10-04T12:48+0800 发布，minor）
 
