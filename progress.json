@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-04T21:20+0800",
+  "updated": "2026-10-04T22:05+0800",
   "latest_released_version": "3.0.0",
   "unreleased": [
     {
@@ -11,6 +11,12 @@
     {
       "type": "fixed",
       "summary": "修复更新域测试版本基线在 tag 跨 major 后前提翻转：v2.x 段内自增基线随 v3.0.0 发布整体落后本地致 16 用例失败，改恒定远段 v999.0.0 对任何现实 tag 恒为「有更新」",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "修复停止回退队列删除后的幽灵候选：删除队列曾无条件退回全部成员，而手动停止时未启动成员已标 skipped 执行行——带执行记录的候选删除时先删输入文件、删行再撞 executions 外键必失败，留下文件已失、行仍可见且重复删除永不成功的幽灵行；现删除队列按执行记录分流（roadmap §2.4：已执行过含 failed/skipped 的成员只留历史，未执行者退回候选），候选删除遇执行记录转 finished 归历史所有（行与文件保留），无执行记录者先删行后删文件杜绝半途态",
       "breaking": false,
       "migration": null
     }
