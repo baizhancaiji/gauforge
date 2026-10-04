@@ -10,14 +10,16 @@
 #   3. 等待端口释放（辅助探测，上限 60s；「设置改端口未重启」边界下探测
 #      端口取 SQLite 现值可能与实际监听不同，以父进程退出判据兜底）
 #   4. 解压 .update-payload.tar.gz（后端已 sha256 校验的载荷）覆盖
-#   5. 差量刷依赖（同 update.sh：uv pip，镜像可 GAUFORGE_PIP_INDEX 覆盖）
+#   5. 差量刷依赖（同 update.sh：uv pip，镜像可 GAUFORGE_PIP_INDEX 覆盖）；
+#      uv 经 PATH 与常见安装位定位，不可得或刷新失败均警告跳过——包体已
+#      落位，服务拉回不可被依赖刷新阻断（2026-10-04 3.0.0 升级事故）
 #   6. update-state 置 phase=done（仅改 phase、保留 target_version/started_at）
 #   7. 根脚本全量同步：包内全部 *.sh 先落 *.new，重启前原子 mv 覆盖
 #      （运行中 bash 持旧 inode，不影响本次执行；遍历而非枚举固定名单，
 #      新增根脚本借此对旧部署目录自动补装；仓库源文件不动，仅部署副本刷新）
 #   8. 重启服务：systemd 托管（env 含 G16WEB_SERVICE_UNIT，随 Popen 继承）
-#      下委托 systemctl --user restart，否则 nohup 按原上下文重启
-#      （cwd=本目录、命令同 install.sh 提示）
+#      下委托 systemctl --user restart，否则 nohup 直启 .venv/bin/python
+#      （与 unit ExecStart 同构，回退路径不依赖 uv）
 #
 # 全程不杀任何进程；日志一律追加 update.log。--dry-run 只打印编排步骤，
 # 不动任何文件（演练与测试用）。
@@ -40,10 +42,10 @@ if [ "$DRY_RUN" = "1" ]; then
   echo "  2. 等待父进程退出（kill -0 \$PPID，上限 ${WAIT_LIMIT}s）"
   echo "  3. 等待端口释放（curl 127.0.0.1:<SQLite 现值>，上限 ${WAIT_LIMIT}s，辅助判据）"
   echo "  4. 解压 $PAYLOAD → 覆盖 web/docs/requirements/VERSION/README/CHANGELOG/LICENSE/crates/bin"
-  echo "  5. 差量刷依赖（uv pip，镜像 \${GAUFORGE_PIP_INDEX:-清华}）"
+  echo "  5. 差量刷依赖（uv pip 经 PATH 与常见安装位定位，不可得则跳过；镜像 \${GAUFORGE_PIP_INDEX:-清华}）"
   echo "  6. $STATE_FILE 置 phase=done（仅改 phase）"
   echo "  7. 根脚本全量同步（包内全部 *.sh 经 *.new 原子 mv，新增脚本自动补装）"
-  echo "  8. 重启（systemd 托管下委托 systemctl restart，否则 nohup 按原上下文，日志追加 $LOG）"
+  echo "  8. 重启（systemd 托管下委托 systemctl restart，否则 nohup 直启 .venv/bin/python，日志追加 $LOG）"
   exit 0
 fi
 
@@ -128,9 +130,27 @@ if [ ! -d .venv ]; then
   log "未发现 .venv，请先运行 ./install.sh"
   exit 1
 fi
-log "差量刷新依赖…"
-uv pip install --python .venv/bin/python -r requirements.txt \
-  -i "${GAUFORGE_PIP_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"
+# uv 定位：systemd 托管下 unit 环境的 PATH 不含 uv 安装目录（~/.local/bin
+# 等），PATH 命中不可依赖，依次回落常见安装位。均未命中或刷新失败都只
+# 警告跳过——包体已解压落位，此步不得阻断服务拉回（3.0.0 升级事故：
+# uv not found 中止编排，WebUI 死透、update-state 卡 restarting）。
+UV_BIN="$(command -v uv 2>/dev/null || true)"
+if [ -z "$UV_BIN" ]; then
+  for cand in "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv" /usr/local/bin/uv; do
+    if [ -x "$cand" ]; then UV_BIN="$cand"; break; fi
+  done
+fi
+if [ -n "$UV_BIN" ]; then
+  log "差量刷新依赖…"
+  if ! "$UV_BIN" pip install --python .venv/bin/python -r requirements.txt \
+      -i "${GAUFORGE_PIP_INDEX:-https://pypi.tuna.tsinghua.edu.cn/simple}"; then
+    log "依赖刷新失败（继续拉回服务；可手动补刷：$UV_BIN pip install" \
+        "--python .venv/bin/python -r requirements.txt）"
+  fi
+else
+  log "未找到 uv，跳过依赖刷新（包体已落位；可手动补刷：" \
+      "uv pip install --python .venv/bin/python -r requirements.txt）"
+fi
 install -m 755 bin/hq .venv/bin/hq
 
 # ---------- 6. update-state 置 done（仅改 phase，保留其余字段） ----------
@@ -163,7 +183,7 @@ else
   if [ -n "$UNIT" ]; then
     log "systemctl --user restart 失败，回退 nohup 复原"
   fi
-  log "重启服务（uv run python -m web.src.main）"
-  nohup uv run python -m web.src.main >> "$LOG" 2>&1 &
+  log "重启服务（.venv/bin/python -m web.src.main）"
+  nohup .venv/bin/python -m web.src.main >> "$LOG" 2>&1 &
 fi
 log "接管完成"

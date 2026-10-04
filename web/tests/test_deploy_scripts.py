@@ -218,10 +218,77 @@ def test_self_update_syncs_all_root_scripts(tmp_path, systemd):
         calls = (tmp_path / "systemctl.log").read_text(encoding="utf-8")
         assert calls.endswith("--user restart gauforge.service\n")
         assert "已委托 systemd 重启（unit=gauforge.service）" in log_text
-        assert "重启服务（uv run" not in log_text  # 不再 nohup
+        assert "重启服务（.venv/bin/python" not in log_text  # 不再 nohup
     else:
-        assert "重启服务（uv run" in log_text
+        assert "重启服务（.venv/bin/python" in log_text
         assert "已委托 systemd" not in log_text
+
+
+def test_self_update_survives_missing_uv(tmp_path):
+    """PATH 与常见安装位都无 uv：依赖刷新警告跳过，编排不死透——
+    照常置 done、同步根脚本、拉回服务（2026-10-04 3.0.0 升级事故回归：
+    systemd unit 环境无 uv，uv not found 中止脚本，WebUI 死透）。"""
+    deploy = tmp_path / "deploy"
+    _seed_old_deploy(deploy)
+    shutil.copyfile(SCRIPTS_DIR / "self_update.sh", deploy / "self_update.sh")
+    _write(deploy / "update-state", json.dumps(
+        {"target_version": PKG_VERSION, "phase": "restarting",
+         "started_at": "2026-10-04T12:00:00+08:00"}))
+    real_py = subprocess.run(["bash", "-c", "command -v python3"],
+                             capture_output=True, text=True).stdout.strip()
+    _write(deploy / ".venv" / "bin" / "python",
+           f"#!/bin/sh\nexec {real_py} \"$@\"\n", 0o755)
+    pkg = _make_package(tmp_path)
+    payload = deploy / ".update-payload.tar.gz"
+    _make_asset(pkg, payload)
+
+    env = _sandbox_env(tmp_path)
+    # PATH 重建：摘除 fakebin 与一切含 uv 的目录（含真实 ~/.local/bin），
+    # 前置无 uv 的假命令目录——假 curl 必须保留，否则第 3 步端口探测用
+    # 真 curl 会撞开发机真实监听（8300 有实例时探测吃满 60s）
+    no_uv_bin = tmp_path / "fakebin-no-uv"
+    no_uv_bin.mkdir()
+    for name in ("curl", "systemctl", "loginctl"):
+        shutil.copyfile(tmp_path / "fakebin" / name, no_uv_bin / name)
+        (no_uv_bin / name).chmod(0o755)
+    env["PATH"] = os.pathsep.join(
+        [str(no_uv_bin)]
+        + [p for p in env["PATH"].split(os.pathsep)
+           if p != str(tmp_path / "fakebin")
+           and not (Path(p) / "uv").exists()])
+    # HOME 指到沙箱空目录：脚本的常见安装位回落看 $HOME，真实 home 若装
+    # 有 uv（~/.local/bin）会被命中而走真 uv
+    home = tmp_path / "fakehome"
+    (home / ".local" / "bin").mkdir(parents=True)
+    (home / ".cargo" / "bin").mkdir(parents=True)
+    env["HOME"] = str(home)
+
+    outer = subprocess.Popen(  # noqa: S603 —— 沙箱内受控拉起
+        ["bash", "-c",
+         f'cd "{deploy}" && exec bash self_update.sh >> update.log 2>&1 &'],
+        cwd=deploy, env=env, stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    log = deploy / "update.log"
+    deadline = time.time() + 60
+    while time.time() < deadline:
+        outer.poll()
+        if log.exists() and "接管完成" in log.read_text(encoding="utf-8",
+                                                        errors="replace"):
+            break
+        time.sleep(0.5)
+    else:
+        pytest.fail("self_update.sh 60s 未完成；update.log：\n"
+                    + (log.read_text(encoding="utf-8", errors="replace")
+                       if log.exists() else "<缺>"))
+
+    log_text = log.read_text(encoding="utf-8", errors="replace")
+    assert "未找到 uv，跳过依赖刷新" in log_text
+    state = json.loads((deploy / "update-state").read_text(encoding="utf-8"))
+    assert state["phase"] == "done"
+    for name in ALL_SCRIPTS:
+        assert (deploy / name).read_text(encoding="utf-8") == \
+            f"#!/usr/bin/env bash\n# pkg:{name}\n", name
+    assert (deploy / "bin" / "hq").exists()
 
 
 # ---------------- systemd_install.sh（托管安装） ----------------
