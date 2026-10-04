@@ -4,7 +4,9 @@
 校验内容：
   1. CHANGELOG.jsonl 逐行为合法 JSON，字段与取值符合 schema；
   2. 恰好存在一个 unreleased 行且位于末行；
-  3. progress.json 为合法 JSON 且字段齐全，unreleased 与 CHANGELOG 一致。
+  3. progress.json 为合法 JSON 且字段齐全，unreleased 与 CHANGELOG 一致；
+  4. progress.json 内容新鲜度：context 非空且提及最新已发布版本号
+    （发布不刷新 context 即失修，2026-10-04 实测横跨三次发布）。
 失败输出问题清单并以非零码退出。
 """
 from __future__ import annotations
@@ -94,6 +96,25 @@ def validate_progress(errors: list[str], changelog_rows: list[dict]) -> None:
         expected = changelog_unreleased[-1].get("changes", [])
         if progress["unreleased"] != expected:
             errors.append("progress.json 的 unreleased 与 CHANGELOG.jsonl 当前 unreleased 行不一致")
+    for name in ("next_steps", "known_issues"):
+        value = progress.get(name)
+        if value is not None and (not isinstance(value, list)
+                                  or not all(isinstance(x, str) for x in value)):
+            errors.append(f"progress.json 的 {name} 应为字符串数组")
+    # 内容新鲜度（spec §2.5）：发布必须刷新 context，最新已发布版本号
+    # 必须出现其中（latest_released_version 无 v 前缀，context 行文带 v）
+    context = progress.get("context")
+    if not isinstance(context, str) or not context.strip():
+        errors.append("progress.json 的 context 应为非空字符串")
+    else:
+        latest = next((r["version"] for r in reversed(changelog_rows)
+                       if r.get("status") == "released" and r.get("version")),
+                      None)
+        if latest is not None and latest not in context \
+                and f"v{latest}" not in context:
+            errors.append(
+                f"progress.json 的 context 未提及最新已发布版本 {latest}"
+                "（发布时须刷新 context，防快照滞留旧状态）")
 
 
 def main() -> int:
