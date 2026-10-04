@@ -4,6 +4,12 @@
 
 ## Unreleased（未发布）
 
+### 变更
+
+- 【engine】清理边界修订定稿：异常终止仅保全 chk 入 protected/（rwf 无续跑消费价值，不再保全），Gau-* 瞬态 scratch（rwf/int/d2e/skr/inp 等）与任意命名 .rwf 即终收尸删除（failed 终态管线与 S3 重定向同口径），帮 g16 收尸不留垃圾
+- 【api】历史页手动清理拆双档：「清理 chk」默认档仅删成功且超保留期的顶层 chk，「清理所有」无视保留期清所有成功任务的 chk（失败任务的保全 chk 两档均保留）；POST /history/cleanup 新增 scope 参数（expired|all，缺省 expired），响应统计移除 removed_rwf 仅留 checked/removed_chk；前端清理入口改 split button（默认清理 chk，「清理所有」藏下拉）并配悬停提示区分两档，可清理量统计口径同步收窄为 chk **（破坏性变更）**
+  - 迁移指引：依赖 /history/cleanup 响应 removed_rwf 字段的外部调用方：该字段已移除；scope 缺省 expired 与原超期档为同一边界，但 rwf 不再属于清理范围（异常终止时自动收尸）
+
 ### 修复
 
 - 修复保存为队列后成员名称不显示：队列契约 Queue 增补成员明细 members（task_id/filename，title 实时解析不落库）并由队列视图聚合填充，队列页成员概览与编辑对话框改接契约来源（未提交队列原先无名称来源只能显 —）
