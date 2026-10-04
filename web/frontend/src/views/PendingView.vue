@@ -9,6 +9,11 @@
  * 席位重排动效（A-12，2026-10-02）：迁移 usePointerSort 指针跟手画布式
  * （与队列编辑框一致）——变高行前缀和定位（子表展开行高可变）、逐行门控
  * （锁定席位不可作拖源/落点）；与队列页队列框同一动效纪律。
+ * 队列席位成员重排（2026-10-04）：子表行内 ↑/↓ 相邻交换，PATCH
+ * /queues/{id} member_ids 全量有序（m2 分级矩阵：submitted 可重排、
+ * executing 409——锁定席位不渲染按钮；已执行/在途成员为既定历史，
+ * 仅 staged 成员参与交换）。子表行嵌于席位拖拽行内，行高小、命中难，
+ * 用按钮而非嵌套拖拽画布。
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
@@ -123,6 +128,43 @@ watch(expanded, () => void nextTick(() => sort.measure()));
 function onSeatLineClick(s: PendingSeat) {
   if (sort.moved.value) return;
   if (s.kind === "queue") toggle(s.seat_id);
+}
+
+// ---------- 队列席位成员重排（子表行内 ↑/↓ 相邻交换） ----------
+const moveBusy = ref(false);
+
+/** ↑/↓ 渲染门控：锁定席位（执行中）不可重排（m2 分级矩阵 409）；
+ *  仅相邻两行均 staged 才可交换（正在执行/已完成成员为既定历史）。 */
+function canMove(s: PendingSeat, index: number, dir: -1 | 1): boolean {
+  if (s.locked) return false;
+  const members = s.members ?? [];
+  const j = index + dir;
+  return j >= 0 && j < members.length
+    && members[index]?.state === "staged"
+    && members[j]?.state === "staged";
+}
+
+/** 提交走 PATCH /queues/{id} member_ids 全量有序原子（契约 #15）。 */
+async function moveMember(s: PendingSeat, index: number, dir: -1 | 1) {
+  if (!canMove(s, index, dir)) return;
+  const ids = (s.members ?? []).map((m) => m.task_id);
+  [ids[index], ids[index + dir]] = [ids[index + dir] as number, ids[index] as number];
+  moveBusy.value = true;
+  orderError.value = null;
+  const { error } = await client.PATCH("/queues/{id}", {
+    params: { path: { id: s.queue_id ?? "" } },
+    body: { member_ids: ids as number[] },
+  });
+  moveBusy.value = false;
+  if (error) {
+    const body = error as unknown as { error?: { code?: string; message?: string } };
+    orderError.value =
+      body.error?.code === "QUEUE_STATE_CONFLICT"
+        ? "队列已在执行，成员顺序不可调整"
+        : (body.error?.message ?? "重排被拒绝");
+    return;
+  }
+  load(); // SSE pending.snapshot 随后同值到达，此处兜底即时刷新
 }
 
 // ---------- 整席移除 / 席位内成员移除（二次确认） ----------
@@ -284,14 +326,36 @@ async function confirmRemove() {
                 :state="m.state"
                 :label="m.state === 'staged' ? '等待' : undefined"
               />
-              <button
-                v-if="m.state === 'staged'"
-                class="btn btn--ghost m-remove"
-                type="button"
-                @click="removing = { seat: s, task_id: m.task_id }"
-              >
-                移除
-              </button>
+              <span class="m-ops">
+                <button
+                  v-if="canMove(s, mi, -1)"
+                  class="btn btn--ghost m-move"
+                  type="button"
+                  :title="`上移 ${m.filename}`"
+                  :disabled="moveBusy"
+                  @click="moveMember(s, mi, -1)"
+                >
+                  ↑
+                </button>
+                <button
+                  v-if="canMove(s, mi, 1)"
+                  class="btn btn--ghost m-move"
+                  type="button"
+                  :title="`下移 ${m.filename}`"
+                  :disabled="moveBusy"
+                  @click="moveMember(s, mi, 1)"
+                >
+                  ↓
+                </button>
+                <button
+                  v-if="m.state === 'staged'"
+                  class="btn btn--ghost m-remove"
+                  type="button"
+                  @click="removing = { seat: s, task_id: m.task_id }"
+                >
+                  移除
+                </button>
+              </span>
             </div>
           </div>
         </div>
@@ -534,9 +598,10 @@ async function confirmRemove() {
 .sub-row {
   display: grid;
   /* 序号/id 列 minmax 收窄但不截断：id ≥ 1000 时自然加宽（034 为显示下宽）；
-     状态/操作列定宽——表头与数据行是两个独立 grid，auto 轨随内容宽漂移会错位 */
+     状态/操作列定宽——表头与数据行是两个独立 grid，auto 轨随内容宽漂移会错位
+     （操作列 120px 容 ↑/↓/移除 三按钮） */
   grid-template-columns:
-    20px minmax(36px, auto) minmax(0, 1.2fr) minmax(0, 1fr) 108px 72px 64px;
+    20px minmax(36px, auto) minmax(0, 1.2fr) minmax(0, 1fr) 108px 72px 120px;
   gap: var(--space-3);
   align-items: center;
   font-size: var(--text-sm);
@@ -580,6 +645,19 @@ async function confirmRemove() {
 .m-remove {
   height: var(--control-height-sm);
   font-size: var(--text-sm); /* 文案含中文（移除） */
+}
+/* 成员重排按钮组（↑/↓/移除）：行尾右对齐、小方钮 */
+.m-ops {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}
+.m-move {
+  width: 26px;
+  padding: 0;
+  height: var(--control-height-sm);
+  font-size: var(--text-sm);
+  line-height: 1;
 }
 .confirm-line {
   font-size: var(--text-sm);

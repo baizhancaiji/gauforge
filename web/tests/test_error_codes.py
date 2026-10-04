@@ -169,6 +169,8 @@ def test_import_parse_reason_aligned():
 #   「生成失败」与「cubegen 不可用」（M3 C4 轨道面板，§4.12 失败态）
 # - WORKSPACE_PATH_OUTSIDE：工作区路径守卫三态同码的定制拒绝文案
 #   （M3 C2 workspace .out 入口，§2.3 语义 UI 承载）
+# - QUEUE_STATE_CONFLICT：待执行页队列席位成员重排的执行中定制提示
+#   （m2 分级矩阵 executing 409 的语义 UI 承载，2026-10-04）
 FRONTEND_CODE_BRANCHES = {
     "PENDING_CAPACITY_FULL",
     "SEAT_WINDOW_LOCKED",
@@ -177,6 +179,7 @@ FRONTEND_CODE_BRANCHES = {
     "CUBE_GENERATION_FAILED",
     "CUBE_EXECUTABLE_MISSING",
     "WORKSPACE_PATH_OUTSIDE",
+    "QUEUE_STATE_CONFLICT",
 }
 
 
