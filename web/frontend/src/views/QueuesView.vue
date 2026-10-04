@@ -34,7 +34,7 @@ type Queue = components["schemas"]["Queue"];
 interface MemberView {
   id: number;
   position: number;
-  /** submitted 队列从待执行席位交叉可得；其余形态契约无来源显 — */
+  /** 名称来源 Queue.members（filename/title，契约自带明细） */
   filename?: string;
   title?: string | null;
   /** 失败归因交叉（Queue.last_failure.members） */
@@ -130,15 +130,14 @@ function toggle(id: string) {
   expanded.value[id] = !expanded.value[id];
 }
 
-/** 成员概览：member_ids 为主序，last_failure.members 交叉状态/归因，
- *  submitted 队列再从待执行席位交叉文件名/标题（契约内数据全用尽）。 */
+/** 成员概览：member_ids 为主序，Queue.members 供名称（filename/title），
+ *  last_failure.members 交叉状态/归因（契约内数据全用尽）。 */
 function memberRows(q: Queue): MemberView[] {
   const lf = new Map<number, { state?: string; cause?: string | null }>();
   for (const it of q.last_failure?.members ?? []) {
     if (it.task_id != null) lf.set(it.task_id, { state: it.state, cause: it.cause });
   }
-  const seat = events.pending?.seats.find((s) => s.queue_id === q.id);
-  const byId = new Map((seat?.members ?? []).map((m) => [m.task_id, m]));
+  const byId = new Map((q.members ?? []).map((m) => [m.task_id, m]));
   return q.member_ids.map((id, i) => {
     const sm = byId.get(id);
     return {

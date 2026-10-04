@@ -1,10 +1,10 @@
 <script lang="ts">
-/** 成员行视图（创建态来自候选行；编辑态经 last_failure/pending 交叉）。
+/** 成员行视图（创建态来自候选行；编辑态名称经 Queue.members，归因经 last_failure 交叉）。
  *  置于普通 script 块：script setup 内 export 会引发模块初始化 ReferenceError
  *  （对话框 chunk 加载即崩溃，D1 走查实测；vue-tsc/vite build 均不拦截）。 */
 export interface MemberRow {
   id: number;
-  /** 创建态来自候选行；编辑态契约 Queue 无成员明细，缺省显示 — */
+  /** 创建态来自候选行；编辑态来自 Queue.members（契约自带成员明细） */
   filename?: string;
   title?: string | null;
   /** 失败归因交叉（Queue.last_failure.members，编辑/只读态） */
@@ -107,10 +107,11 @@ watch(
       for (const it of q?.last_failure?.members ?? []) {
         if (it.task_id != null) lf.set(it.task_id, { state: it.state, cause: it.cause });
       }
+      const det = new Map((q?.members ?? []).map((m) => [m.task_id, m]));
       members.value = (q?.member_ids ?? []).map((id) => ({
         id,
-        filename: undefined,
-        title: null,
+        filename: det.get(id)?.filename,
+        title: det.get(id)?.title ?? null,
         ...(lf.get(id) ?? {}),
       }));
     }
