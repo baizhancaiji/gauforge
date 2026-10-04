@@ -85,6 +85,9 @@ class Dispatcher:
             from .reconcile import detect_rerun
             self._rerun_probe = detect_rerun
         self._reconciled = False  # 启动对账闩：成功一次后不再重复（B10）
+        # 运行中对账待办：watchdog 重起 server 后由 on_server_restarted
+        # 置位（引擎线程 _loop 消费；防闩被并发翻转时丢失重跑请求）
+        self._reconcile_pending = False
         # HQ server 本次生命周期被重新 spawn 的时刻（startup 接线；
         # None=复用存活实例）。S3 对账判据③：server 比 job 新 ⇒ journal
         # 恢复重跑（确定性，不受对账时点竞态影响）。
@@ -592,10 +595,12 @@ class Dispatcher:
     # ---------------- 重启对账（B10，编排见 reconcile.Reconciler） ----------------
 
     def reconcile(self) -> dict:
-        """启动对账（§2.4 五场景）：HQ job 实态 ↔ 本地 running 执行对照。
+        """启动/运行中对账（§2.4 五场景）：HQ job 实态 ↔ 本地 running 执行对照。
 
-        幂等闩：成功一次后跳过（重复调用返回 {}）；HQ 不可达时
-        GatewayError 上抛（启动序列与引擎线程均会重试至成功）。
+        幂等闩：成功一次后跳过（重复调用返回 {}）；watchdog 运行中重起
+        server 时经 on_server_restarted 复位闩（2026-10-04 缺口修复：对账
+        原先仅启动跑一次，web 不重启时 HQ 断连重起后 journal 恢复重跑完全
+        无感知）。HQ 不可达时 GatewayError 上抛（引擎线程逐周期重试）。
         """
         if self._reconciled:
             return {}
@@ -603,6 +608,16 @@ class Dispatcher:
         summary = Reconciler(self).run()
         self._reconciled = True
         return summary
+
+    def on_server_restarted(self, spawn_ts: str | None) -> None:
+        """watchdog 运行中重起 server 成功后的接线回调（watchdog 线程调用）。
+
+        刷新 S3 判据③的 spawn 证据（原仅启动时接线一次，重起后陈旧）并
+        复位对账闩 + 置待办标记；对账由引擎线程 _loop 下周期串行执行
+        （不在此线程直接跑 Reconciler：与 tick 并发改库无防护）。"""
+        self.server_spawn_ts = spawn_ts
+        self._reconciled = False
+        self._reconcile_pending = True
 
     # ---------------- 线程循环（B10 挂启动序列） ----------------
 
@@ -616,14 +631,22 @@ class Dispatcher:
     def stop(self) -> None:
         self._stop.set()
 
+    def _reconcile_step(self) -> None:
+        """对账步（引擎线程，测试入口）：待办标记或闩未落 → 对账一次。
+
+        HQ 不可达时 GatewayError 静默延后（标记保持，下周期重试）。"""
+        if not (self._reconcile_pending or not self._reconciled):
+            return
+        try:
+            self.reconcile()
+            self._reconcile_pending = False
+        except GatewayError:
+            pass  # HQ 未就绪：下周期重试对账（标记保持）
+
     def _loop(self) -> None:
         while not self._stop.is_set():
             try:
-                if not self._reconciled:
-                    try:
-                        self.reconcile()
-                    except GatewayError:
-                        pass  # HQ 未就绪：下周期重试对账
+                self._reconcile_step()
                 self.tick()
             except Exception:  # 引擎线程不因单轮异常死亡
                 traceback.print_exc()

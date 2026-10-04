@@ -6,7 +6,9 @@ Dispatcher → 启动对账（reconcile.Reconciler 五场景）→ 挂载运行�
 
 容错：HQ 进程确保/对账失败仅告警降级——引擎照常挂载（tick 内停等），
 watchdog 周期重试 server、引擎线程下周期重试对账。g16web 自身退出
-**不杀** HQ 进程（§8.7：g16web 死亡不影响在跑计算）。
+**不杀** HQ 进程（§8.7：g16web 死亡不影响在跑计算）。watchdog 运行中
+重起 server 成功即回调 Dispatcher.on_server_restarted（复位对账闩 +
+刷新 S3 判据③ spawn 证据，引擎线程串行重跑对账）。
 """
 from __future__ import annotations
 
@@ -59,6 +61,9 @@ def start_engine(*, gateway: Gateway | None = None,
 
     d = Dispatcher(gateway)
     d.server_spawn_ts = pm.server_spawn_ts  # S3 判据③接线（server 重 spawn 证据）
+    # watchdog 运行中重起 server → 复位对账闩并刷新 spawn 证据（回调在
+    # watchdog 线程触发，仅置标记；对账由引擎线程 _loop 串行执行）
+    pm.on_server_restart = lambda: d.on_server_restarted(pm.server_spawn_ts)
     try:
         d.reconcile()
     except GatewayError as exc:

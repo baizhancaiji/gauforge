@@ -23,6 +23,11 @@ worker 快速重连时 ①② 可被对账时点双双错过，③ 由 server sp
 必晚于误记时刻，submitted_at 不早于 spawn_ts → ③ 否决按 S1 接管。
 
 对账完成发 system.snapshot(server_restarted=true) 供前端全量重建。
+
+触发点（2026-10-04 运行中对账缺口修复）：启动序列一次 + watchdog 运行中
+重起 server 成功后各一次（pm.on_server_restart → Dispatcher.
+on_server_restarted 复位闩、刷新 server_spawn_ts，引擎线程 _loop 下周期
+串行重跑；web 不重启时 HQ 断连重起由此不再静默）。
 """
 from __future__ import annotations
 

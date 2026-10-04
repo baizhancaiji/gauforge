@@ -714,3 +714,97 @@ def test_s3_real_hq_journal_rerun(tmp_path):
         gw.cancel(jid)  # 清理：取消重跑作业
     finally:
         mgr.stop()
+
+
+# ---------------- 运行中对账触发（watchdog 重起，2026-10-04 缺口修复） ----------------
+
+def test_watchdog_step_fires_on_server_restart(monkeypatch, tmp_path):
+    """server 死亡重起成功 → on_server_restart 先于 ensure_worker 触发。"""
+    from web.src.hq.process import HqProcessManager
+
+    pm = HqProcessManager("hq", tmp_path)
+    calls: list[str] = []
+    monkeypatch.setattr(pm, "server_alive", lambda: False)
+    monkeypatch.setattr(pm, "start", lambda: calls.append("start") or True)
+    monkeypatch.setattr(pm, "ensure_worker",
+                        lambda *a, **k: calls.append("worker"))
+    pm.on_server_restart = lambda: calls.append("restart")
+    pm._watchdog_step()
+    assert calls == ["start", "restart", "worker"]
+
+
+def test_watchdog_step_alive_noop_and_callback_error_swallowed(
+        monkeypatch, tmp_path):
+    """server 存活不动；回调异常仅告警、worker 拉起照常（接管不被阻断）。"""
+    from web.src.hq.process import HqProcessManager
+
+    pm = HqProcessManager("hq", tmp_path)
+    calls: list[str] = []
+    monkeypatch.setattr(pm, "server_alive", lambda: True)
+    pm._watchdog_step()
+    assert calls == []
+
+    monkeypatch.setattr(pm, "server_alive", lambda: False)
+    monkeypatch.setattr(pm, "start", lambda: True)
+    monkeypatch.setattr(pm, "ensure_worker",
+                        lambda *a, **k: calls.append("worker"))
+
+    def _boom() -> None:
+        raise RuntimeError("callback boom")
+
+    pm.on_server_restart = _boom
+    pm._watchdog_step()
+    assert calls == ["worker"]
+
+
+def test_reconcile_latch_reset_by_server_restart(gw, rec):
+    """watchdog 重起回调复位闩：同实例重跑对账，待办标记由对账步消费。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    d2 = restarted(gw, [])
+    d2.reconcile()
+    assert d2.reconcile() == {}  # 闩生效：不重复
+
+    d2.on_server_restarted("2026-10-05T00:00:00+00:00")
+    assert d2.server_spawn_ts == "2026-10-05T00:00:00+00:00"  # 判据③刷新
+    assert d2._reconciled is False and d2._reconcile_pending is True
+    d2._reconcile_step()  # 引擎线程同款消费路径
+    assert d2._reconcile_pending is False  # 待办已消费
+    assert d2.reconcile() == {}  # 闩重新落定
+    assert executions().get(row["id"])["state"] == "running"  # S1 接管不误动
+
+
+def test_reconcile_step_unreachable_keeps_pending(gw, rec):
+    """HQ 不可达时对账步延后：待办保持、恢复后同实例重跑成功。"""
+    d1 = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    row = seed_running(gw, d1)
+    gw.set_state(str(row["hq_job_id"]), "finished")
+    d2 = restarted(gw, [])
+    d2.on_server_restarted(None)
+    gw.fail_worker()
+    d2._reconcile_step()
+    assert d2._reconcile_pending is True  # 标记保持（下周期重试）
+    assert executions().get(row["id"])["state"] == "running"
+    gw._unreachable = False
+    d2._reconcile_step()
+    assert d2._reconcile_pending is False
+    assert executions().get(row["id"])["state"] == "succeeded"  # S2 冻结
+
+
+def test_start_engine_wires_server_restart_callback(gw, rec, tmp_path,
+                                                    monkeypatch):
+    """start_engine 接线 on_server_restart：回调刷新 spawn 证据并复位对账闩。"""
+    monkeypatch.setattr(config, "ENGINE_ENABLED", True)
+    pm = FakePM(tmp_path)
+    pm.server_spawn_ts = "2026-10-05T00:00:00+00:00"
+    d = startup.start_engine(gateway=gw, process_manager=pm)
+    try:
+        assert d._reconciled is True  # 启动对账已成功
+        pm.server_spawn_ts = "2026-10-05T00:30:00+00:00"  # 重起后 pm 侧更新
+        pm.on_server_restart()
+        assert d.server_spawn_ts == "2026-10-05T00:30:00+00:00"
+        assert d._reconciled is False and d._reconcile_pending is True
+    finally:
+        d.stop()
+        runtime.set_dispatcher(None)
+    monkeypatch.setattr(config, "ENGINE_ENABLED", False)

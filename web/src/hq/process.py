@@ -4,11 +4,13 @@
   --http-port，H 阶段启用）；
 - 进程 start_new_session 脱离父进程组：g16web 退出不杀 HQ；
 - 已有 server 在跑（server-dir 可达）则复用不新起；
-- watchdog 周期检查进程存活，死亡自动重启（daemon 线程）。
+- watchdog 周期检查进程存活，死亡自动重启（daemon 线程）；重起成功即
+  触发 on_server_restart 回调（运行中对账接线，见 engine/reconcile）。
 """
 from __future__ import annotations
 
 import subprocess
+import sys
 import threading
 import time
 import weakref
@@ -38,6 +40,9 @@ class HqProcessManager:
         # 本次生命周期内 spawn server 的时刻（复用已有实例则保持 None）：
         # S3 对账判据③的依据——server 比 job 新 ⇒ journal 恢复重跑。
         self.server_spawn_ts: str | None = None
+        # watchdog 重起 server 成功后的回调（watchdog 线程内触发，须自保
+        # 线程安全且轻量）：engine/startup 接线 Dispatcher 运行中对账。
+        self.on_server_restart = None
         HqProcessManager._instances.add(self)
 
     # ---------- 存活探测 ----------
@@ -137,12 +142,27 @@ class HqProcessManager:
     def _watchdog_loop(self, interval: float = 5.0) -> None:
         while not self._stop.wait(interval):
             try:
-                if not self.server_alive():
-                    self._server_proc = None
-                    self.start()
-                    self.ensure_worker()
+                self._watchdog_step()
             except GatewayError:
                 continue  # 下个周期重试
+
+    def _watchdog_step(self) -> None:
+        """单轮健康检查（测试入口）：server 死亡 → 重起 → 保证 worker 在线。
+
+        重起成功（本次确实新 spawn）即触发 on_server_restart 回调——先于
+        ensure_worker（worker 拉起失败不得吞掉对账请求）；回调异常仅告警
+        不中断接管编排。"""
+        if self.server_alive():
+            return
+        self._server_proc = None
+        if self.start():  # True=本次新 spawn（重起而非竞态复用）
+            if self.on_server_restart is not None:
+                try:
+                    self.on_server_restart()
+                except Exception:
+                    print("[watchdog] on_server_restart 回调异常（忽略）",
+                          file=sys.stderr)
+            self.ensure_worker()
 
     # ---------- 关闭（仅测试/显式运维用） ----------
     def stop(self) -> None:
