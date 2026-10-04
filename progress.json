@@ -1,7 +1,14 @@
 {
-  "updated": "2026-10-04T12:48+0800",
+  "updated": "2026-10-04T14:21+08:00",
   "latest_released_version": "2.3.0",
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "fixed",
+      "summary": "修复保存为队列后成员名称不显示：队列契约 Queue 增补成员明细 members（task_id/filename，title 实时解析不落库）并由队列视图聚合填充，队列页成员概览与编辑对话框改接契约来源（未提交队列原先无名称来源只能显 —）",
+      "breaking": false,
+      "migration": null
+    }
+  ],
   "in_progress": null,
   "next_steps": [
     "观察 v2.2.0 部署反馈，问题按验收修复流程另立计划"
