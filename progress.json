@@ -1,7 +1,20 @@
 {
-  "updated": "2026-10-04T20:32+0800",
+  "updated": "2026-10-04T21:20+0800",
   "latest_released_version": "3.0.0",
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "fixed",
+      "summary": "修复 GUI 升级通道在 systemd 托管下升级后服务死透：接管脚本依赖刷新步骤按 PATH 调用 uv，而 unit 环境的 PATH 不含 uv 安装目录，uv not found 使编排中止——WebUI 不再拉回、update-state 卡 restarting（2026-10-04 客户端 2.3.0→3.0.0 升级事故）；现 uv 经 PATH 与常见安装位（~/.local/bin 等）依次定位，不可得或刷新失败均警告跳过（包体已落位，服务拉回不被阻断），nohup 回退拉起改直启 .venv/bin/python 与 unit ExecStart 同构、回退彻底免 uv",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "summary": "修复更新域测试版本基线在 tag 跨 major 后前提翻转：v2.x 段内自增基线随 v3.0.0 发布整体落后本地致 16 用例失败，改恒定远段 v999.0.0 对任何现实 tag 恒为「有更新」",
+      "breaking": false,
+      "migration": null
+    }
+  ],
   "in_progress": null,
   "next_steps": [
     "观察 v2.2.0 部署反馈，问题按验收修复流程另立计划"
