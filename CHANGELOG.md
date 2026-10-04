@@ -6,7 +6,7 @@
 
 ### 新增
 
-- 待执行页队列席位成员重排：展开子表行内新增 ↑/↓ 相邻交换（PATCH /queues/{id} member_ids 全量有序原子，SSE pending.snapshot 即时刷新）；门控按 m2 分级矩阵定稿——未开跑席位可重排、执行中席位不渲染按钮（后端 409 QUEUE_STATE_CONFLICT 兜底定制提示），仅 staged 成员参与交换（正在执行/已完成成员为既定历史）；错误码分支登记 FRONTEND_CODE_BRANCHES 白名单
+- 待执行页队列席位成员拖拽重排：展开子表抽为 PendingSeatMembers 组件，成员行复用既有 usePointerSort 指针跟手拖拽（与席位行/队列编辑框同一动效纪律，子表行 pointerdown 阻断冒泡不误触席位拖拽），提交 PATCH /queues/{id} member_ids 全量有序原子（契约 #15），SSE pending.snapshot 即时刷新；门控按 m2 分级矩阵定稿——执行中席位（locked）整体不可拖、仅 staged 成员可作拖源/落点（正在执行/已完成成员为既定历史），后端 409 QUEUE_STATE_CONFLICT 兜底定制提示；错误码分支登记 FRONTEND_CODE_BRANCHES 白名单
 
 ### 变更
 
