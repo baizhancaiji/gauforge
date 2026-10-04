@@ -64,7 +64,7 @@ const overText = computed(() => {
       <p class="st-foot mono">
         共 {{ usage.total_entries }} 项执行目录{{ usage.truncated ? "（仅列前 50）" : "" }}
         — 口径：工作区根整树（含数据库等非执行文件）；可清理量为超保留期的
-        chk/rwf，手动清理后此处即时反映
+        chk，手动清理后此处即时反映
       </p>
     </div>
   </div>

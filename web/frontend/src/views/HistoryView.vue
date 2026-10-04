@@ -15,7 +15,7 @@
  * （统计回显）。批量导出走工具条（单条导出入口已移除）。
  * 归档管理视图承载 archived=true（独立路由 /archive，决策点 10），仅保留查看动作。
  */
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { client, exportOutputs, getText } from "@/api/client";
@@ -339,18 +339,53 @@ function setActionError(error: unknown) {
   };
 }
 
-// ---------- chk/rwf 清理（手动触发，统计回显） ----------
+// ---------- chk 清理（split button，清理边界修订定稿 2026-10-04） ----------
+// 主按钮 =「清理 chk」默认档（仅删成功且超保留期的 chk）；「清理所有」
+// 藏于下拉（无视保留期清所有成功任务的 chk）；失败任务的保全 chk 两档均不触碰。
 const cleanupOpen = ref(false);
+const cleanupScope = ref<"expired" | "all">("expired");
 const cleanupLoading = ref(false);
 const cleanupNote = ref<string | null>(null);
+const cleanupMenu = ref(false);
+
+function openCleanup(scope: "expired" | "all") {
+  cleanupScope.value = scope;
+  cleanupMenu.value = false;
+  cleanupOpen.value = true;
+}
+
+/** 下拉菜单外部点击 / Esc 关闭（监听随开合挂摘，卸载兜底）。 */
+function dismissMenu() {
+  cleanupMenu.value = false;
+}
+function onMenuKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") dismissMenu();
+}
+watch(cleanupMenu, (open) => {
+  if (open) {
+    document.addEventListener("click", dismissMenu);
+    document.addEventListener("keydown", onMenuKeydown);
+  } else {
+    document.removeEventListener("click", dismissMenu);
+    document.removeEventListener("keydown", onMenuKeydown);
+  }
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("click", dismissMenu);
+  document.removeEventListener("keydown", onMenuKeydown);
+});
 
 async function confirmCleanup() {
   cleanupLoading.value = true;
-  const { data } = await client.POST("/history/cleanup");
+  const { data } = await client.POST("/history/cleanup", {
+    params: { query: cleanupScope.value === "all" ? { scope: "all" } : {} },
+  });
   cleanupLoading.value = false;
   cleanupOpen.value = false;
   if (data) {
-    cleanupNote.value = `清理完成 — 检查 ${data.checked} 项 — 移除 chk ${data.removed_chk} — rwf ${data.removed_rwf}`;
+    cleanupNote.value = cleanupScope.value === "all"
+      ? `清理完成（所有成功任务） — 检查 ${data.checked} 项 — 移除 chk ${data.removed_chk}`
+      : `清理完成 — 检查 ${data.checked} 项 — 移除 chk ${data.removed_chk}`;
   }
   loadUsage(); // 手动清理后统计即时反映（§2.6）
 }
@@ -395,14 +430,39 @@ async function confirmCleanup() {
       <span class="spacer"></span>
       <RouterLink v-if="!archived" class="btn btn--secondary" to="/archive">归档管理</RouterLink>
       <RouterLink v-else class="btn btn--secondary" to="/history">返回历史</RouterLink>
-      <button
-        v-if="!archived"
-        class="btn btn--secondary"
-        type="button"
-        @click="cleanupOpen = true"
-      >
-        清理 chk/rwf
-      </button>
+      <!-- chk 清理（split button）：主按钮=超期档；「清理所有」藏于下拉 -->
+      <div v-if="!archived" class="cleanup-split">
+        <button
+          class="btn btn--secondary cleanup-main"
+          type="button"
+          title="清理 chk — 仅删除「正常结束且超过保留期」任务的 chk；输出与输入永不触碰，失败任务的保全 chk 不受影响"
+          @click="openCleanup('expired')"
+        >
+          清理 chk
+        </button>
+        <button
+          class="btn btn--secondary cleanup-caret"
+          type="button"
+          title="更多清理方式"
+          aria-haspopup="menu"
+          :aria-expanded="cleanupMenu"
+          aria-label="更多清理方式"
+          @click.stop="cleanupMenu = !cleanupMenu"
+        >
+          ▾
+        </button>
+        <div v-if="cleanupMenu" class="cleanup-menu" role="menu">
+          <button
+            class="cleanup-item"
+            type="button"
+            role="menuitem"
+            title="清理所有 chk — 无视保留期，立即清理所有成功任务的 chk；失败任务的保全 chk 依旧保留"
+            @click="openCleanup('all')"
+          >
+            清理所有 chk
+          </button>
+        </div>
+      </div>
       <span v-if="cleanupNote" class="cleanup-note mono">{{ cleanupNote }}</span>
       <!-- 占用面板（M3.7 C8）：常驻读数 + 超阈琥珀警示 + 可展开明细 -->
       <StoragePanel v-if="!archived" :usage="usage" />
@@ -625,18 +685,23 @@ async function confirmCleanup() {
       </aside>
     </div>
 
-    <!-- 清理确认（仅删正常结束且超保留期的 chk/rwf，永不触碰输出/输入） -->
+    <!-- 清理确认（双档：expired 超期档 / all 无视保留期档；均不触碰
+         .out/.log/输入与失败任务的保全 chk） -->
     <ConfirmModal
       :open="cleanupOpen"
-      title="清理 chk/rwf"
+      :title="cleanupScope === 'all' ? '清理所有 chk' : '清理 chk'"
       danger
       confirm-text="清理"
       :loading="cleanupLoading"
       @confirm="confirmCleanup"
       @close="cleanupOpen = false"
     >
-      <p class="confirm-line">
-        仅删除「正常结束且超过保留期」任务的 chk/rwf 中间文件；输出与输入文件永不触碰；
+      <p v-if="cleanupScope === 'all'" class="confirm-line">
+        无视保留期，立即删除所有「正常结束」任务的 chk；输出与输入文件永不触碰；
+        失败任务的保全 chk 依旧保留
+      </p>
+      <p v-else class="confirm-line">
+        仅删除「正常结束且超过保留期」任务的 chk；输出与输入文件永不触碰；
         非正常终止的保全快照不受影响
       </p>
     </ConfirmModal>
@@ -670,6 +735,46 @@ async function confirmCleanup() {
 .cleanup-note {
   font-size: var(--text-sm);
   color: var(--state-succeeded);
+}
+/* 清理 split button：主按钮（超期档）+ 下拉箭头（「清理所有」藏于菜单） */
+.cleanup-split {
+  position: relative;
+  display: inline-flex;
+}
+.cleanup-main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.cleanup-caret {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 0 var(--space-2);
+}
+.cleanup-menu {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: max-content;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-hair);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+  padding: var(--space-1) 0;
+}
+.cleanup-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.cleanup-item:hover {
+  background: var(--row-hover);
 }
 /* 列表卡：flex 列，滚动包裹层吃剩余高度、局部滚动（§3 视口纪律） */
 .table-card {

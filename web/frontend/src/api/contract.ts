@@ -583,7 +583,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 手动触发过期 chk/rwf 清理（返回清理统计，M1 实施） */
+        /**
+         * 手动触发 chk 清理（返回清理统计，M1 实施）
+         * @description 双档清理（scope）：expired（默认）仅删除「正常结束且超保留期」执行的
+         *     顶层 .chk；all 无视保留期立即删除所有「正常结束」执行的顶层 .chk。
+         *     两档均不触碰失败任务的保全 chk（protected/）与 .out/.log/输入；
+         *     rwf/Gau-* 瞬态残留已于异常终止时自动收尸，不在本端点范围。
+         */
         post: operations["cleanupTransients"];
         delete?: never;
         options?: never;
@@ -2357,7 +2363,9 @@ export interface operations {
     };
     cleanupTransients: {
         parameters: {
-            query?: never;
+            query?: {
+                scope?: "expired" | "all";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2373,10 +2381,10 @@ export interface operations {
                     "application/json": {
                         checked: number;
                         removed_chk: number;
-                        removed_rwf: number;
                     };
                 };
             };
+            400: components["responses"]["Error"];
         };
     };
     exportHistoryOutputs: {
