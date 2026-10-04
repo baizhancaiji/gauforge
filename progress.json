@@ -1,15 +1,18 @@
 {
-  "updated": "2026-10-04T21:32+0800",
+  "updated": "2026-10-04T22:07+0800",
   "latest_released_version": "3.0.1",
   "unreleased": [],
   "in_progress": null,
   "next_steps": [
-    "观察 v2.2.0 部署反馈，问题按验收修复流程另立计划"
+    "升级接管自举缺口（2026-10-04 确认立项）：GUI 升级执行的是当前部署的旧 self_update.sh，修复「服务拉回」的版本要等升级完成才落位——3.0.0→3.0.1 这次升级仍被旧脚本坑死（uv not found 中止、服务死透，客户端已手动恢复）。修法：apply 流水线在拉起接管脚本前先把载荷内的新版脚本落盘，脚本执行者必须是新版",
+    "回退队列重新提交后成员状态刷新（2026-10-04 用户报障，非阻塞）：待执行页成员展示态混杂 running/skipped。归因：pending._member_view 读跨周期全量执行历史（any running 优先，否则最近终态，否则 staged）——重提交后未派发成员读到上一周期的 skipped 终态。修法方向：成员 state 判定按席位本周期过滤（席位 submitted_at 之后的执行行才算数，本周期无执行行即 staged）",
+    "运行中对账缺口：对账仅在 web 启动时跑一次（dispatcher._reconciled 闩），web 不重启时 HQ server/worker 意外断连、watchdog 重起后 journal 恢复重跑完全无感知（计时器/进度静默错乱）；修法方向：watchdog 重起 server 成功后触发一次对账或 S3 判据接入运行中路径",
+    "server_spawn_ts 记账时机收紧：process.start() 在 spawn 发起后立即记账，探测抖动误报死亡时记账虚假 spawn（消费端判据③交叉验证已在 3.0.0/3.0.1 兜底，生产端仍产生误值）；修法方向：确认新 server 真正起来（新 server-dir 子目录/journal mtime 佐证）后再记账",
+    "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
-    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行",
-    "全量 pytest 在受限沙箱下会 1 失败（test_extract_keywords regen 用例须写仓库外 ~/gaussian-kb/data/regen.txt 被拦截，环境权限非产品缺陷）；放行后复跑 569 通过（2026-10-01 22:44 实测）"
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
-  "context": "v2.2.1 已发布并推送（分支 g16-webui + tag v2.2.1，Release 附件 5 个上传完成，latest 已指向 v2.2.1）；内容：测试僵尸进程根治、三处界面小瑕疵、默认主题亮色并持久化。"
+  "context": "v3.0.1 已发布推送（tag v3.0.1，Release 附件待用户浏览器上传）：GUI 升级接管免 uv（依赖刷新失败不再阻断服务拉回、nohup 回退直启 .venv/bin/python）、停止回退队列删除幽灵候选根治（删除队列按执行记录分流＋候选删除转 finished）、更新域测试基线改恒定 v999.0.0。2026-10-04 全天事故链：对账判据③误触发（提交时间被重置）→ server.log/历史页三组记录定案 → 修复并 3.0.0 发布；客户端 3.0.0→3.0.1 升级仍由旧脚本执行踩自举缺口，服务手动恢复，磁盘已落 3.0.1。判据③交叉验证、等待席位点击展开修复已随 3.0.0 到达客户端。"
 }
