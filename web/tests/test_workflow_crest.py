@@ -69,14 +69,18 @@ def _set_crest_root(tmp_path, name: str = "crest-ok") -> Path:
     root.mkdir(exist_ok=True)
     (root / "crest").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     (root / "crest").chmod(0o755)
-    settings().set("crest_root", str(root))
+    # 经设置目录校验路径登记（审查 P1-1/P2-6 整改）：既往 settings().set
+    # 直写绕过目录白名单，crest_root 未登记曾逃逸全部闸门（真实部署
+    # PUT /settings 422 unknown_setting、组合流整体不可用）
+    assert settings().apply_update({"crest_root": str(root)}) == []
     return root
 
 
 # ---------------- 提交前置检查 ----------------
 
 def test_submit_rejects_missing_executable(tmp_path):
-    settings().set("crest_root", str(tmp_path / "nope"))
+    assert settings().apply_update(
+        {"crest_root": str(tmp_path / "nope")}) == []
     cid = _mk_candidate()
     with pytest.raises(ApiError) as ei:
         wf_svc.submit_conformer_refinement(_payload(cid))

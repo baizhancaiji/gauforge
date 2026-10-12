@@ -48,7 +48,10 @@ def new_workflow_id() -> str:
 
 
 def _crest_root() -> Path:
-    return Path(str(settings().get("crest_root"))).expanduser()
+    """crest_root 设置定位：异常空值回落目录默认值，字面 None 不进路径
+    （可执行探测 503 的 details 须呈现真实定位而非 "None/crest"）。"""
+    raw = settings().get("crest_root") or config.RUNTIME_DEFAULTS["crest_root"]
+    return Path(str(raw)).expanduser()
 
 
 def _extract_molecule_block(text: str) -> tuple[str, list[str]]:

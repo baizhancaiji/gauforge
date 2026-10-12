@@ -141,3 +141,41 @@ def test_runtime_defaults_include_update_check_interval():
     assert item["value"] == "weekly"
     assert item["value_type"] == "string"
     assert item["effect"] == "immediate"
+
+# ---------------- M4 组合流引擎定位（审查 P1-1 整改：目录登记一致性） ----------------
+
+def test_crest_xtb_root_registered_with_defaults():
+    """crest_root/xtb_root 登记设置目录（m4-plan §2.3）：目录型 string、
+    editable、effect=new_submissions，缺省值与计划一致。"""
+    r = client.get("/api/v1/settings")
+    runtime = {m["key"]: m for m in r.json()["runtime"]}
+    for key, default in (("crest_root", "~/opt/crest-3.0.2"),
+                         ("xtb_root", "~/opt/xtb-6.7.1")):
+        item = runtime[key]
+        assert item["value"] == default
+        assert item["value_type"] == "string"
+        assert item["range"] is None
+        assert item["editable"] is True
+        assert item["effect"] == "new_submissions"
+    assert_contract_schema(spec, "GET", "/settings", 200, r.json())
+
+
+def test_put_crest_root_accepted():
+    """crest_root 可经 PUT /settings 登记（未登记时 422 unknown_setting，
+    组合流在真实部署不可用——B10 单测经 settings().set 直写绕过目录，
+    登记缺失曾逃逸全部闸门）。"""
+    r = client.put("/api/v1/settings",
+                   json={"values": {"crest_root": "~/opt/crest-3.0.2"}})
+    assert r.status_code == 200
+    runtime = {m["key"]: m["value"] for m in r.json()["runtime"]}
+    assert runtime["crest_root"] == "~/opt/crest-3.0.2"
+    assert_contract_schema(spec, "PUT", "/settings", 200, r.json())
+
+
+def test_put_xtb_root_type_check():
+    """xtb_root 非 string 值 → 422 reason=type（目录型 string 通则）。"""
+    r = client.put("/api/v1/settings", json={"values": {"xtb_root": 1}})
+    assert r.status_code == 422
+    errors = r.json()["error"]["details"]["errors"]
+    assert any(item["key"] == "xtb_root" and item["reason"] == "type"
+               for item in errors)

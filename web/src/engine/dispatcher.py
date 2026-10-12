@@ -428,8 +428,11 @@ class Dispatcher:
         # 误杀（GUI 走查实测 monitor_summary 恒 0 的根因）。
         self._monitor.note_started(eid, now_iso())
         if is_crest:
-            crest_bin = Path(str(settings().get("crest_root"))
-                             ).expanduser() / "crest"
+            # crest_root 异常空值回落目录默认值，字面 None 不进提交命令
+            crest_root = Path(str(
+                settings().get("crest_root")
+                or config.RUNTIME_DEFAULTS["crest_root"])).expanduser()
+            crest_bin = crest_root / "crest"
             job_id = self._gw.submit(
                 [str(crest_bin), "crest_input.xyz",
                  "-T", str(int(resolved["nproc"]["value"]))],
