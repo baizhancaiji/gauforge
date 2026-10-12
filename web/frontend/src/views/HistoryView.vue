@@ -23,6 +23,7 @@ import type { components } from "@/api/contract";
 import AnalysisPanel from "@/components/analysis/AnalysisPanel.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import ResumeDialog from "@/components/ResumeDialog.vue";
 import StateChip from "@/components/StateChip.vue";
 import StoragePanel from "@/components/analysis/StoragePanel.vue";
 import TablePager from "@/components/TablePager.vue";
@@ -142,6 +143,24 @@ const activeId = computed(() => selected.value?.id ?? null);
 const canRequeue = computed(
   () => selected.value?.state === "failed" || selected.value?.state === "skipped",
 );
+
+// ---------- 断点续跑（m4-plan §4.9 C6；入口=failed 未归档条目——§2.2：
+// skipped 无执行目录不展示、归档封存不提供、succeeded 无断点走「重新排队」） ----------
+const resumeOpen = ref(false);
+
+/** 入口守卫与后端 preview 404 口径一致（succeeded 条目两段均 404）。 */
+const canResume = computed(
+  () => selected.value?.state === "failed" && !selected.value?.archived && !archived.value,
+);
+
+function onResumeConfirmed(taskId: number, originId: number) {
+  resumeOpen.value = false;
+  actionNote.value = {
+    ok: true,
+    msg: `已创建续跑任务 #${taskId}（源自 #${originId}）— 已入待执行队列`,
+  };
+  load();
+}
 
 // ---------- 表格多选（与候选页同套件：useMultiSelect 锚点+焦点驱动） ----------
 /** 滚动容器 ref：键盘事件宿主（tabindex=0）与行元素序来源（与列表响应序
@@ -617,6 +636,17 @@ async function confirmCleanup() {
             }}{{ selected.chk_snapshot.location ? ` — ${selected.chk_snapshot.location}` : "" }}
           </dd>
         </dl>
+        <!-- 断点续跑双向关联（M4 C6：resumed_from 记录层 / resumed_by 派生只读） -->
+        <dl v-if="selected.resumed_from" class="cell">
+          <dt class="mono">续跑自</dt>
+          <dd class="mono">
+            #{{ selected.resumed_from.execution_id }}（任务 {{ selected.resumed_from.task_id }}）
+          </dd>
+        </dl>
+        <dl v-if="selected.resumed_by?.length" class="cell">
+          <dt class="mono">已续跑</dt>
+          <dd class="mono">{{ selected.resumed_by.map((id) => `#${id}`).join("、") }}</dd>
+        </dl>
 
         <p v-if="actionNote" class="note mono" :class="actionNote.ok ? 'note--ok' : 'note--bad'">
           {{ actionNote.msg }}
@@ -635,6 +665,15 @@ async function confirmCleanup() {
             分析
           </button>
           <template v-if="!archived">
+            <button
+              v-if="canResume"
+              class="btn btn--secondary"
+              type="button"
+              :disabled="actLoading"
+              @click="resumeOpen = true"
+            >
+              从断点续跑
+            </button>
             <button
               v-if="canRequeue"
               class="btn btn--secondary"
@@ -684,6 +723,15 @@ async function confirmCleanup() {
         </div>
       </aside>
     </div>
+
+    <!-- 断点续跑对话框（C6：preview 渲染 → 确认 → 新任务入队；
+         确认成功注记「已创建续跑任务 #NNN（源自 #MMM）」） -->
+    <ResumeDialog
+      :open="resumeOpen"
+      :entry="selected"
+      @confirmed="onResumeConfirmed"
+      @close="resumeOpen = false"
+    />
 
     <!-- 清理确认（双档：expired 超期档 / all 无视保留期档；均不触碰
          .out/.log/输入与失败任务的保全 chk） -->

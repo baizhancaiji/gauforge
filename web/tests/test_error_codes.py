@@ -179,11 +179,14 @@ def test_import_parse_reason_aligned():
 #   映射（m4-plan §4.9 C5——按码取 details.cycle/task_ids 映射成员行红描边
 #   与错误清单；UNREACHABLE/CHK_SOURCE_MISSING 走 details.task_id 通用路径
 #   不按码分支）
+# - RESUME_NOT_ELIGIBLE：断点续跑确认时幂等重探未通过的定制引导（m4-plan
+#   §4.9 C6——「资产已失效请重新发起」，与 ineligible 预览态文案分立）
 FRONTEND_CODE_BRANCHES = {
     "PENDING_CAPACITY_FULL",
     "SEAT_WINDOW_LOCKED",
     "DEPENDENCY_CYCLE",
     "INVALID_MEMBERS",
+    "RESUME_NOT_ELIGIBLE",
     "ANALYSIS_UNAVAILABLE",
     "ANALYSIS_PARSE_FAILED",
     "CUBE_GENERATION_FAILED",
