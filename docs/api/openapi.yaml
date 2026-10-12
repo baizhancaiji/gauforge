@@ -65,8 +65,9 @@
 #     stderr 尾部；fchk 产物缺失亦走此码、details 注明；M3）
 #   - CUBE_EXECUTABLE_MISSING — 503：g16_root/cubegen 探测失败（显式不静默；M3）
 #   - DEPENDENCY_UNREACHABLE — 422：Link0 符号引用不可达（@task:id 非同队列现存
-#     成员——跨队列/引用已移除成员/自引用，M4；队列 PATCH 移除被依赖成员同码
-#     拒绝，details 注明被谁依赖）
+#     成员——跨队列/引用已移除成员/自引用，M4；前向引用——引用目标位于本成员
+#     序之后，保序停等派发下永不满足、静态校验即拒，M4；队列 PATCH 移除被依赖
+#     成员同码拒绝，details 注明被谁依赖）
 #   - DEPENDENCY_CYCLE — 422：依赖图成环（含 %Chk=@task:自id 续用自环，M4）
 #   - CHK_SOURCE_MISSING — 422：被引用上游已有成功执行但其 chk 已被保留期清理
 #     （提交拒绝，details 注明缺失的执行 id，提示重跑上游恢复 chk 来源，M4）
@@ -273,7 +274,10 @@ components:
         队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>`
         （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。
         `%Chk=@task:X`（续用）与 `%OldChk=@task:X`（只读接续）均产生对 X 的
-        依赖边。运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录
+        依赖边。方向约束（M4）：X 须位于本成员队列序**之前**——派发保序不越位
+        （依赖未满足者停等且后继不越过），前向引用（引用目标在本成员之后）
+        永不满足，静态校验即拒（DEPENDENCY_UNREACHABLE）。
+        运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录
         `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。
       required: [id, position, time_limit_s, state, kind]
       properties:
@@ -1918,8 +1922,9 @@ paths:
       summary: 分块预览
       description: >-
         id 跨形态延续（M2）：候选与失败回退队列成员（unsubmitted 且
-        rollback_flag=true，与 PUT blocks 守卫一致）可读；
-        其余形态（新建未提交成员/已提交/在途/终态）404。
+        rollback_flag=true，与 PUT blocks 守卫一致）可读；M4 C5 增
+        unsubmitted 队列成员可读（队列编辑框「接续前置 chk」勾选取
+        Link0 基线）；其余形态（已提交/在途/终态）404。
       parameters:
         - $ref: '#/components/parameters/CandidateId'
       responses:
@@ -1939,7 +1944,8 @@ paths:
       summary: 完整输入纯文本（提交确认框用）
       description: >-
         id 跨形态延续（M2）：候选与失败回退队列成员（守卫与 PUT blocks 一致）
-        可读，供分块编辑初始化与 CRLF 检出；其余形态 404。
+        可读，供分块编辑初始化与 CRLF 检出；M4 C5 增 unsubmitted 队列成员
+        可读（同 preview 守卫）；其余形态 404。
       parameters:
         - $ref: '#/components/parameters/CandidateId'
       responses:
@@ -1957,7 +1963,12 @@ paths:
       tags: [candidates]
       operationId: saveBlock
       summary: 分块编辑保存（M2 实施；id 跨形态延续）
-      description: section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑
+      description: >-
+        section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑。
+        形态守卫（m2-plan §2.1）：候选与失败回退队列成员（unsubmitted 且
+        rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节
+        （队列编辑框「接续前置 chk」写 %OldChk 依赖行，DAG 校验读输入），
+        其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。
       parameters:
         - $ref: '#/components/parameters/CandidateId'
         - name: section

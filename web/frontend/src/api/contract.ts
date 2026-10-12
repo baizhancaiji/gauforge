@@ -214,7 +214,7 @@ export interface paths {
         };
         /**
          * 分块预览
-         * @description id 跨形态延续（M2）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true，与 PUT blocks 守卫一致）可读； 其余形态（新建未提交成员/已提交/在途/终态）404。
+         * @description id 跨形态延续（M2）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true，与 PUT blocks 守卫一致）可读；M4 C5 增 unsubmitted 队列成员可读（队列编辑框「接续前置 chk」勾选取 Link0 基线）；其余形态（已提交/在途/终态）404。
          */
         get: operations["previewCandidate"];
         put?: never;
@@ -234,7 +234,7 @@ export interface paths {
         };
         /**
          * 完整输入纯文本（提交确认框用）
-         * @description id 跨形态延续（M2）：候选与失败回退队列成员（守卫与 PUT blocks 一致） 可读，供分块编辑初始化与 CRLF 检出；其余形态 404。
+         * @description id 跨形态延续（M2）：候选与失败回退队列成员（守卫与 PUT blocks 一致） 可读，供分块编辑初始化与 CRLF 检出；M4 C5 增 unsubmitted 队列成员 可读（同 preview 守卫）；其余形态 404。
          */
         get: operations["getCandidateInput"];
         put?: never;
@@ -255,7 +255,7 @@ export interface paths {
         get?: never;
         /**
          * 分块编辑保存（M2 实施；id 跨形态延续）
-         * @description section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑
+         * @description section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑。 形态守卫（m2-plan §2.1）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节 （队列编辑框「接续前置 chk」写 %OldChk 依赖行，DAG 校验读输入）， 其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。
          */
         put: operations["saveBlock"];
         post?: never;
@@ -993,7 +993,7 @@ export interface components {
             /** @description —；响应中实时解析注入（解析失败为 null），不落库（roadmap §2.6 ①） */
             title?: string | null;
         };
-        /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）。 依赖语义（M4 A4 定稿，单一真相）：成员的依赖关系由其 Link0 符号引用 **自动推导**（引用即依赖），无独立 depends_on 字段。文法：Link0 的 `%Chk=`/`%OldChk=` 取值支持两形态——`@task:<id>`（id=同队列成员任务 id， 队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>` （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。 `%Chk=@task:X`（续用）与 `%OldChk=@task:X`（只读接续）均产生对 X 的 依赖边。运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录 `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。 */
+        /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）。 依赖语义（M4 A4 定稿，单一真相）：成员的依赖关系由其 Link0 符号引用 **自动推导**（引用即依赖），无独立 depends_on 字段。文法：Link0 的 `%Chk=`/`%OldChk=` 取值支持两形态——`@task:<id>`（id=同队列成员任务 id， 队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>` （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。 `%Chk=@task:X`（续用）与 `%OldChk=@task:X`（只读接续）均产生对 X 的 依赖边。方向约束（M4）：X 须位于本成员队列序**之前**——派发保序不越位 （依赖未满足者停等且后继不越过），前向引用（引用目标在本成员之后） 永不满足，静态校验即拒（DEPENDENCY_UNREACHABLE）。 运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录 `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。 */
         Task: {
             /** @description C；同候选 id */
             id: number;
