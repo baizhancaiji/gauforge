@@ -57,6 +57,13 @@
       "summary": "B7 chk 物化器与探针：engine/materialize.py 派发前物化钩子（复制上游 chk 至本执行目录 dep-<id>.chk 并重写 %Chk=/%OldChk= 符号行、物化后零符号残留校验，复制语义保上游原件零改动）、溯源定位（当前输入哈希匹配的被沿用成功执行优先、回落最近成功执行；@exec 走 protected 保全优先回落保留期 input.chk）、formchk 有效性探针（临时目录执行、正常/损坏/空 fchk 段三分支、超时 120s 按探针失败）、派发器接线（物化失败=成员 failed(program_error) 经失败分流、含物化依赖执行提交 HQ 时 crash_limit=0 禁用内部重试——重入①，Gateway 三实现透传 crash_limit：HTTP 数字 0/NeverRestart、CLI never-restart 字符串形态）；FakeGateway 单测 10 用例（重写/零残留/上游零改动/缺源/哈希跳过溯源/@exec 资产/探针三分支/重入①提交参数/物化失败终态）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B8 派发窗口依赖联动：advance 依赖守卫（先于窗口满与资源检查——roadmap §7.1 依赖未满足者不得进入窗口，保序不越位不变；停等原因 wait_reason 类级注册表经 pending.snapshot 暴露，dependency 优先于 resource）、skipped 传递闭包（前驱 failed/skipped → 下游即时 skipped 归因 predecessor_failed 既有语义复用、stderr 注明传递链——勾选跳过开关时三段链沿链传递至尾段、队列收束不悬挂防窗口死锁）、哈希跳过成员视为依赖满足且下游物化溯源其被沿用的历史 chk、重入②对账特判（物化依赖执行被 journal 恢复重跑时先于 S3 chk 分流处置：取消 HQ job、原执行 external_interrupt 落历史、以符号形式输入重新物化派发 crash_limit=0；物化依赖执行重跑识别容差收紧为 0——120s 盲区宁可重派不可静默，静默重跑其余通道已被重入① crash_limit=0 堵死）；FakeGateway 场景单测 9 用例（停等不越位/双停等叠加/失败联动/传递 skipped 收束/哈希跳过溯源/wait_reason 快照/重入②取消重派/盲区收紧/无依赖不误触）",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
