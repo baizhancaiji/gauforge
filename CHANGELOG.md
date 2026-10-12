@@ -10,6 +10,7 @@
 - 【web】迁移 v3 随 A4 契约批次落库：executions 加列 resumed_from（可空 TEXT JSON 断点续跑关联）与 workflows 组合流记录表（state 四态 CHECK + refine_queue_pending），HistoryEntry 响应接通 resumed_from 透传与 resumed_by 派生只读（按 resumed_from 反查）
 - 【docs】A5 断点续跑与组合流设计定稿：crest 3.0.2 真机实测（甲醇/乙醇双样例）三结论落档——内嵌 tblite 引擎、XTB_PATH 环境变量全路径不消费（派发无需注入、风险 7 落定，含 --xnam xtb 外部模式同测）；构象能量锚点为 crest_conformers.xyz（非旧版 crest_ensemble.xyz，§2.3/§3.4/§4.7 随测修订）+ crest.energies（相对列实测 kcal/mol）；能量取数单一来源=注释行 Hartree 绝对能量、相对 kJ/mol 后端按 2625.4996 系数直算不经 kcal 中转；决策点 2 定案（自动提交+满员保留 unsubmitted+refine_queue_pending 布尔）与决策点 4 定案（resume 新建任务天然不触发哈希跳过），§4.2 增补 A5 定稿记录与用户授权执行口径
 - 【web】crest 3.0.2 实测样例留存 fixtures（web/tests/fixtures/crest/：乙醇 4 构象全套——输入 str.xyz / crest_conformers.xyz / crest.energies / cre_members / stdout 头部锚点段 / 终态统计段），供 B10 ensemble 提取器单测与锚点回归
+- 【web】B6 依赖模型与 DAG 校验：Link0 符号引用解析器（@task:<id>/@exec:<执行id> 两形态与文法残缺判定），队列创建/PATCH/提交三时点静态校验（crest 任务不入队 INVALID_MEMBERS 复用、移除被依赖成员拒绝 details 注明被谁依赖、@task 可达、依赖图无环含自环 DEPENDENCY_CYCLE、溯源 chk 已清理 CHK_SOURCE_MISSING 拒绝并提示重跑上游）与单任务席位载体校验（行内提交/历史重新排队 @task: 一律拒绝、@exec 三点校验：存在/终态/chk 溯源），test_error_codes 全集 29→35 同步；迁移 v4 tasks 加列 kind（g16|crest 默认 g16 CHECK 约束），迁移测试版本断言 3→4 并补 kind 用例
 
 ### 变更
 

@@ -36,6 +36,13 @@
       "summary": "crest 3.0.2 实测样例留存 fixtures（web/tests/fixtures/crest/：乙醇 4 构象全套——输入 str.xyz / crest_conformers.xyz / crest.energies / cre_members / stdout 头部锚点段 / 终态统计段），供 B10 ensemble 提取器单测与锚点回归",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B6 依赖模型与 DAG 校验：Link0 符号引用解析器（@task:<id>/@exec:<执行id> 两形态与文法残缺判定），队列创建/PATCH/提交三时点静态校验（crest 任务不入队 INVALID_MEMBERS 复用、移除被依赖成员拒绝 details 注明被谁依赖、@task 可达、依赖图无环含自环 DEPENDENCY_CYCLE、溯源 chk 已清理 CHK_SOURCE_MISSING 拒绝并提示重跑上游）与单任务席位载体校验（行内提交/历史重新排队 @task: 一律拒绝、@exec 三点校验：存在/终态/chk 溯源），test_error_codes 全集 29→35 同步；迁移 v4 tasks 加列 kind（g16|crest 默认 g16 CHECK 约束），迁移测试版本断言 3→4 并补 kind 用例",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
