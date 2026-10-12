@@ -1,0 +1,32 @@
+       8   1.551   -11.39187    0.01172
+       9   1.551   -11.39187    0.01172
+      10   2.485   -11.39038    0.00243    0.00243       3       1
+      11   3.596   -11.38861    0.00037    0.00037       4       1
+T /K                                  :   298.15
+E lowest                              :   -11.39434
+ensemble average energy (kcal)        :    0.062
+ensemble entropy (J/mol K, cal/mol K) :   16.088    3.845
+ensemble free energy (kcal/mol)       :   -1.146
+population of lowest in %             :   96.203
+ number of unique conformers for further calc            4
+ list of relative energies saved as "crest.energies"
+
+ -----------------
+ Wall Time Summary
+ -----------------
+ CREST runtime (total)               0 d,  0 h,  0 min, 32.262 sec
+ ------------------------------------------------------------------
+ Trial metadynamics (MTD)   ...        0 min,  0.277 sec (  0.858%)
+ Metadynamics (MTD)         ...        0 min, 18.295 sec ( 56.707%)
+ Geometry optimization      ...        0 min, 10.487 sec ( 32.507%)
+ Molecular dynamics (MD)    ...        0 min,  2.717 sec (  8.421%)
+ Genetic crossing (GC)      ...        0 min,  0.321 sec (  0.994%)
+ I/O and setup              ...        0 min,  0.165 sec (  0.512%)
+ ------------------------------------------------------------------
+ * wall-time:     0 d,  0 h,  0 min, 32.262 sec
+ *  cpu-time:     0 d,  0 h,  1 min,  4.729 sec
+ * ratio c/w:     2.006 speedup
+ ------------------------------------------------------------------
+ * Total number of energy+grad calls: 48174
+
+ CREST terminated normally.
