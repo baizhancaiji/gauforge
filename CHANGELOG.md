@@ -8,6 +8,8 @@
 
 - 【api】M4 A4 契约 diff（任务链依赖与 chk 传递定稿，关闭 roadmap §7 开放事项 1）：Link0 符号引用文法两形态（@task:<id> 同队列成员/@exec:<执行id> resume 专用，引用即依赖单一真相）与 DAG 校验规则、错误码全集 29→35（DEPENDENCY_CYCLE/DEPENDENCY_UNREACHABLE/CHK_SOURCE_MISSING/RESUME_NOT_ELIGIBLE/WORKFLOW_STATE_INVALID/CREST_EXECUTABLE_MISSING）、Task.kind（g16|crest）与 crest 不入队/无增量解析/停滞告警不适用契约承载、PendingSeat 成员停等原因字段（dependency/resource，依赖守卫先于资源检查）、断点续跑端点对（POST /history/{id}/resume/preview 恒 200 五态 ineligible + POST /history/{id}/resume 幂等重探/满员 409）与 HistoryEntry.resumed_from/resumed_by 关联字段、组合流端点（POST /workflows/conformer-refinement 前置检查序 503/409/422 + GET /workflows 列表 + GET /workflows/{id} 状态与能量表跨容器聚合）与 WorkflowState 状态机/refine_queue_pending 布尔、GET /queues/{id}/energy-summary 能量表（末次 SCF 双单位 + 相对 kJ/mol 零点=查询范围最低）、设置项 crest_root/xtb_root 登记、mapping 增行（55 操作）与 sse.md execution.progress/execution.stalled 两行 crest 不适用补注（无新增事件，全集维持 15 类），前后端契约生成物再生
 - 【web】迁移 v3 随 A4 契约批次落库：executions 加列 resumed_from（可空 TEXT JSON 断点续跑关联）与 workflows 组合流记录表（state 四态 CHECK + refine_queue_pending），HistoryEntry 响应接通 resumed_from 透传与 resumed_by 派生只读（按 resumed_from 反查）
+- 【docs】A5 断点续跑与组合流设计定稿：crest 3.0.2 真机实测（甲醇/乙醇双样例）三结论落档——内嵌 tblite 引擎、XTB_PATH 环境变量全路径不消费（派发无需注入、风险 7 落定，含 --xnam xtb 外部模式同测）；构象能量锚点为 crest_conformers.xyz（非旧版 crest_ensemble.xyz，§2.3/§3.4/§4.7 随测修订）+ crest.energies（相对列实测 kcal/mol）；能量取数单一来源=注释行 Hartree 绝对能量、相对 kJ/mol 后端按 2625.4996 系数直算不经 kcal 中转；决策点 2 定案（自动提交+满员保留 unsubmitted+refine_queue_pending 布尔）与决策点 4 定案（resume 新建任务天然不触发哈希跳过），§4.2 增补 A5 定稿记录与用户授权执行口径
+- 【web】crest 3.0.2 实测样例留存 fixtures（web/tests/fixtures/crest/：乙醇 4 构象全套——输入 str.xyz / crest_conformers.xyz / crest.energies / cre_members / stdout 头部锚点段 / 终态统计段），供 B10 ensemble 提取器单测与锚点回归
 
 ### 变更
 
