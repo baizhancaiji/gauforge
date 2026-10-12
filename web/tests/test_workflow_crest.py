@@ -364,11 +364,9 @@ def test_queue_energy_summary_zero_point(tmp_path):
 def qid_of(task_id: int) -> str:
     from web.src.store import tasks as t_store
     row = t_store().get(task_id)
-    return row["queue_id"] if row and row.get("queue_id") else         (assert_fail() if False else _raise_notfound(task_id))
-
-
-def _raise_notfound(task_id: int) -> str:
-    raise AssertionError(f"queue not found for task {task_id}")
+    if row is None or not row.get("queue_id"):
+        raise AssertionError(f"queue not found for task {task_id}")
+    return row["queue_id"]
 
 
 def test_queue_energy_partial_rows(tmp_path):
@@ -404,7 +402,7 @@ def test_workflow_aggregation_mixed_rows(tmp_path):
     view = get_workflow(out["workflow_id"])
     rows = view["energy_summary"]["rows"]
     kinds = [r["kind"] for r in rows]
-    assert "crest" in kinds and rows.count(0.0 if False else rows[0]) is not None
+    assert kinds.count("crest") == 1 and kinds.count("g16") == 2  # 混排
     crest_rows = [r for r in rows if r["kind"] == "crest"]
     g16_rows = [r for r in rows if r["kind"] == "g16"]
     assert len(crest_rows) == 1 and len(g16_rows) == 2
