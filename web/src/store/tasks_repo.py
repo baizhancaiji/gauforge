@@ -1,6 +1,8 @@
 """tasks 表 DAL（候选/任务同表同 id，form 形态列，m1-plan §2.2）。"""
 from __future__ import annotations
 
+import json
+
 from .db import Database, now_iso
 
 
@@ -44,6 +46,23 @@ class TasksRepo:
                 "INSERT INTO tasks (filename, origin, failure_note, form,"
                 " created_at, updated_at) VALUES (?, ?, ?, 'candidate', ?, ?)",
                 (filename, origin, failure_note, ts, ts))
+            return int(cur.lastrowid)
+
+    def create_seat_task(self, filename: str,
+                         resume_of: dict | None = None) -> int:
+        """resume 新建续跑任务（M4 B9）：直接 seat_task 形态、不经候选
+        （origin 以 imported 占位满足非空约束——候选域语义不适用于
+        续跑任务，候选列表不展示）。resume_of：任务级续跑关联
+        {task_id, execution_id}=原执行（派发建行时转移到执行记录）。"""
+        ts = now_iso()
+        with self._db.tx() as conn:
+            cur = conn.execute(
+                "INSERT INTO tasks (filename, origin, form, created_at,"
+                " updated_at, resume_of) VALUES (?, 'imported', 'seat_task',"
+                " ?, ?, ?)",
+                (filename, ts, ts,
+                 json.dumps(resume_of, ensure_ascii=False)
+                 if resume_of is not None else None))
             return int(cur.lastrowid)
 
     def delete(self, task_id: int) -> None:

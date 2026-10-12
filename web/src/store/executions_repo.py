@@ -64,17 +64,22 @@ class ExecutionsRepo:
                queue_id: str | None = None, input_hash: str | None = None,
                hq_job_id: int | None = None,
                submitted_at: str | None = None,
-               state: str = "running") -> int:
+               state: str = "running",
+               resumed_from: dict | None = None) -> int:
         """创建执行记录（默认 state=running；staged 由席位表达不建行）。
 
-        state 直落：B6 失败分流 skipped 终态行即时落库（无运行过程）。"""
+        state 直落：B6 失败分流 skipped 终态行即时落库（无运行过程）。
+        resumed_from（M4 断点续跑关联）：{task_id, execution_id}=原执行，
+        仅经 resume 动作新建的执行携带（记录层关联，随创建写入）。"""
         with self._db.tx() as conn:
             cur = conn.execute(
                 "INSERT INTO executions (task_id, queue_id, state, submitted_at,"
-                " input_hash, resources, hq_job_id, filename)"
-                " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                " input_hash, resources, hq_job_id, filename, resumed_from)"
+                " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (task_id, queue_id, state, submitted_at or now_iso(), input_hash,
-                 json.dumps(resources, ensure_ascii=False), hq_job_id, filename))
+                 json.dumps(resources, ensure_ascii=False), hq_job_id, filename,
+                 json.dumps(resumed_from, ensure_ascii=False)
+                 if resumed_from is not None else None))
             return int(cur.lastrowid)
 
     def set_started_at(self, execution_id: int, started_at: str) -> None:

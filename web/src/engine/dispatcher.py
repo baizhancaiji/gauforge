@@ -31,6 +31,7 @@ finished_with_failures 处理；手动停止——在跑成员全部被 stop，
 """
 from __future__ import annotations
 
+import json
 import sys
 import threading
 import time
@@ -330,10 +331,19 @@ class Dispatcher:
         if item["queue_id"]:
             self._queue_enter_executing(item["queue_id"])
         resources = {"nproc": resolved["nproc"], "mem_gb": resolved["mem_gb"]}
+        # M4 续跑关联（B9）：续跑任务的任务级 resume_of 转移到执行记录
+        # resumed_from（记录层关联，随创建写入；保留于任务行——重复派发
+        # 仍携带）
+        resumed_from = None
+        if task.get("resume_of"):
+            try:
+                resumed_from = json.loads(task["resume_of"])
+            except ValueError:
+                resumed_from = None
         eid = executions().create(
             task_id=task["id"], filename=task["filename"],
             resources=resources, queue_id=item["queue_id"],
-            input_hash=input_hash)
+            input_hash=input_hash, resumed_from=resumed_from)
         g16_root = Path(str(settings().get("g16_root"))).expanduser()
         nproc_default = int(settings().get("link0_default_nproc"))
         mem_default = float(settings().get("link0_default_mem_gb"))

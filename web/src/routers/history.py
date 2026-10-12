@@ -102,6 +102,24 @@ def requeue_history_entry(id: int) -> dict:
     return out
 
 
+@router.post("/history/{id}/resume/preview")
+def preview_resume(id: int) -> dict:
+    """断点续跑预览（M4 B9）：探针+注入矩阵+输入 diff；无副作用、恒 200
+    （ineligible 以 eligible=false + reason 表达，五态见 services.resume）。"""
+    from ..services import resume as resume_svc
+    return resume_svc.preview(id)
+
+
+@router.post("/history/{id}/resume")
+def resume_from_checkpoint(id: int) -> dict:
+    """断点续跑确认（M4 B9）：幂等重探 → 新建任务（注入改写副本）入
+    待执行队列；ineligible 422、满员 409；freq 回落原样重跑同经此端点。"""
+    from ..services import resume as resume_svc
+    out = resume_svc.confirm(id)
+    get_state().emit("pending.snapshot", _pending_snapshot())
+    return out
+
+
 @router.post("/history/{id}/return-candidate",
              status_code=status.HTTP_201_CREATED)
 def return_candidate(id: int) -> dict:

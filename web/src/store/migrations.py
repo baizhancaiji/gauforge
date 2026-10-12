@@ -135,6 +135,16 @@ ALTER TABLE tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'g16'
 """
 MIGRATIONS[4] = SCHEMA_V4
 
+# v5（2026-10-12，M4 B9）：tasks 加列 resume_of——续跑任务的任务级关联
+# （可空 TEXT JSON {task_id, execution_id}=原执行；confirm 时写入，
+# 派发创建执行记录时转移到执行行 resumed_from 并保留于任务行——重复
+# 派发（重新排队续跑任务）关联仍在，重启不丢。freq 回落原样重跑任务
+# 的文本无 @exec 引用，关联同样经此列承载）。
+SCHEMA_V5 = """
+ALTER TABLE tasks ADD COLUMN resume_of TEXT;
+"""
+MIGRATIONS[5] = SCHEMA_V5
+
 
 def run_migrations(db: Database) -> None:
     with db.tx() as conn:
