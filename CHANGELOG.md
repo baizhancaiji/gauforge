@@ -12,6 +12,7 @@
 - 【web】crest 3.0.2 实测样例留存 fixtures（web/tests/fixtures/crest/：乙醇 4 构象全套——输入 str.xyz / crest_conformers.xyz / crest.energies / cre_members / stdout 头部锚点段 / 终态统计段），供 B10 ensemble 提取器单测与锚点回归
 - 【web】B6 依赖模型与 DAG 校验：Link0 符号引用解析器（@task:<id>/@exec:<执行id> 两形态与文法残缺判定），队列创建/PATCH/提交三时点静态校验（crest 任务不入队 INVALID_MEMBERS 复用、移除被依赖成员拒绝 details 注明被谁依赖、@task 可达、依赖图无环含自环 DEPENDENCY_CYCLE、溯源 chk 已清理 CHK_SOURCE_MISSING 拒绝并提示重跑上游）与单任务席位载体校验（行内提交/历史重新排队 @task: 一律拒绝、@exec 三点校验：存在/终态/chk 溯源），test_error_codes 全集 29→35 同步；迁移 v4 tasks 加列 kind（g16|crest 默认 g16 CHECK 约束），迁移测试版本断言 3→4 并补 kind 用例
 - 【rust】HTTP 提交参数支持 per-job 重试上限（crash_limit）：0=NeverRestart 禁用内部重试、n>0=MaxCrashes(n)、缺省=server 默认 MaxCrashes(5) 行为零变化（serde default），为 M4 重入语义定案落位（决策点 7 分支 b：含物化依赖的执行提交时禁用 HQ 内部重试，worker 失联即终态 failed、显式重跑经派发器重新物化）；实测核验 HTTP payload 原硬编码 CrashLimit::default() 不支持 per-job 设定，改动限于提交结构体加字段+server 应用+HTTP 层透传、不触调度核心；映射单测三分支覆盖，cargo test lib 212 通过（check_doc_path_on_disk 为上游文档站路径检查、本项目 docs 结构切割后既有失败与本次无关），hq release 产物重建
+- 【web】B7 chk 物化器与探针：engine/materialize.py 派发前物化钩子（复制上游 chk 至本执行目录 dep-<id>.chk 并重写 %Chk=/%OldChk= 符号行、物化后零符号残留校验，复制语义保上游原件零改动）、溯源定位（当前输入哈希匹配的被沿用成功执行优先、回落最近成功执行；@exec 走 protected 保全优先回落保留期 input.chk）、formchk 有效性探针（临时目录执行、正常/损坏/空 fchk 段三分支、超时 120s 按探针失败）、派发器接线（物化失败=成员 failed(program_error) 经失败分流、含物化依赖执行提交 HQ 时 crash_limit=0 禁用内部重试——重入①，Gateway 三实现透传 crash_limit：HTTP 数字 0/NeverRestart、CLI never-restart 字符串形态）；FakeGateway 单测 10 用例（重写/零残留/上游零改动/缺源/哈希跳过溯源/@exec 资产/探针三分支/重入①提交参数/物化失败终态）
 
 ### 变更
 
