@@ -336,6 +336,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/queues/{id}/energy-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 队列能量表（成员恒 g16；末次 SCF 能量 hartree/eV 双单位 + 相对 kJ/mol）
+         * @description 队列维度能量表（M4）。成员按队列当前 member_ids 顺序逐行返回（crest 不入队，队列成员恒 g16——kind 字段为与 workflow 聚合同形而设）；每行取 B1 解析的末次 SCF 能量（succeeded 且解析可用者有值，双单位同源换算）。 relative_kJ_mol 以该查询范围内最低能量为零点；部分完成态照常返回已完成 行，零点随行集重算（接受漂移，前端标注「随完成进度重算」）。尚无终态 能量的成员 source=none、能量字段 null。
+         */
+        get: operations["getQueueEnergySummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/pending": {
         parameters: {
             query?: never;
@@ -557,6 +577,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/{id}/resume/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 断点续跑预览（探针+注入矩阵+输入 diff；无副作用，恒 200）
+         * @description 两段式续跑的第一段（M4）。前置检测顺序：① 输入含 @task: 链内引用 → eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定， 引导队列回退重提）；② 续跑资产取数——优先 chk_snapshot.location= protected 的保全 chk，无保全但该任务存在成功执行记录者取最近成功执行的 input.chk，两者皆无 → reason=no_resume_asset；③ formchk 有效性探针 （临时目录，超时 120s 按探针失败→chk_corrupted/超时→probe_timeout 分列）； ④ route 任务类型判定（复用 M0 输入分块解析器取 route 节，大小写不敏感： 含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq； 其余→scf；缺失/不可解析→unknown_kind）。ineligible 时 preview 恒 200 以 eligible=false + reason 表达（不经 422）；POST /history/{id}/resume 对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。skipped/归档条目无续跑 入口（前端不展示动作，404 兜底归 NOT_FOUND 口径外——预览对无执行目录 条目按 no_resume_asset 处理）。
+         */
+        post: operations["previewResume"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 断点续跑确认（新建任务入待执行队列；物化随派发钩子）
+         * @description 两段式续跑的第二段（M4）。幂等重探：preview 与确认之间 chk 可能被 保留期/手动清理，确认时复跑探针（秒级），资产缺失或探针失败按 422 RESUME_NOT_ELIGIBLE 拒绝。确认即新建任务（新 task id + 注入改写后 输入副本，Link0 携带 %OldChk=@exec:<原执行id>），入待执行队列（在途 席位满员 409 PENDING_CAPACITY_FULL，与普通提交同待遇）；派发创建执行 记录时落 resumed_from 关联，物化随 B7 派发钩子复制原 chk 并重写实际 路径。原历史条目数据零变更（「已续跑」经 resumed_by 派生只读承载）。 freq 回落原样重跑：同样经本端点新建任务（保留 resumed_from 关联， 与「重新排队」语义等价、并存）。
+         */
+        post: operations["resumeFromCheckpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/history/{id}/return-candidate": {
         parameters: {
             query?: never;
@@ -758,6 +818,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workflows/conformer-refinement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 一键组合流提交（crest 构象搜索 → top-N 精修队列自动生成与提交）
+         * @description M4 组合流（M4.2/M4.5「一个按钮」验收语义的端点承载）。流程：生成 crest 任务（候选输入副本的分子坐标引导文件，程序化生成）→ 入待执行队列（占 1 席）→ 登记 workflow 记录 → crest succeeded 终态钩子提取 ensemble 与 构象能量表（锁 crest 3.0.2 实测格式的最小提取器）→ top-N 构象坐标对 模板做分子说明节坐标替换程序化生成 N 个 g16 成员输入 → 生成精修队列 （成员数 N=min(top_n, 实际构象数)）→ 自动提交。自动提交满员时精修队列 保留为已保存（unsubmitted）+ workflow.refine_queue_pending=true（前端 提示手动提交）；crest 阶段失败或 ensemble 构象数 <2 → workflow 记 failed、不生成精修队列。前置检查顺序（m4-plan §2.3）：可执行探测 （503）→ 席位满员（409，整体拒绝零副作用）→ 候选形态（422）→ top_n 越界（422）。crest 任务 kind=crest：不入 cclib 管道、无增量进度解析 与停滞告警（sse.md 两事件行补注）、禁入任何队列成员。
+         */
+        post: operations["submitConformerRefinement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 组合流列表（按 updated_at 倒序；页面刷新恢复路径） */
+        get: operations["listWorkflows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workflows/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 组合流单点（状态 + 能量表跨容器后端聚合）
+         * @description C7 进度面板数据源：state 供进度展示（crest 执行与精修队列经既有 SSE 事件驱动前端刷新后再拉本端点）；energy_summary 由后端聚合 crest 行 （ensemble 相对能量）+ 精修队列行（末次 SCF 双单位能量），零点=聚合 范围内最低能量。精修队列被删除/放弃时停留 refining、队列行按缺失成员 处理、crest 结果仍可查。
+         */
+        get: operations["getWorkflow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -784,6 +901,11 @@ export interface components {
          * @enum {string}
          */
         TaskState: "staged" | "running" | "succeeded" | "failed" | "skipped";
+        /**
+         * @description 任务类型（M4 A4 一次性扩展，roadmap §2.6 规则 3）：g16=Gaussian 输入 （默认）；crest=CREST 构象搜索任务（组合流程序化生成，禁止单独导入/ 组队——kind=crest 禁止经「+队列」或队列 PATCH 加入成员 422 INVALID_MEMBERS）。crest 任务不入 cclib 解析管道：无 execution.progress 增量进度、停滞告警不适用（sse.md 两事件行补注），终态按「无 chk」走 finalize 既有跳过路径（不 formchk、不保全）。
+         * @enum {string}
+         */
+        TaskKind: "g16" | "crest";
         /**
          * @description 队列四态；completed 为唯一稳定终态，失败自动回退为 unsubmitted
          * @enum {string}
@@ -840,7 +962,7 @@ export interface components {
         EffectKind: "immediate" | "immediate_retroactive" | "new_submissions" | "on_restart";
         ErrorBody: {
             error: {
-                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，24 码 + 两张 reason 词表） */
+                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，35 码 + 两张 reason 词表） */
                 code: string;
                 message: string;
                 /** @description 错误附加信息（如越界值、逐字段错误数组） */
@@ -871,7 +993,7 @@ export interface components {
             /** @description —；响应中实时解析注入（解析失败为 null），不落库（roadmap §2.6 ①） */
             title?: string | null;
         };
-        /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示） */
+        /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）。 依赖语义（M4 A4 定稿，单一真相）：成员的依赖关系由其 Link0 符号引用 **自动推导**（引用即依赖），无独立 depends_on 字段。文法：Link0 的 `%Chk=`/`%OldChk=` 取值支持两形态——`@task:<id>`（id=同队列成员任务 id， 队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>` （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。 `%Chk=@task:X`（续用）与 `%OldChk=@task:X`（只读接续）均产生对 X 的 依赖边。运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录 `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。 */
         Task: {
             /** @description C；同候选 id */
             id: number;
@@ -884,6 +1006,8 @@ export interface components {
              * @default 0
              */
             time_limit_s: number;
+            /** @description C；任务类型（M4；历史行默认 g16） */
+            kind: components["schemas"]["TaskKind"];
             /** @description T；派生展示字段 */
             state: components["schemas"]["TaskState"];
         };
@@ -977,6 +1101,11 @@ export interface components {
                 /** @description —；响应中实时解析注入（解析失败为 null），不落库（同候选 title 口径） */
                 title?: string | null;
                 resources?: components["schemas"]["Resources"];
+                /**
+                 * @description "T；窗口停等原因（M4 A4 契约承载，C5 执行中页图注数据源）： dependency=Link0 符号引用的直接前驱未到 succeeded 终态（依赖 未满足）；resource=声明资源（cpus/mem）大于空闲——窗口停在该 成员等待释放。两者并存时先判依赖（dependency 优先，m4-plan §2.1：窗口守卫先于资源检查）；null=未被窗口停等（已派发/ 已结算/未被窗口触及）。仅窗口当前停等成员非 null，不越位 （保序语义不变）。"
+                 * @enum {string|null}
+                 */
+                wait_reason?: "dependency" | "resource" | null;
             }[];
             /** @description T；并行窗口已触及 → 不可整席重排/移除 */
             locked: boolean;
@@ -1067,11 +1196,140 @@ export interface components {
             archived: boolean;
             /** @description M3 起：succeeded 且 run/<id>/analysis.json 落盘成功（含 degraded 降级产物）时 = "analysis.json"（执行目录内相对引用，读取方 按 run/<执行id>/ 拼接）；落盘失败/缺失恒 null。非 succeeded 恒 null （口径 m3-plan §2.1，2026-09-30 三轮审查统一） */
             result_ref: string | null;
+            /** @description "M4；断点续跑关联（记录层，终态冻结前提早于创建——随新执行记录 创建时写入，原历史条目数据零变更）。仅经「从断点续跑」新建的 执行携带：{task_id, execution_id}=原执行的任务 id 与执行 id。 输入层关联另行以 Link0 %OldChk=@exec:<原执行id> 符号引用承载 （物化链技术关联）。" */
+            resumed_from: {
+                /** @description 原执行归属任务 id */
+                task_id: number;
+                /** @description 原执行 id */
+                execution_id: number;
+            } | null;
+            /** @description "M4；派生只读（不入存储，响应时按 resumed_from 反查汇聚）： 本条目已被哪些续跑执行承接（执行 id 列表，升序）。前端据此在 原历史详情展示「已续跑 → #MMM」。" */
+            resumed_by: number[];
         };
         /** @description 批量导出请求（执行 id 集合；服务端去重保序） */
         HistoryExportRequest: {
             /** @description 历史条目（终态执行）id 集合 */
             ids: number[];
+        };
+        /** @description 断点续跑探针结果（对续跑资产 chk 跑 formchk 有效性探针，临时 目录执行，超时 120s 沿 finalize 同款兜底） */
+        ResumeProbe: {
+            /** @description formchk 成功且 fchk 可读 ⇒ true */
+            formchk_ok: boolean;
+            /** @description formchk_ok=false 时的失败原因（chk 损坏/探针超时）；成功为 null */
+            reason: string | null;
+        };
+        /** @description 单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加 %OldChk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加 %OldChk=@exec + route 追加 Guess=Read；freq=无注入、回落原样重跑）。 */
+        ResumeInjection: {
+            /**
+             * @description link0_append=Link0 追加行（见 link0_lines）；route_rewrite=route 行整体改写（Opt=Restart，见 route_lines）；route_append=route 行追加关键词（Guess=Read，见 route_lines）
+             * @enum {string}
+             */
+            type: "link0_append" | "route_rewrite" | "route_append";
+            /** @description 追加的 Link0 行（如 %OldChk=@exec:42） */
+            link0_lines?: string[] | null;
+            /** @description 改写/追加后的 route 行全文 */
+            route_lines?: string[] | null;
+        };
+        /** @description GET 断点续跑预览响应（POST /history/{id}/resume/preview；无副作用、 恒 200——ineligible 以 eligible=false + reason 表达，不经 422）。 eligible=false 时不返回 injections/input_diff 之外承诺（可为 null）。 ineligible 原因五态：no_resume_asset（无续跑资产——无保全 chk 且无可 溯源成功执行 chk）/ chk_corrupted（探针失败）/ probe_timeout（探针 超时）/ unknown_kind（route 缺失或不可解析）/ chained_ref（输入含 @task: 链内引用——注入前置检测，先于 chk 资产判定）。 */
+        ResumePreviewResponse: {
+            eligible: boolean;
+            /** @description ineligible 时的原因（五态枚举，见上）；eligible=true 为 null */
+            reason: string | null;
+            probe?: components["schemas"]["ResumeProbe"];
+            /**
+             * @description route 判定结果（含 Opt 一切变体→opt——opt freq 组合归优化行；不含 Opt 含 Freq→freq；其余→scf）；不可解析为 null（reason=unknown_kind）
+             * @enum {string|null}
+             */
+            task_kind?: "opt" | "scf" | "freq" | null;
+            /** @description 注入改动清单；freq 回落原样重跑为空数组（弹窗明示） */
+            injections?: components["schemas"]["ResumeInjection"][] | null;
+            /** @description 注入前后完整输入的统一 diff 文本 */
+            input_diff?: string | null;
+        };
+        /** @description 断点续跑确认响应（POST /history/{id}/resume）：新建任务并入 待执行队列，沿用既有派发/核验链路；派发创建执行记录时落 resumed_from */
+        ResumeConfirmResponse: {
+            /** @description 新建任务 id（新任务新输入副本=注入改写后文本） */
+            task_id: number;
+            /** @description 待执行席位 id */
+            seat_id: number;
+            /** @description 关联的原执行 id（resumed_from.execution_id 回显，便于前端提示） */
+            execution_id?: number | null;
+        };
+        /**
+         * @description 组合流状态机（M4）：迁移单向 crest_running → refining → completed； 任一阶段失败（crest 执行失败、ensemble 构象数 <2 无法成队等）→ failed （终态）。精修队列失败回退期间停留 refining（回退重提属队列既有语义， 终态判据=精修队列成功记 completed）；精修队列最终被放弃/删除同样停留 refining（不设放弃终态、记录不级联删除，单点端点聚合按缺失成员处理、 crest 结果仍可查）。
+         * @enum {string}
+         */
+        WorkflowState: "crest_running" | "refining" | "completed" | "failed";
+        /** @description 组合流记录（GET /workflows/{id} 与 GET /workflows 列表项同形；列表按 updated_at 倒序）。energy_summary 由后端跨容器聚合：crest 行（ensemble 相对能量）+ 精修队列 g16 行（B1 解析末次 SCF 能量），零点=聚合范围内 最低能量。 */
+        Workflow: {
+            /** @description 组合流 id（随机短 id，同队列 id 生成规约） */
+            workflow_id: string;
+            /** @description 来源候选 id（候选被删除后照常返回 id 原值、不解析文件名） */
+            source_candidate_id: number;
+            state: components["schemas"]["WorkflowState"];
+            /** @description 独立布尔字段（非 state 枚举值）：精修队列已生成但自动提交因在途 席位满员未提交时 true（state=refining 叠加 pending=true），前端 提示「可手动提交」；提交成功或未发生满员为 false */
+            refine_queue_pending: boolean;
+            /** @description crest 执行 id（提交受理即有） */
+            crest_execution_id?: number | null;
+            /** @description 精修队列 id（crest 终态钩子建队后写入；crest 失败/构象数不足恒 null） */
+            refine_queue_id?: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            energy_summary: components["schemas"]["EnergySummary"];
+        };
+        /** @description POST /workflows/conformer-refinement 请求体（一键组合流）。前置检查 顺序：① crest/xtb 可执行探测（缺失 503 CREST_EXECUTABLE_MISSING）→ ② 在途席位满员（409 PENDING_CAPACITY_FULL，整体拒绝零副作用——不建 workflow 记录、不生成 crest 任务）→ ③ 来源候选形态（非候选形态 422 WORKFLOW_STATE_INVALID）与 top_n ∈ [2,10]（越界 422 VALIDATION_FAILED）。 */
+        ConformerRefinementRequest: {
+            /** @description 来源候选 id（提供电荷/多重度与分子说明节框架；候选输入副本） */
+            candidate_id: number;
+            crest: {
+                /** @description crest 任务核数（HQ 请求仅 cpus、mem 不声明） */
+                nproc: number;
+                /** @description 精修构象数（对齐队列成员数 2–10；实际构象不足取 min，<2 组合流记 failed） */
+                top_n: number;
+            };
+            template: {
+                /** @description 精修 route 行（坐标由 top-N 构象替换注入，模板坐标替换为程序化输入生成的唯一场景） */
+                route: string;
+                /** @description 可选精修 Link0 行（缺省按运行级补齐默认值） */
+                link0?: string[] | null;
+            };
+        };
+        /** @description POST /workflows/conformer-refinement 响应（受理即返回，crest 任务已入 待执行队列；前端由此取得 id 打开进度面板） */
+        ConformerRefinementResponse: {
+            workflow_id: string;
+            state: components["schemas"]["WorkflowState"];
+            crest_execution_id?: number | null;
+        };
+        /** @description GET /workflows?limit=20 响应（按 updated_at 倒序；页面刷新后 找回组合流、refine_queue_pending 满员提示回看的恢复路径） */
+        WorkflowList: {
+            workflows: components["schemas"]["Workflow"][];
+        };
+        /** @description 能量表单行。g16 行取 B1 解析末次 SCF 能量（hartree/eV 双单位，仅 succeeded 且解析可用者有值）；crest 行仅出现于 workflow 聚合（source= ensemble，给相对能量与绝对 hartree——提取自 crest 能量表输出）。 relative_kJ_mol 以**该查询范围内最低能量**为零点，部分完成态新增更低 能量行时已展示行随零点整体改写（接受漂移，前端标注「随完成进度重算」）。 */
+        EnergySummaryRow: {
+            /** @description 任务 id（crest 行=crest 任务 id） */
+            task_id: number;
+            kind: components["schemas"]["TaskKind"];
+            /** @description 成员当前终态（部分完成态照常返回已完成行） */
+            state: components["schemas"]["TaskState"];
+            /** @description 方法摘要（B1 解析 metadata.methods；crest 行 null） */
+            method?: string | null;
+            /** @description 末次 SCF 能量（hartree）；未成功/解析缺失 null */
+            energy_hartree?: number | null;
+            /** @description 末次 SCF 能量（eV）；与 hartree 同源换算 */
+            energy_eV?: number | null;
+            /** @description 相对能量（kJ/mol，零点=查询范围内最低能量；最低行=0） */
+            relative_kJ_mol?: number | null;
+            /**
+             * @description 取数来源：analysis=B1 解析（g16）；ensemble=crest 构象能量表提取；none=尚无能量（未成功/解析缺失）
+             * @enum {string}
+             */
+            source: "analysis" | "ensemble" | "none";
+        };
+        /** @description 能量表（GET /queues/{id}/energy-summary 队列维度 / GET /workflows/{id} 的 energy_summary 聚合）。队列端点成员恒 g16（crest 不入队）；workflow 聚合为 crest 行 + 精修队列行混排。 */
+        EnergySummary: {
+            rows: components["schemas"]["EnergySummaryRow"][];
         };
         /** @description 分析结果概览（仅 succeeded 执行；run/<id>/analysis.json 的契约 形状，cclib 白名单解析产物。字段集一次定死，roadmap §2.6 规则 1/3） */
         Result: {
@@ -1239,6 +1497,7 @@ export interface components {
             filename: string;
             blocks: {
                 link0: {
+                    /** @description Link0 行。M4 起 %Chk=/%OldChk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/溯源 chk 已清理 422 CHK_SOURCE_MISSING），派发前由物化器重写为实际路径。 */
                     lines: string[];
                     /** @description 缺失 %NProcShared/%Mem 等（驱动提交确认框琥珀警告） */
                     missing: string[];
@@ -1276,7 +1535,7 @@ export interface components {
             env_var?: string | null;
             description?: string;
         };
-        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 ——A1 决策点 5 定稿；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6） */
+        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 ——A1 决策点 5 定稿；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6）；M4 增组合流引擎定位 crest_root（默认 ~/opt/crest-3.0.2）与 xtb_root（默认 ~/opt/xtb-6.7.1），均为目录型 string， effect=new_submissions（新提交生效通则；可执行探测缺失时组合流提交即拒 503 CREST_EXECUTABLE_MISSING） */
         SettingsResponse: {
             startup: components["schemas"]["SettingItem"][];
             runtime: components["schemas"]["SettingItem"][];
@@ -2032,6 +2291,29 @@ export interface operations {
             409: components["responses"]["Error"];
         };
     };
+    getQueueEnergySummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["QueueId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 能量表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnergySummary"];
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
     getPending: {
         parameters: {
             query?: never;
@@ -2338,6 +2620,62 @@ export interface operations {
             409: components["responses"]["Error"];
         };
     };
+    previewResume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 预览载荷（eligible=false 时同样 200） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumePreviewResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    resumeFromCheckpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已新建续跑任务并入队 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeConfirmResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            /** @description ineligible（RESUME_NOT_ELIGIBLE，details 注明五态原因） */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
     returnCandidate: {
         parameters: {
             query?: never;
@@ -2619,6 +2957,102 @@ export interface operations {
                     "application/json": components["schemas"]["StorageUsage"];
                 };
             };
+        };
+    };
+    submitConformerRefinement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConformerRefinementRequest"];
+            };
+        };
+        responses: {
+            /** @description 已受理（crest 任务已入待执行队列） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConformerRefinementResponse"];
+                };
+            };
+            /** @description 在途席位满员（PENDING_CAPACITY_FULL，零副作用） */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 来源候选形态（WORKFLOW_STATE_INVALID）/ top_n 越界（VALIDATION_FAILED） */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description crest/xtb 可执行探测失败（CREST_EXECUTABLE_MISSING） */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+        };
+    };
+    listWorkflows: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 组合流列表（单点同形响应） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowList"];
+                };
+            };
+        };
+    };
+    getWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 组合流记录 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Workflow"];
+                };
+            };
+            404: components["responses"]["Error"];
         };
     };
     sseEvents: {
