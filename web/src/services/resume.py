@@ -52,10 +52,12 @@ _INELIGIBLE_REASONS = ("no_resume_asset", "chk_corrupted", "probe_timeout",
 
 
 def _load_source_row(execution_id: int) -> dict:
-    """续跑源历史条目（终态；skipped/归档条目不提供续跑入口——前端不
-    展示动作，后端 preview 按无资产态处理、confirm 显式拒绝）。"""
+    """续跑源历史条目（终态；入口=failed/skipped——§2.2 续跑=从断点恢复，
+    succeeded 条目无断点、其重跑诉求由历史页「重新排队」承载，后端显式
+    拒绝（404 无续跑入口）；skipped/归档条目不提供续跑入口——前端不展示
+    动作，后端 preview 按无资产态处理、confirm 显式拒绝）。"""
     row = executions().get(execution_id)
-    if row is None or row["state"] not in ("succeeded", "failed", "skipped"):
+    if row is None or row["state"] not in ("failed", "skipped"):
         raise not_found("history", execution_id)
     return row
 

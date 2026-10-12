@@ -301,3 +301,30 @@ def test_resumed_by_derived_readonly(tmp_path):
     assert after["resumed_from"] is None  # 原条目不携带关联（数据零变更）
     new_rows = executions().list_by_task(confirm["task_id"])
     assert after["resumed_by"] == [new_rows[-1]["id"]]  # 派生反查命中
+
+
+# ---------------- 缺陷整改（P5）：入口设防 ----------------
+
+def test_succeeded_source_rejected(tmp_path):
+    """succeeded 条目无续跑入口（preview/confirm 同口径 404 NOT_FOUND）：
+    续跑=从断点恢复、成功条目无断点，重跑诉求由「重新排队」承载。"""
+    _set_g16("ok", tmp_path)
+    (out,) = import_files([("ok.gjf",
+                            ("%chk=own.chk\n#p opt b3lyp/6-31g(d)\n" + TAIL)
+                            .encode("utf-8"))],
+                          inputs_dir=config.HOME_DIR / "inputs")
+    eid = executions().create(
+        task_id=out["id"], filename="ok.gjf",
+        resources={"nproc": {"value": 1, "defaulted": False},
+                   "mem_gb": {"value": 1, "defaulted": False}})
+    run_d = config.HOME_DIR / "run" / str(eid)
+    (run_d / "protected").mkdir(parents=True)
+    (run_d / "protected" / "own.chk").write_bytes(b"protected-chk")
+    executions().finalize(execution_id=eid, state="succeeded",
+                          finished_at=datetime.now().isoformat())
+    with pytest.raises(ApiError) as ep:
+        preview_resume(eid)
+    assert (ep.value.code, ep.value.http) == ("NOT_FOUND", 404)
+    with pytest.raises(ApiError) as ec:
+        resume_from_checkpoint(eid)
+    assert (ec.value.code, ec.value.http) == ("NOT_FOUND", 404)
