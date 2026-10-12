@@ -346,9 +346,15 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
 ### 2.3 CREST/xtb 组合流与能量表（A5 定稿基线，M4.2/M4.5）
 
 - **任务类型**：Task 增 `kind: g16 | crest`（契约 diff，随 A4 一次性扩展）。
-  crest 任务：HQ 提交 program=crest 可执行、cwd=`run/<执行id>/`、环境设
-  `XTB_PATH` 指向 `~/opt/xtb-6.7.1/bin`（**环境变量拼写与生效方式为 A5
-  实测核验项**——连同 crest 输出锚点一并核验留痕）；资源声明取组合流参数
+  crest 任务：HQ 提交 program=crest 可执行、cwd=`run/<执行id>/`、命令行经
+  `-T <nproc>` 控制线程（**A5 实测定稿（2026-10-12，乙醇/甲醇实测留痕
+  fixtures `web/tests/fixtures/crest/`）：crest 3.0.2 二进制静态内嵌 tblite
+  库（运行输出锚点行「xTB calculation via tblite lib」），xtb 引擎不经外部
+  可执行、`XTB_PATH` 环境变量全路径不消费（含 `--xnam xtb` 外部引擎模式
+  亦走内置库，仅回显参数）——派发环境**无需注入 `XTB_PATH`**，与 GAUSS_*
+  环境天然零冲突（风险 7 应对相应落定）；`xtb_root` 设置项保留（未来独立
+  xtb 需求的定位锚，不参与 crest 派发；可执行探测对象恒为
+  `<crest_root>/crest`）；资源声明取组合流参数
   （核数默认 `link0_default_nproc`、HQ 请求仅 cpus、mem 不声明——窗口
   mem 账对 crest 成员按未声明不计，实测越界再议）；**不进 cclib 管道、
   无增量进度解析**（execution.monitor 照常，execution.progress 不适用
@@ -369,8 +375,16 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
   - 流程：① 生成 crest 任务（输入=候选输入副本的分子坐标引导文件，程序化
     生成）→ 入待执行队列；② 执行记录登记 `workflow_id`（SQLite 组合流
     记录：来源候选、crest 执行、状态、精修队列 id）；③ crest succeeded
-    终态钩子提取 `crest_ensemble.xyz` 与输出中的构象能量表（**最小提取器**：
-    文件级锚点解析，锁 crest 3.0.2 实测格式，不做通用 crest 日志解析）；
+    终态钩子提取 `crest_conformers.xyz` 与 `crest.energies`（**A5 实测定稿
+    （2026-10-12）：crest 3.0.2 无旧版 `crest_ensemble.xyz`，构象与能量
+    锚点为 `crest_conformers.xyz`——多构象 XYZ 堆叠，每构象=原子数行+
+    注释行（该构象绝对能量，Hartree、10 位小数）+ 坐标行，按能量升序；
+    `crest.energies` 每行「序号 相对能量」，相对列单位 kcal/mol（实测
+    ΔHartree×627.509 吻合）；实际构象数=注释行条目数（crest.energies 行数
+    交叉核对）。**能量取数单一来源=crest_conformers.xyz 注释行 Hartree**，
+    相对 kJ/mol 由后端按 (E_i − E_min) × 2625.4996 计算、不经 kcal/mol
+    中转；crest.energies 相对列仅作提取器交叉验证）——最小提取器：
+    文件级锚点解析，锁 crest 3.0.2 实测格式，不做通用 crest 日志解析；
     ④ 取 top N 构象坐标（实际构象数不足 top_n 时取 min(top_n, 实际数)
     并在前端提示实际成队数；不足 2 无法成队 → 组合流记 failed，见下），
     对模板输入做「分子说明节坐标替换」程序化生成 N 个 g16 成员输入 →
@@ -573,7 +587,7 @@ flowchart LR
     SEAT -->|是| E409[409 PENDING_CAPACITY_FULL·整体拒绝·零副作用]
     SEAT -->|否| CT[生成 crest 任务入队·登记 workflow_id]
     CT --> CR[crest 执行·monitor 照常·无 cclib 管道]
-    CR -->|succeeded| EXT[终态钩子：crest_ensemble.xyz+能量表最小提取]
+    CR -->|succeeded| EXT[终态钩子：crest_conformers.xyz+能量表最小提取]
     CR -->|failed| WFB[组合流记 failed·可查 crest 原文]
     EXT --> GEN[top N 构象坐标→模板坐标替换→程序化输入]
     GEN --> Q[生成精修队列·top_n∈2–10·自动提交（满员→保留 unsubmitted 待手动提交）]
@@ -627,9 +641,22 @@ flowchart LR
   随锚点一并核验留痕）——均对 crest 3.0.2 实测输出核验；④ 能量表数据
   形状定稿；⑤ 程序化输入生成的模板与坐标替换规则定稿（沿用
   roadmap §2.7 空行规约——模板重组经既有 verify_and_normalize）。
+  **A5 定稿记录（2026-10-12 实测关闭）**：①②④⑤ 按 §2.2/§2.3 定稿基线
+  与 A4 契约落定（决策点 2 定案=自动提交+满员保留 unsubmitted+`refine_queue_pending`
+  布尔；决策点 4 定案=resume 新建任务首次执行无哈希记录、天然不触发跳过）；
+  ③ 实测三结论（甲醇单构象 + 乙醇 4 构象双样例，`--xnam xtb` 外部模式
+  同测）：crest 3.0.2 内嵌 tblite 引擎、`XTB_PATH` 全路径不消费（派发
+  无需注入，风险 7 落定）；锚点文件=crest_conformers.xyz（非旧版
+  crest_ensemble.xyz，§2.3 已随测修订）+ crest.energies；能量单位=注释行
+  Hartree 绝对 + 相对列 kcal/mol，相对 kJ/mol 后端按 2625.4996 系数自
+  Hartree 直算。用户授权按本计划执行 A/B 批次，§2 定稿基线即评审基线、
+  开放决策点按建议值定案（A4 同此口径，契约 diff 已落）。
 - 质量标准：crest 真机输出实测锚点与 XTB_PATH 核验留痕；评审通过。
-- 交付物：本节定稿回填 + crest 样例输出留存 fixtures（小文件，落
-  `web/tests/fixtures/crest/`——沿 M3 体例）。
+- 交付物：本节定稿回填（已完成——§2.3 锚点与 XTB_PATH 结论随测修订）+
+  crest 样例输出留存 fixtures（小文件，落 `web/tests/fixtures/crest/`——
+  已入库：str.xyz 输入 / crest_conformers.xyz 4 构象 / crest.energies /
+  cre_members / crest_stdout_head.log 头部锚点 / crest_stdout_summary.log
+  终态统计段，沿 M3 体例）。
 
 ### 4.3 B6 · 依赖模型与 DAG 校验
 
@@ -698,12 +725,14 @@ flowchart LR
 
 ### 4.7 B10 · CREST 组合流
 
-- 步骤：① Task.kind 扩展与派发适配（crest 程序、cwd、`XTB_PATH` 环境、
-  资源声明）；② workflow 记录表（随 migrations 版本化新建）；③ 组合流
+- 步骤：① Task.kind 扩展与派发适配（crest 程序 `<crest_root>/crest`、
+  cwd、`-T <nproc>` 线程参数、资源声明——`XTB_PATH` 经 A5 实测无需注入，
+  见 §2.3）；② workflow 记录表（随 migrations 版本化新建——已随 A4 批次
+  迁移 v3 落库）；③ 组合流
   端点（提交前置检查按 §2.3 顺序：可执行探测 → 在途席位满员 409
   `PENDING_CAPACITY_FULL` 整体拒绝零副作用 → 来源候选形态校验
   `WORKFLOW_STATE_INVALID`；`top_n ∈ [2,10]` 校验）；④ ensemble 最小
-  提取器（锚点解析 crest_ensemble.xyz + 能量表，crest 3.0.2 实测核验）；
+  提取器（锚点解析 crest_conformers.xyz + 能量表，crest 3.0.2 实测核验）；
   ⑤ top-N 程序化输入生成与精修队列自动提交（满员时保留 unsubmitted +
   workflow 记 `refine_queue_pending`）。
 - 技术要求：crest 可执行探测缺失提交即拒（503 `CREST_EXECUTABLE_MISSING`）；
@@ -969,7 +998,7 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
 | 4 | 组合流自动提交产生用户未预期的队列 | 误提交成本 | 满员时保留 unsubmitted 并提示手动提交（§2.3，不静默）；crest 阶段失败不生成精修队列（§3.4）；ensemble 构象数不足按 §2.3 边界处置（<2 记 failed、2≤n<top_n 取 min）；`top_n∈[2,10]` 前后端校验兜底 |
 | 5 | M4 触及派发链路引入 M1/M2 回归 | 既有闭环受损 | B8 全部 FakeGateway 单测 + 既有 test_dispatch_engine/test_e2e_* 回归；hq 产物在位硬检查；A4 交互矩阵评审前置 |
 | 6 | 契约 diff 与 3.1.0 发布交叠（版本号/SSOT） | ssot 闸门误报 | 沿用 v2.1.0 动态覆盖与豁免口径（§0.6）；契约批次跑 openapi ssot 测试；发布五步独立提交 |
-| 7 | crest/xtb 与 g16 环境变量共存冲突（XTB_PATH 传递、worker env 构建） | 组合流 crest 任务启动失败或引错 xtb | A5 实测核验 XTB_PATH 拼写与生效路径（§2.3）；crest 任务 env 与 GAUSS_* 分域构建；可执行探测缺失提交即拒（503） |
+| 7 | crest/xtb 与 g16 环境变量共存冲突（XTB_PATH 传递、worker env 构建） | 组合流 crest 任务启动失败或引错 xtb | **已实测落定（A5，2026-10-12）**：crest 3.0.2 内嵌 tblite 引擎、XTB_PATH 不消费——无需注入、与 GAUSS_* 天然零冲突（§2.3）；crest 任务 env 与 GAUSS_* 分域构建保留为实现纪律；可执行探测缺失提交即拒（503） |
 | 8 | HQ 隐式重跑（worker 失联 crash_limit 自动重排 / journal 恢复重提交）绕过物化钩子，二次尝试以被 G16 重写的 dep chk 为起点（%Chk 续用形态） | 链式/resume 执行从污染状态静默重启，结果错误或连环失败 | 重入语义定稿（§2.1/§8 决策点 7）：含依赖执行禁用 HQ 内部重试（失联即 failed、显式重跑重新物化）；journal 重跑者对账取消+新执行 id 重派发；B7/B8 用例与 test_materialize/test_dispatch_deps 覆盖；crash_limit 不支持 per-job 时按决策点 7 三分支落位（b 改 `crates/` 或 c 退守对账拦截）。**失效模式登记**：若重跑者识别落入 120s 容差盲区（S1 静默接管），取消+重派不触发、污染 dep chk 直接成为二次起点且零可观测——触发判据独立信号/保守处置随 A4 定案（§2.1、决策点 7），B8 含盲区边界用例；盲区消除前该残差风险在案 |
 | 9 | crest 长跑任务无进度/停滞信号（无增量解析、停滞告警不适用——§2.3），hung 不可观测 | 组合流体验受损、席位占用无感知 | 组合流对话框与文档提示 crest 任务可配墙钟上限（Task.time_limit 既有机制，roadmap §2.6，默认 0 不限制、按需设置）；execution.monitor（CPU/内存）照常可作人工判据；crest 最小进度提取列为后续按需观察项 |
 | 10 | 链式物化复制语义放大磁盘占用（多下游各持 dep chk 副本 + 上游保留期 chk 并存） | 工作区占用随链深与队列数上升 | dep 副本属本执行目录产物、随执行目录清理规则同生命周期；空间占用统计与阈值告警（M3 B12）提供可见性（超阈仅警告）；上游 chk 到期清理不影响下游已物化副本（自持）；手动清理沿用 M1 历史页入口 |
