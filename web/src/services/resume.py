@@ -96,12 +96,13 @@ def _opt_restart_token(tok: str) -> str:
 
     opt → Opt=Restart；opt=X → Opt=(Restart,X)；opt=(a,b) →
     Opt=(Restart,a,b)。已含 Restart 项不重复注入（选项大小写不敏感
-    比对）；裸括号形态 Opt(...) 与取值形态 opt=... 同视；括号残缺按
-    裸 opt 处理（语义变化在弹窗 diff 可见）。"""
+    比对）；裸括号形态 Opt(...) 与取值形态 opt=... 同视；括号残缺
+    （只有一侧括号）按裸 opt 处理、产出合法 Opt=Restart（语义变化在
+    弹窗 diff 可见），不复制残缺括号产出 G16 文法非法的 route。"""
     inner = ""
     if "(" in tok and ")" in tok:
         inner = tok[tok.index("(") + 1:tok.rindex(")")]
-    elif "=" in tok:
+    elif "=" in tok and "(" not in tok and ")" not in tok:
         inner = tok.partition("=")[2].strip()
     items = [s.strip() for s in inner.split(",") if s.strip()]
     if not any(s.lower() == "restart" for s in items):

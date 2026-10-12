@@ -346,3 +346,10 @@ def test_opt_atomic_options_preserved(tmp_path):
     assert "Opt=(Restart,ts)" in preview_resume(eid)["input_diff"]
     _, eid = _mk_source("#p Opt=Restart b3lyp/6-31g(d)")
     assert "Opt=Restart" in preview_resume(eid)["input_diff"]
+    # 括号残缺按裸 opt 处理（产出合法 Opt=Restart，不复制残缺括号）
+    _, eid = _mk_source("#p opt=(ts b3lyp/6-31g(d)")
+    diff = preview_resume(eid)["input_diff"]
+    assert "Opt=Restart" in diff and "Opt=(Restart,(ts)" not in diff
+    _, eid = _mk_source("#p opt=ts) hf/6-31g(d)")
+    diff = preview_resume(eid)["input_diff"]
+    assert "Opt=Restart" in diff and "Opt=(Restart,ts))" not in diff
