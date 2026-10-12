@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T19:40+0800",
+  "updated": "2026-10-12T19:15+0800",
   "latest_released_version": "3.0.2",
   "unreleased": [
     {
@@ -134,11 +134,18 @@
       "summary": "resume preview 契约对齐（二轮独立复核 N2/N3）：probe 无资产等探针未执行态恒返回对象 {formchk_ok:false, reason:no_resume_asset}（原返回 null、与 ResumeProbe 非空对象 schema 不符，openapi-core 实测报 InvalidData），ResumeProbe.reason 描述扩至无资产/归档态；preview/resume 两端点描述补 succeeded 条目 404 无续跑入口口径（重跑由「重新排队」承载）与 ineligible 恒 200 边界；前后端契约生成物再生",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "C5 队列依赖 UI（m4-plan §4.9）：队列编辑框成员行「接续前置 chk」勾选——保存时序先经候选分块编辑端点向前置成员写入 %OldChk=@task:<id> 只读接续行再建队（DAG 校验读输入放行/拒绝），校验失败回滚写盘零残留；DAG 校验错误逐成员内联提示（details.cycle/task_id/task_ids 映射成员行红描边+错误清单，行高恒定不破坏拖拽量测；重排不改既有 id 引用）；待执行席位成员子表窗口停等图注（wait_reason 覆盖措辞「等依赖/等资源」+title 完整说明，依赖优先序由后端落字段前端只渲染）；test_error_codes 前端分支白名单登记 DEPENDENCY_CYCLE/INVALID_MEMBERS 两码",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M4 工作流（m4-plan，目标版本 3.1.0）",
-    "note": "A/B 批次执行中：自 A4 契约 diff 起步，按 §1 提交序列逐任务落库"
+    "note": "C 批次执行中：C5 已落库（2026-10-12），按 §1 提交序列续行 C6→C7"
   },
   "next_steps": [
     "A4 契约 diff（openapi/mapping/sse + roadmap §7.1 回填）→ A5 设计定稿（crest 实测锚点 + fixtures）→ B6–B11 后端实现",
