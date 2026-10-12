@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T22:50+0800",
+  "updated": "2026-10-13T00:35+0800",
   "latest_released_version": "3.0.2",
   "unreleased": [
     {
@@ -232,14 +232,42 @@
       "summary": "UI 分隔符圆点改顿号（P3-11/P3-12 约定违例收口，C 阶段范围两处）：WorkflowDrawer 组合流元信息行与 EnergyTable 零点漂移标注（存量违例 QueuesView/ExecutionsView/PendingView/BlockEditor/CandidatesView 另批统一收口）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复窗口停等图注永不及 UI（D3 走查缺陷①）：wait_reasons 逐 tick 重算但 pending.snapshot 推送仅挂席位增删，停等原因的出现与解除均不触发推送（REST 直读可见而待执行页成员子表恒显「等待」），advance 改包装层按 last_wait_reasons 差异推送——原因出现、解除与窗口满解除均推、稳定轮次不重推；新增 test_wait_reason_change_pushes_snapshot（变化推/稳定不重推/窗口满解除推）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复勾选跳过链队列收束悬挂（D3 走查缺陷②）：传递 skipped 为本地落库、无 HQ 终态事件，_settle_queue_seat 仅挂 _on_terminal，前驱 failed 后传递 skipped 全部落齐而队列永停 executing、席位不释放（违反 DoD 5 队列收束不死锁；单测手工结算调用曾掩盖生产缺失）；advance 收集本轮 gate settle 队列并在主体结束后逐队追加幂等结算，test_skipped_propagates_transitively 去除手工结算调用并增席位释放断言",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "web",
+      "summary": "修复能量表 g16 行能量恒空（D3 走查缺陷③）：_latest_analysis 原按扁平 summary 读 analysis.json，B1 落盘 SSOT 为 result.summary 嵌套（method 在 result 层），真实管道队列端点与 workflow 聚合 g16 行能量与方法名全空；_g16_row 改按嵌套形状读取，test_workflow_crest 夹具同步改 SSOT 形状（扁平夹具失真曾致缺陷逃逸全部闸门）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "docs",
+      "summary": "落档 M4 D3 验收走查记录（docs/plans/m4-acceptance.md）：真机 g16 + crest 3.0.2 全链路九条走查留痕（依赖链三段与续用形态/依赖校验错误码矩阵/失败联动两分支/哈希跳过溯源与上游重跑传导/断点续跑 opt/续跑 sp-freq 与 ineligible/组合流/可执行缺失 503/闸门）与三缺陷随查随修的归因、修复、复验记录，全部通过",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M4 工作流（m4-plan，目标版本 3.1.0）",
-    "note": "C 批次审查整改已落库（2026-10-12，P1×3/P2×3/P3×4+2 处约定违例；P3-10 队列编辑取消无未保存确认属可接受设计登记备查）：C 批次收口待 D3 端到端走查"
+    "note": "D3 端到端走查完成（2026-10-12，真机 g16+crest 3.0.2 九条全过，记录落档 docs/plans/m4-acceptance.md）；三缺陷随查随修已落库（停等图注推送/跳过链收束悬挂/能量表取数形状）——M4 收口待按 changelog-spec §1.6 冻结发布"
   },
   "next_steps": [
-    "A4 契约 diff（openapi/mapping/sse + roadmap §7.1 回填）→ A5 设计定稿（crest 实测锚点 + fixtures）→ B6–B11 后端实现",
+    "D 阶段收口：C 批次整改与 D3 走查三缺陷修复已落库、九条走查全过（m4-acceptance.md），确认 unreleased 完整后按 changelog-spec §1.6 冻结发布 v3.1.0",
     "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"

@@ -22,6 +22,7 @@
 - 【api】Execution 契约增 kind 冗余字段（M4 C7 契约增量，unreleased 期零漂移）：任务类型 g16|crest 注入运行视图与历史条目（HistoryEntry 为其超集自动继承），响应时按 task_id 反查任务注入、执行表不落列（与 filename 写入时冗余不同源，口径随字段描述登记），供前端 crest 任务行 kind 徽标与「无增量解析」占位渲染；前后端契约生成物再生（models.py/contract.ts）
 - 【web】执行与历史视图透传任务 kind（M4 C7 前置）：/executions 列表与详情 _attach_kind 反查注入、history entry_shape 同源透传、system.snapshot executions_running 快照行同口径（任务已删除缺省 g16 兜底）；test_history_api 增 kind 透传用例（g16 缺省/crest 透传/契约 schema 断言）
 - 【frontend】C7 组合流对话框与能量表（m4-plan §4.9）：候选行「组合流」入口一键提交对话框（crest 核数默认 link0_default_nproc/top N∈[2,10] 前端兜底/精修模板 route+可选 Link0；前置检查 503 CREST_EXECUTABLE_MISSING/409 满员零副作用/422 形态失效逐一映射文案）；WorkflowDrawer 进度面板（GET /workflows 列表恢复路径、SSE history.appended 驱动增量刷新、四态中文徽标、refine_queue_pending 满员「可手动提交」提示、EnergyTable 后端聚合能量表混排——crest 行相对 kJ/mol+g16 行双单位、部分完成态「随完成进度重算」标注）；队列详情「能量表」入口（GET /queues/{id}/energy-summary，纯 g16 队列）；crest 任务行展示（执行中页 kind 徽标+「无增量解析」占位非空白非报错+monitor 照常、历史页任务列徽标，events store kind 合并透传）；test_error_codes 白名单登记 CREST_EXECUTABLE_MISSING/WORKFLOW_STATE_INVALID
+- 【docs】落档 M4 D3 验收走查记录（docs/plans/m4-acceptance.md）：真机 g16 + crest 3.0.2 全链路九条走查留痕（依赖链三段与续用形态/依赖校验错误码矩阵/失败联动两分支/哈希跳过溯源与上游重跑传导/断点续跑 opt/续跑 sp-freq 与 ineligible/组合流/可执行缺失 503/闸门）与三缺陷随查随修的归因、修复、复验记录，全部通过
 
 ### 变更
 
@@ -45,6 +46,9 @@
 - 【frontend】展开态数据增量刷新两处（P3-8/P3-9 整改）：QueuesView 能量表面板随 history.appended 增量重取（原需收起再展开）；HistoryView 抽屉详情随历史事件与续跑确认同步重取（resumed_by 派生只读随事件续新，原需重开抽屉可见）
 - 【frontend】组合流对话框 nproc/route 前端校验（P3-7 整改）：crest 核数正整数、精修模板 route 非空前端兜底（后端 422 同判），越界红描边与文案提示、打开重置校验态
 - 【frontend】UI 分隔符圆点改顿号（P3-11/P3-12 约定违例收口，C 阶段范围两处）：WorkflowDrawer 组合流元信息行与 EnergyTable 零点漂移标注（存量违例 QueuesView/ExecutionsView/PendingView/BlockEditor/CandidatesView 另批统一收口）
+- 【web】修复窗口停等图注永不及 UI（D3 走查缺陷①）：wait_reasons 逐 tick 重算但 pending.snapshot 推送仅挂席位增删，停等原因的出现与解除均不触发推送（REST 直读可见而待执行页成员子表恒显「等待」），advance 改包装层按 last_wait_reasons 差异推送——原因出现、解除与窗口满解除均推、稳定轮次不重推；新增 test_wait_reason_change_pushes_snapshot（变化推/稳定不重推/窗口满解除推）
+- 【web】修复勾选跳过链队列收束悬挂（D3 走查缺陷②）：传递 skipped 为本地落库、无 HQ 终态事件，_settle_queue_seat 仅挂 _on_terminal，前驱 failed 后传递 skipped 全部落齐而队列永停 executing、席位不释放（违反 DoD 5 队列收束不死锁；单测手工结算调用曾掩盖生产缺失）；advance 收集本轮 gate settle 队列并在主体结束后逐队追加幂等结算，test_skipped_propagates_transitively 去除手工结算调用并增席位释放断言
+- 【web】修复能量表 g16 行能量恒空（D3 走查缺陷③）：_latest_analysis 原按扁平 summary 读 analysis.json，B1 落盘 SSOT 为 result.summary 嵌套（method 在 result 层），真实管道队列端点与 workflow 聚合 g16 行能量与方法名全空；_g16_row 改按嵌套形状读取，test_workflow_crest 夹具同步改 SSOT 形状（扁平夹具失真曾致缺陷逃逸全部闸门）
 
 ## v3.0.2（2026-10-12T09:42+0800 发布，patch）
 
