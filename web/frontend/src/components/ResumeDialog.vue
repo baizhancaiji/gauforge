@@ -43,10 +43,18 @@ async function loadPreview() {
   const e = props.entry;
   if (!e) return;
   loading.value = true;
-  const { data } = await client.POST("/history/{id}/resume/preview", {
+  error.value = null;
+  const { data, error: err } = await client.POST("/history/{id}/resume/preview", {
     params: { path: { id: e.id } },
   });
   loading.value = false;
+  if (err) {
+    // 预览失败不静默（原缺陷：error 被解构丢弃，弹窗只剩 origin 行）
+    const body = err as unknown as { error?: { message?: string } };
+    error.value = `探针预览获取失败 — ${body.error?.message ?? "请关闭后重试"}`;
+    preview.value = null;
+    return;
+  }
   preview.value = data ?? null;
 }
 
