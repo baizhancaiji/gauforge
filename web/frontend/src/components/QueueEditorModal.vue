@@ -98,13 +98,17 @@ const done = ref(false);
 /** per-member 勾选状态：打开对话框时拉取成员预览初始化。
  *  original=写盘前基线（DAG 校验失败回滚用）；initTarget=打开时已含的
  *  %OldChk=@task:<前驱> 引用目标（按加载时顺序判定，重排不重算——
- *  重排不改既有 id 引用，仅新写入按保存时位置取前驱）。 */
+ *  重排不改既有 id 引用，仅勾选动作过的成员按保存时位置写入）；
+ *  dirty=本会话勾选动作标记（uncheck→重排→recheck 等序列以动作为准，
+ *  不以「checked 与初值相等」判定——否则重排后复勾会跳过持久化，
+ *  UI title 显示新前驱而文件引用残留旧前驱）。 */
 interface LinkState {
   original: string[];
   baseline: string[];
   initTarget: number | null;
   checked: boolean;
-  /** 预览不可达（如输入解析失败）：不渲染勾选 */
+  dirty: boolean;
+  /** 预览不可达（如输入解析失败）：不渲染可用勾选（禁用+提示） */
   available: boolean;
 }
 const linkStates = ref<Map<number, LinkState>>(new Map());
@@ -114,13 +118,24 @@ const depErrors = ref<Map<number, string>>(new Map());
 
 const linkEditable = computed(() => !readonly.value && !memberOnly.value && !done.value);
 
-/** 成员行勾选框 title：接续当前序列前置成员（保存时按位置生成引用）。 */
+/** 成员行勾选框 title：接续当前序列前置成员（保存时按位置生成引用）；
+ *  预览不可达（available=false）时明确提示不可用原因。 */
 function linkTitle(i: number): string {
+  const m = members.value[i];
+  const st = m ? linkStates.value.get(m.id) : undefined;
+  if (linksReady.value && st && !st.available) {
+    return "成员输入预览不可用（解析失败或形态锁定）— 接续勾选不可用";
+  }
   const prev = members.value[i - 1];
   return prev
     ? `接续前置成员 ${fmtTaskId(prev.id)} 的 chk（写入 %OldChk=@task:${prev.id}，只读接续）`
     : "接续前置 chk";
 }
+
+const linkState = (i: number) => {
+  const m = members.value[i];
+  return m ? linkStates.value.get(m.id) : undefined;
+};
 
 /** 前驱是否为 crest 任务不可行——crest 不入队（B6 校验），勾选无需特判；
  *  单成员队列无前驱：首行不渲染勾选框。 */
@@ -153,6 +168,7 @@ async function loadLinkStates() {
       baseline: [...(lines ?? [])],
       initTarget: init && prevId != null ? prevId : null,
       checked: init,
+      dirty: false,
       available: lines != null,
     });
   });
@@ -165,23 +181,25 @@ function toggleLink(i: number) {
   const st = m ? linkStates.value.get(m.id) : undefined;
   if (!st?.available) return;
   st.checked = !st.checked;
+  st.dirty = true; // 勾选动作标记：保存按动作判定，非「与初值相等」
   depErrors.value.delete(m.id); // 勾选变更即解除该行旧错误标注
 }
 
-/** 勾选状态有变更的成员写入 Link0 引用行（先于建队——DAG 校验读输入文件，
- *  m4-plan §4.9 C5 落盘时序）。失败抛错由调用方汇总；成功则同步 baseline。 */
+/** 勾选动作过的成员写入 Link0 引用行（先于建队——DAG 校验读输入文件，
+ *  m4-plan §4.9 C5 落盘时序）。写入按保存时位置取前驱（重排后复勾落新
+ *  前驱、纯重排不动既有引用）；内容与基线一致则不产生写请求。
+ *  失败抛错由调用方汇总；成功则同步 baseline。 */
 async function persistLinkChanges(): Promise<void> {
   const ids = members.value.map((m) => m.id);
   for (let i = 0; i < members.value.length; i++) {
     const m = members.value[i];
     const st = m ? linkStates.value.get(m.id) : undefined;
-    if (!st?.available) continue;
-    const initChecked = st.initTarget != null;
-    if (st.checked === initChecked) continue;
+    if (!st?.available || !st.dirty) continue;
     const prevId = i > 0 ? ids[i - 1] : null;
     let lines = [...st.baseline];
     if (st.initTarget != null) lines = removeOldChkTaskRef(lines, st.initTarget);
     if (st.checked && prevId != null) lines.push(`%OldChk=@task:${prevId}`);
+    if (JSON.stringify(lines) === JSON.stringify(st.baseline)) continue;
     const { error: e } = await client.PUT("/candidates/{id}/blocks/{section}", {
       params: { path: { id: m.id, section: "link0" } },
       body: { lines },
@@ -472,11 +490,13 @@ function tryClose() {
             <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
             <!-- 接续前置 chk（m4-plan §4.9 C5）：勾选=对前置成员写入
                  %OldChk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
-                 首成员无前驱不渲染；pointerdown.stop 防拖拽误触 -->
+                 首成员无前驱不渲染；预览不可达（编辑态成员锁定/解析失败）
+                 禁用并提示——不静默：原生勾选视觉态曾掩盖持久化失效；
+                 pointerdown.stop 防拖拽误触 -->
             <label
               v-if="i > 0 && linkEditable"
               class="m-link"
-              :class="{ 'm-link--disabled': !linksReady }"
+              :class="{ 'm-link--disabled': !linksReady || !linkState(i)?.available }"
               :title="linkTitle(i)"
               @pointerdown.stop
               @click.stop
@@ -484,7 +504,7 @@ function tryClose() {
               <input
                 class="ck"
                 type="checkbox"
-                :disabled="!linksReady || busy"
+                :disabled="!linksReady || busy || !linkState(i)?.available"
                 :checked="linkStates.get(m.id)?.checked ?? false"
                 @change="toggleLink(i)"
               />
