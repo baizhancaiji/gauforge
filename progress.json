@@ -43,6 +43,13 @@
       "summary": "B6 依赖模型与 DAG 校验：Link0 符号引用解析器（@task:<id>/@exec:<执行id> 两形态与文法残缺判定），队列创建/PATCH/提交三时点静态校验（crest 任务不入队 INVALID_MEMBERS 复用、移除被依赖成员拒绝 details 注明被谁依赖、@task 可达、依赖图无环含自环 DEPENDENCY_CYCLE、溯源 chk 已清理 CHK_SOURCE_MISSING 拒绝并提示重跑上游）与单任务席位载体校验（行内提交/历史重新排队 @task: 一律拒绝、@exec 三点校验：存在/终态/chk 溯源），test_error_codes 全集 29→35 同步；迁移 v4 tasks 加列 kind（g16|crest 默认 g16 CHECK 约束），迁移测试版本断言 3→4 并补 kind 用例",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "rust",
+      "summary": "HTTP 提交参数支持 per-job 重试上限（crash_limit）：0=NeverRestart 禁用内部重试、n>0=MaxCrashes(n)、缺省=server 默认 MaxCrashes(5) 行为零变化（serde default），为 M4 重入语义定案落位（决策点 7 分支 b：含物化依赖的执行提交时禁用 HQ 内部重试，worker 失联即终态 failed、显式重跑经派发器重新物化）；实测核验 HTTP payload 原硬编码 CrashLimit::default() 不支持 per-job 设定，改动限于提交结构体加字段+server 应用+HTTP 层透传、不触调度核心；映射单测三分支覆盖，cargo test lib 212 通过（check_doc_path_on_disk 为上游文档站路径检查、本项目 docs 结构切割后既有失败与本次无关），hq release 产物重建",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
