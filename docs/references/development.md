@@ -125,11 +125,43 @@ uv run python scripts/validate_progress.py     # 进度两文件校验
 
 ## 6. 隔离冒烟实例
 
-验证改动而**不污染真实工作区**（`~/g16web`）时，用独立工作区 + 独立端口 +关引擎起临时实例：
+验证改动而**不污染真实工作区**（`~/g16web`）时，用独立工作区 + 独立端口起
+临时实例。端口无法用环境变量覆盖（listen_port 属运行级设置），临时实例以内联
+uvicorn 指定；用完 `kill` 该进程即可，临时工作区目录可随时整体删除。
+
+### 6.1 纯界面/契约冒烟（关引擎）
 
 ```bash
 G16WEB_HOME=/tmp/g16web-dev G16WEB_ENGINE=0 \
   uv run python -c "from web.src.main import app; import uvicorn; uvicorn.run(app, host='127.0.0.1', port=8399)"
 ```
 
-端口无法用环境变量覆盖（listen_port 属运行级设置），临时实例以内联uvicorn 指定；用完 `kill` 该进程即可。临时工作区目录可随时整体删除。
+### 6.2 人工测试实例（引擎开，真实派发全链路）
+
+人工走全链路（提交 → HQ 派发 → g16/crest 真机执行 → 历史/组合流/能量表）
+时引擎须开（缺省即开），并**显式钉死 hq 内核**为仓库构建产物：
+
+```bash
+cargo build --release   # 派发链路测试前先确保新内核（见 §5 注意）
+G16WEB_HOME=/tmp/g16web-manual G16WEB_HQ_BIN="$PWD/target/release/hq" \
+  nohup uv run python -c "from web.src.main import app; import uvicorn; uvicorn.run(app, host='127.0.0.1', port=8398)" >>/tmp/g16web-manual.log 2>&1 &
+```
+
+- **为何钉 `G16WEB_HQ_BIN`**：hq 定位顺序为 环境变量 > PATH > 仓库产物；
+  PATH 上残留的旧版上游二进制（如 `~/opt/hyperqueue/hq`）会抢先命中——
+  M4 起 per-job crash_limit 等提交参数仅新内核支持，旧内核下链式/续跑
+  执行会静默退回默认重试语义（m4-acceptance §0 实测踩坑）。凡触及派发
+  链路的测试一律显式指定。
+- 启动序列自动拉起（或接管已存活的）HQ server/worker（对账语义，见
+  §2.3）；停止 g16web 不杀 HQ 进程，下次启动自动复用。
+- 健康检查：`curl -s http://127.0.0.1:8398/api/v1/system/health`（返回
+  status/version/uptime）；日志续写在 `/tmp/g16web-manual.log`。
+- 停止：
+
+```bash
+PID=$(ss -ltnp | grep ':8398' | grep -oP 'pid=\K[0-9]+' | head -1); kill "$PID"
+```
+
+- 引擎相关运行级设置（并行窗口/待执行席位上限/g16_root/crest_root 等）
+  在 WebUI 设置页调整；真机资产缺省定位 `~/g16`、`~/opt/crest-3.0.2`，
+  无则派发时显式报错（不静默）。
