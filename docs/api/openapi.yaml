@@ -852,16 +852,21 @@ components:
       type: object
       description: >-
         POST /workflows/conformer-refinement 响应（受理即返回，crest 任务已入
-        待执行队列；前端由此取得 id 打开进度面板）
-      required: [workflow_id, state]
+        待执行队列；前端由此取得 workflow id 打开进度面板，crest 任务 id 与
+        席位 id 供待执行面板定位。crest_execution_id 属 GET /workflows/{id}
+        单点响应——提交时点 crest 尚未派发、提交响应不含该字段）
+      required: [workflow_id, state, crest_task_id, seat_id]
       properties:
         workflow_id:
           type: string
         state:
           $ref: '#/components/schemas/WorkflowState'
-        crest_execution_id:
+        crest_task_id:
           type: integer
-          nullable: true
+          description: crest 任务 id（已入待执行队列）
+        seat_id:
+          type: integer
+          description: crest 任务占用的待执行席位 id
 
     WorkflowList:
       type: object

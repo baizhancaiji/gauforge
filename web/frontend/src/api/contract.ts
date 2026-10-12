@@ -1296,11 +1296,14 @@ export interface components {
                 link0?: string[] | null;
             };
         };
-        /** @description POST /workflows/conformer-refinement 响应（受理即返回，crest 任务已入 待执行队列；前端由此取得 id 打开进度面板） */
+        /** @description POST /workflows/conformer-refinement 响应（受理即返回，crest 任务已入 待执行队列；前端由此取得 workflow id 打开进度面板，crest 任务 id 与 席位 id 供待执行面板定位。crest_execution_id 属 GET /workflows/{id} 单点响应——提交时点 crest 尚未派发、提交响应不含该字段） */
         ConformerRefinementResponse: {
             workflow_id: string;
             state: components["schemas"]["WorkflowState"];
-            crest_execution_id?: number | null;
+            /** @description crest 任务 id（已入待执行队列） */
+            crest_task_id: number;
+            /** @description crest 任务占用的待执行席位 id */
+            seat_id: number;
         };
         /** @description GET /workflows?limit=20 响应（按 updated_at 倒序；页面刷新后 找回组合流、refine_queue_pending 满员提示回看的恢复路径） */
         WorkflowList: {

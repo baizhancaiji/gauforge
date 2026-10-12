@@ -25,7 +25,11 @@ router = APIRouter(tags=["workflow"])
 def submit_conformer_refinement(payload: dict) -> dict:
     out = workflows_svc.submit_conformer_refinement(payload)
     get_state().emit("pending.snapshot", pending_svc.snapshot())
-    return {"workflow_id": out["workflow_id"], "state": out["state"]}
+    # 响应契约 = openapi ConformerRefinementResponse 四字段（crest 任务 id
+    # 与席位 id 供待执行面板定位；crest_execution_id 属 GET 单点，
+    # 提交时点 crest 尚未派发、恒不存在）
+    return {"workflow_id": out["workflow_id"], "state": out["state"],
+            "crest_task_id": out["crest_task_id"], "seat_id": out["seat_id"]}
 
 
 @router.get("/workflows")

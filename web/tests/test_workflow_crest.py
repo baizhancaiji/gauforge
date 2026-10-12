@@ -23,7 +23,7 @@ from web.src.errors import ApiError
 from web.src.services.candidates import import_files
 from web.src.services import workflows as wf_svc
 from web.src.store import executions, queues, seats, settings, tasks, workflows
-from web.src.routers.workflows import submit_conformer_refinement  # noqa: F401（契约形状路由层测试随 B11）
+from web.src.routers.workflows import submit_conformer_refinement
 
 CAND = ("%chk=c.chk\n%nprocshared=2\n"
         "#p opt b3lyp/6-31g(d)\n\n乙醇\n\n0 1\n"
@@ -432,3 +432,13 @@ def test_workflow_aggregation_after_queue_delete(tmp_path):
     assert view["state"] == "refining"  # 不设放弃终态
     kinds = [r["kind"] for r in view["energy_summary"]["rows"]]
     assert kinds == ["crest"]  # 仅 crest 行，结果仍可查
+
+
+def test_submit_route_response_contract(tmp_path):
+    """P3：提交响应 = 契约 ConformerRefinementResponse 四字段（与
+    openapi/计划 §2.3 三方对齐；crest_execution_id 属 GET 单点响应）。"""
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    out = submit_conformer_refinement(_payload(cid))
+    assert set(out) == {"workflow_id", "state", "crest_task_id", "seat_id"}
+    assert out["state"] == "crest_running"
