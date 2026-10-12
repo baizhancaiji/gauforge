@@ -1,7 +1,15 @@
 {
-  "updated": "2026-10-13T00:42+0800",
+  "updated": "2026-10-13T01:04+0800",
   "latest_released_version": "3.1.0",
-  "unreleased": [],
+  "unreleased": [
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "拆分 development.md §6 为纯界面冒烟与人工测试实例两口径，新增引擎开+G16WEB_HQ_BIN 钉死仓库内核的拉起命令与 PATH 旧版 hq 抢占踩坑注记",
+      "breaking": false,
+      "migration": null
+    }
+  ],
   "in_progress": {
     "task": "M4 工作流（m4-plan，目标版本 3.1.0）——3.1.0 已发布",
     "note": "M4 已发布收口（v3.1.0 冻结于 2026-10-13T00:42+0800：37 条变更随版发布，added 17/changed 1/fixed 19 判 minor，tag v3.1.0 本地落位待推送授权）；无进行中任务，后续按 next_steps 与 roadmap 推进"
