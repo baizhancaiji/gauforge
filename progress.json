@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T09:42+0800",
+  "updated": "2026-10-12T16:20+0800",
   "latest_released_version": "3.0.2",
   "unreleased": [
     {
@@ -76,6 +76,13 @@
       "type": "added",
       "scope": "web",
       "summary": "B10 CREST 任务类型与组合流：组合流提交端点（POST /workflows/conformer-refinement 前置检查序=可执行探测 503 CREST_EXECUTABLE_MISSING→席位满员 409 整体拒绝零副作用→来源候选形态 422 WORKFLOW_STATE_INVALID+top_n∈[2,10] 422），crest 任务派发适配（程序=<crest_root>/crest+crest_input.xyz 输入物化+命令行 -T 线程参数+资源仅 cpus mem 不声明+环境无 GAUSS_*/XTB_PATH，不进 cclib 管道无 formchk/analysis、execution.progress 与停滞告警豁免），ensemble 最小提取器（锁 crest 3.0.2 实测格式 crest_conformers.xyz 注释行 Hartree 锚点+crest.energies kcal/mol 交叉验证哨兵、升序规约、锚文件落盘幂等），终态钩子链（提取→构象数边界 <2 记 failed 不生成队列→建精修队列 min(top_n,实际构象数) 判重不重建→自动提交满员保留 unsubmitted+refine_queue_pending，crest 离席为链尾满员判定含自身席位），程序化输入生成（模板坐标替换唯一场景+候选分子节提取+必过既有核验不绕行），迁移 v6（tasks.workflow_id/crest_nproc+workflows.top_n），启动对账 workflow 重推幂等（锚判重+队列判重+crest 执行反查）；单测 16 用例（前置检查序/派发适配/提取器 fixtures 回归与交叉验证/钩子链边界与幂等/对账重推）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "B11 能量表汇总与 workflow 查询端点（三端点）：GET /queues/{id}/energy-summary（队列成员恒 g16，行取 B1 解析末次 SCF 双单位——eV 透传解析层原值与 B1 同源不二次换算、method 摘要）、GET /workflows/{id}（状态 + energy_summary 跨容器后端聚合：crest 行 ensemble 最低构象代表 source=ensemble + 精修队列 g16 行混排，队列删除/放弃后停留 refining 仅 crest 行结果仍可查）、GET /workflows?limit=20 列表（updated_at 倒序单点同形——页面刷新恢复路径）；relative_kJ_mol 零点=查询范围最低能量（HARTREE_KJ_MOL=2625.4996 换算单点、物理基准单测断言），部分完成态零点随行集重算（接受漂移、未成功成员 source=none 相对值 null）；聚合在后端完成前端不拼两段数据；单测 4 用例（队列零点/部分完成态重算/workflow 混排与列表同形/队列删除后聚合）随 test_workflow_crest（B10/B11 同文件口径）",
       "breaking": false,
       "migration": null
     }
