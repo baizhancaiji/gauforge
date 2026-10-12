@@ -434,7 +434,7 @@ def test_workflow_aggregation_after_queue_delete(tmp_path):
     assert kinds == ["crest"]  # 仅 crest 行，结果仍可查
 
 
-# ---------------- 缺陷整改（P1）：completed 联动 ----------------
+# ---------------- 缺陷整改（P1/P3/P4）：completed 联动/提交响应/孤儿回收 ----------------
 
 def _succeed_member(task_id: int) -> int:
     """成员成功执行行（无解析产物——completed 联动判定不依赖能量表）。"""
@@ -484,3 +484,23 @@ def test_submit_route_response_contract(tmp_path):
     out = submit_conformer_refinement(_payload(cid))
     assert set(out) == {"workflow_id", "state", "crest_task_id", "seat_id"}
     assert out["state"] == "crest_running"
+
+
+def test_hook_orphan_cleanup_on_validate_failure(tmp_path):
+    """P4：建队中断（模板 link0 含 @task: 被成员校验拒绝）→ 半成品队列
+    与成员回收、refine_queue_id 不落——对账重推不复制孤儿队列。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wid = out["workflow_id"]
+    wf_svc.save_template(wid, "b3lyp/6-31g(d) opt",
+                         ["%OldChk=@task:99999"])  # 防御校验必拒的模板
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf = workflows().get(wid)
+    assert wf["refine_queue_id"] is None
+    assert wf["state"] == "crest_running"  # 钩子异常不阻断、保留重推入口
+    assert queues().list() == []  # 半成品队列已回收
+    # 修复模板后对账重推可干净建队（不复制孤儿）
+    wf_svc.save_template(wid, "b3lyp/6-31g(d) opt", None)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf2 = workflows().get(wid)
+    assert wf2["refine_queue_id"] is not None
+    assert len(tasks().list_queue_members(wf2["refine_queue_id"])) == 2

@@ -236,19 +236,27 @@ def _build_and_submit_refine_queue(dispatcher, wf: dict,
     qid = "R" + "".join(secrets.choice(ALPHABET) for _ in range(5))
     while queues().get(qid) is not None:
         qid = "R" + "".join(secrets.choice(ALPHABET) for _ in range(5))
-    queues().create(qid, name=f"精修 {wid}", skip_failed=False)
     member_ids: list[int] = []
-    for pos, conf in enumerate(ensemble["conformers"][:n]):
-        text = _refine_input(template["route"], template.get("link0"),
-                             charge_mult, conf["coords"],
-                             f"{title} #{pos + 1}")
-        tid = tasks().create_candidate(f"refine-{pos + 1:02d}.gjf",
-                                       "imported")
-        (default_inputs_dir() / str(tid)).write_text(text, encoding="utf-8")
-        verify_svc.verify_and_store(tid)  # 程序化输入必过既有核验（不绕行）
-        tasks().enqueue(tid, qid, pos)
-        member_ids.append(tid)
-    validate_queue_members(member_ids)  # 与提交核验链同源（防御）
+    try:
+        queues().create(qid, name=f"精修 {wid}", skip_failed=False)
+        for pos, conf in enumerate(ensemble["conformers"][:n]):
+            text = _refine_input(template["route"], template.get("link0"),
+                                 charge_mult, conf["coords"],
+                                 f"{title} #{pos + 1}")
+            tid = tasks().create_candidate(f"refine-{pos + 1:02d}.gjf",
+                                           "imported")
+            member_ids.append(tid)
+            (default_inputs_dir() / str(tid)).write_text(text,
+                                                         encoding="utf-8")
+            verify_svc.verify_and_store(tid)  # 程序化输入必过既有核验（不绕行）
+            tasks().enqueue(tid, qid, pos)
+        validate_queue_members(member_ids)  # 与提交核验链同源（防御）
+    except Exception:
+        # 建队中断回收（如模板 link0 含 @task: 被 validate_queue_members
+        # 拒绝）：refine_queue_id 未落、判重不生效，残留半成品会被对账
+        # 重推二次复制（孤儿队列+成员）——先回收再上抛
+        _discard_refine_draft(qid, member_ids)
+        raise
     workflows().set_refine_queue(wid, qid)
     dispatcher._emit("queues.changed", {"action": "created", "queue_id": qid})
     # ④ 自动提交（crest 仍占席：满员判定含 crest 自身席位）
@@ -268,6 +276,20 @@ def _build_and_submit_refine_queue(dispatcher, wf: dict,
     dispatcher._emit("queue.status", {"queue_id": qid,
                                       "from": "unsubmitted", "to": "submitted"})
     dispatcher._emit("pending.snapshot", None)
+
+
+def _discard_refine_draft(qid: str, member_ids: list[int]) -> None:
+    """建队中断回收：删成员任务行与输入副本、删队列行（不重建已存在
+    实体的对偶防线——半成品不残留）。单步回收失败仅记日志、不阻断原
+    异常上抛（对账按 refine_queue_id 未落重推兜底）。"""
+    for tid in member_ids:
+        try:
+            (default_inputs_dir() / str(tid)).unlink(missing_ok=True)
+            tasks().delete(tid)
+        except OSError as exc:
+            print(f"[workflow] 精修建队回收 task={tid} 失败：{exc}",
+                  file=sys.stderr)
+    queues().delete(qid)
 
 
 def _workflow_template(wid: str) -> dict:
