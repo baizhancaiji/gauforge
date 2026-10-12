@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.1.0（2026-10-13T00:42+0800 发布，minor）
+
 ### 新增
 
 - 【api】M4 A4 契约 diff（任务链依赖与 chk 传递定稿，关闭 roadmap §7 开放事项 1）：Link0 符号引用文法两形态（@task:<id> 同队列成员/@exec:<执行id> resume 专用，引用即依赖单一真相）与 DAG 校验规则、错误码全集 29→35（DEPENDENCY_CYCLE/DEPENDENCY_UNREACHABLE/CHK_SOURCE_MISSING/RESUME_NOT_ELIGIBLE/WORKFLOW_STATE_INVALID/CREST_EXECUTABLE_MISSING）、Task.kind（g16|crest）与 crest 不入队/无增量解析/停滞告警不适用契约承载、PendingSeat 成员停等原因字段（dependency/resource，依赖守卫先于资源检查）、断点续跑端点对（POST /history/{id}/resume/preview 恒 200 五态 ineligible + POST /history/{id}/resume 幂等重探/满员 409）与 HistoryEntry.resumed_from/resumed_by 关联字段、组合流端点（POST /workflows/conformer-refinement 前置检查序 503/409/422 + GET /workflows 列表 + GET /workflows/{id} 状态与能量表跨容器聚合）与 WorkflowState 状态机/refine_queue_pending 布尔、GET /queues/{id}/energy-summary 能量表（末次 SCF 双单位 + 相对 kJ/mol 零点=查询范围最低）、设置项 crest_root/xtb_root 登记、mapping 增行（55 操作）与 sse.md execution.progress/execution.stalled 两行 crest 不适用补注（无新增事件，全集维持 15 类），前后端契约生成物再生
