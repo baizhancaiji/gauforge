@@ -236,3 +236,39 @@ def test_exec_ref_validated_on_single_seat(ind):
     with pytest.raises(ApiError) as ei:
         submit_candidate(a, None)
     assert ei.value.code == "DEPENDENCY_UNREACHABLE"
+
+
+# ---------------- 序约束（审查 P1-3 整改：前向引用静态拒绝） ----------------
+
+def test_forward_reference_rejected(ind):
+    """前向引用拒绝：引用目标须在本成员序前列——保序停等派发下前向引用
+    永不满足（前驱不被派发→窗口停等死锁，恢复仅剩手动停止/移除成员），
+    静态校验同码 DEPENDENCY_UNREACHABLE、details 注明成员与引用。"""
+    a = _plain(ind, "a.gjf")
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n%nprocshared=2\n"), "b.gjf")
+    with pytest.raises(ApiError) as ei:
+        create_queue({"name": "fwd", "member_ids": [b, a],
+                      "skip_failed": False})
+    assert ei.value.code == "DEPENDENCY_UNREACHABLE"
+    assert ei.value.details["task_id"] == b
+    assert ei.value.details["ref"] == f"@task:{a}"
+
+
+def test_backward_reference_passes(ind):
+    """序前列引用放行（既有合法链语义不回退）：引用目标在引用者之前。"""
+    a = _plain(ind, "a.gjf")
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n%nprocshared=2\n"), "b.gjf")
+    q = create_queue({"name": "bwd", "member_ids": [a, b],
+                      "skip_failed": False})
+    assert q["member_ids"] == [a, b]
+
+
+def test_patch_reorder_introducing_forward_ref_rejected(ind):
+    """PATCH 重排引入前向引用拒绝（编辑既有队列重排场景，同码拒绝）。"""
+    a = _plain(ind, "a.gjf")
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n%nprocshared=2\n"), "b.gjf")
+    q = create_queue({"name": "ro", "member_ids": [a, b],
+                      "skip_failed": False})
+    with pytest.raises(ApiError) as ei:
+        queues_svc.patch_queue(q["id"], {"member_ids": [b, a]})
+    assert ei.value.code == "DEPENDENCY_UNREACHABLE"

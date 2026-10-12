@@ -184,7 +184,9 @@ def validate_queue_members(member_ids: list[int], *,
     现存成员（跨队列/悬引用/自引用同码 DEPENDENCY_UNREACHABLE）；
     ⑤ 依赖图无环（含自环，DEPENDENCY_CYCLE，details 携带环路径）；
     ⑥ 溯源 chk 存在性——上游已有成功执行但其 chk 已被清理 →
-    CHK_SOURCE_MISSING（details 注明缺失的执行 id，提示重跑上游恢复）。
+    CHK_SOURCE_MISSING（details 注明缺失的执行 id，提示重跑上游恢复）；
+    ⑦ 方向——引用目标须在本成员序前列（前向引用在保序停等派发下永不
+    满足，前驱不被派发即窗口死锁，DEPENDENCY_UNREACHABLE 拒绝）。
     """
     rows = {t["id"]: t for t in (tasks().get(t) for t in member_ids)
             if t is not None}
@@ -223,7 +225,8 @@ def validate_queue_members(member_ids: list[int], *,
                     "成员被下游依赖，不可移除（先解除下游引用再操作）",
                     {"removed": sorted(removed_set),
                      "depended_by": tid, "targets": hit})
-    # ④ 可达 + ⑤ 无环（邻接表仅收合法 task 引用；自引用=自环归 CYCLE）
+    # ④ 可达（邻接表仅收合法 task 引用；自引用=自环归 CYCLE）
+    pos = {tid: i for i, tid in enumerate(member_ids)}
     deps: dict[int, list[int]] = {}
     for tid, refs in refs_by.items():
         edges: list[int] = []
@@ -242,6 +245,17 @@ def validate_queue_members(member_ids: list[int], *,
             edges.append(ref["target"])
         deps[tid] = edges
     _assert_acyclic(deps)
+    # ⑦ 方向：引用目标须在本成员序前列（前向引用静态拒绝）——置于无环
+    # 判定之后，环/自环错误码优先级不因序校验改变
+    for tid, refs in refs_by.items():
+        for ref in refs:
+            if ref["kind"] == "task" and pos[ref["target"]] > pos[tid]:
+                _err_unreachable(
+                    f"@task:{ref['target']} 位于本成员之后（前向引用）——"
+                    "保序派发下前驱不会被先行执行，依赖永不满足"
+                    "（调整队列顺序使被引用成员在前）",
+                    {"task_id": tid, "line": ref["line"],
+                     "ref": f"@task:{ref['target']}"})
     # ⑥ 溯源 chk 存在性（§2.1：上游无成功执行=依赖满足时必然有产出，
     # 放行；已有成功执行但 chk 已清理 → 明知物化必败的提交拒绝）
     for tid in member_ids:
