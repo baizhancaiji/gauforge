@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T19:15+0800",
+  "updated": "2026-10-12T19:55+0800",
   "latest_released_version": "3.0.2",
   "unreleased": [
     {
@@ -141,11 +141,18 @@
       "summary": "C5 队列依赖 UI（m4-plan §4.9）：队列编辑框成员行「接续前置 chk」勾选——保存时序先经候选分块编辑端点向前置成员写入 %OldChk=@task:<id> 只读接续行再建队（DAG 校验读输入放行/拒绝），校验失败回滚写盘零残留；DAG 校验错误逐成员内联提示（details.cycle/task_id/task_ids 映射成员行红描边+错误清单，行高恒定不破坏拖拽量测；重排不改既有 id 引用）；待执行席位成员子表窗口停等图注（wait_reason 覆盖措辞「等依赖/等资源」+title 完整说明，依赖优先序由后端落字段前端只渲染）；test_error_codes 前端分支白名单登记 DEPENDENCY_CYCLE/INVALID_MEMBERS 两码",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "C6 断点续跑对话框（m4-plan §4.9）：历史页 failed 未归档条目「从断点续跑」入口（skipped/归档/succeeded 不展示——§2.2 入口排除口径）；对话框两段式第一段渲染——preview 等待期「探针进行中」占位、eligible 展示探针结果/route 任务类型/注入清单（LINK0/ROUTE 载荷徽标）/input_diff 统一 diff 文本、freq 回落原样重跑琥珀明示（无注入无 diff）、ineligible 原因五态中文与确认禁用（零副作用）；确认调 POST /history/{id}/resume（422 RESUME_NOT_ELIGIBLE 复探失效与 409 满员弹窗内提示），成功注记「已创建续跑任务 #NNN（源自 #MMM）」；历史详情抽屉 resumed_from/resumed_by 双向关联字段（续跑自/已续跑）；test_error_codes 白名单登记 RESUME_NOT_ELIGIBLE",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
     "task": "M4 工作流（m4-plan，目标版本 3.1.0）",
-    "note": "C 批次执行中：C5 已落库（2026-10-12），按 §1 提交序列续行 C6→C7"
+    "note": "C 批次执行中：C5/C6 已落库（2026-10-12），按 §1 提交序列续行 C7"
   },
   "next_steps": [
     "A4 契约 diff（openapi/mapping/sse + roadmap §7.1 回填）→ A5 设计定稿（crest 实测锚点 + fixtures）→ B6–B11 后端实现",
