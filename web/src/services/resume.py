@@ -91,15 +91,35 @@ def _route_kind(text: str) -> str | None:
     return None
 
 
+def _opt_restart_token(tok: str) -> str:
+    """opt 项改写保留原子选项（§2.2 注入矩阵「Opt=Restart + 原选项」）：
+
+    opt → Opt=Restart；opt=X → Opt=(Restart,X)；opt=(a,b) →
+    Opt=(Restart,a,b)。已含 Restart 项不重复注入（选项大小写不敏感
+    比对）；裸括号形态 Opt(...) 与取值形态 opt=... 同视；括号残缺按
+    裸 opt 处理（语义变化在弹窗 diff 可见）。"""
+    inner = ""
+    if "(" in tok and ")" in tok:
+        inner = tok[tok.index("(") + 1:tok.rindex(")")]
+    elif "=" in tok:
+        inner = tok.partition("=")[2].strip()
+    items = [s.strip() for s in inner.split(",") if s.strip()]
+    if not any(s.lower() == "restart" for s in items):
+        items.insert(0, "Restart")
+    if items == ["Restart"]:
+        return "Opt=Restart"
+    return "Opt=(" + ",".join(items) + ")"
+
+
 def _rewrite_route_line(route_line: str, kind: str) -> str:
-    """route 行注入改写（优化行=opt 项改 Opt=Restart；单点行=追加
-    Guess=Read；freq 行不改写）。"""
+    """route 行注入改写（优化行=opt 项改 Opt=Restart 并保留原选项；
+    单点行=追加 Guess=Read；freq 行不改写）。"""
     if kind == "opt":
         tokens = route_line.split()
         out = []
         for tok in tokens:
             head = tok.lower().split("=", 1)[0].split("/", 1)[0]
-            out.append("Opt=Restart" if head == "opt" else tok)
+            out.append(_opt_restart_token(tok) if head == "opt" else tok)
         return " ".join(out)
     if kind == "scf":
         stripped = route_line.rstrip()

@@ -303,7 +303,7 @@ def test_resumed_by_derived_readonly(tmp_path):
     assert after["resumed_by"] == [new_rows[-1]["id"]]  # 派生反查命中
 
 
-# ---------------- 缺陷整改（P5）：入口设防 ----------------
+# ---------------- 缺陷整改（P5/P6）：入口设防与原选项保留 ----------------
 
 def test_succeeded_source_rejected(tmp_path):
     """succeeded 条目无续跑入口（preview/confirm 同口径 404 NOT_FOUND）：
@@ -328,3 +328,18 @@ def test_succeeded_source_rejected(tmp_path):
     with pytest.raises(ApiError) as ec:
         resume_from_checkpoint(eid)
     assert (ec.value.code, ec.value.http) == ("NOT_FOUND", 404)
+
+
+def test_opt_atomic_options_preserved(tmp_path):
+    """opt 变体原子选项保留（§2.2 注入矩阵「Opt=Restart + 原选项」）：
+    opt=(ts,calcfc) → Opt=(Restart,ts,calcfc)、opt=ts → Opt=(Restart,ts)、
+    Opt=Restart 幂等不重复注入。"""
+    _set_g16("ok", tmp_path)
+    _, eid = _mk_source("#p opt=(ts,calcfc) b3lyp/6-31g(d)")
+    out = preview_resume(eid)
+    assert "Opt=(Restart,ts,calcfc)" in out["input_diff"]
+    assert "calcfc" in out["input_diff"]  # 原子选项未丢失
+    _, eid = _mk_source("#p opt=ts hf/6-31g(d)")
+    assert "Opt=(Restart,ts)" in preview_resume(eid)["input_diff"]
+    _, eid = _mk_source("#p Opt=Restart b3lyp/6-31g(d)")
+    assert "Opt=Restart" in preview_resume(eid)["input_diff"]
