@@ -52,10 +52,13 @@ def entry_shape(row: dict, resumed_by: list[int] | None = None) -> dict:
     """HistoryEntry 序列化：bool 转换、派生 wall_time_s、chk_snapshot 缺省。
 
     resumed_from 透传库值（M4 续跑关联，无则 null）；resumed_by 为派生只读
-    （不入存储，调用方按 _resumed_by_map 反查传入，缺省空列表）。
+    （不入存储，调用方按 _resumed_by_map 反查传入，缺省空列表）；kind 冗余
+    自任务（M4 C7 crest 行徽标数据源，响应时反查注入、任务已删除缺省 g16）。
     """
+    t = tasks().get(row["task_id"])
     return {**row,
             "archived": bool(row.get("archived")),
+            "kind": (t or {}).get("kind") or "g16",
             "wall_time_s": _wall_time_s(row),
             "chk_snapshot": row.get("chk_snapshot")
             or {"protected": False, "location": None},

@@ -159,6 +159,27 @@ def test_history_detail_shape(home):
     assert_contract_schema(spec, "GET", "/history/{id}", 200, body)
 
 
+def test_history_and_executions_carry_kind(home):
+    """kind 冗余注入（M4 C7 crest 行徽标数据源）：历史与运行视图按任务
+    反查透传（crest 任务徽标 / g16 缺省）。FK 约束下执行行必对应现存
+    任务，「任务已删除」缺省分支为防御路径（_attach_kind/entry_shape
+    内 or g16 兜底），不在 FK 可达面。"""
+    eid, tid = seed_terminal("succeeded")
+    # g16 任务：kind 恒注入缺省值
+    body = client.get("/api/v1/history").json()
+    assert body["items"][0]["kind"] == "g16"
+    r = client.get("/api/v1/executions", params={"state": "succeeded"})
+    assert r.json()[0]["kind"] == "g16"
+    # crest 任务：set_crest_binding 置 kind 后两视图均透传 crest
+    tasks().set_crest_binding(tid, "WFTEST1", 4)
+    body = client.get("/api/v1/history").json()
+    assert body["items"][0]["kind"] == "crest"
+    r = client.get("/api/v1/executions", params={"state": "succeeded"})
+    assert r.json()[0]["kind"] == "crest"
+    assert client.get(f"/api/v1/executions/{eid}").json()["kind"] == "crest"
+    assert_contract_schema(spec, "GET", "/history", 200, body)
+
+
 def test_history_detail_running_is_404(home):
     eid = seed_running()
     r = client.get(f"/api/v1/history/{eid}")
