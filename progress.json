@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T18:20+0800",
+  "updated": "2026-10-12T19:40+0800",
   "latest_released_version": "3.0.2",
   "unreleased": [
     {
@@ -127,6 +127,13 @@
       "summary": "断点续跑 Opt= 变体原子选项保留（P6 整改）：opt=(ts,calcfc)→Opt=(Restart,ts,calcfc)、opt=X→Opt=(Restart,X)、已含 Restart 项不重复注入（大小写不敏感）、括号残缺按裸 opt——对齐 §2.2 注入矩阵「Opt=Restart + 原选项」语义",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "api",
+      "summary": "resume preview 契约对齐（二轮独立复核 N2/N3）：probe 无资产等探针未执行态恒返回对象 {formchk_ok:false, reason:no_resume_asset}（原返回 null、与 ResumeProbe 非空对象 schema 不符，openapi-core 实测报 InvalidData），ResumeProbe.reason 描述扩至无资产/归档态；preview/resume 两端点描述补 succeeded 条目 404 无续跑入口口径（重跑由「重新排队」承载）与 ineligible 恒 200 边界；前后端契约生成物再生",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
@@ -136,7 +143,8 @@
   "next_steps": [
     "A4 契约 diff（openapi/mapping/sse + roadmap §7.1 回填）→ A5 设计定稿（crest 实测锚点 + fixtures）→ B6–B11 后端实现",
     "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",
-    "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）"
+    "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
+    "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",

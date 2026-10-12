@@ -30,6 +30,7 @@
 - 【web】组合流终态钩子建队中断回收（P4 整改）：queues().create 至成员校验之间异常（如模板 link0 含 @task: 被 validate_queue_members 防御拒绝）时回收半成品队列、成员任务行与输入副本、refine_queue_id 不落——对账重推不复制孤儿队列，「不重建已存在实体」判重失效窗口消除
 - 【web】断点续跑入口对 succeeded 条目显式设防（P5 整改）：preview/confirm 同口径 404 无续跑入口（404 NOT_FOUND）——续跑=从断点恢复、成功条目无断点，重跑诉求由历史页「重新排队」承载；m4-plan §2.2 入口措辞随改
 - 【web】断点续跑 Opt= 变体原子选项保留（P6 整改）：opt=(ts,calcfc)→Opt=(Restart,ts,calcfc)、opt=X→Opt=(Restart,X)、已含 Restart 项不重复注入（大小写不敏感）、括号残缺按裸 opt——对齐 §2.2 注入矩阵「Opt=Restart + 原选项」语义
+- 【api】resume preview 契约对齐（二轮独立复核 N2/N3）：probe 无资产等探针未执行态恒返回对象 {formchk_ok:false, reason:no_resume_asset}（原返回 null、与 ResumeProbe 非空对象 schema 不符，openapi-core 实测报 InvalidData），ResumeProbe.reason 描述扩至无资产/归档态；preview/resume 两端点描述补 succeeded 条目 404 无续跑入口口径（重跑由「重新排队」承载）与 ineligible 恒 200 边界；前后端契约生成物再生
 
 ## v3.0.2（2026-10-12T09:42+0800 发布，patch）
 
