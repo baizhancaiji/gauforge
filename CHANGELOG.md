@@ -36,6 +36,15 @@
 - 【web】断点续跑入口对 succeeded 条目显式设防（P5 整改）：preview/confirm 同口径 404 无续跑入口（404 NOT_FOUND）——续跑=从断点恢复、成功条目无断点，重跑诉求由历史页「重新排队」承载；m4-plan §2.2 入口措辞随改
 - 【web】断点续跑 Opt= 变体原子选项保留（P6 整改）：opt=(ts,calcfc)→Opt=(Restart,ts,calcfc)、opt=X→Opt=(Restart,X)、已含 Restart 项不重复注入（大小写不敏感）、括号残缺按裸 opt——对齐 §2.2 注入矩阵「Opt=Restart + 原选项」语义
 - 【api】resume preview 契约对齐（二轮独立复核 N2/N3）：probe 无资产等探针未执行态恒返回对象 {formchk_ok:false, reason:no_resume_asset}（原返回 null、与 ResumeProbe 非空对象 schema 不符，openapi-core 实测报 InvalidData），ResumeProbe.reason 描述扩至无资产/归档态；preview/resume 两端点描述补 succeeded 条目 404 无续跑入口口径（重跑由「重新排队」承载）与 ineligible 恒 200 边界；前后端契约生成物再生
+- 【api】队列成员依赖序约束契约化与分块预览/编辑口径修订（C 阶段审查整改 P1-2/P1-3 文档面）：Task 依赖语义补「引用目标须位于本成员序前列」方向约束（保序停等派发下前向引用永不满足、静态校验即拒），DEPENDENCY_UNREACHABLE 词表注释扩前向引用形态；previewCandidate/getCandidateInput 放开 unsubmitted 队列成员可读（队列编辑框「接续前置 chk」取 Link0 基线），saveBlock 补 unsubmitted 队列成员限 link0 节口径；前后端契约生成物再生
+- 【web】crest_root/xtb_root 登记设置目录（P1-1/P2-6 整改，B10 遗漏）：两键入 RUNTIME_DEFAULTS/RUNTIME_SETTINGS（目录型 string、默认 ~/opt/crest-3.0.2 与 ~/opt/xtb-6.7.1、effect=new_submissions），组合流可执行探测与 crest 派发经设置目录取值并兜底异常空值（字面 None 不进路径——原缺省提交恒 503 且 details 显 None/crest）；B10 测试 _set_crest_root 改经 apply_update 目录校验路径（settings().set 直写绕过白名单曾致登记缺失逃逸全部闸门）；test_settings 增目录登记一致性/PUT 受理/类型校验三用例
+- 【web】队列成员依赖前向引用静态校验（P1-3 整改）：validate_queue_members 增方向校验（引用目标须在成员序前列——前向引用在保序停等派发下永不满足，原重排可静默引入永久停等死锁），同码 DEPENDENCY_UNREACHABLE、details 注明 task_id/line/ref，置于无环判定之后环/自环错误码优先级不变；test_dependencies 增创建引入拒绝/序前列放行/PATCH 重排引入拒绝三用例
+- 【web】分块预览与 link0 编辑放开 unsubmitted 队列成员（P1-2 整改后端面）：_readable_row 放行 unsubmitted 队列成员（原仅候选与失败回退队列，编辑既有队列 preview 404 使 C5 勾选静默失效），_guard_editable 增 unsubmitted 队列成员限 link0 节可写（其余节仍 QUEUE_MEMBER_LOCKED、提交后锁定复原——m2-plan 守卫矩阵不回退）；新增 test_queue_edit_links 编辑模式 e2e 四用例（preview 可读/勾选落盘提交复读/非 link0 节仍锁/提交后复原）；test_contract_rest 404 用例随契约改写
+- 【frontend】队列编辑勾选状态机按动作判定并禁用不可用勾选（P1-2/P2-4 整改前端面）：persistLinkChanges 以 dirty 勾选动作标记替代「checked 与初值相等」跳过（uncheck→重排→recheck 序列原跳过持久化、UI title 显新前驱而文件残留旧引用），写入按保存时位置取前驱、内容与基线一致不发写请求、「重排不改既有 id 引用」语义保持；预览不可达勾选框禁用并提示（原原生 DOM 勾选视觉态掩盖持久化失效）
+- 【frontend】断点续跑预览失败显式报错不静默（P2-5 整改）：ResumeDialog loadPreview 捕获 preview 请求错误弹窗内提示（原 error 被解构丢弃，404/网络失败时静默只剩 origin 行）
+- 【frontend】展开态数据增量刷新两处（P3-8/P3-9 整改）：QueuesView 能量表面板随 history.appended 增量重取（原需收起再展开）；HistoryView 抽屉详情随历史事件与续跑确认同步重取（resumed_by 派生只读随事件续新，原需重开抽屉可见）
+- 【frontend】组合流对话框 nproc/route 前端校验（P3-7 整改）：crest 核数正整数、精修模板 route 非空前端兜底（后端 422 同判），越界红描边与文案提示、打开重置校验态
+- 【frontend】UI 分隔符圆点改顿号（P3-11/P3-12 约定违例收口，C 阶段范围两处）：WorkflowDrawer 组合流元信息行与 EnergyTable 零点漂移标注（存量违例 QueuesView/ExecutionsView/PendingView/BlockEditor/CandidatesView 另批统一收口）
 
 ## v3.0.2（2026-10-12T09:42+0800 发布，patch）
 
