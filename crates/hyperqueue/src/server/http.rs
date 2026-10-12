@@ -314,6 +314,12 @@ struct HttpSubmit {
     /// 0 = 不设上限（§8.7 定稿：默认不设 time_limit）
     #[serde(default)]
     time_limit_s: u64,
+    /// per-job 重试上限（M4 重入语义，m4-plan §2.1/§8 决策点 7 分支 b）：
+    /// 0 = 禁用内部重试（NeverRestart——worker 失联即终态 failed，重跑由
+    /// 上层显式发起）；n > 0 = 最多自动重排 n 次；缺省 = server 默认
+    /// （MaxCrashes(5)，行为零变化）。
+    #[serde(default)]
+    crash_limit: Option<u32>,
 }
 
 #[derive(Deserialize)]
@@ -409,6 +415,14 @@ fn build_submit_request(payload: HttpSubmit) -> SubmitRequest {
 
     let time_limit = (payload.time_limit_s > 0).then(|| Duration::from_secs(payload.time_limit_s));
 
+    // per-job 重试上限（M4 重入语义）：0=NeverRestart、n=MaxCrashes(n)、
+    // 缺省=server 默认（行为零变化）
+    let crash_limit = match payload.crash_limit {
+        Some(0) => CrashLimit::NeverRestart,
+        Some(n) => CrashLimit::MaxCrashes(u16::try_from(n).unwrap_or(u16::MAX)),
+        None => CrashLimit::default(),
+    };
+
     SubmitRequest {
         job_desc: JobDescription {
             name,
@@ -426,7 +440,7 @@ fn build_submit_request(payload: HttpSubmit) -> SubmitRequest {
                     }),
                     priority: UserPriority::new(0),
                     time_limit,
-                    crash_limit: CrashLimit::default(),
+                    crash_limit,
                 },
                 resource_rq,
             },
@@ -765,5 +779,31 @@ mod tests {
                 weight: Default::default(),
             }
         ])
+    }
+
+    fn build_with_crash_limit(crash_limit: Option<u32>) -> CrashLimit {
+        let payload = HttpSubmit {
+            args: vec!["sleep".to_string()],
+            cwd: None,
+            env: HashMap::new(),
+            stdout: None,
+            stderr: None,
+            name: None,
+            resources: None,
+            time_limit_s: 0,
+            crash_limit,
+        };
+        match build_submit_request(payload).submit_desc.task_desc {
+            JobTaskDescription::Array { task_desc, .. } => task_desc.crash_limit,
+            _ => unreachable!("array job expected"),
+        }
+    }
+
+    #[test]
+    fn test_crash_limit_mapping() {
+        // M4 重入语义（决策点 7 分支 b）：0=禁用重试、n=重排上限、缺省=默认
+        assert_eq!(build_with_crash_limit(Some(0)), CrashLimit::NeverRestart);
+        assert_eq!(build_with_crash_limit(Some(2)), CrashLimit::MaxCrashes(2));
+        assert_eq!(build_with_crash_limit(None), CrashLimit::default());
     }
 }
