@@ -299,9 +299,16 @@ def reconcile_workflows(dispatcher) -> int:
     按幂等钩子重推未完成一步、不重建已存在实体。返回重推行数。"""
     pushed = 0
     for wf in workflows().list_open():
-        if wf["state"] != "crest_running":
-            continue  # refining 态：队列已建（终态判据=精修队列成功，随
-            # B11 能量聚合与队列终态联动判定 completed）
+        if wf["state"] == "refining":
+            # 崩溃窗口收口：_settle_queue_seat 在「队列 completed → workflow
+            # completed」两写之间中断时，重启据此补记（终态判据=精修队列
+            # 成功，m4-plan §2.3）；队列回退/放弃/删除期间维持 refining
+            qid = wf.get("refine_queue_id")
+            q = queues().get(qid) if qid else None
+            if q is not None and q["state"] == "completed":
+                workflows().set_state(wf["workflow_id"], "completed")
+                pushed += 1
+            continue
         crest_eid = wf.get("crest_execution_id")
         if crest_eid:
             row = executions().get(crest_eid)

@@ -434,6 +434,48 @@ def test_workflow_aggregation_after_queue_delete(tmp_path):
     assert kinds == ["crest"]  # 仅 crest 行，结果仍可查
 
 
+# ---------------- 缺陷整改（P1）：completed 联动 ----------------
+
+def _succeed_member(task_id: int) -> int:
+    """成员成功执行行（无解析产物——completed 联动判定不依赖能量表）。"""
+    eid = executions().create(
+        task_id=task_id, filename="m.gjf",
+        resources={"nproc": {"value": 1, "defaulted": False},
+                   "mem_gb": {"value": 1, "defaulted": False}})
+    (config.HOME_DIR / "run" / str(eid)).mkdir(parents=True)
+    executions().finalize(execution_id=eid, state="succeeded",
+                          finished_at="2026-10-12T12:00:00+08:00")
+    return eid
+
+
+def test_refine_queue_completion_completes_workflow(tmp_path):
+    """P1：精修队列收束 completed → workflow 行联动 completed（§2.3
+    终态判据落地——组合流 completed 经真实转移可达，非查询期派生）。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wid = out["workflow_id"]
+    qid = workflows().get(wid)["refine_queue_id"]
+    queues().set_state(qid, "executing")
+    for m in tasks().list_queue_members(qid):
+        _succeed_member(m["id"])
+    disp._settle_queue_seat(qid)
+    assert queues().get(qid)["state"] == "completed"
+    assert workflows().get(wid)["state"] == "completed"
+
+
+def test_reconcile_completes_refining_with_completed_queue(tmp_path):
+    """P1 崩溃窗口收口：队列已 completed 而 workflow 未及推进（两写之间
+    中断）→ 启动对账补记 completed。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wid = out["workflow_id"]
+    qid = workflows().get(wid)["refine_queue_id"]
+    queues().set_state(qid, "completed")  # 模拟收束后、联动写入前中断
+    assert workflows().get(wid)["state"] == "refining"
+    assert wf_svc.reconcile_workflows(disp) == 1
+    assert workflows().get(wid)["state"] == "completed"
+
+
 def test_submit_route_response_contract(tmp_path):
     """P3：提交响应 = 契约 ConformerRefinementResponse 四字段（与
     openapi/计划 §2.3 三方对齐；crest_execution_id 属 GET 单点响应）。"""

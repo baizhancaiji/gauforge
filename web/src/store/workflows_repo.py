@@ -46,6 +46,11 @@ class WorkflowsRepo:
             " ('crest_running','refining') ORDER BY updated_at")
         return [self._deserialize(r) for r in rows]  # type: ignore[misc]
 
+    def get_by_refine_queue(self, queue_id: str) -> dict | None:
+        """精修队列反查 workflow 行（队列 completed 终态联动用）。"""
+        return self._deserialize(self._db.one(
+            "SELECT * FROM workflows WHERE refine_queue_id = ?", (queue_id,)))
+
     def _update(self, workflow_id: str, **cols) -> None:
         sets = ", ".join(f"{k} = ?" for k in cols)
         self._db.run(

@@ -40,7 +40,7 @@ from pathlib import Path
 
 from .. import config
 from ..hq.gateway import Gateway, GatewayError
-from ..store import executions, queues, seats, settings, tasks
+from ..store import executions, queues, seats, settings, tasks, workflows
 from ..store.db import now_iso
 from . import finalize, materialize, workspace
 from ..services.dependencies import parse_link0_refs
@@ -673,6 +673,12 @@ class Dispatcher:
                 queues().update(queue_id, finish_reason="success",
                                 last_failure=None)
                 queues().set_state(queue_id, "completed")
+                # workflow 终态联动（m4-plan §2.3：终态判据=精修队列成功
+                # 记 completed）——精修队列收束即推进归属组合流，组合流
+                # completed 从此可达
+                wf = workflows().get_by_refine_queue(queue_id)
+                if wf is not None and wf["state"] == "refining":
+                    workflows().set_state(wf["workflow_id"], "completed")
                 self._emit("queue.status",
                            {"queue_id": queue_id, "from": "executing",
                             "to": "completed", "finish_reason": "success",
