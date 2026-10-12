@@ -116,7 +116,17 @@ function goPage(p: number) {
 watch(() => events.dirty.history, () => {
   load();
   loadUsage(); // 占用统计随终态落库/清理刷新（拉取式，无新增 SSE 事件）
+  void refreshSelected(); // 抽屉详情同步刷新（resumed_by 派生只读随之更新）
 });
+
+/** 抽屉详情重取（终态条目恒可取；随历史事件与续跑确认刷新，不必重开抽屉）。 */
+async function refreshSelected() {
+  if (!selected.value) return;
+  const { data } = await client.GET("/history/{id}", {
+    params: { path: { id: selected.value.id } },
+  });
+  if (data) selected.value = data;
+}
 watch(
   () => route.fullPath,
   () => {
@@ -160,6 +170,7 @@ function onResumeConfirmed(taskId: number, originId: number) {
     msg: `已创建续跑任务 #${taskId}（源自 #${originId}）— 已入待执行队列`,
   };
   load();
+  void refreshSelected(); // 续跑关联字段（后续 resumed_by 反查）随事件续新
 }
 
 // ---------- 表格多选（与候选页同套件：useMultiSelect 锚点+焦点驱动） ----------

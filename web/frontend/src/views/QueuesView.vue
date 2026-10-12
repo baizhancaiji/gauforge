@@ -191,11 +191,7 @@ const energyRows = ref<Record<string, components["schemas"]["EnergySummaryRow"][
 const energyLoading = ref<Record<string, boolean>>({});
 const energyError = ref<Record<string, string>>({});
 
-async function toggleEnergy(q: Queue) {
-  const id = q.id;
-  energyOpen.value[id] = !energyOpen.value[id];
-  if (!energyOpen.value[id]) return;
-  if (energyRows.value[id]) return; // 已取过：增量刷新由收起再展开触发
+async function fetchEnergy(id: string) {
   energyLoading.value[id] = true;
   const { data, error: e } = await client.GET("/queues/{id}/energy-summary", {
     params: { path: { id } },
@@ -208,6 +204,25 @@ async function toggleEnergy(q: Queue) {
   }
   energyRows.value[id] = data?.rows ?? [];
 }
+
+async function toggleEnergy(q: Queue) {
+  const id = q.id;
+  energyOpen.value[id] = !energyOpen.value[id];
+  if (!energyOpen.value[id]) return;
+  if (energyRows.value[id]) return; // 已取过：展开期由终态事件增量刷新
+  await fetchEnergy(id);
+}
+
+// 展开期增量刷新（m4-plan §4.9 C7「能量表随成员完成增量刷新」）：成员
+// 终态走 history.appended，展开中的面板随之重取；收起态不取（下次展开拉新）
+watch(
+  () => events.dirty.history,
+  () => {
+    for (const [id, open] of Object.entries(energyOpen.value)) {
+      if (open) void fetchEnergy(id);
+    }
+  },
+);
 
 /** 编辑卡守卫：正在编辑的成员属于该回退队列（展开区切换/收起防悬挂）。 */
 function editingMemberIn(q: Queue): boolean {
