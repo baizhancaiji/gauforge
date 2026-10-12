@@ -907,8 +907,8 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
 5. 派发联动：前驱失败 → 下游 skipped（predecessor_failed）；前驱
    skipped → 下游传递 skipped（predecessor_failed、details 注明传递链，
    勾选跳过开关时队列收束不死锁）；哈希跳过成员的 chk 可被下游溯源
-   物化；上游重跑后下游按 A4 定案语义（溯源执行 id 变化即视依赖已变
-   ——决策点 6 建议值，随 A4 定案后按定案语义复核本条）重跑。
+   物化；上游重跑后下游按定案语义重跑（溯源执行 id 变化即视依赖已变
+   ——决策点 6 已定案，实施落位 `Dispatcher._upstream_rerun_since`，§8）。
 6. crest/xtb 可执行缺失时组合流提交显式 503。
 7. 全量测试与全部闸门脚本通过（含 hq 产物在位、offline 审计与
    `npm run build`）。
@@ -937,8 +937,8 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
    details 注明传递链「freq=skipped←opt=failed」）→ 队列跑完记失败
    （跳过跑完仍有失败）回退、无成员悬挂。
 4. **哈希跳过溯源**：上游成功未变 + 下游依赖 → 重提交后下游物化使用上游
-   被沿用的历史 chk；上游重跑（新执行 id）→ 下游重跑（A4 定案语义——
-   决策点 6 建议值，随 A4 定案后按定案语义复核本条）。
+   被沿用的历史 chk；上游重跑（新执行 id）→ 下游重跑（定案语义——
+   决策点 6 已定案，§8）。
 5. **断点续跑 opt**：真机强停 opt → resume preview（探针/注入 diff）→
    确认 → 新任务「续跑自」双向关联可见 → Opt=Restart 跑通。
 6. **续跑 sp 与 freq**：sp 场景 %OldChk+Guess=Read 跑通；freq 场景弹窗
@@ -963,17 +963,38 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
 
 ## 8. 开放决策点（实施中关闭，建议值先行）
 
-1. **crest/xtb 配置项形态**（A4 关闭）：建议运行级 `crest_root`/
+1. **crest/xtb 配置项形态**（A4 关闭；实施落位 2026-10-12：`config.py`
+   RUNTIME_DEFAULTS/RUNTIME_SETTINGS 两处登记——目录型 string、默认
+   `~/opt/crest-3.0.2` 与 `~/opt/xtb-6.7.1`、effect=new_submissions，
+   消费方（组合流可执行探测/crest 派发）经设置目录取值并兜底异常空值；
+   用例 `test_settings.py` 目录登记一致性/PUT 受理/类型校验三用例，
+   B10 全套 `_set_crest_root` 改经 apply_update 目录校验路径——C 阶段
+   审查整改 P1-1/P2-6，登记缺失曾致组合流真实部署不可用）：
+   建议运行级 `crest_root`/
    `xtb_root` 两键（§2.3），生效边界=new_submissions 通则。
-2. **精修队列自动提交**（A5 关闭）：建议自动提交（「一个按钮」验收语义）；
+2. **精修队列自动提交**（A5 关闭；实施落位：B10 终态钩子 `_build_and_submit_refine_queue`
+   自动提交、满员（crest 仍占席、计数含自身）保留 unsubmitted 并置
+   `refine_queue_pending`，失败回退走既有队列回退机制；用例
+   `test_workflow_crest.py::test_hook_capacity_full_keeps_unsubmitted`）：
+   建议自动提交（「一个按钮」验收语义）；
    满员时保留 unsubmitted 并在 workflow 记录中置 `refine_queue_pending`
    布尔标志、前端提示手动提交（§2.3）；提交成功后的失败回退走既有队列
    回退机制，用户可编辑后重提。
-3. **物化失败归因**（A4 关闭）：建议归因沿用 `program_error`（M0 归因
+3. **物化失败归因**（A4 关闭；实施落位：B7 物化失败=成员
+   failed(program_error)、details 注明 chk_materialization 经失败分流；
+   用例 `test_materialize.py::test_dispatch_materialize_failure_terminal`）：
+   建议归因沿用 `program_error`（M0 归因
    枚举冻结不扩），details 注明 chk_materialization 细节。
-4. **resume 与哈希跳过**（A5 关闭）：resume **新建任务**、首次执行无哈希
+4. **resume 与哈希跳过**（A5 关闭；实施落位：B9 confirm 新建任务——
+   seat_task 载体、首次执行无哈希记录，零豁免逻辑；用例
+   `test_resume.py::test_confirm_creates_task_and_materializes`）：
+   resume **新建任务**、首次执行无哈希
    记录天然不触发跳过——显式动作即强制重跑（无需额外豁免逻辑）。
-5. **符号引用文法形态**（A4 关闭）：仅支持 `@task:<id>`（队列内）与
+5. **符号引用文法形态**（A4 关闭；实施落位：B6 `parse_link0_refs`
+   两形态与文法残缺判定+三时点载体校验，`@prev` 全库未纳入；A4 契约
+   Task 文法定稿（2026-10-12 增补「引用目标须在成员序前列」方向约束
+   口径）；用例 `test_dependencies.py` 全套）：
+   仅支持 `@task:<id>`（队列内）与
    `@exec:<执行id>`（resume 专用）两形态；`@prev` 不纳入（提交顺序不构成
    承诺、重排破坏语义）。如评审坚持保留 @prev，定义为「提交时展开为队首
    前驱的 @task:id 糖衣」，重排后不重展开。
@@ -1000,7 +1021,16 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
    应对预案相应改写。另随 A4 一并核验：重入②触发判据对 S3 已知盲区
    （120s 容差内 `detect_rerun` 不成立、S1 静默接管）的覆盖——独立信号
    或保守处置（§2.1「重入②触发判据与 S3 盲区」），不足则收紧该子集
-   容差豁免。
+   容差豁免。**落位注记（2026-10-12 回写）**：实走分支 (b)——实测核验
+   HTTP payload 原硬编码 `CrashLimit::default()` 不支持 per-job 设定，
+   `feat(hq)` 批次已落（提交结构体加字段+server 应用+HTTP 层透传，
+   不触调度核心，映射单测三分支、cargo test lib 212 通过）+ B7 接线
+   crash_limit=0（重入①）+ 盲区处置采纳保守收紧——物化依赖执行重跑
+   识别容差收紧为 0（宁可重派不可静默，B8）；用例
+   `test_materialize.py::test_dispatch_materializes_and_disables_retry` /
+   `test_dispatch_no_dep_keeps_default_retry`、
+   `test_dispatch_deps.py::test_reentry_rematerialize_on_journal_rerun`
+   （含盲区边界断言）。
 
 ## 9. 风险评估与应对预案
 
@@ -1013,7 +1043,7 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
 | 5 | M4 触及派发链路引入 M1/M2 回归 | 既有闭环受损 | B8 全部 FakeGateway 单测 + 既有 test_dispatch_engine/test_e2e_* 回归；hq 产物在位硬检查；A4 交互矩阵评审前置 |
 | 6 | 契约 diff 与 3.1.0 发布交叠（版本号/SSOT） | ssot 闸门误报 | 沿用 v2.1.0 动态覆盖与豁免口径（§0.6）；契约批次跑 openapi ssot 测试；发布五步独立提交 |
 | 7 | crest/xtb 与 g16 环境变量共存冲突（XTB_PATH 传递、worker env 构建） | 组合流 crest 任务启动失败或引错 xtb | **已实测落定（A5，2026-10-12）**：crest 3.0.2 内嵌 tblite 引擎、XTB_PATH 不消费——无需注入、与 GAUSS_* 天然零冲突（§2.3）；crest 任务 env 与 GAUSS_* 分域构建保留为实现纪律；可执行探测缺失提交即拒（503） |
-| 8 | HQ 隐式重跑（worker 失联 crash_limit 自动重排 / journal 恢复重提交）绕过物化钩子，二次尝试以被 G16 重写的 dep chk 为起点（%Chk 续用形态） | 链式/resume 执行从污染状态静默重启，结果错误或连环失败 | 重入语义定稿（§2.1/§8 决策点 7）：含依赖执行禁用 HQ 内部重试（失联即 failed、显式重跑重新物化）；journal 重跑者对账取消+新执行 id 重派发；B7/B8 用例与 test_materialize/test_dispatch_deps 覆盖；crash_limit 不支持 per-job 时按决策点 7 三分支落位（b 改 `crates/` 或 c 退守对账拦截）。**失效模式登记**：若重跑者识别落入 120s 容差盲区（S1 静默接管），取消+重派不触发、污染 dep chk 直接成为二次起点且零可观测——触发判据独立信号/保守处置随 A4 定案（§2.1、决策点 7），B8 含盲区边界用例；盲区消除前该残差风险在案 |
+| 8 | HQ 隐式重跑（worker 失联 crash_limit 自动重排 / journal 恢复重提交）绕过物化钩子，二次尝试以被 G16 重写的 dep chk 为起点（%Chk 续用形态） | 链式/resume 执行从污染状态静默重启，结果错误或连环失败 | 重入语义定稿（§2.1/§8 决策点 7）：含依赖执行禁用 HQ 内部重试（失联即 failed、显式重跑重新物化）；journal 重跑者对账取消+新执行 id 重派发；B7/B8 用例与 test_materialize/test_dispatch_deps 覆盖；per-job crash_limit 已按决策点 7 分支 (b) 落位（`feat(hq)` 批次——提交结构体加字段+server 应用+HTTP 层透传，不触调度核心）。**失效模式登记**：若重跑者识别落入 120s 容差盲区（S1 静默接管），取消+重派不触发、污染 dep chk 直接成为二次起点且零可观测——触发判据已采纳保守处置定案：物化依赖执行重跑识别容差收紧为 0（§2.1、决策点 7 落位注记，B8 含盲区边界用例），该子集盲区残差随收紧消除 |
 | 9 | crest 长跑任务无进度/停滞信号（无增量解析、停滞告警不适用——§2.3），hung 不可观测 | 组合流体验受损、席位占用无感知 | 组合流对话框与文档提示 crest 任务可配墙钟上限（Task.time_limit 既有机制，roadmap §2.6，默认 0 不限制、按需设置）；execution.monitor（CPU/内存）照常可作人工判据；crest 最小进度提取列为后续按需观察项 |
 | 10 | 链式物化复制语义放大磁盘占用（多下游各持 dep chk 副本 + 上游保留期 chk 并存） | 工作区占用随链深与队列数上升 | dep 副本属本执行目录产物、随执行目录清理规则同生命周期；空间占用统计与阈值告警（M3 B12）提供可见性（超阈仅警告）；上游 chk 到期清理不影响下游已物化副本（自持）；手动清理沿用 M1 历史页入口 |
 | 11 | 组合流钩子链（crest 终态 → 提取 → 建队 → 自动提交）被 g16web 重启/崩溃打断 | workflow 卡中间态不可恢复、或恢复时重复建队/重复提交 | 终态钩子幂等化（提取产物落盘为锚、重入查锚跳过）；启动对账增 workflow 扫描、按幂等钩子重推未完成一步；建队/提交各步以 workflow 记录状态判重不重建（§2.3 恢复语义） |
