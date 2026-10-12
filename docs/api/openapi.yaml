@@ -678,7 +678,9 @@ components:
         reason:
           type: string
           nullable: true
-          description: formchk_ok=false 时的失败原因（chk 损坏/探针超时）；成功为 null
+          description: formchk_ok=false 时的失败原因（无续跑资产
+            no_resume_asset/归档 archived/chk 损坏/探针超时）；探针成功为 null
+            （无资产等探针未执行态恒返回对象、不返回 null probe）
 
     ResumeInjection:
       type: object
@@ -2462,7 +2464,7 @@ paths:
     post:
       tags: [history]
       operationId: previewResume
-      summary: 断点续跑预览（探针+注入矩阵+输入 diff；无副作用，恒 200）
+      summary: 断点续跑预览（探针+注入矩阵+输入 diff；无副作用，ineligible 恒 200）
       description: >-
         两段式续跑的第一段（M4）。前置检测顺序：① 输入含 @task: 链内引用 →
         eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定，
@@ -2474,9 +2476,10 @@ paths:
         含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq；
         其余→scf；缺失/不可解析→unknown_kind）。ineligible 时 preview 恒 200
         以 eligible=false + reason 表达（不经 422）；POST /history/{id}/resume
-        对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。skipped/归档条目无续跑
-        入口（前端不展示动作，404 兜底归 NOT_FOUND 口径外——预览对无执行目录
-        条目按 no_resume_asset 处理）。
+        对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。续跑入口=failed/skipped
+        两终态：succeeded 条目无断点，preview/confirm 同口径 404 NOT_FOUND
+        （重跑诉求由历史页「重新排队」承载）；skipped/归档条目 preview 按
+        no_resume_asset 处理（200 + eligible=false，前端不展示动作）。
       parameters:
         - $ref: '#/components/parameters/ExecutionId'
       responses:
@@ -2503,7 +2506,8 @@ paths:
         记录时落 resumed_from 关联，物化随 B7 派发钩子复制原 chk 并重写实际
         路径。原历史条目数据零变更（「已续跑」经 resumed_by 派生只读承载）。
         freq 回落原样重跑：同样经本端点新建任务（保留 resumed_from 关联，
-        与「重新排队」语义等价、并存）。
+        与「重新排队」语义等价、并存）。succeeded 条目 404 NOT_FOUND 无续跑
+        入口（重跑诉求由「重新排队」承载）。
       parameters:
         - $ref: '#/components/parameters/ExecutionId'
       responses:

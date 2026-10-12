@@ -181,6 +181,7 @@ def _evaluate(row: dict, g16_root) -> dict:
         text = _source_text(row)
     except OSError:
         result["reason"] = "no_resume_asset"
+        result["probe"] = {"formchk_ok": False, "reason": "no_resume_asset"}
         return result
     # 注入前置检测（§3.3：链内引用先于 chk 资产判定）
     if any(r["kind"] == "task" for r in parse_link0_refs(text)):
@@ -190,6 +191,7 @@ def _evaluate(row: dict, g16_root) -> dict:
     chk = execution_chk_asset(row["id"])
     if chk is None:
         result["reason"] = "no_resume_asset"
+        result["probe"] = {"formchk_ok": False, "reason": "no_resume_asset"}
         return result
     ok, reason = probe_chk(chk, g16_root)
     result["probe"] = {"formchk_ok": ok, "reason": reason}
@@ -212,7 +214,9 @@ def _evaluate(row: dict, g16_root) -> dict:
 
 
 def preview(execution_id: int) -> dict:
-    """POST /history/{id}/resume/preview：无副作用、恒 200。"""
+    """POST /history/{id}/resume/preview：无副作用、ineligible 恒 200
+    （续跑入口外条目——running/succeeded——preview/confirm 同口径 404
+    NOT_FOUND 无续跑入口）。"""
     row = _load_source_row(execution_id)
     g16_root = _g16_root()
     out = _evaluate(row, g16_root)

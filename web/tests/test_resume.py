@@ -135,7 +135,9 @@ def test_ineligible_no_resume_asset(tmp_path):
     prot.unlink()
     out = preview_resume(eid)
     assert out == {"eligible": False, "reason": "no_resume_asset",
-                   "probe": None, "task_kind": None,
+                   "probe": {"formchk_ok": False,
+                             "reason": "no_resume_asset"},
+                   "task_kind": None,
                    "injections": None, "input_diff": None}
     with pytest.raises(ApiError) as ei:
         resume_from_checkpoint(eid)
@@ -225,6 +227,7 @@ def test_skipped_and_archived_not_resumable(tmp_path):
     executions().set_archived(eid2)
     out = preview_resume(eid2)
     assert out["eligible"] is False
+    assert out["probe"]["reason"] == "archived"  # probe 恒对象、不返回 null
 
 
 # ---------------- confirm 语义 ----------------

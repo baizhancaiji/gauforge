@@ -587,8 +587,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 断点续跑预览（探针+注入矩阵+输入 diff；无副作用，恒 200）
-         * @description 两段式续跑的第一段（M4）。前置检测顺序：① 输入含 @task: 链内引用 → eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定， 引导队列回退重提）；② 续跑资产取数——优先 chk_snapshot.location= protected 的保全 chk，无保全但该任务存在成功执行记录者取最近成功执行的 input.chk，两者皆无 → reason=no_resume_asset；③ formchk 有效性探针 （临时目录，超时 120s 按探针失败→chk_corrupted/超时→probe_timeout 分列）； ④ route 任务类型判定（复用 M0 输入分块解析器取 route 节，大小写不敏感： 含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq； 其余→scf；缺失/不可解析→unknown_kind）。ineligible 时 preview 恒 200 以 eligible=false + reason 表达（不经 422）；POST /history/{id}/resume 对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。skipped/归档条目无续跑 入口（前端不展示动作，404 兜底归 NOT_FOUND 口径外——预览对无执行目录 条目按 no_resume_asset 处理）。
+         * 断点续跑预览（探针+注入矩阵+输入 diff；无副作用，ineligible 恒 200）
+         * @description 两段式续跑的第一段（M4）。前置检测顺序：① 输入含 @task: 链内引用 → eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定， 引导队列回退重提）；② 续跑资产取数——优先 chk_snapshot.location= protected 的保全 chk，无保全但该任务存在成功执行记录者取最近成功执行的 input.chk，两者皆无 → reason=no_resume_asset；③ formchk 有效性探针 （临时目录，超时 120s 按探针失败→chk_corrupted/超时→probe_timeout 分列）； ④ route 任务类型判定（复用 M0 输入分块解析器取 route 节，大小写不敏感： 含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq； 其余→scf；缺失/不可解析→unknown_kind）。ineligible 时 preview 恒 200 以 eligible=false + reason 表达（不经 422）；POST /history/{id}/resume 对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。续跑入口=failed/skipped 两终态：succeeded 条目无断点，preview/confirm 同口径 404 NOT_FOUND （重跑诉求由历史页「重新排队」承载）；skipped/归档条目 preview 按 no_resume_asset 处理（200 + eligible=false，前端不展示动作）。
          */
         post: operations["previewResume"];
         delete?: never;
@@ -608,7 +608,7 @@ export interface paths {
         put?: never;
         /**
          * 断点续跑确认（新建任务入待执行队列；物化随派发钩子）
-         * @description 两段式续跑的第二段（M4）。幂等重探：preview 与确认之间 chk 可能被 保留期/手动清理，确认时复跑探针（秒级），资产缺失或探针失败按 422 RESUME_NOT_ELIGIBLE 拒绝。确认即新建任务（新 task id + 注入改写后 输入副本，Link0 携带 %OldChk=@exec:<原执行id>），入待执行队列（在途 席位满员 409 PENDING_CAPACITY_FULL，与普通提交同待遇）；派发创建执行 记录时落 resumed_from 关联，物化随 B7 派发钩子复制原 chk 并重写实际 路径。原历史条目数据零变更（「已续跑」经 resumed_by 派生只读承载）。 freq 回落原样重跑：同样经本端点新建任务（保留 resumed_from 关联， 与「重新排队」语义等价、并存）。
+         * @description 两段式续跑的第二段（M4）。幂等重探：preview 与确认之间 chk 可能被 保留期/手动清理，确认时复跑探针（秒级），资产缺失或探针失败按 422 RESUME_NOT_ELIGIBLE 拒绝。确认即新建任务（新 task id + 注入改写后 输入副本，Link0 携带 %OldChk=@exec:<原执行id>），入待执行队列（在途 席位满员 409 PENDING_CAPACITY_FULL，与普通提交同待遇）；派发创建执行 记录时落 resumed_from 关联，物化随 B7 派发钩子复制原 chk 并重写实际 路径。原历史条目数据零变更（「已续跑」经 resumed_by 派生只读承载）。 freq 回落原样重跑：同样经本端点新建任务（保留 resumed_from 关联， 与「重新排队」语义等价、并存）。succeeded 条目 404 NOT_FOUND 无续跑 入口（重跑诉求由「重新排队」承载）。
          */
         post: operations["resumeFromCheckpoint"];
         delete?: never;
@@ -1215,7 +1215,7 @@ export interface components {
         ResumeProbe: {
             /** @description formchk 成功且 fchk 可读 ⇒ true */
             formchk_ok: boolean;
-            /** @description formchk_ok=false 时的失败原因（chk 损坏/探针超时）；成功为 null */
+            /** @description formchk_ok=false 时的失败原因（无续跑资产 no_resume_asset/归档 archived/chk 损坏/探针超时）；探针成功为 null （无资产等探针未执行态恒返回对象、不返回 null probe） */
             reason: string | null;
         };
         /** @description 单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加 %OldChk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加 %OldChk=@exec + route 追加 Guess=Read；freq=无注入、回落原样重跑）。 */
