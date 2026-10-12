@@ -74,6 +74,10 @@ class Dispatcher:
     # task_id → "dependency" | "resource"——仅 advance 当前停等成员非空；
     # 类级注册表（pending 快照读取），advance 每轮重置。
     wait_reasons: dict[int, str] = {}
+    # 上一轮已推送快照所载的停等原因集：原因集变化才推送 pending.snapshot
+    # （推送原本仅挂在席位增删，停等出现/解除不触发、图注永不及 UI——
+    # D3 走查缺陷①修复）。
+    last_wait_reasons: dict[int, str] = {}
 
     def __init__(self, gateway: Gateway, *, emitter=None,
                  run_root: Path | None = None,
@@ -143,13 +147,31 @@ class Dispatcher:
     # ---------------- 窗口推进 ----------------
 
     def advance(self) -> None:
+        """重算停等原因注册表并推进窗口（_advance_once 主体）。
+
+        停等原因集相对上一轮变化时推送 pending.snapshot：停等图注的
+        可观测性承载（m4-plan §4.5 B8/§7.2 走查 1）——原因出现与解除
+        都必须到达 UI，不能依赖席位增删事件的搭车推送。
+        本轮发生依赖联动 skipped 的队列追加席位结算（_settle_queue_seat
+        幂等）：结算原本仅挂 HQ 终态事件（_on_terminal），skip 模式下
+        传递 skipped 为本地落库、无 HQ 事件可搭——缺失则队列收束悬挂
+        （D3 走查缺陷②，DoD 5「队列收束不死锁」）。"""
+        Dispatcher.wait_reasons = {}
+        self._skipped_qids: set[str] = set()
+        self._advance_once()
+        for qid in self._skipped_qids:
+            self._settle_queue_seat(qid)
+        if Dispatcher.wait_reasons != Dispatcher.last_wait_reasons:
+            Dispatcher.last_wait_reasons = dict(Dispatcher.wait_reasons)
+            self._emit_pending_snapshot()
+
+    def _advance_once(self) -> None:
         """自序列头按序推进并行窗口（哈希跳过/依赖守卫/停等/物化/提交/回填）。
 
         B8 依赖联动（m4-plan §2.1）：依赖守卫先于资源检查（roadmap §7.1
         「依赖未满足者不得进入窗口」，保序不越位不变）；前驱 failed/skipped
         → 该成员即时 skipped（传递闭包——勾选跳过开关时防「中段 skipped
         后末段直接前驱永不到 succeeded」的窗口死锁，队列收束不悬挂）。"""
-        Dispatcher.wait_reasons = {}  # 停等原因逐 tick 重算
         window = int(settings().get("parallel_window"))
         # 停滞阈值逐 tick 跟随设置（新任务生效）：新建监测 entry 用当前值，
         # 已在跑 entry 的检测器保有创建时刻阈值，不追溯。
@@ -218,6 +240,8 @@ class Dispatcher:
             #    stderr 注明传递链）；unmet=前驱未到 succeeded → 窗口停等
             gate = self._dependency_gate(item, task)
             if gate == "settle":
+                if item["queue_id"] is not None:
+                    self._skipped_qids.add(item["queue_id"])
                 continue
             if gate == "unmet":
                 Dispatcher.wait_reasons[task["id"]] = "dependency"

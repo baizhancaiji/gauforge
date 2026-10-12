@@ -142,8 +142,7 @@ def test_skipped_propagates_transitively(disp, gw):
     disp.advance()  # a 派发（b 依赖停等、c 不越位）
     disp._on_terminal(executions().list_by_task(a)[-1], "failed",
                       "program_error")
-    disp.advance()  # b：gate settle → skipped；c：gate settle（b=skipped）
-    disp._settle_queue_seat(qid)
+    disp.advance()  # b/c：gate settle → skipped；席位随 advance 自动结算
     states = {e["task_id"]: e["state"] for e in executions().list_all()}
     assert states[a] == "failed"
     assert states[b] == "skipped"
@@ -151,6 +150,7 @@ def test_skipped_propagates_transitively(disp, gw):
     q = queues().get(qid)
     assert q["state"] == "unsubmitted"
     assert q["finish_reason"] == "finished_with_failures"
+    assert seats().list_by_position() == []  # 席位释放，无悬挂（缺陷②）
 
 
 def test_hash_skip_member_satisfies_dependency_and_feeds_materialization(
@@ -218,6 +218,26 @@ def test_wait_reason_in_snapshot(disp, gw):
     views = {m["task_id"]: m for s in snap["seats"] for m in s["members"]}
     assert views[a]["wait_reason"] is None
     assert views[b]["wait_reason"] == "dependency"
+
+
+def test_wait_reason_change_pushes_snapshot(disp, gw):
+    """停等原因集变化 → 推送 pending.snapshot；稳定轮次不重推（D3 走查
+    缺陷①：推送原本仅挂席位增删，停等出现/解除不及 UI）。"""
+    a = _mk("%chk=a.chk\n" + TAIL, "a.gjf")
+    b = _mk(f"%OldChk=@task:{a}\n" + TAIL, "b.gjf")
+    _mk_queue([a, b])
+    Dispatcher.last_wait_reasons = {}  # 类级注册表跨用例复位
+    rec: list = []
+    disp._emit = lambda e, d: rec.append(e)  # noqa: SLF001 — 观测推送
+    disp.advance()
+    pushes = [e for e in rec if e == "pending.snapshot"]
+    assert len(pushes) == 1  # 停等出现即推送（无席位增删搭车）
+    rec.clear()
+    disp.advance()  # 窗口满（a 在跑）→ 原因集 {b: dep} → {}（图注解除）
+    assert "pending.snapshot" in rec
+    rec.clear()
+    disp.advance()  # 原因集稳定（仍空）→ 不重推
+    assert "pending.snapshot" not in rec
 
 
 # ---------------- 重入②（journal 重跑者取消 + 重新物化） ----------------
