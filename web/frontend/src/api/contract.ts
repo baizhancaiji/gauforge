@@ -1134,6 +1134,8 @@ export interface components {
             state: components["schemas"]["TaskState"];
             /** @description C；冗余自任务，列表展示用 */
             filename: string;
+            /** @description C；冗余自任务，列表展示用（M4 C7：crest 任务行 kind 徽标与「无增量解析」占位提示的数据源；响应时按 task_id 反查注入，执行表不落列） */
+            kind?: components["schemas"]["TaskKind"];
             /**
              * Format: date-time
              * @description C
