@@ -176,15 +176,6 @@ def submit_conformer_refinement(payload: dict) -> dict:
             "crest_task_id": crest_tid, "seat_id": sid}
 
 
-def workflow_view(row: dict) -> dict:
-    """契约 Workflow 视图：energy_summary 由 B11 聚合（此函数仅结构；
-    B11 接入后 energy_summary 恒由聚合层填充）。"""
-    row = dict(row)
-    row.setdefault("crest_execution_id", row.get("crest_execution_id"))
-    row.setdefault("energy_summary", {"rows": []})
-    return row
-
-
 def on_crest_terminal(dispatcher, execution_row: dict, state: str) -> None:
     """crest 终态钩子（幂等；dispatcher 终态管线在席位释放前调用）。
 

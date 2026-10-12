@@ -113,6 +113,14 @@ def delete_queue(id: str) -> Response:
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.get("/queues/{id}/energy-summary")
+def get_queue_energy_summary(id: str) -> dict:
+    """队列能量表（M4 B11）：成员恒 g16，B1 解析末次 SCF 双单位 +
+    相对 kJ/mol（零点=查询范围最低，部分完成态随行集重算）。"""
+    from ..services import energy as energy_svc
+    return energy_svc.queue_energy_summary(id)
+
+
 @router.post("/queues/{id}/submit")
 def submit_queue(id: str) -> dict:
     q = queues_store().get(id)

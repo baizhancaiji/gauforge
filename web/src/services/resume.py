@@ -217,7 +217,6 @@ def confirm(execution_id: int) -> dict:
     if seats().count() >= limit:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)
-    # 新建任务：输入副本 = 注入改写后文本（新 task id，不经候选）
     # 新建任务：输入副本 = 注入改写后文本（新 task id，不经候选）；
     # 任务级续跑关联（派发建行时转移到执行记录 resumed_from）
     new_tid = tasks().create_seat_task(

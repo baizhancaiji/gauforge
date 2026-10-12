@@ -300,3 +300,137 @@ def test_reconcile_pushes_pending_workflow(tmp_path):
     assert wf["refine_queue_id"] is not None
     # 再跑一轮：已推进（refining）不再重推
     assert wf_svc.reconcile_workflows(disp) == 0
+
+
+# ---------------- B11 能量表汇总与 workflow 查询 ----------------
+
+TAIL = "#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\nH 1 0.96\n\n"
+
+
+def _mk_queue(members: list[int], skip_failed: bool = False) -> str:
+    qid = "Q" + "".join(chr(65 + i) for i in range(5))
+    queues().create(qid, name="t", skip_failed=skip_failed)
+    for pos, tid in enumerate(members):
+        tasks().enqueue(tid, qid, pos)
+    seats().append(kind="queue", queue_id=qid)
+    queues().set_state(qid, "submitted")
+    return qid
+
+
+def _mk(text: str, name: str) -> int:
+    tid = tasks().create_candidate(name, "imported")
+    (config.HOME_DIR / "inputs" / str(tid)).write_text(text, encoding="utf-8")
+    return tid
+
+
+def _succeed_with_analysis(task_id: int, hartree: float, method="b3lyp/6-31g(d)"):
+    """succeeded 执行 + analysis.json（B1 解析产物最小形状）。"""
+    eid = executions().create(
+        task_id=task_id, filename="x.gjf",
+        resources={"nproc": {"value": 1, "defaulted": False},
+                   "mem_gb": {"value": 1, "defaulted": False}})
+    run_d = config.HOME_DIR / "run" / str(eid)
+    run_d.mkdir(parents=True)
+    (run_d / "analysis.json").write_text(json.dumps({
+        "summary": {"method": method,
+                    "scf_energy_hartree": hartree,
+                    "scf_energy_eV": hartree * 27.211386245988},
+    }), encoding="utf-8")
+    executions().finalize(execution_id=eid, state="succeeded",
+                          finished_at="2026-10-12T12:00:00+08:00")
+    return eid
+
+
+def test_queue_energy_summary_zero_point(tmp_path):
+    """队列能量表：B1 解析取数 + 双单位同源换算 + 零点=行集最低（相对
+    kJ/mol，最低行 0）。"""
+    from web.src.services.energy import queue_energy_summary
+    a = _mk("%chk=a.chk\n" + TAIL, "a.gjf")
+    b = _mk("%chk=b.chk\n" + TAIL, "b.gjf")
+    _mk_queue([a, b])
+    _succeed_with_analysis(a, -231.0)
+    _succeed_with_analysis(b, -230.5)
+    out = queue_energy_summary(qid_of(a))
+    rows = out["rows"]
+    assert [r["task_id"] for r in rows] == [a, b]
+    assert rows[0]["source"] == "analysis"
+    assert rows[0]["energy_hartree"] == -231.0
+    assert abs(rows[0]["energy_eV"] + 231.0 * 27.211386245988) < 1e-4
+    assert rows[0]["relative_kJ_mol"] == 0.0  # 零点=最低
+    expect = (-230.5 - -231.0) * 2625.4996
+    assert abs(rows[1]["relative_kJ_mol"] - expect) < 1e-4
+
+
+def qid_of(task_id: int) -> str:
+    from web.src.store import tasks as t_store
+    row = t_store().get(task_id)
+    return row["queue_id"] if row and row.get("queue_id") else         (assert_fail() if False else _raise_notfound(task_id))
+
+
+def _raise_notfound(task_id: int) -> str:
+    raise AssertionError(f"queue not found for task {task_id}")
+
+
+def test_queue_energy_partial_rows(tmp_path):
+    """部分完成态：未成功成员 source=none、relative null；新增更低能量行
+    时零点整体重算（接受漂移）。"""
+    from web.src.services.energy import queue_energy_summary
+    a = _mk("%chk=a.chk\n" + TAIL, "a.gjf")
+    b = _mk("%chk=b.chk\n" + TAIL, "b.gjf")
+    _mk_queue([a, b])
+    _succeed_with_analysis(a, -231.0)  # b 无成功执行
+    rows = queue_energy_summary(qid_of(a))["rows"]
+    assert rows[0]["relative_kJ_mol"] == 0.0
+    assert rows[1]["source"] == "none"
+    assert rows[1]["relative_kJ_mol"] is None
+    # b 新增更低能量执行 → a 的相对值随零点整体改写
+    _succeed_with_analysis(b, -231.2)
+    rows = queue_energy_summary(qid_of(a))["rows"]
+    assert rows[1]["relative_kJ_mol"] == 0.0
+    assert abs(rows[0]["relative_kJ_mol"] - 0.2 * 2625.4996) < 1e-4
+
+
+def test_workflow_aggregation_mixed_rows(tmp_path):
+    """workflow 跨容器聚合：crest 行（ensemble 代表）+ 精修队列 g16 行
+    混排，零点跨容器；单点与列表端点同形。"""
+    from web.src.routers.workflows import get_workflow, list_workflows
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    # 精修成员成功执行（能量高于 crest 最优构象 → crest 行为零点行）
+    wf = workflows().get(out["workflow_id"])
+    members = tasks().list_queue_members(wf["refine_queue_id"])
+    _succeed_with_analysis(members[0]["id"], -11.39)
+    _succeed_with_analysis(members[1]["id"], -11.20)
+    view = get_workflow(out["workflow_id"])
+    rows = view["energy_summary"]["rows"]
+    kinds = [r["kind"] for r in rows]
+    assert "crest" in kinds and rows.count(0.0 if False else rows[0]) is not None
+    crest_rows = [r for r in rows if r["kind"] == "crest"]
+    g16_rows = [r for r in rows if r["kind"] == "g16"]
+    assert len(crest_rows) == 1 and len(g16_rows) == 2
+    assert crest_rows[0]["source"] == "ensemble"
+    # crest ensemble 最低构象（-11.393）< 精修成员（-11.39/-11.20）→ 零点在 crest 行
+    assert crest_rows[0]["relative_kJ_mol"] == 0.0
+    assert view["state"] == "refining"
+    assert view["refine_queue_id"] == wf["refine_queue_id"]
+    # 列表端点同形
+    lst = list_workflows(20)
+    assert len(lst["workflows"]) == 1
+    assert lst["workflows"][0]["workflow_id"] == out["workflow_id"]
+    assert lst["workflows"][0]["energy_summary"]["rows"] == rows
+
+
+def test_workflow_aggregation_after_queue_delete(tmp_path):
+    """精修队列删除后：workflow 停留 refining、仅 crest 行可查（结果仍可查）。"""
+    from web.src.routers.workflows import get_workflow
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf = workflows().get(out["workflow_id"])
+    qid = wf["refine_queue_id"]
+    # 删除精修队列（成员已建执行行 → detach_finished 路径）
+    from web.src.services.queues import delete_queue
+    delete_queue(qid)  # 分级处置：席位撤销 + 已执行成员只留历史
+    view = get_workflow(out["workflow_id"])
+    assert view["state"] == "refining"  # 不设放弃终态
+    kinds = [r["kind"] for r in view["energy_summary"]["rows"]]
+    assert kinds == ["crest"]  # 仅 crest 行，结果仍可查
