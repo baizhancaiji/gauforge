@@ -22,6 +22,15 @@
 
 - 【specs】roadmap 随 A4 关闭回填四处：§7 开放事项 1（任务间依赖与 chk 规范）标注已定稿关闭并落定稿要点（@prev 不纳入/依赖推导单一真相/三错误码/窗口联动/边界交互）、M4 段补注续跑入口含手动停止条目与新增端点按 DSH 可消费形态供 M5 复用、§6 backlog 程序化输入生成加注 M4 仅组合流内模板坐标替换、§8.6 补 M4 重入语义注记（含物化依赖执行不适用采纳重跑通则——禁用 HQ 内部重试 + journal 重跑者取消重派 + 120s 盲区保守处置）
 
+### 修复
+
+- 【web】workflow completed 状态可达（P1 整改）：精修队列收束 completed 时由派发器席位结算按 refine_queue_id 反查推进 workflow 行（终态判据=精修队列成功记 completed，m4-plan §2.3 实施定案），启动对账对 refining 行按「归属队列已 completed」补记、收束两写间崩溃窗口——组合流成功后 GET /workflows 系端点状态语义正确（C7 进度面板与 D3 走查 7 前置）
+- 【web】上游重跑对下游哈希跳过的传导定案落地（P2 整改，m4-plan §8 决策点 6 按建议值定案关闭）：advance 哈希跳过判定前置守卫——直接前驱在下游最近成功执行之后产生过新执行（重跑）即视依赖已变、拒绝跳过随之重跑（溯源基线=下游最近 succeeded 执行 id，全局执行 id 单调可比、无须落库溯源记录），守卫后由既有依赖守卫按前驱最新终态照常处置；roadmap §7 事项 1 回填定案句
+- 【api】组合流提交响应契约三方对齐（P3 整改）：POST /workflows/conformer-refinement 回传 {workflow_id, state, crest_task_id, seat_id} 四字段（crest 任务 id 与席位 id 供待执行面板定位；crest_execution_id 属 GET /workflows/{id} 单点响应、提交时点 crest 尚未派发恒不存在），openapi ConformerRefinementResponse 与 m4-plan §2.3 措辞随改、前后端契约生成物再生（models.py/contract.ts）
+- 【web】组合流终态钩子建队中断回收（P4 整改）：queues().create 至成员校验之间异常（如模板 link0 含 @task: 被 validate_queue_members 防御拒绝）时回收半成品队列、成员任务行与输入副本、refine_queue_id 不落——对账重推不复制孤儿队列，「不重建已存在实体」判重失效窗口消除
+- 【web】断点续跑入口对 succeeded 条目显式设防（P5 整改）：preview/confirm 同口径 404 无续跑入口（404 NOT_FOUND）——续跑=从断点恢复、成功条目无断点，重跑诉求由历史页「重新排队」承载；m4-plan §2.2 入口措辞随改
+- 【web】断点续跑 Opt= 变体原子选项保留（P6 整改）：opt=(ts,calcfc)→Opt=(Restart,ts,calcfc)、opt=X→Opt=(Restart,X)、已含 Restart 项不重复注入（大小写不敏感）、括号残缺按裸 opt——对齐 §2.2 注入矩阵「Opt=Restart + 原选项」语义
+
 ## v3.0.2（2026-10-12T09:42+0800 发布，patch）
 
 ### 变更
