@@ -42,6 +42,7 @@ from ..hq.gateway import Gateway, GatewayError
 from ..store import executions, queues, seats, settings, tasks
 from ..store.db import now_iso
 from . import finalize, materialize, workspace
+from ..services.dependencies import parse_link0_refs
 from .monitor import ExecutionMonitor
 from .progress import ProgressTracker
 
@@ -68,6 +69,11 @@ def _declared(execution: dict) -> tuple[int, int]:
 
 
 class Dispatcher:
+    # 窗口停等原因（B8 可观测性，契约 PendingSeat.members.wait_reason）：
+    # task_id → "dependency" | "resource"——仅 advance 当前停等成员非空；
+    # 类级注册表（pending 快照读取），advance 每轮重置。
+    wait_reasons: dict[int, str] = {}
+
     def __init__(self, gateway: Gateway, *, emitter=None,
                  run_root: Path | None = None,
                  monitor: ExecutionMonitor | None = None,
@@ -136,7 +142,13 @@ class Dispatcher:
     # ---------------- 窗口推进 ----------------
 
     def advance(self) -> None:
-        """自序列头按序推进并行窗口（哈希跳过/停等/物化/提交/回填）。"""
+        """自序列头按序推进并行窗口（哈希跳过/依赖守卫/停等/物化/提交/回填）。
+
+        B8 依赖联动（m4-plan §2.1）：依赖守卫先于资源检查（roadmap §7.1
+        「依赖未满足者不得进入窗口」，保序不越位不变）；前驱 failed/skipped
+        → 该成员即时 skipped（传递闭包——勾选跳过开关时防「中段 skipped
+        后末段直接前驱永不到 succeeded」的窗口死锁，队列收束不悬挂）。"""
+        Dispatcher.wait_reasons = {}  # 停等原因逐 tick 重算
         window = int(settings().get("parallel_window"))
         # 停滞阈值逐 tick 跟随设置（新任务生效）：新建监测 entry 用当前值，
         # 已在跑 entry 的检测器保有创建时刻阈值，不追溯。
@@ -157,8 +169,6 @@ class Dispatcher:
         running_task_ids = {e["task_id"] for e in running}
 
         for item in self.expand_sequence():
-            if len(running) >= window:
-                break
             if item["task_id"] in running_task_ids:
                 continue  # 同任务不重复派发（防御）
             task = tasks().get(item["task_id"])
@@ -189,12 +199,29 @@ class Dispatcher:
                     self._release_seat_task(task["id"])
                 continue
 
-            # ③ 声明资源停等：窗口停在该任务，不越位（mem 维度仅当 worker 上报）
+            # ② 依赖守卫（先于窗口满与资源检查，§2.1）：settle=前驱
+            #    failed/skipped → 即时 skipped（归因 predecessor_failed，
+            #    stderr 注明传递链）；unmet=前驱未到 succeeded → 窗口停等
+            gate = self._dependency_gate(item, task)
+            if gate == "settle":
+                continue
+            if gate == "unmet":
+                Dispatcher.wait_reasons[task["id"]] = "dependency"
+                break
+
+            # ③ 并行窗口满：不再取新成员（保序不越位）；依赖已满足者的
+            #    等待原因为并行槽满（不属停等图注两类，wait_reason 置 null）
+            if len(running) >= window:
+                break
+
+            # ④ 声明资源停等：窗口停在该任务，不越位（mem 维度仅当 worker 上报）
             nproc = int(resolved["nproc"]["value"])
             mem = _mem_mib(resolved["mem_gb"]["value"])
             if nproc > total_cpus - claimed_cpus:
+                Dispatcher.wait_reasons[task["id"]] = "resource"
                 break
             if total_mem and mem > total_mem - claimed_mem:
+                Dispatcher.wait_reasons[task["id"]] = "resource"
                 break
 
             eid = self._dispatch(item, task, resolved, input_hash)
@@ -204,6 +231,45 @@ class Dispatcher:
                 running.append(row)
                 claimed_cpus += nproc
                 claimed_mem += mem
+
+    def _dependency_gate(self, item: dict, task: dict) -> str:
+        """依赖守卫判定（B8，m4-plan §2.1）。
+
+        返回 "met"（全部直接前驱 succeeded——含哈希跳过沿用）/ "unmet"
+        （任一前驱无终态执行记录——staged/running/未到，窗口停等）/
+        "settle"（任一前驱 failed/skipped → 本成员即时 skipped 后返回，
+        归因 predecessor_failed、stderr 注明传递链与直接前驱终态）。
+
+        依赖集合 = Link0 @task: 引用 ∩ 本队列现存成员（单任务席位无队列
+        依赖——@task: 被 B6 静态校验拒绝、@exec 由物化器处理不经守卫）。
+        """
+        qid = item.get("queue_id")
+        if qid is None:
+            return "met"
+        try:
+            text = self._inputs_path(task["id"]).read_text(
+                encoding="utf-8", errors="replace")
+        except OSError:
+            return "met"
+        refs = [r["target"] for r in parse_link0_refs(text)
+                if r["kind"] == "task"]
+        member_ids = {m["id"] for m in tasks().list_queue_members(qid)}
+        preds = [t for t in refs if t in member_ids]
+        if not preds:
+            return "met"
+        states: dict[int, str | None] = {}
+        for p in preds:
+            exs = executions().list_by_task(p)
+            states[p] = exs[-1]["state"] if exs else None
+        if any(s in ("failed", "skipped") for s in states.values()):
+            self._mark_skipped(task, qid, "predecessor_failed")
+            chain = ",".join(f"{p}={states[p]}" for p in preds)
+            print(f"[dispatch] 依赖联动 skipped：task={task['id']} ← {chain}",
+                  file=sys.stderr)
+            return "settle"
+        if any(s != "succeeded" for s in states.values()):
+            return "unmet"
+        return "met"
 
     def _hash_skip(self, task_id: int, input_hash: str) -> bool:
         return any(e["state"] == "succeeded" and e["input_hash"] == input_hash

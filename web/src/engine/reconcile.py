@@ -36,7 +36,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import finalize
+from . import finalize, workspace
 from .dispatcher import HQ_TERMINAL_MAP, Dispatcher, _mem_mib
 from .monitor import psutil
 from .workspace import materialize
@@ -117,7 +117,8 @@ class Reconciler:
         """全量对账一轮；HQ 不可达时 GatewayError 上抛（调用方重试）。"""
         jobs = {int(j["id"]): j for j in self._d._gw.jobs()}
         summary: dict[str, list[int]] = {"takeover": [], "terminal": [],
-                                         "redirect": [], "lost": []}
+                                         "redirect": [], "lost": [],
+                                         "rematerialize": []}
         for row in executions().list_by_state("running"):
             jid = row.get("hq_job_id")
             job = jobs.get(int(jid)) if jid is not None else None
@@ -129,6 +130,11 @@ class Reconciler:
                 self._s2_settle(row, job["state"])
             else:  # running / waiting：在跑或待启动
                 run_d = self._d._run_root / str(row["id"])
+                # B8 重入②（m4-plan §2.1）：物化依赖执行不吃 120s 容差豁免
+                # ——进程证据容差收紧为 0（宁可重派、不可静默）。静默重跑
+                # 的其余通道已被重入①堵死（crash_limit=0：worker 失联即
+                # failed 不自动重排；复用存活 server 时无 journal 恢复）。
+                has_deps = self._row_needs_materialization(row)
                 # S3 判据（§2.4 ③）：① job 状态回退 waiting 且本地曾 running；
                 # ② create_time 佐证（已回 running 者）；③ server 本次生命
                 # 周期被重新 spawn 且本地 started_at 早于 server spawn——
@@ -142,8 +148,18 @@ class Reconciler:
                 rerun = (by_spawn and not self._spawn_vetoed(job, spawn_ts)) \
                     or (job["state"] == "waiting"
                         and bool(row.get("started_at"))) \
-                    or self._d._rerun_probe(row, run_d)
+                    or self._d._rerun_probe(row, run_d) \
+                    or (has_deps and detect_rerun(row, run_d, tolerance_s=0.0))
                 if rerun:
+                    if has_deps:
+                        # 重入②特判（先于 S3 的 chk 分流判定，§2.1）：含
+                        # @task:/@exec: 的执行被 journal 恢复重跑时不可接管
+                        # 亦不可原样重定向（dep chk 已被污染/重定向副本缺
+                        # dep 文件）——取消 HQ job、以符号形式输入重新物化
+                        # 派发（新执行 id，crash_limit=0 自动携带）。
+                        summary["rematerialize"].append(row["id"])
+                        self._cancel_and_rematerialize(row)
+                        continue
                     if has_chk(run_d) and self._seat_holds(row):
                         summary["redirect"].append(row["id"])
                         self._s3_redirect(row)
@@ -153,6 +169,53 @@ class Reconciler:
                 self._takeover(row, job)
         self._emit_snapshot()
         return summary
+
+    @staticmethod
+    def _row_needs_materialization(row: dict) -> bool:
+        """执行输入是否含物化依赖（@task:/@exec: 任一形态）。
+
+        以任务输入副本（符号形式）判定——run/<id>/input.gjf 已被物化重写、
+        不含符号，不作为判据。
+        """
+        from ..services.candidates import default_inputs_dir
+        from ..services.dependencies import parse_link0_refs
+        try:
+            text = (default_inputs_dir() / str(row["task_id"])) \
+                .read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return False
+        return bool(parse_link0_refs(text))
+
+    def _cancel_and_rematerialize(self, row: dict) -> None:
+        """重入②处置：取消 HQ job → 原执行归因 external_interrupt 落历史
+        （release=False：席位由新执行延续）→ 以任务输入副本（符号形式）
+        重新物化派发（复用 _dispatch：物化钩子重建 dep chk、crash_limit=0）。"""
+        d = self._d
+        try:
+            d._gw.cancel(str(row["hq_job_id"]))
+        except GatewayError:
+            pass  # job 可能已自行终态：原执行落历史照常
+        run_d = d._run_root / str(row["id"])
+        snap = finalize.protect_transient(run_d)
+        finalize.reap_scratch(run_d)
+        d._on_terminal(row, "failed", "external_interrupt",
+                       monitor_summary=None, chk_snapshot=snap, release=False)
+        task = tasks().get(row["task_id"])
+        if task is None:
+            print(f"[reconcile] 重入②重派失败：任务 {row['task_id']} 不存在",
+                  file=sys.stderr)
+            return
+        text = d._inputs_path(row["task_id"]).read_text(
+            encoding="utf-8", errors="replace")
+        resolved = workspace.resolve_link0(
+            text, int(settings().get("link0_default_nproc")),
+            float(settings().get("link0_default_mem_gb")))
+        input_hash = workspace.content_hash(resolved["completed_text"])
+        item = {"seat_id": None,
+                "kind": "queue" if row.get("queue_id") else "task",
+                "task_id": row["task_id"], "queue_id": row.get("queue_id"),
+                "filename": row["filename"]}
+        d._dispatch(item, task, resolved, input_hash)
 
     # ---------------- 各场景处置 ----------------
 

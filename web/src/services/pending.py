@@ -76,11 +76,16 @@ def _parse_extra(task_id: int) -> dict:
                           "mem_gb": resolved["mem_gb"]}}
 
 
-def _member_view(m: dict, since: str) -> dict:
+def _member_view(m: dict, since: str, wait_reason: str | None = None) -> dict:
     """成员展示态：执行行只认席位本周期的（提交时刻 since 起、含临界秒，
     提交同秒的即时派发归属本周期）——回退重新提交后未派发成员不再读到
     上一周期的 running/skipped 终态（2026-10-04 报障修复）；本周期无执行
-    行即 staged，跨周期全量执行历史归历史页所有。"""
+    行即 staged，跨周期全量执行历史归历史页所有。
+
+    wait_reason（M4 B8）：窗口停等原因（dependency/resource），仅窗口当前
+    停等成员非 null（引擎类级注册表，advance 逐 tick 重算；引擎未启用为
+    None）——执行中页「依赖停等/资源停等」图注数据源（C5 渲染）。
+    """
     exs = [e for e in executions().list_by_task(m["id"])
            if (e["submitted_at"] or "") >= since]
     if any(e["state"] == "running" for e in exs):
@@ -91,20 +96,33 @@ def _member_view(m: dict, since: str) -> dict:
         state = "staged"
     return {"task_id": m["id"], "filename": m["filename"], "state": state,
             "position": m["position"] if m["queue_id"] else None,
+            "wait_reason": wait_reason,
             **_parse_extra(m["id"])}
+
+
+def _wait_reasons() -> dict[int, str]:
+    """窗口停等原因注册表（延迟导入防 services←engine 环；引擎未启用时
+    Dispatcher.wait_reasons 为空 dict）。"""
+    try:
+        from ..engine.dispatcher import Dispatcher
+    except Exception:  # noqa: BLE001 — 引擎不可用（M0 演示模式）不阻断快照
+        return {}
+    return getattr(Dispatcher, "wait_reasons", None) or {}
 
 
 def snapshot() -> dict:
     """PendingResponse：席位（含队列名/提交时刻/成员概览/locked）+ 容量 + 窗口。"""
     locked = locked_seat_ids()
+    wait = _wait_reasons()
     items = []
     for s in seats().list_by_position():
         if s["kind"] == "task":
             row = tasks().get(s["task_id"])
-            members = ([_member_view(row, s["created_at"])] if row else [])
+            members = ([_member_view(row, s["created_at"],
+                                     wait.get(s["task_id"]))] if row else [])
             queue_name = None
         else:
-            members = [_member_view(m, s["created_at"])
+            members = [_member_view(m, s["created_at"], wait.get(m["id"]))
                        for m in tasks().list_queue_members(s["queue_id"])]
             q = queues().get(s["queue_id"])
             queue_name = q["name"] if q else None
