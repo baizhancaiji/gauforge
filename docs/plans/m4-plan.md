@@ -278,7 +278,10 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
   增「从断点续跑」动作（skipped 条目无执行目录、必无续跑资产，
   **不展示**该动作，C6 按此实现，与 failed 条目的 ineligible「无续跑
   资产」态区分；**归档条目同样不提供该动作**——归档即封存，如需续跑属
-  「取消归档」专项、不入 M4，如需另立），两段式：
+  「取消归档」专项、不入 M4，如需另立；**succeeded 条目亦无续跑入口**
+  ——续跑=从断点恢复、成功条目无断点，重跑诉求由历史页「重新排队」
+  承载，后端对 succeeded 显式拒绝（404 无续跑入口，preview/confirm
+  同口径）），两段式：
   `POST /history/{id}/resume/preview`（无副作用）
   → 前端弹窗 → `POST /history/{id}/resume`（**新建任务**并入待执行队列，
   沿用既有派发/核验链路；任务身份见下）。
@@ -435,9 +438,11 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
     内最低能量）；无 combo 需求的队列能量表直接走 `/queues/{id}/energy-summary`。
     端点随 A4 契约 diff 登记（mapping 增行）。
   - `POST /workflows/conformer-refinement` 响应（与既有提交端点同形，
-    200）：`{workflow_id, state, crest_execution_id?}`——前端由此取得
-    id 打开进度面板；端点随 A4 契约 diff 登记（mapping 增行），与两 GET
-    workflow 端点对齐。
+    200）：`{workflow_id, state, crest_task_id, seat_id}`——前端由此取得
+    workflow id 打开进度面板，crest 任务 id 与席位 id 供待执行面板定位
+    （`crest_execution_id` 属 GET 单点响应：提交时点 crest 尚未派发、
+    提交响应不含该字段）；端点随 A4 契约 diff 登记（mapping 增行），与
+    两 GET workflow 端点对齐。
   - `GET /workflows?limit=20`（**新增列表端点**，只读）→
     `{workflows: [<GET /workflows/{id} 同形响应>…]}`，按 `updated_at`
     倒序——页面刷新后找回组合流、`refine_queue_pending` 满员提示回看的
@@ -448,6 +453,10 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
     `crest_running → refining → completed`，任一阶段失败（crest 执行失败、
     构象数 <2 等）→ failed（终态）；精修队列失败回退期间 workflow 停留
     refining（回退重提属队列既有语义，终态判据=精修队列成功记 completed）；
+    **completed 联动落位（实施定案）**：精修队列收束 completed 时由派发器
+    席位结算（`_settle_queue_seat` 成功分支）按 `refine_queue_id` 反查推进
+    workflow 行，启动对账对 refining 行按「归属队列已 completed」补记——
+    收束崩溃窗口，completed 为实转移状态、非查询期派生。
     精修队列最终被放弃/删除（回退后不再重提、或用户删除精修队列）时
     同样停留 refining——不设放弃终态、workflow 记录不级联删除，单点
     端点聚合中精修队列行按缺失成员处理、crest 结果（ensemble 能量）
@@ -968,10 +977,15 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
    `@exec:<执行id>`（resume 专用）两形态；`@prev` 不纳入（提交顺序不构成
    承诺、重排破坏语义）。如评审坚持保留 @prev，定义为「提交时展开为队首
    前驱的 @task:id 糖衣」，重排后不重展开。
-6. **上游重跑对下游哈希跳过的传导**（A4 关闭；源自 §4.1 交互矩阵
-   专项决策）：建议「依赖满足与跳过溯源纳入直接前驱的
-   **溯源执行 id**——前驱产生新执行（重跑）即视依赖已变，下游不再沿用
-   旧结果、随之重跑」；随 A4 评审定案。
+6. **上游重跑对下游哈希跳过的传导**（~~A4 关闭~~ **已定案**：2026-10-12
+   按 §4.2 记录口径采纳建议值；实施落位 `Dispatcher._upstream_rerun_since`
+   ——advance 哈希跳过判定前置守卫，用例 `test_dispatch_deps.py::test_upstream_rerun_blocks_downstream_hash_skip`）：
+   「依赖满足与跳过溯源纳入直接前驱的**溯源执行 id**——前驱产生新执行
+   （重跑）即视依赖已变，下游不再沿用旧结果、随之重跑」。溯源基线取下游
+   最近 succeeded 执行 id（依赖守卫保证被溯源的前驱执行 id 必小于该值，
+   全局执行 id 单调可比），前驱其后的任意新执行即重跑信号、无须落库溯源
+   记录；守卫拒绝跳过后由既有依赖守卫按前驱最新终态照常处置（前驱重跑
+   失败 → 下游传递 skipped）。
 7. **物化执行的重入语义**（A4 关闭）：建议「含 `@task:`/`@exec:` 物化
    依赖的执行禁用 HQ 内部重试（crash_limit 单执行关闭，失联即 failed、
    显式重跑经派发器重新物化）+ journal 重跑者对账取消后以新执行 id
