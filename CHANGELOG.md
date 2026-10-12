@@ -4,7 +4,14 @@
 
 ## Unreleased（未发布）
 
-_暂无条目。_
+### 新增
+
+- 【api】M4 A4 契约 diff（任务链依赖与 chk 传递定稿，关闭 roadmap §7 开放事项 1）：Link0 符号引用文法两形态（@task:<id> 同队列成员/@exec:<执行id> resume 专用，引用即依赖单一真相）与 DAG 校验规则、错误码全集 29→35（DEPENDENCY_CYCLE/DEPENDENCY_UNREACHABLE/CHK_SOURCE_MISSING/RESUME_NOT_ELIGIBLE/WORKFLOW_STATE_INVALID/CREST_EXECUTABLE_MISSING）、Task.kind（g16|crest）与 crest 不入队/无增量解析/停滞告警不适用契约承载、PendingSeat 成员停等原因字段（dependency/resource，依赖守卫先于资源检查）、断点续跑端点对（POST /history/{id}/resume/preview 恒 200 五态 ineligible + POST /history/{id}/resume 幂等重探/满员 409）与 HistoryEntry.resumed_from/resumed_by 关联字段、组合流端点（POST /workflows/conformer-refinement 前置检查序 503/409/422 + GET /workflows 列表 + GET /workflows/{id} 状态与能量表跨容器聚合）与 WorkflowState 状态机/refine_queue_pending 布尔、GET /queues/{id}/energy-summary 能量表（末次 SCF 双单位 + 相对 kJ/mol 零点=查询范围最低）、设置项 crest_root/xtb_root 登记、mapping 增行（55 操作）与 sse.md execution.progress/execution.stalled 两行 crest 不适用补注（无新增事件，全集维持 15 类），前后端契约生成物再生
+- 【web】迁移 v3 随 A4 契约批次落库：executions 加列 resumed_from（可空 TEXT JSON 断点续跑关联）与 workflows 组合流记录表（state 四态 CHECK + refine_queue_pending），HistoryEntry 响应接通 resumed_from 透传与 resumed_by 派生只读（按 resumed_from 反查）
+
+### 变更
+
+- 【specs】roadmap 随 A4 关闭回填四处：§7 开放事项 1（任务间依赖与 chk 规范）标注已定稿关闭并落定稿要点（@prev 不纳入/依赖推导单一真相/三错误码/窗口联动/边界交互）、M4 段补注续跑入口含手动停止条目与新增端点按 DSH 可消费形态供 M5 复用、§6 backlog 程序化输入生成加注 M4 仅组合流内模板坐标替换、§8.6 补 M4 重入语义注记（含物化依赖执行不适用采纳重跑通则——禁用 HQ 内部重试 + journal 重跑者取消重派 + 120s 盲区保守处置）
 
 ## v3.0.2（2026-10-12T09:42+0800 发布，patch）
 
