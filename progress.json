@@ -2,15 +2,15 @@
   "updated": "2026-10-12T09:42+0800",
   "latest_released_version": "3.0.2",
   "unreleased": [],
-  "in_progress": null,
+  "in_progress": {"task": "M4 工作流（m4-plan，目标版本 3.1.0）", "note": "A/B 批次执行中：自 A4 契约 diff 起步，按 §1 提交序列逐任务落库"},
   "next_steps": [
-    "M4 开工：把「M4 工作流」登记入 progress.json 的 in_progress，按 m4-plan §4.1 从 A4 依赖与 chk 契约 diff 起步（文档先行）",
+    "A4 契约 diff（openapi/mapping/sse + roadmap §7.1 回填）→ A5 设计定稿（crest 实测锚点 + fixtures）→ B6–B11 后端实现",
     "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",
-    "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据"
+    "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）"
   ],
   "known_issues": [
     "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
     "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
   ],
-  "context": "v3.0.2 已发布（tag v3.0.2 本地落位，Release 附件待上传）：冻结 2026-10-04 更新域事故链四项修复（升级接管脚本晋升自举、成员展示态本周期判定、watchdog 运行中对账、server_spawn_ts 记账后置）与发布流程 context 刷新/闸门校验，并随批入库 M4 计划基线刷新与八轮审查修订（m4-plan.md 2026-10-12 定稿、目标版本 3.1.0，roadmap M4 段时序措辞提前回填）。M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）；M4 未开工，开工闸门已满足（unreleased 已清空），下一步登记 in_progress 后自 A4 契约 diff 起步，B6 起后端实现前核对批次闸门（m4-plan §0.4 条件 4）。"
+  "context": "v3.0.2 已发布（tag v3.0.2 本地落位，Release 附件待上传）：冻结 2026-10-04 更新域事故链四项修复（升级接管脚本晋升自举、成员展示态本周期判定、watchdog 运行中对账、server_spawn_ts 记账后置）与发布流程 context 刷新/闸门校验，并随批入库 M4 计划基线刷新与八轮审查修订（m4-plan.md 2026-10-12 定稿、目标版本 3.1.0，roadmap M4 段时序措辞提前回填）。M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）；M4 已开工（2026-10-12 登记入 in_progress），执行 A/B 批次：A4 契约 diff → A5 设计定稿 → B6–B11 后端，C/D 批次后续；B6 起后端实现前按 m4-plan §0.4 条件 4 核对批次闸门。"
 }
