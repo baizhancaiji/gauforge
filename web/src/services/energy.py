@@ -51,15 +51,20 @@ def _latest_analysis(task_id: int) -> tuple[dict | None, dict | None]:
 
 
 def _g16_row(task_row: dict) -> dict:
-    """g16 成员能量行（B1 解析末次 SCF，hartree/eV 双单位同源）。"""
+    """g16 成员能量行（B1 解析末次 SCF，hartree/eV 双单位同源）。
+
+    analysis.json 形状随 B1 落盘 SSOT（results_parse.parse_output）：
+    能量在 result.summary、方法名在 result 层——扁平读取曾致真实管道
+    全行 energy 空（D3 走查缺陷③，单测夹具形状失真逃逸）。"""
     analysis, latest = _latest_analysis(task_row["id"])
-    summary = (analysis or {}).get("summary") or {}
+    result = (analysis or {}).get("result") or {}
+    summary = result.get("summary") or {}
     state = latest["state"] if latest else "staged"
     eh = summary.get("scf_energy_hartree")
     # eV 透传 B1 双单位原值（与解析层同源，不二次换算）；kJ/mol 由
     # HARTREE_KJ_MOL 单点计算（B11 单位换算单点）
     row = {"task_id": task_row["id"], "kind": "g16", "state": state,
-           "method": summary.get("method"),
+           "method": result.get("method"),
            "energy_hartree": eh,
            "energy_eV": summary.get("scf_energy_eV"),
            "relative_kJ_mol": None,

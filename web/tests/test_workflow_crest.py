@@ -328,7 +328,8 @@ def _mk(text: str, name: str) -> int:
 
 
 def _succeed_with_analysis(task_id: int, hartree: float, method="b3lyp/6-31g(d)"):
-    """succeeded 执行 + analysis.json（B1 解析产物最小形状）。"""
+    """succeeded 执行 + analysis.json（B1 落盘 SSOT 形状：result.summary
+    嵌套、method 在 result 层——扁平夹具曾致缺陷③逃逸）。"""
     eid = executions().create(
         task_id=task_id, filename="x.gjf",
         resources={"nproc": {"value": 1, "defaulted": False},
@@ -336,9 +337,9 @@ def _succeed_with_analysis(task_id: int, hartree: float, method="b3lyp/6-31g(d)"
     run_d = config.HOME_DIR / "run" / str(eid)
     run_d.mkdir(parents=True)
     (run_d / "analysis.json").write_text(json.dumps({
-        "summary": {"method": method,
-                    "scf_energy_hartree": hartree,
-                    "scf_energy_eV": hartree * 27.211386245988},
+        "result": {"method": method,
+                   "summary": {"scf_energy_hartree": hartree,
+                               "scf_energy_eV": hartree * 27.211386245988}},
     }), encoding="utf-8")
     executions().finalize(execution_id=eid, state="succeeded",
                           finished_at="2026-10-12T12:00:00+08:00")
