@@ -66,7 +66,7 @@ const SOURCE_LABEL: Record<string, string> = {
       </tbody>
     </table>
     <p v-if="partial" class="et-note mono" role="note">
-      相对能量以当前最低为零点 · 随完成进度重算
+      相对能量以当前最低为零点、随完成进度重算
     </p>
   </div>
 </template>

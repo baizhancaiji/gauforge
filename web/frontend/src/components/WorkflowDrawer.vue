@@ -98,8 +98,8 @@ defineExpose({ show, hide });
         <div v-if="expanded[w.workflow_id]" class="wf-body">
           <p class="wf-meta mono dim">
             来源候选 #{{ w.source_candidate_id }}
-            <template v-if="w.crest_execution_id != null"> · crest 执行 #{{ w.crest_execution_id }}</template>
-            <template v-if="w.refine_queue_id"> · 精修队列 {{ w.refine_queue_id }}</template>
+            <template v-if="w.crest_execution_id != null">、crest 执行 #{{ w.crest_execution_id }}</template>
+            <template v-if="w.refine_queue_id">、精修队列 {{ w.refine_queue_id }}</template>
           </p>
           <!-- 满员未自动提交提示（refine_queue_pending 布尔，§2.3 非状态枚举） -->
           <p v-if="w.refine_queue_pending" class="wf-pending mono" role="status">
