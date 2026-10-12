@@ -17,10 +17,11 @@ from .settings_repo import SettingsRepo
 from .sse_repo import SseSeqRepo
 from .tasks_repo import TasksRepo
 from .ui_prefs_repo import UiPrefsRepo
+from .workflows_repo import WorkflowsRepo
 
 __all__ = ["Database", "run_migrations", "get_db", "set_db", "reset_db",
            "SettingsRepo", "TasksRepo", "QueuesRepo", "SeatsRepo",
-           "ExecutionsRepo", "SseSeqRepo", "UiPrefsRepo"]
+           "ExecutionsRepo", "SseSeqRepo", "UiPrefsRepo", "WorkflowsRepo"]
 
 _db: Database | None = None
 _lock = threading.Lock()
@@ -79,3 +80,7 @@ def sse_seq() -> SseSeqRepo:
 
 def ui_prefs() -> UiPrefsRepo:
     return UiPrefsRepo(get_db())
+
+
+def workflows() -> WorkflowsRepo:
+    return WorkflowsRepo(get_db())

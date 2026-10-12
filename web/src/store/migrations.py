@@ -145,6 +145,19 @@ ALTER TABLE tasks ADD COLUMN resume_of TEXT;
 """
 MIGRATIONS[5] = SCHEMA_V5
 
+# v6（2026-10-12，M4 B10）：组合流派发承载——
+# - tasks.workflow_id：crest 任务归属的组合流（workflow 行 id；g16 行 NULL）；
+# - tasks.crest_nproc：crest 任务核数（组合流 payload.crest.nproc，
+#   派发资源声明与 HQ cpus 请求来源；g16 行 NULL）；
+# - workflows.top_n：组合流精修构象数（终态钩子建队成员上限
+#   min(top_n, 实际构象数)）。
+SCHEMA_V6 = """
+ALTER TABLE tasks ADD COLUMN workflow_id TEXT;
+ALTER TABLE tasks ADD COLUMN crest_nproc INTEGER;
+ALTER TABLE workflows ADD COLUMN top_n INTEGER;
+"""
+MIGRATIONS[6] = SCHEMA_V6
+
 
 def run_migrations(db: Database) -> None:
     with db.tx() as conn:

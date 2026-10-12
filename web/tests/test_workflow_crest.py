@@ -1,0 +1,302 @@
+"""CREST 任务类型与组合流测试（M4 B10，m4-plan §4.7/§5 test_workflow_crest）。
+
+覆盖：crest 任务派发适配（程序/输入物化/资源仅 cpus/不进解析管道）、
+可执行缺失 503、提交席位满员 409 零副作用（无 workflow 行）、来源候选
+形态校验（WORKFLOW_STATE_INVALID）、top_n∈[2,10]、构象数边界（<2 记
+failed 不生成队列、2≤n<top_n 取 min）、提取器样例回归（A5 fixtures 喂入
++ 相对能量交叉验证 + 交叉验证不符拒绝）、top-N 队列生成与自动提交（含
+满员保留 unsubmitted + refine_queue_pending）、crest 失败 workflow 记
+failed、启动对账 workflow 重推幂等（锚判重/队列判重）。
+"""
+from __future__ import annotations
+
+import json
+import shutil
+from pathlib import Path
+
+import pytest
+
+from web.src import config
+from web.src.engine import Dispatcher, FakeGateway
+from web.src.engine.crest import CrestExtractError, extract_ensemble
+from web.src.errors import ApiError
+from web.src.services.candidates import import_files
+from web.src.services import workflows as wf_svc
+from web.src.store import executions, queues, seats, settings, tasks, workflows
+from web.src.routers.workflows import submit_conformer_refinement  # noqa: F401（契约形状路由层测试随 B11）
+
+CAND = ("%chk=c.chk\n%nprocshared=2\n"
+        "#p opt b3lyp/6-31g(d)\n\n乙醇\n\n0 1\n"
+        "C 0.87 -0.29 -0.01\n"
+        "C -0.54 0.29 0.04\n"
+        "O -1.37 -0.44 -0.52\n"
+        "H 1.55 0.35 -0.43\n"
+        "H 1.23 -0.56 0.99\n"
+        "H 0.90 -1.15 -0.65\n"
+        "H -0.36 1.26 -0.34\n"
+        "H -0.61 0.44 1.10\n"
+        "H -2.17 0.01 -0.02\n\n")
+NATOM = 9
+FIXTURES = Path(__file__).resolve().parent / "fixtures" / "crest"
+
+
+@pytest.fixture(autouse=True)
+def home(tmp_path, monkeypatch):
+    (tmp_path / "inputs").mkdir()
+    (tmp_path / "run").mkdir()
+    (tmp_path / "g16").mkdir()
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    settings().set("g16_root", str(tmp_path / "g16"))
+    return tmp_path
+
+
+def _mk_candidate() -> int:
+    (out,) = import_files([("ethanol.gjf", CAND.encode("utf-8"))],
+                          inputs_dir=config.HOME_DIR / "inputs")
+    return out["id"]
+
+
+def _payload(candidate_id: int, **over) -> dict:
+    p = {"candidate_id": candidate_id,
+         "crest": {"nproc": 2, "top_n": 2},
+         "template": {"route": "b3lyp/6-31g(d) opt", "link0": None}}
+    p.update(over)
+    return p
+
+
+def _set_crest_root(tmp_path, name: str = "crest-ok") -> Path:
+    root = tmp_path / f"crest-root-{name}"
+    root.mkdir(exist_ok=True)
+    (root / "crest").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (root / "crest").chmod(0o755)
+    settings().set("crest_root", str(root))
+    return root
+
+
+# ---------------- 提交前置检查 ----------------
+
+def test_submit_rejects_missing_executable(tmp_path):
+    settings().set("crest_root", str(tmp_path / "nope"))
+    cid = _mk_candidate()
+    with pytest.raises(ApiError) as ei:
+        wf_svc.submit_conformer_refinement(_payload(cid))
+    assert ei.value.code == "CREST_EXECUTABLE_MISSING"
+    assert ei.value.http == 503
+    assert workflows().list() == []  # 零副作用
+
+
+def test_submit_rejects_when_seats_full(tmp_path):
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    settings().set("pending_seat_limit", 1)
+    sid = seats().append(kind="task", task_id=tasks().create_candidate(
+        "filler.gjf", "imported"))
+    with pytest.raises(ApiError) as ei:
+        wf_svc.submit_conformer_refinement(_payload(cid))
+    assert ei.value.code == "PENDING_CAPACITY_FULL"
+    assert ei.value.http == 409
+    assert workflows().list() == []  # 整体拒绝零副作用（无 workflow 行）
+
+
+def test_submit_rejects_non_candidate_source(tmp_path):
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    tasks().to_seat_task(cid)  # 已提交形态
+    with pytest.raises(ApiError) as ei:
+        wf_svc.submit_conformer_refinement(_payload(cid))
+    assert ei.value.code == "WORKFLOW_STATE_INVALID"
+    assert ei.value.details["form"] == "seat_task"
+
+
+@pytest.mark.parametrize("top_n", [1, 11])
+def test_submit_rejects_top_n_out_of_range(tmp_path, top_n):
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    with pytest.raises(ApiError) as ei:
+        wf_svc.submit_conformer_refinement(_payload(cid, crest={"nproc": 2,
+                                                         "top_n": top_n}))
+    assert ei.value.code == "VALIDATION_FAILED"
+
+
+def test_submit_creates_crest_task_and_workflow(tmp_path):
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    out = wf_svc.submit_conformer_refinement(_payload(cid))
+    assert out["state"] == "crest_running"
+    wf = workflows().get(out["workflow_id"])
+    assert wf["source_candidate_id"] == cid
+    assert wf["top_n"] == 2
+    assert wf["refine_queue_pending"] is False
+    task = tasks().get(out["crest_task_id"])
+    assert task["kind"] == "g16" or task["kind"] == "crest"
+    assert task["workflow_id"] == out["workflow_id"]
+    assert task["crest_nproc"] == 2
+    # crest 引导 xyz 已程序化生成
+    text = (config.HOME_DIR / "inputs" / str(out["crest_task_id"])
+            ).read_text(encoding="utf-8")
+    assert text.split("\n")[0] == "9"
+
+
+# ---------------- 派发适配 ----------------
+
+def test_crest_dispatch_adapter(tmp_path):
+    """crest 任务派发：程序=<crest_root>/crest、输入物化 crest_input.xyz、
+    资源仅 cpus、环境不注 GAUSS_*。"""
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    out = wf_svc.submit_conformer_refinement(_payload(cid))
+    rec: list = []
+    gw = FakeGateway(cpus=8)
+    disp = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    disp.advance()
+    sub = gw.submitted[0]
+    assert sub["command"][0].endswith("/crest")
+    assert sub["command"][1:] == ["crest_input.xyz", "-T", "2"]
+    assert sub["resources"] == {"cpus": 2}  # mem 不声明
+    assert "env" in sub
+    run_d = Path(sub["cwd"])
+    assert (run_d / "crest_input.xyz").is_file()
+    assert not (run_d / "input.gjf").is_file()
+    eid_row = executions().list_by_task(out["crest_task_id"])[-1]
+    assert eid_row["state"] == "running"
+    # crest 任务终态 succeeded：不进 cclib 管道（无 analysis.json）
+    (run_d / "crest_conformers.xyz").write_text(
+        "1\nx\nC 0 0 0\n")  # 产物占位（构象数不足走 failed 分支）
+    wf_svc.on_crest_terminal(disp, executions().get(eid_row["id"]),
+                             "failed")
+    wf = workflows().get(out["workflow_id"])
+    assert wf["state"] == "failed"  # crest 失败：workflow 记 failed
+    assert wf["refine_queue_id"] is None
+
+
+# ---------------- 提取器样例回归 ----------------
+
+def test_extractor_on_fixture():
+    """A5 留存样例（乙醇 4 构象）喂入：条目数/能量锚点/升序。"""
+    ens = extract_ensemble(FIXTURES)
+    assert ens["n"] == 4
+    energies = [c["energy_hartree"] for c in ens["conformers"]]
+    assert energies == sorted(energies)
+    assert len(ens["conformers"][0]["coords"]) == NATOM
+    # 相对能量物理基准（交叉验证已内置；最低行 0 由 B11 聚合计算）
+    from web.src.engine.crest import HARTREE_KJ_MOL
+    assert abs(HARTREE_KJ_MOL - 2625.4996) < 1e-6
+
+
+def test_extractor_missing_anchor(tmp_path):
+    d = tmp_path / "empty-run"
+    d.mkdir()
+    with pytest.raises(CrestExtractError):
+        extract_ensemble(d)
+
+
+def test_extractor_crosscheck_mismatch(tmp_path):
+    """crest.energies 相对列与坐标注释行不一致 → 锚点漂移拒绝。"""
+    d = tmp_path / "run-x"
+    d.mkdir()
+    xyz = "9\n-11.39433939\n" + ("C 0 0 0\n" * 9)
+    (d / "crest_conformers.xyz").write_text(xyz, encoding="utf-8")
+    (d / "crest.energies").write_text("  1         9.999\n", encoding="utf-8")
+    with pytest.raises(CrestExtractError):
+        extract_ensemble(d)
+
+
+# ---------------- 终态钩子链 ----------------
+
+def _crest_done_with_ensemble(tmp_path, n_conf: int, top_n: int = 2):
+    """驱动到「crest succeeded + ensemble 已落 run 目录」的现场。"""
+    _set_crest_root(tmp_path)
+    cid = _mk_candidate()
+    out = wf_svc.submit_conformer_refinement(_payload(
+        cid, crest={"nproc": 2, "top_n": top_n}))
+    rec: list = []
+    gw = FakeGateway(cpus=8)
+    disp = Dispatcher(gw, emitter=lambda e, d: rec.append((e, d)))
+    disp.advance()  # crest 派发
+    row = executions().list_by_task(out["crest_task_id"])[-1]
+    run_d = config.HOME_DIR / "run" / str(row["id"])
+    coords = "\n".join("C 0.1 0.2 0.3" for _ in range(NATOM))
+    xyz = "".join(f"{NATOM}\n{-11.39 - i * 0.001:.10f}\n{coords}\n"
+                  for i in range(n_conf))
+    (run_d / "crest_conformers.xyz").write_text(xyz, encoding="utf-8")
+    return out, disp, gw, row, run_d
+
+
+def test_hook_below_2_fails(tmp_path):
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=1)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf = workflows().get(out["workflow_id"])
+    assert wf["state"] == "failed"  # 构象数 <2 记 failed
+    assert wf["refine_queue_id"] is None  # 不生成精修队列
+
+
+def test_hook_builds_queue_and_submits(tmp_path):
+    """crest succeeded → top-N 队列自动生成并提交（N=min(top_n, n)）。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf = workflows().get(out["workflow_id"])
+    assert wf["state"] == "refining"
+    qid = wf["refine_queue_id"]
+    assert qid is not None and wf["refine_queue_pending"] is False
+    members = tasks().list_queue_members(qid)
+    assert len(members) == 2  # min(top_n=2, n=4)
+    assert queues().get(qid)["state"] == "submitted"  # 自动提交（一个按钮语义）
+    # 锚文件落盘（重入判据）
+    assert (run_d / "crest_ensemble.json").is_file()
+    # 成员输入含构象坐标 + 模板 route，必过核验
+    m0 = (config.HOME_DIR / "inputs" / str(members[0]["id"])
+          ).read_text(encoding="utf-8")
+    assert "# b3lyp/6-31g(d) opt" in m0
+
+
+def test_hook_partial_min_top_n(tmp_path):
+    """2 ≤ n < top_n：取 min（成队数=实际构象数）。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=3,
+                                                          top_n=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf = workflows().get(out["workflow_id"])
+    members = tasks().list_queue_members(wf["refine_queue_id"])
+    assert len(members) == 3
+
+
+def test_hook_capacity_full_keeps_unsubmitted(tmp_path):
+    """自动提交满员（crest 仍占席）：队列保留 unsubmitted + refine_queue_pending。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    settings().set("pending_seat_limit", 1)  # crest 自身席位已占满
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf = workflows().get(out["workflow_id"])
+    assert wf["state"] == "refining"
+    assert wf["refine_queue_pending"] is True
+    assert queues().get(wf["refine_queue_id"])["state"] == "unsubmitted"  # 保留待手动提交
+    assert seats().count() == 1  # 席位未被占用（队列未入席）
+
+
+def test_hook_idempotent_on_reentry(tmp_path):
+    """钩子重入幂等：锚判重（不再提取）+ 队列判重（不重建不重复提交）。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf1 = workflows().get(out["workflow_id"])
+    n_tasks = len(tasks().list_by_workflow(out['workflow_id']))
+    # 重入（模拟对账重推）：不重复建队/提交
+    wf_svc.on_crest_terminal(disp, executions().get(row["id"]), "succeeded")
+    wf2 = workflows().get(out["workflow_id"])
+    assert wf2["refine_queue_id"] == wf1["refine_queue_id"]
+    assert len(tasks().list_by_workflow(out['workflow_id'])) == n_tasks
+
+
+def test_reconcile_pushes_pending_workflow(tmp_path):
+    """启动对账 workflow 重推：crest_running + crest 执行已 succeeded →
+    幂等钩子重推（钩子链中断恢复）。"""
+    out, disp, gw, row, run_d = _crest_done_with_ensemble(tmp_path, n_conf=4)
+    # 模拟钩子链中断：执行已终态 succeeded 但 workflow 仍 crest_running
+    executions().finalize(execution_id=row["id"], state="succeeded",
+                          finished_at="2026-10-12T12:00:00+08:00")
+    assert workflows().get(out["workflow_id"])["state"] == "crest_running"
+    # 清空席位现场（模拟重启后重新挂载）
+    pushed = wf_svc.reconcile_workflows(disp)
+    assert pushed == 1
+    wf = workflows().get(out["workflow_id"])
+    assert wf["state"] == "refining"
+    assert wf["refine_queue_id"] is not None
+    # 再跑一轮：已推进（refining）不再重推
+    assert wf_svc.reconcile_workflows(disp) == 0

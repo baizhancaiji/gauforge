@@ -65,6 +65,26 @@ class TasksRepo:
                  if resume_of is not None else None))
             return int(cur.lastrowid)
 
+    def set_crest_binding(self, task_id: int, workflow_id: str,
+                          crest_nproc: int) -> None:
+        """crest 任务绑定组合流（M4 B10）：kind=crest + workflow_id + 核数
+        声明（派发资源与 HQ cpus 请求来源；g16 行恒 NULL）。"""
+        self._db.run(
+            "UPDATE tasks SET kind = 'crest', workflow_id = ?, crest_nproc = ?,"
+            " updated_at = ? WHERE id = ?",
+            (workflow_id, crest_nproc, now_iso(), task_id))
+
+    def crest_task_ids(self) -> set[int]:
+        """crest 任务 id 集（B10：progress/停滞告警过滤的豁免名单）。"""
+        return {r["id"] for r in self._db.query(
+            "SELECT id FROM tasks WHERE kind = 'crest'")}
+
+    def list_by_workflow(self, workflow_id: str) -> list[dict]:
+        """组合流任务反查（crest 任务行；M4 B10 启动对账用）。"""
+        return self._db.query(
+            "SELECT * FROM tasks WHERE workflow_id = ? ORDER BY id",
+            (workflow_id,))
+
     def delete(self, task_id: int) -> None:
         self._db.run("DELETE FROM tasks WHERE id = ?", (task_id,))
 

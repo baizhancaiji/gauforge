@@ -189,9 +189,19 @@ class Dispatcher:
             if not inputs.is_file():
                 continue  # 输入副本缺失：不可派发（导入目录异常，防御跳过）
             text = inputs.read_text(encoding="utf-8", errors="replace")
-            resolved = workspace.resolve_link0(
-                text, int(settings().get("link0_default_nproc")),
-                float(settings().get("link0_default_mem_gb")))
+            if task.get("kind", "g16") == "crest":
+                # crest 任务（B10）：无 Link0，核数取组合流绑定，mem 不声明
+                #（窗口 mem 账按未声明不计，§2.3）
+                nproc_val = int(task.get("crest_nproc")
+                                or settings().get("link0_default_nproc"))
+                resolved = {"completed_text": text,
+                            "nproc": {"value": nproc_val,
+                                      "defaulted": False},
+                            "mem_gb": {"value": 0, "defaulted": False}}
+            else:
+                resolved = workspace.resolve_link0(
+                    text, int(settings().get("link0_default_nproc")),
+                    float(settings().get("link0_default_mem_gb")))
             input_hash = workspace.content_hash(resolved["completed_text"])
 
             # ① 哈希跳过：上次成功且输入哈希一致 → 沿用结果，序列越过
@@ -349,10 +359,23 @@ class Dispatcher:
         mem_default = float(settings().get("link0_default_mem_gb"))
         has_deps = materialize.needs_materialization(
             resolved["completed_text"])
+        is_crest = task.get("kind", "g16") == "crest"
         try:
-            run_d, env = workspace.materialize(
-                self._run_root, eid, resolved["completed_text"], g16_root)
-            if has_deps:
+            if is_crest:
+                # crest 任务（B10）：无 Link0/g16 环境，仅物化 crest_input.xyz
+                # （程序与线程参数随 HQ 提交；内嵌 tblite 引擎无需 XTB_PATH）
+                run_d = workspace.run_dir(self._run_root, eid)
+                run_d.mkdir(parents=True, exist_ok=True)
+                env = None
+            else:
+                run_d, env = workspace.materialize(
+                    self._run_root, eid, resolved["completed_text"], g16_root)
+            if is_crest:
+                # crest 任务（B10）：输入物化为 crest_input.xyz，程序与
+                # 线程参数随 HQ 提交（内嵌 tblite 引擎，无需 XTB_PATH）
+                (run_d / "crest_input.xyz").write_text(
+                    resolved["completed_text"], encoding="utf-8")
+            elif has_deps:
                 final_text = materialize.materialize_chk(
                     run_d, resolved["completed_text"],
                     nproc_default=nproc_default, mem_gb_default=mem_default)
@@ -373,13 +396,23 @@ class Dispatcher:
         # started_at 晚于进程启动 1~2s，据此过滤会把真实 g16 进程树整体
         # 误杀（GUI 走查实测 monitor_summary 恒 0 的根因）。
         self._monitor.note_started(eid, now_iso())
-        job_id = self._gw.submit(
-            [str(g16_root / "g16"), "input.gjf"], cwd=str(run_d),
-            name=task["filename"], env=env,
-            resources={"cpus": int(resolved["nproc"]["value"]),
-                       "mem_mib": mem},
-            time_limit_s=int(task.get("time_limit_s") or 0),
-            crash_limit=0 if has_deps else None)
+        if is_crest:
+            crest_bin = Path(str(settings().get("crest_root"))
+                             ).expanduser() / "crest"
+            job_id = self._gw.submit(
+                [str(crest_bin), "crest_input.xyz",
+                 "-T", str(int(resolved["nproc"]["value"]))],
+                cwd=str(run_d), name=task["filename"], env=None,
+                resources={"cpus": int(resolved["nproc"]["value"])},
+                time_limit_s=int(task.get("time_limit_s") or 0))
+        else:
+            job_id = self._gw.submit(
+                [str(g16_root / "g16"), "input.gjf"], cwd=str(run_d),
+                name=task["filename"], env=env,
+                resources={"cpus": int(resolved["nproc"]["value"]),
+                           "mem_mib": mem},
+                time_limit_s=int(task.get("time_limit_s") or 0),
+                crash_limit=0 if has_deps else None)
         executions().update_hq_job_id(eid, int(job_id))
         self._emit("task.status",
                    {"task_id": task["id"], "execution_id": eid,
@@ -470,7 +503,15 @@ class Dispatcher:
         run_d = self._run_root / str(eid)
         snap = chk_snapshot
         result_ref: str | None = None
-        if state == "succeeded":
+        task_row = tasks().get(tid) or {}
+        is_crest = task_row.get("kind", "g16") == "crest"
+        if state == "succeeded" and is_crest:
+            # crest 任务（B10）：不进 cclib 管道（无 formchk/analysis）；
+            # 组合流钩子链在席位释放之前执行（离席为链尾——自动提交的
+            # 满员判定发生在 crest 仍占席期间）
+            from ..services import workflows as workflows_svc
+            workflows_svc.on_crest_terminal(self, execution, "succeeded")
+        elif state == "succeeded":
             # ② formchk：失败记日志不阻断（finalize.make_fchk）
             g16_root = Path(str(settings().get("g16_root"))).expanduser()
             finalize.make_fchk(run_d, g16_root)
@@ -650,7 +691,10 @@ class Dispatcher:
 
         新进度同时喂入 monitor.note_progress（停滞基准推进；置于
         _monitor_step 之前，同周期即可解除停滞）。"""
+        crest_tids = tasks().crest_task_ids()
         for e in executions().list_by_state("running"):
+            if e["task_id"] in crest_tids:
+                continue  # crest 无增量解析（execution.progress 不适用）
             facts = self._progress.step(
                 e["id"], self._run_root / str(e["id"]) / "input.log")
             if facts is None:
@@ -662,11 +706,14 @@ class Dispatcher:
 
     def _monitor_step(self) -> None:
         """对全部在跑执行采样：execution.monitor（2s 节流）+ 停滞翻转。"""
+        crest_tids = tasks().crest_task_ids()
         for e in executions().list_by_state("running"):
             payload, flip = self._monitor.step(
                 e, self._run_root / str(e["id"]), now_iso())
             if payload is not None:
                 self._emit("execution.monitor", payload)
+            if flip is not None and e["task_id"] in crest_tids:
+                continue  # crest 停滞告警不适用（以增量解析为源）
             if flip is not None:
                 stall = self._monitor._entry(e["id"])["stall"]
                 self._emit("execution.stalled",
@@ -745,6 +792,8 @@ class Dispatcher:
         try:
             self.reconcile()
             self._reconcile_pending = False
+            from ..services import workflows as workflows_svc
+            workflows_svc.reconcile_workflows(self)  # B10 恢复语义：钩子重推
         except GatewayError:
             pass  # HQ 未就绪：下周期重试对账（标记保持）
 
