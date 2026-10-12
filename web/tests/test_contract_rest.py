@@ -262,9 +262,23 @@ def test_input_endpoint_returns_raw_crlf(tmp_path, monkeypatch):
     assert "\r\n" in r.text
 
 
-def test_preview_and_input_404_for_locked_member(tmp_path, monkeypatch):
-    """新建未提交成员（非回退）不可读预览与原文——404 语义不变。"""
+def test_preview_and_input_readable_for_unsubmitted_member(tmp_path,
+                                                           monkeypatch):
+    """M4 C5 口径（契约 previewCandidate/getCandidateInput 随改）：
+    unsubmitted 队列成员（非回退）可读预览与原文——队列编辑框「接续前置
+    chk」取 Link0 基线依赖；锁定窗口止于提交（submitted 后 404 复原）。"""
+    from web.src.store import queues as queues_store
     tid = _mk_member(tmp_path, monkeypatch, rollback=False)
+    r = client.get(f"/api/v1/candidates/{tid}/preview")
+    assert r.status_code == 200
+    assert r.json()["candidate_id"] == tid
+    assert_contract_schema(spec, "GET", "/candidates/{id}/preview", 200,
+                           r.json())
+    r2 = client.get(f"/api/v1/candidates/{tid}/input")
+    assert r2.status_code == 200
+    # 提交后锁定复原（404 语义收窄到已提交及之后形态）
+    qid = f"QP{tid:04d}"
+    queues_store().set_state(qid, "submitted")
     assert client.get(
         f"/api/v1/candidates/{tid}/preview").status_code == 404
     assert client.get(f"/api/v1/candidates/{tid}/input").status_code == 404

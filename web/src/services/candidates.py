@@ -278,18 +278,25 @@ def _validate_section(section: str, content: list[str]) -> None:
         raise validation_failed(errors)
 
 
-def _guard_editable(row: dict, task_id: int) -> None:
-    """形态守卫（m2-plan §2.1 守卫矩阵；编辑入口仅候选与失败回退队列）。"""
+def _guard_editable(row: dict, task_id: int, section: str | None = None) -> None:
+    """形态守卫（m2-plan §2.1 守卫矩阵；编辑入口仅候选与失败回退队列）。
+
+    M4 C5 增口：unsubmitted 队列成员限 link0 节可写（队列编辑框
+    「接续前置 chk」写 %OldChk 依赖行，DAG 校验读输入）；其余节仍锁定。
+    """
     form = row["form"]
     if form == "candidate":
         return
     if form == "queue_member":
         q = get_queue_row(row["queue_id"])
-        if q is not None and q["state"] == "unsubmitted" \
-                and bool(q.get("rollback_flag")):
-            return  # 失败回退队列成员：队列编辑框内分块编辑
+        if q is not None and q["state"] == "unsubmitted":
+            if bool(q.get("rollback_flag")):
+                return  # 失败回退队列成员：队列编辑框内分块编辑（全节）
+            if section == "link0":
+                return  # C5 依赖行写入（勾选辅助生成的唯一节口）
         raise err("QUEUE_MEMBER_LOCKED",
-                  "队列成员内容锁定（编辑入口仅候选与失败回退队列）",
+                  "队列成员内容锁定（编辑入口仅候选与失败回退队列；"
+                  "unsubmitted 队列成员限 link0 依赖行）",
                   {"task_id": task_id,
                    "queue_state": q["state"] if q else None}, http=409)
     if form == "seat_task":
@@ -360,7 +367,7 @@ def save_block(task_id: int, section: str, lines: list[str], *,
         row = tasks().get(task_id)
         if row is None:
             raise not_found("candidate", task_id)
-        _guard_editable(row, task_id)
+        _guard_editable(row, task_id, section)
         path = ind / str(task_id)
         try:
             # 字节读入后解码（read_text 通用换行模式会吞 CRLF——编辑不转换行尾）

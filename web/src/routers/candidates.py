@@ -34,9 +34,10 @@ def _candidate_row(cid: int) -> dict:
 def _readable_row(cid: int) -> dict:
     """预览/原文读取守卫（M2：id 跨形态延续，与 PUT blocks 守卫一致）。
 
-    放行候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）——
-    分块编辑初始化与 CRLF 检出需要两端点；其余形态 404（契约 openapi.yaml
-    previewCandidate/getCandidateInput 描述口径）。
+    放行候选、失败回退队列成员（unsubmitted 且 rollback_flag=true）与
+    unsubmitted 队列成员（M4 C5：队列编辑框「接续前置 chk」取 Link0
+    基线）；其余形态 404（契约 openapi.yaml previewCandidate/
+    getCandidateInput 描述口径）。
     """
     row = tasks_store().get(cid)
     if row is None:
@@ -45,8 +46,7 @@ def _readable_row(cid: int) -> dict:
         return row
     if row["form"] == "queue_member":
         q = candidates_svc.get_queue_row(row["queue_id"])
-        if q is not None and q["state"] == "unsubmitted" \
-                and bool(q.get("rollback_flag")):
+        if q is not None and q["state"] == "unsubmitted":
             return row
     raise not_found("candidate", cid)
 
