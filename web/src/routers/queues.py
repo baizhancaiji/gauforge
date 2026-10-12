@@ -51,6 +51,11 @@ def create_queue(payload: dict) -> dict:
         if row is None or row["form"] != "candidate":
             raise err("INVALID_MEMBERS",
                       f"任务 {cid} 不存在或不在候选列表", http=422)
+    # B6 依赖 DAG 静态校验（crest 不入队/引用可达/无环/溯源 chk 存在），
+    # 先于建队列落位
+    from ..services import dependencies as dependencies_svc
+    dependencies_svc.validate_queue_members(
+        [int(x) for x in member_ids])
     qid = queues_svc.new_queue_id()  # 对照全库（含历史引用）查重
     queues_store().create(qid, name=str(name), skip_failed=bool(skip_failed))
     for pos, cid in enumerate(member_ids):
@@ -121,6 +126,10 @@ def submit_queue(id: str) -> dict:
     for m in tasks_store().list_queue_members(id):
         if verify_svc.verify_and_store(m["id"]):
             normalized = True
+    # B6 依赖 DAG 静态校验（回退编辑可能改写成员输入，提交时点重校验）
+    from ..services import dependencies as dependencies_svc
+    dependencies_svc.validate_queue_members(
+        [m["id"] for m in tasks_store().list_queue_members(id)])
     # 整条队列占一席（尾部追加、容量校验、state→submitted），引擎按执行
     # 序列展开派发（含失败分流/回退，engine/dispatcher）。
     seat_id = pending_svc.append_queue(id)

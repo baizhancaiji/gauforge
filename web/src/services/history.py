@@ -196,6 +196,8 @@ def requeue(execution_id: int) -> dict:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)
     normalized = verify_svc.verify_and_store(tid)  # 核验先于建席
+    from .dependencies import validate_single_seat_input
+    validate_single_seat_input(tid)  # B6：单任务席位载体符号引用校验
     sid = seats().append(kind="task", task_id=tid)
     tasks().to_seat_task(tid)  # finished → seat_task（沿用原 id）
     return {"seat_id": sid, "task_id": tid, "normalized": normalized}

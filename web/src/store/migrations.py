@@ -126,6 +126,15 @@ CREATE TABLE IF NOT EXISTS workflows (
 """
 MIGRATIONS[3] = SCHEMA_V3
 
+# v4（2026-10-12，M4 B6）：tasks 加列 kind——任务类型（契约 TaskKind：
+# g16|crest，历史行默认 g16）。crest 任务仅由组合流程序化生成（B10），
+# 禁止组队（B6 校验 INVALID_MEMBERS）。
+SCHEMA_V4 = """
+ALTER TABLE tasks ADD COLUMN kind TEXT NOT NULL DEFAULT 'g16'
+    CHECK (kind IN ('g16','crest'));
+"""
+MIGRATIONS[4] = SCHEMA_V4
+
 
 def run_migrations(db: Database) -> None:
     with db.tx() as conn:

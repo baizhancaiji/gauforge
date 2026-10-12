@@ -19,7 +19,8 @@ from web.src.errors import ApiError
 from web.src.services import pending
 from web.src.store import executions, queues, seats, tasks
 
-# openapi.yaml 文件头错误码全集（29 码，SSOT；与契约文件头同步维护）
+# openapi.yaml 文件头错误码全集（35 码，SSOT；与契约文件头同步维护；
+# M4 波 A4 增补依赖/续跑/工作流域 6 码）
 CONTRACT_CODES = {
     "INVALID_REQUEST", "NOT_FOUND", "VALIDATION_FAILED", "INTERNAL_ERROR",
     "QUEUE_MEMBER_RANGE", "QUEUE_STATE_CONFLICT", "PENDING_CAPACITY_FULL",
@@ -32,6 +33,9 @@ CONTRACT_CODES = {
     "ANALYSIS_UNAVAILABLE", "ANALYSIS_PARSE_FAILED",
     "WORKSPACE_PATH_OUTSIDE", "CUBE_GENERATION_FAILED",
     "CUBE_EXECUTABLE_MISSING",
+    "DEPENDENCY_UNREACHABLE", "DEPENDENCY_CYCLE", "CHK_SOURCE_MISSING",
+    "RESUME_NOT_ELIGIBLE", "WORKFLOW_STATE_INVALID",
+    "CREST_EXECUTABLE_MISSING",
 }
 RETIRED_CODES = ("SEAT_MEMBER_LAST", "SEAT_MEMBER_EXECUTED")
 

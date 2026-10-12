@@ -162,6 +162,12 @@ def patch_queue(queue_id: str, payload: dict) -> dict:
         queues().update(queue_id, skip_failed=bool(fields["skip_failed"]))
     if "member_ids" in fields:
         new_ids = _validate_member_ids(current_ids, fields["member_ids"])
+        # B6 依赖 DAG 静态校验：新成员集合法性 + 移除被依赖成员拒绝
+        # （先于任何移除/重排落库，校验失败整批拒绝零副作用）
+        from .dependencies import validate_queue_members
+        validate_queue_members(
+            new_ids,
+            removed_ids=[t for t in current_ids if t not in set(new_ids)])
         by_id = {m["id"]: m for m in members}
         for tid in current_ids:
             if tid not in set(new_ids):

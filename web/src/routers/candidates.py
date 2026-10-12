@@ -12,6 +12,7 @@ from ..errors import err, not_found
 from ..mock import get_state
 from ..parse.blocks import parse_input
 from ..services import candidates as candidates_svc
+from ..services import dependencies as dependencies_svc
 from ..services import pending as pending_svc
 from ..services import verify as verify_svc
 from ..store import settings as settings_store
@@ -181,6 +182,7 @@ def save_block(id: int, section: str, payload: dict) -> dict:
 def submit_candidate(id: int, payload: dict | None = None) -> dict:
     _candidate_row(id)  # 404 语义先行（非候选形态同按不存在处理）
     normalized = verify_svc.verify_and_store(id)  # 提交核验：先落盘后建席
+    dependencies_svc.validate_single_seat_input(id)  # B6 符号引用载体校验
     sid = pending_svc.append_task(id)
     get_state().emit("candidates.changed",
                      {"action": "moved_out", "candidate_id": id})

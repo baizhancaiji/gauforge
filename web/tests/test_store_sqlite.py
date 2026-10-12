@@ -41,12 +41,26 @@ def repos(db):
 
 def test_migration_sets_version(db):
     row = db.one("SELECT version FROM schema_version")
-    assert row is not None and row["version"] == 3  # v3: resumed_from + workflows
+    assert row is not None and row["version"] == 4  # v4: tasks.kind
 
 
 def test_migration_idempotent(db):
     run_migrations(db)  # 重复执行不报错、版本不变
-    assert db.one("SELECT version FROM schema_version")["version"] == 3
+    assert db.one("SELECT version FROM schema_version")["version"] == 4
+
+
+def test_v4_tasks_kind_column(db):
+    # v4（M4 B6）：tasks.kind 任务类型（g16|crest，默认 g16）
+    cols = {r["name"] for r in db.query("PRAGMA table_info(tasks)")}
+    assert "kind" in cols
+    db.run("INSERT INTO tasks (filename, origin, form, created_at,"
+           " updated_at) VALUES ('a.gjf', 'imported', 'candidate',"
+           " '2026-10-12T00:00:00+08:00', '2026-10-12T00:00:00+08:00')")
+    row = db.one("SELECT kind FROM tasks")
+    assert row["kind"] == "g16"  # 默认 g16（历史行口径）
+    db.run("UPDATE tasks SET kind = 'crest'")
+    with pytest.raises(Exception):  # 非法 kind 被 CHECK 拒绝
+        db.run("UPDATE tasks SET kind = 'bogus'")
 
 
 def test_v3_resumed_from_and_workflows(db):
