@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.0.2（2026-10-12T09:42+0800 发布，patch）
+
 ### 变更
 
 - 发布流程新增 progress.json context 刷新要求:发布时 context 必须提及最新已发布版本号并复核 next_steps/known_issues,validate_progress 闸门同步新增内容新鲜度校验(context 缺最新版本号、两清单类型不符即失败)——2026-10-04 实测 context 滞留 v2.2.1 横跨三次发布、next_steps 停留 m1 时代而闸门全绿,规范缺触发点与闸门缺校验为失修双重根因
