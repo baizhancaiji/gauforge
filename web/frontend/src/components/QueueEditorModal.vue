@@ -11,6 +11,31 @@ export interface MemberRow {
   state?: string;
   cause?: string | null;
 }
+
+/**
+ * Link0 符号引用行解析/改写（m4-plan §4.9 C5「接续前置 chk」勾选的落盘工具）。
+ * 解析规则与后端 dependencies.parse_link0_refs 同源：跳过前导空行/!注释后的
+ * 连续 % 行，keyword 大小写不敏感；此处仅识别 `%OldChk=@task:<id>` 精确形态
+ * （勾选只承载 %OldChk 只读形态，续用形态 `%Chk=@task:id` 无前端生成入口）。
+ */
+export function oldChkTaskRefTargets(lines: string[]): number[] {
+  const targets: number[] = [];
+  let i = 0;
+  while (i < lines.length && (!lines[i].trim() || lines[i].trimStart().startsWith("!"))) i++;
+  while (i < lines.length && lines[i].trimStart().startsWith("%")) {
+    const m = /^%oldchk\s*=\s*@task:(\d+)$/i.exec(lines[i].trim());
+    if (m) targets.push(Number(m[1]));
+    i++;
+  }
+  return targets;
+}
+
+/** 移除指向 target 的 `%OldChk=@task:<target>` 行（精确撤销勾选写入）。 */
+export function removeOldChkTaskRef(lines: string[], target: number): string[] {
+  return lines.filter(
+    (l) => !new RegExp(`^%oldchk\\s*=\\s*@task:${target}$`, "i").exec(l.trim()),
+  );
+}
 </script>
 
 <script setup lang="ts">
@@ -69,6 +94,141 @@ const error = ref<string | null>(null);
 const note = ref<string | null>(null);
 const done = ref(false);
 
+// ---------- 依赖勾选（m4-plan §4.9 C5「接续前置 chk」） ----------
+/** per-member 勾选状态：打开对话框时拉取成员预览初始化。
+ *  original=写盘前基线（DAG 校验失败回滚用）；initTarget=打开时已含的
+ *  %OldChk=@task:<前驱> 引用目标（按加载时顺序判定，重排不重算——
+ *  重排不改既有 id 引用，仅新写入按保存时位置取前驱）。 */
+interface LinkState {
+  original: string[];
+  baseline: string[];
+  initTarget: number | null;
+  checked: boolean;
+  /** 预览不可达（如输入解析失败）：不渲染勾选 */
+  available: boolean;
+}
+const linkStates = ref<Map<number, LinkState>>(new Map());
+const linksReady = ref(false);
+/** DAG 校验错误逐成员映射（taskId → 提示文案；行加红描边 + 错误清单区） */
+const depErrors = ref<Map<number, string>>(new Map());
+
+const linkEditable = computed(() => !readonly.value && !memberOnly.value && !done.value);
+
+/** 成员行勾选框 title：接续当前序列前置成员（保存时按位置生成引用）。 */
+function linkTitle(i: number): string {
+  const prev = members.value[i - 1];
+  return prev
+    ? `接续前置成员 ${fmtTaskId(prev.id)} 的 chk（写入 %OldChk=@task:${prev.id}，只读接续）`
+    : "接续前置 chk";
+}
+
+/** 前驱是否为 crest 任务不可行——crest 不入队（B6 校验），勾选无需特判；
+ *  单成员队列无前驱：首行不渲染勾选框。 */
+async function loadLinkStates() {
+  linkStates.value = new Map();
+  depErrors.value = new Map();
+  linksReady.value = false;
+  if (!linkEditable.value) {
+    linksReady.value = true;
+    return;
+  }
+  const ids = members.value.map((m) => m.id);
+  const previews = await Promise.all(
+    ids.map((id) =>
+      client
+        .GET("/candidates/{id}/preview", { params: { path: { id } } })
+        .then(({ data }) => data?.blocks.link0.lines ?? null)
+        .catch(() => null),
+    ),
+  );
+  const map = new Map<number, LinkState>();
+  ids.forEach((id, i) => {
+    const lines = previews[i];
+    const prevId = i > 0 ? ids[i - 1] : null;
+    const init = prevId != null && (lines ?? []).some((l) =>
+      new RegExp(`^%oldchk\\s*=\\s*@task:${prevId}$`, "i").exec(l.trim()),
+    );
+    map.set(id, {
+      original: [...(lines ?? [])],
+      baseline: [...(lines ?? [])],
+      initTarget: init && prevId != null ? prevId : null,
+      checked: init,
+      available: lines != null,
+    });
+  });
+  linkStates.value = map;
+  linksReady.value = true;
+}
+
+function toggleLink(i: number) {
+  const m = members.value[i];
+  const st = m ? linkStates.value.get(m.id) : undefined;
+  if (!st?.available) return;
+  st.checked = !st.checked;
+  depErrors.value.delete(m.id); // 勾选变更即解除该行旧错误标注
+}
+
+/** 勾选状态有变更的成员写入 Link0 引用行（先于建队——DAG 校验读输入文件，
+ *  m4-plan §4.9 C5 落盘时序）。失败抛错由调用方汇总；成功则同步 baseline。 */
+async function persistLinkChanges(): Promise<void> {
+  const ids = members.value.map((m) => m.id);
+  for (let i = 0; i < members.value.length; i++) {
+    const m = members.value[i];
+    const st = m ? linkStates.value.get(m.id) : undefined;
+    if (!st?.available) continue;
+    const initChecked = st.initTarget != null;
+    if (st.checked === initChecked) continue;
+    const prevId = i > 0 ? ids[i - 1] : null;
+    let lines = [...st.baseline];
+    if (st.initTarget != null) lines = removeOldChkTaskRef(lines, st.initTarget);
+    if (st.checked && prevId != null) lines.push(`%OldChk=@task:${prevId}`);
+    const { error: e } = await client.PUT("/candidates/{id}/blocks/{section}", {
+      params: { path: { id: m.id, section: "link0" } },
+      body: { lines },
+    });
+    if (e) {
+      const body = e as unknown as { error?: { message?: string } };
+      throw new Error(
+        `成员 ${fmtTaskId(m.id)} 依赖行写入失败：${body.error?.message ?? "未知错误"}`,
+      );
+    }
+    st.baseline = lines;
+  }
+}
+
+/** DAG 校验失败回滚：恢复本批次写盘成员的 Link0 原文（零残留副作用）。 */
+async function rollbackLinkChanges(): Promise<void> {
+  for (const [id, st] of linkStates.value) {
+    if (!st.available) continue;
+    if (JSON.stringify(st.baseline) === JSON.stringify(st.original)) continue;
+    await client.PUT("/candidates/{id}/blocks/{section}", {
+      params: { path: { id, section: "link0" } },
+      body: { lines: st.original },
+    });
+    st.baseline = [...st.original];
+  }
+}
+
+/** DAG 校验 422 → 逐成员内联提示（details.task_id / details.cycle /
+ *  details.task_ids 映射到成员行；无法对应者落顶部 error）。 */
+function mapDepError(code: string | undefined, message: string, details: Record<string, unknown> | undefined): boolean {
+  let mapped = false;
+  const put = (tid: number, msg: string) => {
+    if (members.value.some((m) => m.id === tid)) {
+      depErrors.value.set(tid, msg);
+      mapped = true;
+    }
+  };
+  if (code === "DEPENDENCY_CYCLE" && Array.isArray(details?.cycle)) {
+    for (const tid of details.cycle as number[]) put(tid, message);
+  } else if (code === "INVALID_MEMBERS" && Array.isArray(details?.task_ids)) {
+    for (const tid of details.task_ids as number[]) put(tid, message);
+  } else if (typeof details?.task_id === "number") {
+    put(details.task_id, message);
+  }
+  return mapped;
+}
+
 const canSort = computed(() => !readonly.value && !done.value);
 
 // ---------- 拖拽排序（指针跟手画布式 usePointerSort，§4.6；只读/完成态不可拖） ----------
@@ -117,6 +277,7 @@ watch(
     }
     await nextTick(); // 行渲染完成后量测行高/行距（画布高度与步距）
     sort.measure();
+    void loadLinkStates(); // 依赖勾选初始化（异步拉成员预览；不阻塞首帧）
   },
 );
 
@@ -154,13 +315,22 @@ function removeAt(i: number) {
 }
 
 // ---------- 保存 / 直接提交 ----------
-function errText(e: unknown, fallback: string): string {
-  const body = e as unknown as { error?: { code?: string; message?: string } };
-  return body.error?.message ?? fallback;
-}
-
-/** 创建或更新（内部共用，不触发关闭）；成功返回队列视图。 */
+/** 创建或更新（内部共用，不触发关闭）；成功返回队列视图。
+ *  依赖勾选先落盘（Link0 引用行写入成员输入），建队/_PATCH 的 DAG 校验
+ *  方能读到依赖边；校验失败回滚写盘并做逐成员内联提示（m4-plan §4.9 C5）。 */
 async function saveInternal(): Promise<Queue | null> {
+  // ① 勾选变更写入 Link0（create/edit 皆可编辑依赖行）
+  try {
+    await persistLinkChanges();
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "依赖行写入失败";
+    return null;
+  }
+  const rollback = () => {
+    void rollbackLinkChanges().catch(() => {
+      /* 回滚尽力而为：失败时成员输入保留引用行，错误区已提示 */
+    });
+  };
   if (props.mode === "create") {
     const { data, error: e } = await client.POST("/queues", {
       body: {
@@ -170,7 +340,14 @@ async function saveInternal(): Promise<Queue | null> {
       },
     });
     if (e) {
-      error.value = errText(e, "创建被拒绝");
+      const body = e as unknown as { error?: { code?: string; message?: string; details?: Record<string, unknown> } };
+      // DAG 校验错误逐成员内联（§4.9 C5）；无成员映射才落顶部错误条
+      if (body.error?.code && mapDepError(body.error.code, body.error.message ?? "依赖校验未通过", body.error.details)) {
+        error.value = null;
+      } else {
+        error.value = body.error?.message ?? "创建被拒绝";
+      }
+      rollback();
       return null;
     }
     return data ?? null;
@@ -191,7 +368,13 @@ async function saveInternal(): Promise<Queue | null> {
     body: body as never,
   });
   if (e) {
-    error.value = errText(e, "保存被拒绝");
+    const eb = e as unknown as { error?: { code?: string; message?: string; details?: Record<string, unknown> } };
+    if (eb.error?.code && mapDepError(eb.error.code, eb.error.message ?? "依赖校验未通过", eb.error.details)) {
+      error.value = null;
+    } else {
+      error.value = eb.error?.message ?? "保存被拒绝";
+    }
+    rollback();
     return null;
   }
   return data ?? null;
@@ -276,7 +459,7 @@ function tryClose() {
             v-for="(m, i) in members"
             :key="m.id"
             class="q-mem"
-            :class="{ 'q-mem--dragging': sort.dragIndex.value === i }"
+            :class="{ 'q-mem--dragging': sort.dragIndex.value === i, 'q-mem--error': depErrors.has(m.id) }"
             :style="sort.styleFor(i)"
             @pointerdown="sort.onDown($event, i)"
             @pointermove="sort.onMove($event)"
@@ -287,6 +470,26 @@ function tryClose() {
             <span class="m-id mono">{{ fmtTaskId(m.id) }}</span>
             <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
             <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
+            <!-- 接续前置 chk（m4-plan §4.9 C5）：勾选=对前置成员写入
+                 %OldChk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
+                 首成员无前驱不渲染；pointerdown.stop 防拖拽误触 -->
+            <label
+              v-if="i > 0 && linkEditable"
+              class="m-link"
+              :class="{ 'm-link--disabled': !linksReady }"
+              :title="linkTitle(i)"
+              @pointerdown.stop
+              @click.stop
+            >
+              <input
+                class="ck"
+                type="checkbox"
+                :disabled="!linksReady || busy"
+                :checked="linkStates.get(m.id)?.checked ?? false"
+                @change="toggleLink(i)"
+              />
+              <span class="m-link-text">接续前置 chk</span>
+            </label>
             <StateChip v-if="m.state" :state="m.state" />
             <span v-if="m.cause" class="m-cause mono">{{ causeLabel[m.cause] ?? m.cause }}</span>
             <button
@@ -301,6 +504,14 @@ function tryClose() {
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- DAG 校验错误逐成员清单（m4-plan §4.9 C5：内联提示——成员行红描边
+           与此处逐条文案对应，行高恒定不破坏拖拽量测） -->
+      <div v-if="depErrors.size" class="q-dep-errors" role="alert">
+        <p v-for="[tid, msg] in depErrors" :key="tid" class="q-dep-error mono">
+          <span class="m-id mono">{{ fmtTaskId(tid) }}</span> — {{ msg }}
+        </p>
       </div>
 
       <div class="q-toggle-row">
@@ -466,6 +677,42 @@ function tryClose() {
 .m-cause {
   font-size: var(--text-sm);
   color: var(--warn);
+}
+/* 接续前置 chk 勾选（C5）：内联紧凑、阻断行拖拽（pointerdown.stop） */
+.m-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+.m-link--disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+.m-link-text {
+  font-size: var(--text-xs); /* 文案含中文：下限档从属选项（候选页 .qf 同口径） */
+  color: var(--text-secondary);
+}
+/* DAG 校验错误行（C5）：红描边标注涉错成员（不改行高，画布量测不受影响） */
+.q-mem--error {
+  border-color: var(--danger);
+}
+.q-dep-errors {
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  padding: var(--space-2) var(--space-3);
+  display: grid;
+  gap: var(--space-1);
+}
+.q-dep-error {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+.q-dep-error .m-id {
+  color: var(--danger);
 }
 .m-remove {
   height: var(--control-height-sm);

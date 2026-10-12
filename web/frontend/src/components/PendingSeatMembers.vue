@@ -33,6 +33,25 @@ const stagedCount = computed(
   () => members.value.filter((m) => m.state === "staged").length,
 );
 
+/**
+ * 窗口停等图注（m4-plan §4.9 C5；契约 PendingSeatMember.wait_reason）：
+ * 窗口当前停等成员非 null（仅停等成员、不越位），覆盖「等待」措辞为
+ * 「等依赖/等资源」——依赖停等优先于资源停等的优先序由后端落字段，前端
+ * 只渲染（依赖守卫先于资源检查，§2.1）。
+ */
+function memberStateLabel(m: PendingSeat["members"][number]): string | undefined {
+  if (m.state !== "staged") return undefined;
+  if (m.wait_reason === "dependency") return "等依赖";
+  if (m.wait_reason === "resource") return "等资源";
+  return "等待";
+}
+
+function waitTitle(reason: string): string {
+  return reason === "dependency"
+    ? "依赖未满足 — 前置成员尚未成功完成，窗口停等中（依赖优先于资源）"
+    : "声明资源大于当前空闲 — 窗口停等资源释放";
+}
+
 const subEl = ref<HTMLElement | null>(null);
 const scrollerEl = ref<HTMLElement | null>(null);
 
@@ -117,7 +136,8 @@ watch(members, () => void nextTick(() => sort.measure()));
         <span class="mono m-res">{{ fmtDeclaredRes(m.resources) }}</span>
         <StateChip
           :state="m.state"
-          :label="m.state === 'staged' ? '等待' : undefined"
+          :label="memberStateLabel(m)"
+          :title="m.wait_reason ? waitTitle(m.wait_reason) : undefined"
         />
         <button
           v-if="m.state === 'staged'"
@@ -154,9 +174,10 @@ watch(members, () => void nextTick(() => sort.measure()));
 .sub-row {
   display: grid;
   /* 序号/id 列 minmax 收窄但不截断：id ≥ 1000 时自然加宽（034 为显示下宽）；
-     状态/操作列定宽——表头与数据行是两个独立 grid，auto 轨随内容宽漂移会错位 */
+     状态列 92px 容纳停等图注覆盖措辞（等依赖/等资源，C5）；操作列定宽——
+     表头与数据行是两个独立 grid，auto 轨随内容宽漂移会错位 */
   grid-template-columns:
-    20px minmax(36px, auto) minmax(0, 1.2fr) minmax(0, 1fr) 108px 72px 64px;
+    20px minmax(36px, auto) minmax(0, 1.2fr) minmax(0, 1fr) 108px 92px 64px;
   gap: var(--space-3);
   align-items: center;
   font-size: var(--text-sm);

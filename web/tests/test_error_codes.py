@@ -175,9 +175,15 @@ def test_import_parse_reason_aligned():
 #   （M3 C2 workspace .out 入口，§2.3 语义 UI 承载）
 # - QUEUE_STATE_CONFLICT：待执行页队列席位成员重排的执行中定制提示
 #   （m2 分级矩阵 executing 409 的语义 UI 承载，2026-10-04）
+# - DEPENDENCY_CYCLE / INVALID_MEMBERS：队列编辑框 DAG 校验错误逐成员内联
+#   映射（m4-plan §4.9 C5——按码取 details.cycle/task_ids 映射成员行红描边
+#   与错误清单；UNREACHABLE/CHK_SOURCE_MISSING 走 details.task_id 通用路径
+#   不按码分支）
 FRONTEND_CODE_BRANCHES = {
     "PENDING_CAPACITY_FULL",
     "SEAT_WINDOW_LOCKED",
+    "DEPENDENCY_CYCLE",
+    "INVALID_MEMBERS",
     "ANALYSIS_UNAVAILABLE",
     "ANALYSIS_PARSE_FAILED",
     "CUBE_GENERATION_FAILED",
