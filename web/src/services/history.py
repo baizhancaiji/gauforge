@@ -48,14 +48,34 @@ def _wall_time_s(row: dict) -> float:
     return 0.0
 
 
-def entry_shape(row: dict) -> dict:
-    """HistoryEntry 序列化：bool 转换、派生 wall_time_s、chk_snapshot 缺省。"""
+def entry_shape(row: dict, resumed_by: list[int] | None = None) -> dict:
+    """HistoryEntry 序列化：bool 转换、派生 wall_time_s、chk_snapshot 缺省。
+
+    resumed_from 透传库值（M4 续跑关联，无则 null）；resumed_by 为派生只读
+    （不入存储，调用方按 _resumed_by_map 反查传入，缺省空列表）。
+    """
     return {**row,
             "archived": bool(row.get("archived")),
             "wall_time_s": _wall_time_s(row),
             "chk_snapshot": row.get("chk_snapshot")
             or {"protected": False, "location": None},
-            "result_ref": row.get("result_ref")}
+            "result_ref": row.get("result_ref"),
+            "resumed_from": row.get("resumed_from"),
+            "resumed_by": resumed_by if resumed_by is not None else []}
+
+
+def _resumed_by_map() -> dict[int, list[int]]:
+    """resumed_from 反查索引：原执行 id → 续跑执行 id 列表（升序）。
+
+    「已续跑 → #MMM」的派生只读数据源（m4-plan §2.2）；单机终态量级小，
+    全量扫描 resumed_from 非空行即可。"""
+    out: dict[int, list[int]] = {}
+    for r in executions().list_resumed_sources():
+        src = r.get("resumed_from") or {}
+        eid = src.get("execution_id")
+        if eid is not None:
+            out.setdefault(int(eid), []).append(int(r["id"]))
+    return {k: sorted(v) for k, v in out.items()}
 
 
 def _terminal_row(execution_id: int) -> dict:
@@ -73,12 +93,14 @@ def list_entries(state: str | None, queue_id: str | None,
     items, total = executions().list_terminal(
         state=state, queue_id=queue_id, archived=archived,
         page=page, page_size=size, sort=sort)
-    return {"items": [entry_shape(r) for r in items], "page": page,
-            "page_size": size, "total": total}
+    by_map = _resumed_by_map()
+    return {"items": [entry_shape(r, by_map.get(r["id"])) for r in items],
+            "page": page, "page_size": size, "total": total}
 
 
 def get_entry(execution_id: int) -> dict:
-    return entry_shape(_terminal_row(execution_id))
+    row = _terminal_row(execution_id)
+    return entry_shape(row, _resumed_by_map().get(execution_id))
 
 
 def load_input(execution_id: int) -> bytes:

@@ -14,7 +14,8 @@ class ExecutionsRepo:
     def _deserialize(self, row: dict | None) -> dict | None:
         if row is None:
             return None
-        for col in ("resources", "monitor_summary", "chk_snapshot"):
+        for col in ("resources", "monitor_summary", "chk_snapshot",
+                    "resumed_from"):
             if row.get(col) is not None:
                 row[col] = json.loads(row[col])
         return row
@@ -38,6 +39,13 @@ class ExecutionsRepo:
         """任务全部执行记录（id 正序，最近在后）。"""
         rows = self._db.query(
             "SELECT * FROM executions WHERE task_id = ? ORDER BY id", (task_id,))
+        return [self._deserialize(r) for r in rows]  # type: ignore[misc]
+
+    def list_resumed_sources(self) -> list[dict]:
+        """含 resumed_from 的执行行（id + resumed_from；resumed_by 反查源，M4）。"""
+        rows = self._db.query(
+            "SELECT id, resumed_from FROM executions"
+            " WHERE resumed_from IS NOT NULL ORDER BY id")
         return [self._deserialize(r) for r in rows]  # type: ignore[misc]
 
     def used_queue_ids(self) -> set[str]:

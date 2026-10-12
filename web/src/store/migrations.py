@@ -102,6 +102,30 @@ CREATE TABLE IF NOT EXISTS ui_prefs (
 """
 MIGRATIONS[2] = SCHEMA_V2
 
+# v3（2026-10-12，M4 A4 契约 diff 随行落库）：
+# - executions 加列 resumed_from：断点续跑关联（可空 TEXT JSON，
+#   {task_id, execution_id}=原执行；仅经「从断点续跑」新建的执行携带，
+#   创建时写入；原历史条目数据零变更——「已续跑」经 resumed_by 派生只读
+#   （响应时按本列反查），不落库）。
+# - workflows 表：组合流记录（GET /workflows 系端点数据源；B10/B11 消费），
+#   state 与 refine_queue_pending 形状对齐契约 Workflow/WorkflowState。
+SCHEMA_V3 = """
+ALTER TABLE executions ADD COLUMN resumed_from TEXT;
+
+CREATE TABLE IF NOT EXISTS workflows (
+  workflow_id TEXT PRIMARY KEY,
+  source_candidate_id INTEGER NOT NULL,
+  state TEXT NOT NULL
+      CHECK (state IN ('crest_running','refining','completed','failed')),
+  refine_queue_pending INTEGER NOT NULL DEFAULT 0,
+  crest_execution_id INTEGER,
+  refine_queue_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+"""
+MIGRATIONS[3] = SCHEMA_V3
+
 
 def run_migrations(db: Database) -> None:
     with db.tx() as conn:

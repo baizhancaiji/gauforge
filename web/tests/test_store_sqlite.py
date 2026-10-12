@@ -41,12 +41,27 @@ def repos(db):
 
 def test_migration_sets_version(db):
     row = db.one("SELECT version FROM schema_version")
-    assert row is not None and row["version"] == 2  # v2: ui_prefs 表
+    assert row is not None and row["version"] == 3  # v3: resumed_from + workflows
 
 
 def test_migration_idempotent(db):
     run_migrations(db)  # 重复执行不报错、版本不变
-    assert db.one("SELECT version FROM schema_version")["version"] == 2
+    assert db.one("SELECT version FROM schema_version")["version"] == 3
+
+
+def test_v3_resumed_from_and_workflows(db):
+    # v3（M4 A4 随行落库）：executions.resumed_from 可空列 + workflows 表
+    cols = {r["name"] for r in db.query(
+        "PRAGMA table_info(executions)")}
+    assert "resumed_from" in cols
+    db.run(
+        "INSERT INTO workflows (workflow_id, source_candidate_id, state,"
+        " created_at, updated_at) VALUES ('wf0001', 1, 'crest_running',"
+        " '2026-10-12T00:00:00+08:00', '2026-10-12T00:00:00+08:00')")
+    row = db.one("SELECT * FROM workflows WHERE workflow_id = 'wf0001'")
+    assert row is not None and row["refine_queue_pending"] == 0
+    with pytest.raises(Exception):  # 非法 state 被 CHECK 拒绝
+        db.run("UPDATE workflows SET state = 'bogus' WHERE workflow_id = 'wf0001'")
 
 
 def test_wal_mode_file_db(db):
