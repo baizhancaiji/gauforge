@@ -41,6 +41,8 @@ watch(
     route.value = DEFAULT_ROUTE;
     link0.value = "";
     topN.value = 2;
+    nprocInvalid.value = false;
+    routeInvalid.value = false;
     // crest 核数默认取运行级 link0_default_nproc（§2.3 组合流资源声明）
     const { data } = await client.GET("/settings");
     const nprocDefault = data?.runtime.find((s) => s.key === "link0_default_nproc")?.value;
@@ -48,17 +50,24 @@ watch(
   },
 );
 
-/** top_n∈[2,10] 前端兜底（越界后端 422 VALIDATION_FAILED）。 */
+/** top_n∈[2,10] / nproc 正整数 / route 非空——前端兜底（后端 422 同判）。 */
 const topNInvalid = ref(false);
+const nprocInvalid = ref(false);
+const routeInvalid = ref(false);
 
 async function submit() {
   const c = props.candidate;
   if (!c) return;
+  const nprocBad = !Number.isInteger(nproc.value) || nproc.value < 1;
+  const routeBad = !route.value.trim();
+  nprocInvalid.value = nprocBad;
+  routeInvalid.value = routeBad;
   if (topN.value < 2 || topN.value > 10) {
     topNInvalid.value = true;
     return;
   }
   topNInvalid.value = false;
+  if (nprocBad || routeBad) return;
   busy.value = true;
   error.value = null;
   const link0Lines = link0.value
@@ -110,7 +119,7 @@ async function submit() {
       <div class="cf-row">
         <label class="cf-field">
           <span class="cf-label mono">crest 核数</span>
-          <input v-model.number="nproc" type="number" min="1" max="64" />
+          <input v-model.number="nproc" type="number" min="1" max="64" :class="{ 'cf-invalid': nprocInvalid }" />
         </label>
         <label class="cf-field">
           <span class="cf-label mono">精修构象数 Top N（2–10）</span>
@@ -124,11 +133,13 @@ async function submit() {
         </label>
       </div>
       <p v-if="topNInvalid" class="cf-error mono" role="alert">Top N 须在 2–10 范围内</p>
+      <p v-else-if="nprocInvalid" class="cf-error mono" role="alert">crest 核数须为正整数</p>
 
       <label class="cf-field">
         <span class="cf-label mono">精修模板 route</span>
-        <textarea v-model="route" rows="2" class="mono"></textarea>
+        <textarea v-model="route" rows="2" class="mono" :class="{ 'cf-invalid': routeInvalid }"></textarea>
       </label>
+      <p v-if="routeInvalid" class="cf-error mono" role="alert">精修模板 route 必填</p>
       <label class="cf-field">
         <span class="cf-label mono">精修模板 Link0（可选，每行一条；缺省按运行级补齐）</span>
         <textarea v-model="link0" rows="2" class="mono" placeholder="%NProcShared=4"></textarea>
