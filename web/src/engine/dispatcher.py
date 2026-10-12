@@ -205,7 +205,10 @@ class Dispatcher:
             input_hash = workspace.content_hash(resolved["completed_text"])
 
             # ① 哈希跳过：上次成功且输入哈希一致 → 沿用结果，序列越过
-            if self._hash_skip(task["id"], input_hash):
+            #    （§8 决策点 6：直接前驱重跑产生新执行即视依赖已变，拒绝
+            #    跳过、下游随之重跑——守卫先于沿用判定）
+            if self._hash_skip(task["id"], input_hash) \
+                    and not self._upstream_rerun_since(item, task):
                 if item["kind"] == "task":
                     self._release_seat_task(task["id"])
                 continue
@@ -285,6 +288,34 @@ class Dispatcher:
     def _hash_skip(self, task_id: int, input_hash: str) -> bool:
         return any(e["state"] == "succeeded" and e["input_hash"] == input_hash
                    for e in executions().list_by_task(task_id))
+
+    def _upstream_rerun_since(self, item: dict, task: dict) -> bool:
+        """直接前驱重跑传导（§8 决策点 6，定案=建议值）：前驱在本任务
+        最近成功执行之后产生过新执行（重跑）→ 视依赖已变，拒绝哈希跳过
+        （下游随之重跑；其后的依赖守卫/失败分流按前驱最新终态照常处置）。
+
+        溯源基线取本任务最近 succeeded 执行 id：依赖守卫保证其派发前直接
+        前驱已 succeeded——被溯源的前驱执行 id 必小于该值，全局执行 id
+        单调可比，前驱其后的任意新执行即重跑信号（无须落库溯源记录）。
+        无队列上下文（单任务席位禁 @task: 依赖）或无成功基线（本就无可
+        沿用）恒 False。"""
+        qid = item.get("queue_id")
+        if qid is None:
+            return False
+        base = max((e["id"] for e in executions().list_by_task(task["id"])
+                    if e["state"] == "succeeded"), default=None)
+        if base is None:
+            return False
+        try:
+            text = self._inputs_path(task["id"]).read_text(
+                encoding="utf-8", errors="replace")
+        except OSError:
+            return False
+        member_ids = {m["id"] for m in tasks().list_queue_members(qid)}
+        preds = [r["target"] for r in parse_link0_refs(text)
+                 if r["kind"] == "task" and r["target"] in member_ids]
+        return any(any(e["id"] > base for e in executions().list_by_task(p))
+                   for p in preds)
 
     def _executed_this_cycle(self, task_id: int, queue: dict) -> bool:
         """本执行周期内是否已有执行记录。

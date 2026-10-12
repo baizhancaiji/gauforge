@@ -9,6 +9,7 @@
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -170,6 +171,40 @@ def test_hash_skip_member_satisfies_dependency_and_feeds_materialization(
     assert dep["crash_limit"] == 0
     dep_chk = Path(dep["cwd"]) / f"dep-{u}.chk"
     assert dep_chk.read_bytes() == b"reused-chk"
+
+
+def test_upstream_rerun_blocks_downstream_hash_skip(disp, gw, monkeypatch):
+    """§8 决策点 6（定案=建议值）：上游重跑产生新执行 → 视依赖已变，
+    下游拒绝哈希跳过、随之重跑（新执行记录；下游输入未变、哈希仍一致）。"""
+    u = _mk("%chk=u.chk\n" + TAIL, "u.gjf")
+    d = _mk(f"%OldChk=@task:{u}\n" + TAIL, "d.gjf")
+    from web.src.engine.workspace import content_hash, resolve_link0
+    text = (config.HOME_DIR / "inputs" / str(u)).read_text(encoding="utf-8")
+    h = content_hash(resolve_link0(text, 4, 8.0)["completed_text"])
+    _succeed(u, b"old-chk", input_hash=h)
+    qid = _mk_queue([u, d])
+    disp.advance()  # 周期 1：u 哈希跳过（沿用），d 派发
+    d_eid = executions().list_by_task(d)[-1]["id"]
+    disp._on_terminal(executions().get(d_eid), "succeeded", None)
+    assert queues().get(qid)["state"] == "completed"
+    # 上游显式重跑（重新排队语义）：新执行 id、输入未变（哈希一致）。
+    # 提交时间戳强置为严格更晚（真实场景为稍后重提）：避免周期 1/2 同秒
+    # ——updated_at 不变则执行周期水位不重置、d 被误判本周期已执行
+    # （m2-plan §5 秒级时间戳同秒竞态，测试确定性规避）
+    import web.src.store.queues_repo as _qr
+    _real_now = _qr.now_iso
+    monkeypatch.setattr(
+        _qr, "now_iso",
+        lambda: (datetime.now(timezone.utc) + timedelta(seconds=5)).isoformat(
+            timespec="seconds"))
+    _succeed(u, b"new-chk", input_hash=h)
+    seats().append(kind="queue", queue_id=qid)
+    queues().set_state(qid, "submitted")
+    disp.advance()  # 周期 2：d 拒绝哈希跳过 → 重新派发
+    d_execs = executions().list_by_task(d)
+    assert d_execs[-1]["id"] > d_eid and d_execs[-1]["state"] == "running"
+    # u 自身哈希跳过照常（其结果仍是当前输入的有效结果，无新执行记录）
+    assert len(executions().list_by_task(u)) == 2
 
 
 def test_wait_reason_in_snapshot(disp, gw):
