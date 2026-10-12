@@ -30,6 +30,7 @@
 | 「编辑队列」（改名/重排/移除成员，M2） | PATCH /api/v1/queues/{id} | `queues.changed(updated)` |
 | 「删除队列」（二次确认，M2） | DELETE /api/v1/queues/{id} | `queues.changed(deleted)` → `candidates.changed` |
 | 「直接提交」（M2） | POST /api/v1/queues/{id}/submit | `queue.status` → `pending.snapshot` |
+| 队列详情「能量表」入口（末次 SCF 能量 hartree/eV + 相对 kJ/mol，M4） | GET /api/v1/queues/{id}/energy-summary | `history.appended` → 增量刷新 |
 
 ## 03 待执行
 
@@ -63,6 +64,7 @@
 | 输出预览 / 单条导出（?download 以 <stem>.out 命名下载） | GET /api/v1/history/{id}/output | — |
 | 归档 | POST /api/v1/history/{id}/archive | — |
 | 重新排队（M1） | POST /api/v1/history/{id}/requeue | `pending.snapshot` |
+| 「从断点续跑」（failed 条目；弹窗两段式——preview 探针/注入/diff → 确认，M4） | POST /api/v1/history/{id}/resume/preview；POST /api/v1/history/{id}/resume | `pending.snapshot`（确认入队）→ 派发后 `task.status` |
 | 退回候选（M1） | POST /api/v1/history/{id}/return-candidate | `candidates.changed(created)` |
 | 手动触发 chk/rwf 清理（M1） | POST /api/v1/history/cleanup | — |
 | 详情「分析」区 · 概览 tab（Result 全集；blocks 驱动四 tab 可见性，M3） | GET /api/v1/history/{id}/analysis | `history.appended` → 拉取 |
@@ -87,6 +89,15 @@
 | 更新卡代理通道切换（直连/默认代理/自定义 URL，读写工作区 .update-proxy，v2.1.0） | PUT /api/v1/update/proxy | — |
 | 队列/历史/归档页排序规则持久化（跨重启/更新/断联不回默认，键 `queues.sort`/`history.sort`/`archive.sort`） | GET·PUT /api/v1/ui-preferences | — |
 
+## 07 工作流（M4）
+
+| 界面元素 | 端点 | 事件（SSE） |
+|---|---|---|
+| 候选行「组合流」入口 → 对话框（crest 参数/top N/精修模板）一键提交 | POST /api/v1/workflows/conformer-refinement | `pending.snapshot`（crest 任务入队）→ `task.status`/`history.appended`（crest 执行）→ `queues.changed(created)` + `pending.snapshot`（精修队列自动提交） |
+| 组合流进度面板（状态/精修队列/refine_queue_pending 满员提示；SSE 驱动刷新后拉取） | GET /api/v1/workflows/{id} | `task.status`/`history.appended`/`queue.status` → 拉取 |
+| 页面刷新后找回组合流（进度面板恢复） | GET /api/v1/workflows?limit=20 | — |
+| 工作流能量表（crest ensemble 行 + 精修 g16 行跨容器聚合，相对 kJ/mol 增量刷新） | GET /api/v1/workflows/{id}（energy_summary） | `history.appended` → 增量刷新 |
+
 ## 系统级（跨页）
 
 | 界面元素 | 端点 | 事件（SSE） |
@@ -99,9 +110,12 @@
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 48 个操作均已在上表被至少一个界面元素引用：
-candidates(7 个操作) · queues(6) · pending(4) · executions(3) · history(16)
-· settings(2) · system/events(3) · update(4) · ui-prefs(2) · storage(1)。
+全部 55 个操作均已在上表被至少一个界面元素引用：
+candidates(8 个操作) · queues(7) · pending(4) · executions(3) · history(18)
+· settings(2) · system/events(3) · update(4) · ui-prefs(2) · storage(1)
+· workflow(3)。
 —— 由 A5 walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
 计划 D3；ui-prefs(2) 为视图偏好持久化域；history/export 为历史批量导出；history
-分析域 7 操作 + storage(1) 为 M3 波 A1 增补——契约预告，实施随 m3-plan B3/B4/B12）。
+分析域 7 操作 + storage(1) 为 M3 波 A1 增补——契约预告，实施随 m3-plan B3/B4/B12；
+queues energy-summary(1) + history resume(2) + workflow(3) 为 M4 波 A4 增补，
+实施随 m4-plan B9–B11）。
