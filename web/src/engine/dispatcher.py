@@ -41,7 +41,7 @@ from .. import config
 from ..hq.gateway import Gateway, GatewayError
 from ..store import executions, queues, seats, settings, tasks
 from ..store.db import now_iso
-from . import finalize, workspace
+from . import finalize, materialize, workspace
 from .monitor import ExecutionMonitor
 from .progress import ProgressTracker
 
@@ -198,9 +198,12 @@ class Dispatcher:
                 break
 
             eid = self._dispatch(item, task, resolved, input_hash)
-            running.append(executions().get(eid))  # type: ignore[arg-type]
-            claimed_cpus += nproc
-            claimed_mem += mem
+            row = executions().get(eid)
+            if row is not None and row["state"] == "running":
+                # 物化失败成员已在 _dispatch 内落终态（failed），不入窗口账
+                running.append(row)
+                claimed_cpus += nproc
+                claimed_mem += mem
 
     def _hash_skip(self, task_id: int, input_hash: str) -> bool:
         return any(e["state"] == "succeeded" and e["input_hash"] == input_hash
@@ -248,8 +251,16 @@ class Dispatcher:
     # ---------------- 派发 ----------------
 
     def _dispatch(self, item: dict, task: dict, resolved: dict,
-                  input_hash: str) -> int:
-        """④⑤ 建执行记录 → 物化 → 提交 → 回填 hq_job_id → 事件。"""
+                  input_hash: str) -> int | None:
+        """④⑤ 建执行记录 → 物化 → 提交 → 回填 hq_job_id → 事件。
+
+        B7 物化钩子（m4-plan §2.1）：输入含符号引用（@task:/@exec:）时，
+        物化上游 chk 至本执行目录并重写符号行（哈希已按符号形式在 advance
+        计算，物化不改哈希语义）；物化失败 = 成员 failed(program_error，
+        details chk_materialization)，经终态管线走失败分流。含物化依赖的
+        执行提交 HQ 时禁用内部重试（重入①：crash_limit=0——worker 失联
+        即终态 failed，显式重跑经派发器重新物化）。
+        """
         if item["queue_id"]:
             self._queue_enter_executing(item["queue_id"])
         resources = {"nproc": resolved["nproc"], "mem_gb": resolved["mem_gb"]}
@@ -258,9 +269,26 @@ class Dispatcher:
             resources=resources, queue_id=item["queue_id"],
             input_hash=input_hash)
         g16_root = Path(str(settings().get("g16_root"))).expanduser()
+        nproc_default = int(settings().get("link0_default_nproc"))
+        mem_default = float(settings().get("link0_default_mem_gb"))
+        has_deps = materialize.needs_materialization(
+            resolved["completed_text"])
         try:
             run_d, env = workspace.materialize(
                 self._run_root, eid, resolved["completed_text"], g16_root)
+            if has_deps:
+                final_text = materialize.materialize_chk(
+                    run_d, resolved["completed_text"],
+                    nproc_default=nproc_default, mem_gb_default=mem_default)
+                (run_d / "input.gjf").write_text(final_text,
+                                                  encoding="utf-8")
+        except materialize.MaterializeError as exc:
+            # 物化失败落终态（program_error），经失败分流；不留僵尸 running 行
+            print(f"[materialize] 执行 {eid} 物化失败：{exc} "
+                  f"details={exc.details}", file=sys.stderr)
+            self._on_terminal(executions().get(eid), "failed",
+                              "program_error")
+            return eid
         except Exception:
             executions().delete(eid)  # 补偿：不留僵尸 running 行
             raise
@@ -274,7 +302,8 @@ class Dispatcher:
             name=task["filename"], env=env,
             resources={"cpus": int(resolved["nproc"]["value"]),
                        "mem_mib": mem},
-            time_limit_s=int(task.get("time_limit_s") or 0))
+            time_limit_s=int(task.get("time_limit_s") or 0),
+            crash_limit=0 if has_deps else None)
         executions().update_hq_job_id(eid, int(job_id))
         self._emit("task.status",
                    {"task_id": task["id"], "execution_id": eid,

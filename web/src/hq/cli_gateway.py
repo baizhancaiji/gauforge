@@ -46,8 +46,14 @@ class CliGateway(Gateway):
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
                time_limit_s: int = 0,
-               env: dict[str, str] | None = None) -> str:
+               env: dict[str, str] | None = None,
+               crash_limit: int | None = None) -> str:
         args = ["submit"]
+        if crash_limit is not None:
+            # CLI crash_limit 数字不接受 0（defs.rs 校验 0 报错），禁用重试
+            # 走字符串形态 never-restart（CrashLimit::NeverRestart，M4 重入①）
+            args += ["--crash-limit",
+                     "never-restart" if crash_limit == 0 else str(crash_limit)]
         if cwd:
             args += ["--cwd", cwd]
         if name:

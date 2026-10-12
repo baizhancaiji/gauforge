@@ -49,7 +49,8 @@ class FakeGateway(Gateway):
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
                time_limit_s: int = 0,
-               env: dict[str, str] | None = None) -> str:
+               env: dict[str, str] | None = None,
+               crash_limit: int | None = None) -> str:
         self._check()
         jid = str(self._next_id)
         self._next_id += 1
@@ -58,7 +59,8 @@ class FakeGateway(Gateway):
                            "submitted_at": None}
         self.submitted.append({"command": list(command), "cwd": cwd,
                                "name": name, "resources": resources,
-                               "time_limit_s": time_limit_s, "env": env})
+                               "time_limit_s": time_limit_s, "env": env,
+                               "crash_limit": crash_limit})
         return jid
 
     def cancel(self, job_id: str) -> None:

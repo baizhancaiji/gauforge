@@ -69,8 +69,11 @@ class HttpGateway(Gateway):
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
                time_limit_s: int = 0,
-               env: dict[str, str] | None = None) -> str:
+               env: dict[str, str] | None = None,
+               crash_limit: int | None = None) -> str:
         body: dict = {"args": list(command), "time_limit_s": int(time_limit_s or 0)}
+        if crash_limit is not None:
+            body["crash_limit"] = int(crash_limit)  # 0=NeverRestart（M4 重入①）
         if cwd:
             body["cwd"] = cwd
         if name:

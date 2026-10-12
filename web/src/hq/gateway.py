@@ -62,7 +62,8 @@ class Gateway(ABC):
     def submit(self, command: list[str], cwd: str | None = None,
                name: str | None = None, resources: dict | None = None,
                time_limit_s: int = 0,
-               env: dict[str, str] | None = None) -> str:
+               env: dict[str, str] | None = None,
+               crash_limit: int | None = None) -> str:
         """提交作业（command 为参数列表形式），返回 HQ job id。
 
         env：g16 子进程自洽环境（GAUSS_* 全集 + 强制 GAUSS_SCRDIR），
@@ -70,7 +71,11 @@ class Gateway(ABC):
 
         resources（B6 资源双账第二账，roadmap §2.1）：{"cpus": int,
         "mem_mib": int} → HQ 资源请求（%NProcShared→cpus、%Mem GB→MiB）；
-        time_limit_s≠0 时设 HQ time_limit（0=不设，默认）。"""
+        time_limit_s≠0 时设 HQ time_limit（0=不设，默认）。
+
+        crash_limit（M4 重入①，m4-plan §2.1）：per-job 重试上限——0=禁用
+        HQ 内部重试（含物化依赖的执行，worker 失联即终态 failed）；None=
+        server 默认（MaxCrashes(5)，行为零变化）。"""
 
     @abstractmethod
     def cancel(self, job_id: str) -> None:
