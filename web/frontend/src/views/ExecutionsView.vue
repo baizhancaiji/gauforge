@@ -166,7 +166,11 @@ async function confirmStop() {
       >
         <header class="head">
           <span class="ch mono">CH {{ String(card.exec.id).padStart(3, "0") }}</span>
-          <StateChip state="running" loud />
+          <span class="head-chips">
+            <!-- kind 徽标（M4 C7：crest/g16 区分；g16 不徽标、安静档纪律） -->
+            <span v-if="card.exec.kind === 'crest'" class="kind-badge mono">CREST</span>
+            <StateChip state="running" loud />
+          </span>
         </header>
 
         <p class="file mono" :title="card.exec.filename">{{ card.exec.filename }}</p>
@@ -192,14 +196,23 @@ async function confirmStop() {
             <div class="n mono">{{ fmtMemory(card.exec.monitor?.mem_rss_mb) }}</div>
             <div class="l mono zh">内存 RSS</div>
           </div>
-          <div class="ro ro--sub">
-            <div class="n mono">{{ card.exec.progress?.opt_step ?? "—" }}</div>
-            <div class="l mono">OPT STEP</div>
-          </div>
-          <div class="ro ro--sub">
-            <div class="n mono">{{ scfDisplay(card.exec) }}</div>
-            <div class="l mono">SCF RUN-CYCLE</div>
-          </div>
+          <template v-if="card.exec.kind === 'crest'">
+            <!-- crest 无增量解析（§2.3：不进 cclib 管道、execution.progress
+                 不适用——进度位显示占位提示，非空白非报错；monitor 照常） -->
+            <p class="no-progress mono" role="note">
+              无增量解析 — CREST 任务不产生 g16 进度流，运行读数见 CPU/内存
+            </p>
+          </template>
+          <template v-else>
+            <div class="ro ro--sub">
+              <div class="n mono">{{ card.exec.progress?.opt_step ?? "—" }}</div>
+              <div class="l mono">OPT STEP</div>
+            </div>
+            <div class="ro ro--sub">
+              <div class="n mono">{{ scfDisplay(card.exec) }}</div>
+              <div class="l mono">SCF RUN-CYCLE</div>
+            </div>
+          </template>
         </div>
 
         <footer class="foot">
@@ -315,6 +328,27 @@ async function confirmStop() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+.head-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.kind-badge {
+  font-size: var(--text-xs);
+  letter-spacing: var(--ls-wide);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--r-sm);
+  padding: 0 var(--space-1);
+  line-height: 18px;
+}
+/* crest 进度位占位（无增量解析，§2.3）：跨两列、安静档说明性文字 */
+.no-progress {
+  grid-column: 1 / -1;
+  font-size: var(--text-sm);
+  color: var(--text-faint);
+  margin: 0;
 }
 .ch {
   font-size: var(--text-xs);

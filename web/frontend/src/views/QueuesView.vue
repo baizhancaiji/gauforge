@@ -21,6 +21,7 @@ import type { components } from "@/api/contract";
 import BlockEditor from "@/components/BlockEditor.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import EnergyTable from "@/components/EnergyTable.vue";
 import QueueEditorModal from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
@@ -181,6 +182,31 @@ const memberEditing = ref<number | null>(null);
 
 function toggleMemberEdit(id: number) {
   memberEditing.value = memberEditing.value === id ? null : id;
+}
+
+// ---------- 队列能量表（m4-plan §4.9 C7：纯 g16 队列经队列详情入口；
+// 队列端点成员恒 g16——crest 不入队，组合流聚合走候选页 WorkflowDrawer） ----------
+const energyOpen = ref<Record<string, boolean>>({});
+const energyRows = ref<Record<string, components["schemas"]["EnergySummaryRow"][]>>({});
+const energyLoading = ref<Record<string, boolean>>({});
+const energyError = ref<Record<string, string>>({});
+
+async function toggleEnergy(q: Queue) {
+  const id = q.id;
+  energyOpen.value[id] = !energyOpen.value[id];
+  if (!energyOpen.value[id]) return;
+  if (energyRows.value[id]) return; // 已取过：增量刷新由收起再展开触发
+  energyLoading.value[id] = true;
+  const { data, error: e } = await client.GET("/queues/{id}/energy-summary", {
+    params: { path: { id } },
+  });
+  energyLoading.value[id] = false;
+  if (e) {
+    const body = e as unknown as { error?: { message?: string } };
+    energyError.value[id] = body.error?.message ?? "能量表获取失败";
+    return;
+  }
+  energyRows.value[id] = data?.rows ?? [];
 }
 
 /** 编辑卡守卫：正在编辑的成员属于该回退队列（展开区切换/收起防悬挂）。 */
@@ -378,6 +404,19 @@ async function confirmDelete() {
             <span v-if="q.state === 'executing'" class="hint">
               成员移除请前往待执行页操作
             </span>
+            <button
+              class="btn btn--ghost energy-btn"
+              type="button"
+              @click="toggleEnergy(q)"
+            >
+              {{ energyOpen[q.id] ? "收起能量表" : "能量表" }}
+            </button>
+          </div>
+          <!-- 队列能量表（C7）：成员末次 SCF 双单位 + 相对 kJ/mol（零点=查询范围最低） -->
+          <div v-if="energyOpen[q.id]" class="energy-wrap">
+            <p v-if="energyLoading[q.id]" class="mono dim">读取中 …</p>
+            <p v-else-if="energyError[q.id]" class="mono energy-err" role="alert">{{ energyError[q.id] }}</p>
+            <EnergyTable v-else :rows="energyRows[q.id] ?? []" />
           </div>
           <p class="mono label">成员顺序（执行序列）</p>
           <div class="member-list">
@@ -607,6 +646,21 @@ async function confirmDelete() {
 }
 .hint {
   color: var(--text-faint);
+}
+.energy-btn {
+  height: var(--control-height-sm);
+  margin-left: auto;
+  font-size: var(--text-sm); /* 文案含中文（能量表） */
+}
+.energy-wrap {
+  border: 1px solid var(--border-hair);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  padding: var(--space-3);
+}
+.energy-err {
+  font-size: var(--text-sm);
+  color: var(--danger);
 }
 .label {
   font-size: var(--text-sm); /* 文案含中文（成员顺序） */

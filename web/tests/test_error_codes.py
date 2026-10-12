@@ -181,12 +181,17 @@ def test_import_parse_reason_aligned():
 #   不按码分支）
 # - RESUME_NOT_ELIGIBLE：断点续跑确认时幂等重探未通过的定制引导（m4-plan
 #   §4.9 C6——「资产已失效请重新发起」，与 ineligible 预览态文案分立）
+# - CREST_EXECUTABLE_MISSING / WORKFLOW_STATE_INVALID：组合流提交对话框的
+#   前置检查定制文案（m4-plan §4.9 C7——crest_root 不可用引导设置页、
+#   来源候选形态失效引导重选；409 满员沿用 PENDING_CAPACITY_FULL 既有文案）
 FRONTEND_CODE_BRANCHES = {
     "PENDING_CAPACITY_FULL",
     "SEAT_WINDOW_LOCKED",
     "DEPENDENCY_CYCLE",
     "INVALID_MEMBERS",
     "RESUME_NOT_ELIGIBLE",
+    "CREST_EXECUTABLE_MISSING",
+    "WORKFLOW_STATE_INVALID",
     "ANALYSIS_UNAVAILABLE",
     "ANALYSIS_PARSE_FAILED",
     "CUBE_GENERATION_FAILED",

@@ -553,7 +553,10 @@ async function confirmCleanup() {
                 />
               </td>
               <td class="mono dim">{{ String(h.id).padStart(3, "0") }}</td>
-              <td class="mono file" :title="h.filename">{{ h.filename }}</td>
+              <td class="mono file" :title="h.filename">
+                <span v-if="h.kind === 'crest'" class="crest-badge mono">CREST</span>
+                {{ h.filename }}
+              </td>
               <!-- 状态列中文显示（taskStateLabel 单一来源，与队列页同纪律，2026-09-27） -->
               <td>
                 <StateChip :state="h.state" :label="taskStateLabel[h.state] ?? h.state" />
@@ -928,6 +931,16 @@ tbody tr.row--checked:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+/* crest 任务行 kind 徽标（M4 C7）：accent 描边小徽标 + 文件名同列 */
+.crest-badge {
+  font-size: var(--text-xs);
+  letter-spacing: var(--ls-wide);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--r-sm);
+  padding: 0 var(--space-1);
+  margin-right: var(--space-1);
 }
 .dim {
   color: var(--text-faint);

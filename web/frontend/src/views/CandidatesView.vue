@@ -14,11 +14,13 @@ import { computed, ref, watch } from "vue";
 import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 import BlockEditor from "@/components/BlockEditor.vue";
+import ComboFlowDialog from "@/components/ComboFlowDialog.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import QueueEditorModal, { type MemberRow } from "@/components/QueueEditorModal.vue";
 import StateChip from "@/components/StateChip.vue";
 import TablePager from "@/components/TablePager.vue";
+import WorkflowDrawer from "@/components/WorkflowDrawer.vue";
 import { useMultiSelect } from "@/composables/useMultiSelect";
 import { useEventsStore } from "@/stores/events";
 import { fmtDateTime, fmtTaskId } from "@/utils/format";
@@ -389,6 +391,20 @@ function onQueueSubmitted() {
 function onQueueClosed() {
   queueModalOpen.value = false;
 }
+
+// ---------- 组合流（m4-plan §4.9 C7：候选行入口 + 进度面板恢复路径） ----------
+const comboCandidate = ref<Candidate | null>(null);
+const workflowDrawer = ref<InstanceType<typeof WorkflowDrawer> | null>(null);
+
+function openComboFlow(c: Candidate) {
+  comboCandidate.value = c;
+}
+
+/** 一键提交受理：关闭对话框并打开进度面板定位该 workflow（crest 任务已入待执行队列）。 */
+function onComboSubmitted(resp: { workflow_id: string }) {
+  comboCandidate.value = null;
+  workflowDrawer.value?.show(resp.workflow_id);
+}
 </script>
 
 <template>
@@ -453,6 +469,14 @@ function onQueueClosed() {
       <!-- 多选组建队列（C2）：已选 2–10 可用，越界禁用+提示（创建校验前置） -->
       <span v-if="checkedIds.size" class="note-info mono">已选 {{ checkedIds.size }}</span>
       <span v-if="queueHint" class="note-warn mono" role="status">{{ queueHint }}</span>
+      <!-- 组合流进度面板入口（C7：页面刷新后经 GET /workflows 恢复） -->
+      <button
+        class="btn btn--secondary"
+        type="button"
+        @click="workflowDrawer?.show()"
+      >
+        组合流进度
+      </button>
       <button
         class="btn btn--secondary queue-btn"
         type="button"
@@ -545,6 +569,9 @@ function onQueueClosed() {
                     <button class="btn btn--ghost" type="button" @click.stop="select(c, i)">
                       预览
                     </button>
+                    <button class="btn btn--ghost combo" type="button" title="构象搜索 + top-N 精修组合流" @click.stop="openComboFlow(c)">
+                      组合流
+                    </button>
                     <button class="btn btn--ghost remove" type="button" @click.stop="removing = c">
                       移除
                     </button>
@@ -636,6 +663,15 @@ function onQueueClosed() {
       @submitted="onQueueSubmitted"
       @close="onQueueClosed"
     />
+
+    <!-- 组合流对话框（C7：候选行入口、载荷预选该候选）与进度面板 -->
+    <ComboFlowDialog
+      :open="comboCandidate != null"
+      :candidate="comboCandidate"
+      @submitted="onComboSubmitted"
+      @close="comboCandidate = null"
+    />
+    <WorkflowDrawer ref="workflowDrawer" />
   </div>
 </template>
 

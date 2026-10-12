@@ -21,6 +21,8 @@ export interface LiveExecution {
   id: number;
   task_id: number;
   filename: string;
+  /** 任务类型冗余（M4 C7 crest 行展示：徽标 + 「无增量解析」占位） */
+  kind?: string;
   queue_id?: string | null;
   state?: string;
   submitted_at?: string;
@@ -196,6 +198,7 @@ export const useEventsStore = defineStore("events", () => {
       id: e.id,
       task_id: e.task_id,
       filename: e.filename || prev?.filename || knownNames.get(e.id) || "—",
+      kind: (e as { kind?: string }).kind ?? prev?.kind,
       queue_id: e.queue_id ?? prev?.queue_id ?? null,
       state: e.state,
       submitted_at: e.submitted_at,
