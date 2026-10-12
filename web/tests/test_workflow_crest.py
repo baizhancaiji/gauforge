@@ -504,3 +504,25 @@ def test_hook_orphan_cleanup_on_validate_failure(tmp_path):
     wf2 = workflows().get(wid)
     assert wf2["refine_queue_id"] is not None
     assert len(tasks().list_queue_members(wf2["refine_queue_id"])) == 2
+
+
+def test_draft_discard_tolerates_step_failure(tmp_path, monkeypatch):
+    """N4：回收单步失败（如 tasks 行删除异常）仅记日志、不阻断后续回收
+    ——队列行仍被删除，原异常不被回收异常替换。"""
+    from web.src.store import TasksRepo
+    qid = "RTEST1"
+    queues().create(qid, name="t")
+    tid = tasks().create_candidate("x.gjf", "imported")
+    real_delete = TasksRepo.delete
+    calls: list[int] = []
+
+    def flaky_delete(self, task_id: int) -> None:
+        calls.append(task_id)
+        if len(calls) == 1:
+            raise RuntimeError("simulated db failure")
+        real_delete(self, task_id)
+
+    monkeypatch.setattr(TasksRepo, "delete", flaky_delete)
+    wf_svc._discard_refine_draft(qid, [tid, tid + 1])
+    assert calls == [tid, tid + 1]  # 首步失败未阻断次步
+    assert queues().get(qid) is None  # 队列行仍回收

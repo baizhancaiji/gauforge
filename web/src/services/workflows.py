@@ -280,16 +280,21 @@ def _build_and_submit_refine_queue(dispatcher, wf: dict,
 
 def _discard_refine_draft(qid: str, member_ids: list[int]) -> None:
     """建队中断回收：删成员任务行与输入副本、删队列行（不重建已存在
-    实体的对偶防线——半成品不残留）。单步回收失败仅记日志、不阻断原
-    异常上抛（对账按 refine_queue_id 未落重推兜底）。"""
+    实体的对偶防线——半成品不残留）。单步回收失败（文件系统/SQLite
+    异常）仅记日志、不阻断后续回收与原异常上抛（对账按 refine_queue_id
+    未落重推兜底）。"""
     for tid in member_ids:
         try:
             (default_inputs_dir() / str(tid)).unlink(missing_ok=True)
             tasks().delete(tid)
-        except OSError as exc:
+        except Exception as exc:  # noqa: BLE001 — 单步失败不阻断整轮回收
             print(f"[workflow] 精修建队回收 task={tid} 失败：{exc}",
                   file=sys.stderr)
-    queues().delete(qid)
+    try:
+        queues().delete(qid)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[workflow] 精修建队回收 queue={qid} 失败：{exc}",
+              file=sys.stderr)
 
 
 def _workflow_template(wid: str) -> dict:
