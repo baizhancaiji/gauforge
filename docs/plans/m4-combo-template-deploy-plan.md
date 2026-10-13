@@ -199,7 +199,7 @@ CREATE TABLE IF NOT EXISTS combo_templates (
 | route 非空/恢复    | 空 → 恢复初始 route；不报错                                                                                                                                                    | —                                                    |
 | link0 三字段    | 空 → 保持 NULL（未配置语义），不报错；「清空恢复初始值」对 link0 即恢复为空（§0.1/§3.1）                                                                                                                       | —                                                    |
 | route 文法       | **单行约束**：route 为单行文本（多行 422）；以 # 开头；无空行（以 # 开头与空行两项复用 candidates.py 既有判定理由；`multi_line_route` 系本域新增 reason）                                                                                                                    | `route_must_start_with_hash` / `multi_line_route` / `blank_line_in_route` |
-| route 拼写       | token 按 `[/\s#]+` 切分、casefold **精确匹配**白名单（`keywords.txt`，经 gaussian-kb 扩大提取面再生、全小写）；校验函数带 **mode 参数（enforce/warn，由词典覆盖面定案决定，§8.1）**：enforce → 词典外 error，请求 `ignore_spelling=true` 时该批词典外 token 降级放行；warn → 200 + `notice.spelling_warnings` 警告放行（携带词典外 token 清单，对齐既有 save\_block 非阻断语义）                               | `keyword_not_in_dict`（message 含 token；warn 模式不进 `errors[]`，仅以 `notice.spelling_warnings`（词典外 token 原文清单）回传，`errors[]` 为空）               |
+| route 拼写       | token 按 `[/\s#]+` 切分、casefold **精确匹配**白名单（`keywords.txt`，经 gaussian-kb 扩大提取面再生、全小写）；**键值形 token（`key=value`）以键名精确匹配白名单且值非空放行**（补录 2026-10-14 批次 B 实施：`temp=310` 等任意数值形不可能逐值入词典——§0.4 口径 1「已配置 → 校验值合法性」的隐含前提，值合法性归温度等对应值校验；未知键名的键值形仍属词典外）；校验函数带 **mode 参数（enforce/warn，由词典覆盖面定案决定，§8.1）**：enforce → 词典外 error，请求 `ignore_spelling=true` 时该批词典外 token 降级放行；warn → 200 + `notice.spelling_warnings` 警告放行（携带词典外 token 清单，对齐既有 save\_block 非阻断语义）                               | `keyword_not_in_dict`（message 含 token；warn 模式不进 `errors[]`，仅以 `notice.spelling_warnings`（词典外 token 原文清单）回传，`errors[]` 为空）               |
 | 温度（Freq 联动） | route 含 freq（**定案**：token 精确等值 `freq` 或 `freq=` 前缀，casefold；freq 页全部变体均形如 `freq[=opts]`，KB 核验 2026-10-13）：不含 `temp=`/`temperature=` → **自动补** **` temperature=298.15`**（前导空格系追加拼接分隔符、入库值含之；§0.4 口径 1 定案；归一化，响应 notice，非 error）；含任一 → 值合法性＝单值正数（KB 核验 2026-10-13：官方仅单值开尔文语法，无列表形态） | `temp_value_invalid`                                 |
 | nproc          | 非空时须为正整数字符串（如 `"4"`；`"0"`/`"-1"`/`"2.5"` → error；入库转 INTEGER）                                                                                                                                                | `nproc_not_positive_int`                             |
 | mem\_gb        | 非空时须为数值字符串（GB；`"abc"` → error；入库转 REAL、去尾零；模板域限 GB 单一单位记账，与 `_MEM_VALUE_RE` 多单位不同——刻意简化避免换算歧义）                                                                                                                | `mem_value_invalid`                                  |
@@ -226,9 +226,15 @@ CREATE TABLE IF NOT EXISTS combo_templates (
   initial: {route}}`，无副作用（initial 不含 link0：link0 初始值为空，前端清空即恢复，
   无需来源，§3.1/§3.2）。
 - `PUT /combo-templates/{templateId}`：body = name/route/nproc/mem\_gb/cpu +
-  `ignore_spelling?`（nproc/mem\_gb/cpu 均 `string|null`，§3.2）；**PUT 为全量替换
-  语义**——未携带/空值字段按 §3.2 恢复初始值（name/route）或置 NULL（link0 三字段），
-  不做部分更新。校验 → 归一化（casefold + temp 补齐）→ 落库 → 200 返回
+  `ignore_spelling?` ＋ **`is_default?`**（nproc/mem\_gb/cpu 均 `string|null`，
+  其余 boolean/string；§3.2；**补录 2026-10-14**：`is_default` 系批次 C
+  「设为默认」复选框的承载字段、字段缺省/空值语义系「未携带→恢复初始值」
+  的契约表达，批次 B 实施时按文档先行补契约定案——Update 字段全部可选，
+  name/route 缺省或空恢复初始值、link0 三字段缺省或空置 NULL；
+  is\_default=true 时本条置默认并同事务清其余行）；**PUT 为全量替换
+  语义**——未携带/空值字段按 §3.2 恢复初始值（name/route）或置 NULL
+  （link0 三字段），不做部分更新。校验 → 归一化（casefold + temp 补齐）→
+  落库 → 200 返回
   更新后条目（notice：`{temp_applied: bool, normalized: bool,
   spelling_warnings?: string[]}`——warn 模式未豁免的词典外 token 与 enforce
   豁免放行两种情形均回传 token 清单供前端提示）；404（templateId ∉ {1..5}）；

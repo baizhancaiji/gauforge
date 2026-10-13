@@ -905,7 +905,7 @@ export interface paths {
         get?: never;
         /**
          * 保存组合流精修模板（全量替换；校验→归一化→落库）
-         * @description 全量替换语义：未携带/空值字段按规则恢复（name/route 恢复初始值、 link0 三字段置 null=未配置），不做部分更新。校验一次性全量执行、 errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[] reason 值域见文件头词表三；enforce 模式词典外 token 以 reason=keyword_not_in_dict 条目回传、message 含 token 原文，前端据该 reason 渲染「忽略拼写警告并保存」豁免按钮，ignore_spelling=true 时 该批 token 放行）。校验通过则 casefold 归一化（含 freq 自动补 temperature=298.15）落库，200 返回更新后条目 + notice。404= templateId ∉ {1..5}。并发取舍：单机单用户场景不设并发/乐观锁控制 （updated_at 仅审计）；不发 SSE 事件（ui-preferences 同口径）。
+         * @description 全量替换语义：未携带/空值字段按规则恢复（name/route 恢复初始值、 link0 三字段置 null=未配置），不做部分更新；「设为默认」经 body.is_default=true（radio 语义：同事务迁移唯一默认，不可取消只能 改选）。校验一次性全量执行、 errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[] reason 值域见文件头词表三；enforce 模式词典外 token 以 reason=keyword_not_in_dict 条目回传、message 含 token 原文，前端据该 reason 渲染「忽略拼写警告并保存」豁免按钮，ignore_spelling=true 时 该批 token 放行）。校验通过则 casefold 归一化（含 freq 自动补 temperature=298.15）落库，200 返回更新后条目 + notice。404= templateId ∉ {1..5}。并发取舍：单机单用户场景不设并发/乐观锁控制 （updated_at 仅审计）；不发 SSE 事件（ui-preferences 同口径）。
          */
         put: operations["updateComboTemplate"];
         post?: never;
@@ -1382,18 +1382,23 @@ export interface components {
                 route: string;
             };
         };
-        /** @description PUT /combo-templates/{templateId} 请求体（全量替换语义：未携带/空值 字段按规则恢复——name/route 清空恢复初始值、link0 三字段空置 null= 未配置，不做部分更新）。nproc/mem_gb/cpu 以文本形态提交，值级合法性 由校验单点给出 reason（词表三）；仅结构级类型错误（如 nproc 提交 JSON number）由框架 422 直接返回、不进 details.errors[] 细分。 */
+        /** @description PUT /combo-templates/{templateId} 请求体（全量替换语义：未携带/空值 字段按规则恢复——name/route 缺省或空恢复初始值、link0 三字段缺省或 空置 null=未配置，不做部分更新）。nproc/mem_gb/cpu 以文本形态提交， 值级合法性由校验单点给出 reason（词表三）；仅结构级类型错误（如 nproc 提交 JSON number）由框架 422 直接返回、不进 details.errors[] 细分。 */
         ComboTemplateUpdate: {
-            /** @description 配置名（空 → 恢复「配置n」） */
-            name: string;
-            /** @description 精修 route 行（空 → 恢复初始 route；保存时 casefold 归一化） */
-            route: string;
-            /** @description %nprocshared 值（正整数字符串；null/空 → 未配置） */
-            nproc: string | null;
-            /** @description %mem 值（GB 数值字符串；null/空 → 未配置） */
-            mem_gb: string | null;
-            /** @description %cpu proc-list（如 "1-4"；null/空 → 未配置） */
-            cpu: string | null;
+            /** @description 配置名（缺省/空 → 恢复「配置n」） */
+            name?: string;
+            /** @description 精修 route 行（缺省/空 → 恢复初始 route；保存时 casefold 归一化） */
+            route?: string;
+            /** @description %nprocshared 值（正整数字符串；null/缺省/空 → 未配置） */
+            nproc?: string | null;
+            /** @description %mem 值（GB 数值字符串；null/缺省/空 → 未配置） */
+            mem_gb?: string | null;
+            /** @description %cpu proc-list（如 "1-4"；null/缺省/空 → 未配置） */
+            cpu?: string | null;
+            /**
+             * @description 设为默认方案（radio 语义）：true 时本条置默认并同事务清其余行 （恒有且仅有一条默认、不可取消只能改选）；缺省/false 不改变 现有默认归属。
+             * @default false
+             */
+            is_default: boolean;
             /**
              * @description 拼写豁免（仅当次请求生效、不落库）：enforce 模式下放行本批 keyword_not_in_dict 的词典外 token；warn 模式无拦截语义。
              * @default false

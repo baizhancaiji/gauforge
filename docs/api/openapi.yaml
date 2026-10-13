@@ -969,30 +969,36 @@ components:
       type: object
       description: >-
         PUT /combo-templates/{templateId} 请求体（全量替换语义：未携带/空值
-        字段按规则恢复——name/route 清空恢复初始值、link0 三字段空置 null=
-        未配置，不做部分更新）。nproc/mem_gb/cpu 以文本形态提交，值级合法性
-        由校验单点给出 reason（词表三）；仅结构级类型错误（如 nproc 提交
-        JSON number）由框架 422 直接返回、不进 details.errors[] 细分。
-      required: [name, route, nproc, mem_gb, cpu]
+        字段按规则恢复——name/route 缺省或空恢复初始值、link0 三字段缺省或
+        空置 null=未配置，不做部分更新）。nproc/mem_gb/cpu 以文本形态提交，
+        值级合法性由校验单点给出 reason（词表三）；仅结构级类型错误（如
+        nproc 提交 JSON number）由框架 422 直接返回、不进 details.errors[] 细分。
       properties:
         name:
           type: string
-          description: 配置名（空 → 恢复「配置n」）
+          description: 配置名（缺省/空 → 恢复「配置n」）
         route:
           type: string
-          description: 精修 route 行（空 → 恢复初始 route；保存时 casefold 归一化）
+          description: 精修 route 行（缺省/空 → 恢复初始 route；保存时 casefold 归一化）
         nproc:
           type: string
           nullable: true
-          description: '%nprocshared 值（正整数字符串；null/空 → 未配置）'
+          description: '%nprocshared 值（正整数字符串；null/缺省/空 → 未配置）'
         mem_gb:
           type: string
           nullable: true
-          description: '%mem 值（GB 数值字符串；null/空 → 未配置）'
+          description: '%mem 值（GB 数值字符串；null/缺省/空 → 未配置）'
         cpu:
           type: string
           nullable: true
-          description: '%cpu proc-list（如 "1-4"；null/空 → 未配置）'
+          description: '%cpu proc-list（如 "1-4"；null/缺省/空 → 未配置）'
+        is_default:
+          type: boolean
+          default: false
+          description: >-
+            设为默认方案（radio 语义）：true 时本条置默认并同事务清其余行
+            （恒有且仅有一条默认、不可取消只能改选）；缺省/false 不改变
+            现有默认归属。
         ignore_spelling:
           type: boolean
           default: false
@@ -3076,7 +3082,9 @@ paths:
       summary: 保存组合流精修模板（全量替换；校验→归一化→落库）
       description: >-
         全量替换语义：未携带/空值字段按规则恢复（name/route 恢复初始值、
-        link0 三字段置 null=未配置），不做部分更新。校验一次性全量执行、
+        link0 三字段置 null=未配置），不做部分更新；「设为默认」经
+        body.is_default=true（radio 语义：同事务迁移唯一默认，不可取消只能
+        改选）。校验一次性全量执行、
         errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[]
         reason 值域见文件头词表三；enforce 模式词典外 token 以
         reason=keyword_not_in_dict 条目回传、message 含 token 原文，前端据该
