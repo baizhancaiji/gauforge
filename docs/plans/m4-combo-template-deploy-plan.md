@@ -391,6 +391,17 @@ CHANGELOG.jsonl unreleased 与 progress.json unreleased 同步追加；开工时
    个具名基组——**此数量级仅为 enforce 切换闸门的底线验证集，非提取目标**
    （提取面最大化原则见本条开头，用户裁决 2026-10-13）；具名清单在实施时由
    gaussian-kb 内容定案后回填本文档，逐条精确匹配断言。
+   **具名清单定案回填（2026-10-14 批次 B 实施，逐条精确匹配断言落
+   `web/tests/test_extract_keywords.py::test_gate_named_methods_and_bases_in_dictionary`，
+   全部命中）**：具名方法面 27 项——`hf`/`mp2`/`b3lyp`/`wb97xd`/`cam-b3lyp`/
+   `m06`/`m062x`/`m11`/`mn15`/`ccsd`/`casscf`/`am1`/`pm6`/`pbepbe`/`hseh1pbe`/
+   `wb97x`/`lc-wpbe`/`b97d`/`b2plypd3`/`bhandhlyp`/`pw6b95d3`/`tpsstpss`/
+   `mp4(sdtq)`/`cbs-qb3`/`w1bd`/`uff`/`amber`；具名基组面 20 项——
+   `6-31g(d)`/`6-31g(d,p)`/`6-31+g(d,p)`/`6-311+g(d,p)`/`6-311++g(2d,2p)`/
+   `6-31g(3df,3pd)`/`sto-3g`/`3-21g(d)`/`cc-pvtz`/`aug-cc-pvtz`/`def2svp`/
+   `def2tzvp`/`lanl2dz`/`cep-121g`/`svpfit`/`dgdzvp`/`qzvp`/`epr-iii`/`midix`/
+   `cbsb7`（判据示例中的 `def2-svp` 系文献连字符形，basissets 页明示 G16
+   关键词形为「连字符去除」的 `def2svp`，按 KB 定案收录该形）。
    **素材源已核实（2026-10-13，按此最大化提取）**：
    ① keyword category 全部页 slug+标题变体（现行 97 词基础，不动摇）；
    ② 方法面＝`gv6-gaussian-calculation-setup-keywords-and-options` 页
@@ -516,6 +527,47 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   退出码 1（零残留）。契约闸门 test_openapi_ssot.py + test_error_codes.py
   12 passed；models.py／contract.ts 重复再生零 diff（md5 一致）
 - 缺陷：无
+
+- 批次 / 条目：B1（B 批次，四项核验复核）
+- 前置：gaussian-kb MCP 服务可用（2026-10-14 开工复核）
+- 步骤：经 MCP 检索 temp/link0/freq 页核对 §8.2 四项预核验结论
+- 预期：四项结论与 §8.2 定案一致（①温度单值开尔文默认 298.15；②freq
+  变体恒 `freq[=opts]` 形；③%CPU 旨在取代 %NProcShared、共存行为官方未
+  定义；④temp=/temperature= 同关键词两形态均算已配置）
+- 实测：**通过**（2026-10-14，与 §8.2 逐项一致）
+- 留痕：① temp 页（slug=temp、标题 Temperature）正文「Specifies the
+  temperature to be used for thermochemistry analysis (in Kelvin)…
+  `# … Temperature=300`… The default is 298.15 K」——单值开尔文、默认
+  298.15、route 示例唯一形态成立；③ link0 页（Parallel Job Directives 节）
+  「%CPU=proc-list … designed to replace the earlier %NProcShared and
+  %NProc directives」+ running 页「%CPU 指定具体核、%NProcShared 指定总数」
+  ——产品定案（cpu 核数 ≥ nproc 不足拦多于默许）依据成立；② freq 页
+  变体节（freq__055 ReadFCHT Value=*temp* 默认回溯 Temp keyword 298.15）
+  恒 `Freq[=opts]` 形成立；④ temp 页即 Temperature 页，`temp=` 与
+  `temperature=` 同键两形态成立
+- 缺陷：无
+
+- 批次 / 条目：B2（B 批次，词典扩充再生）
+- 前置：`~/gaussian-kb/data` 结构化数据目录在位（135 页清单 + markdown
+  正文，与 MCP 同源）
+- 步骤：扩展 `scripts/extract_keywords.py` 提取面（面①manifest 基座 +
+  面②gv6 对照表末列 route 切分与 dft 族正则/短语锚点 + 面③basissets 族
+  正则与极化/弥散形态生成 + 面④gen/pseudo/extrabasis 评估后不设规则）→
+  再生 keywords.txt → `test_extract_keywords.py` 全绿
+- 预期：达标判据 ①②③ 全过；词典全小写、无重复、码点排序；真实 KB 重生
+  与入库逐字节一致
+- 实测：**通过**（2026-10-14；97 → **387** 词条）
+- 留痕：再生输出「词条 387 个」；判据① p/b3lyp/6-31g(d)/opt/freq 逐条
+  命中、② temp/temperature/freq 及 freq=vcd 等变体命中、③ 具名方法面
+  27 项与基组面 20 项逐条精确匹配（清单见 §8.1 定案回填）；全小写/去重/
+  排序断言过；`test_real_kb_inrepo_dictionary_matches_regeneration` 逐字节
+  一致；基座 97 词零丢失（comm 差集为空）；噪声终查（常见英文词表与词典
+  交集）仅 `name`（系面① slug，合法词条）。口径补录：键值形 token
+  （temp=310 等）以键名白名单+值非空放行（§3.2 补录）；def2 系按页内
+  「连字符去除」形 def2svp 收录
+- 缺陷：无（原型阶段缺陷均在落库前修正：短语锚点分支缺 `\s+`、def2 正则
+  `pp?$` 笔误、弥散 + 位置误置于 g 后〔应为 6-31+g〕、反序锚点句首英文词
+  误捕〔加技术词守卫〕）
 
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
 
