@@ -1,0 +1,11 @@
+%chk=input.chk
+%nprocshared=2
+#p opt b3lyp/6-31g(d)
+
+water opt chain
+
+0 1
+O 0.0 0.0 0.0
+H 0.9572 0.0 0.0
+H -0.2398 0.9266 0.0
+

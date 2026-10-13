@@ -1,0 +1,11 @@
+%chk=input.chk
+%nprocshared=2
+#p opt b3lyp/6-31g(d)
+
+water opt reuse-dst
+
+0 1
+O 0.0 0.0 0.1173
+H 0.0 0.7572 -0.4692
+H 0.0 0.7572 0.7039
+

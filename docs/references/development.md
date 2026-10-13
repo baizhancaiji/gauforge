@@ -162,6 +162,17 @@ G16WEB_HOME=/tmp/g16web-manual G16WEB_HQ_BIN="$PWD/target/release/hq" \
 PID=$(ss -ltnp | grep ':8398' | grep -oP 'pid=\K[0-9]+' | head -1); kill "$PID"
 ```
 
+- **种子数据填充**（首次拉起后执行一次；幂等，重复执行按文件名跳过）：
+
+```bash
+uv run python scripts/seed_manual_workspace.py --base-url http://127.0.0.1:8398
+```
+
+  导入 `scripts/seed_samples/` 走查同款种子并自动接线 `@task:` 引用——
+  水分子三段链（opt→freq→sp）、续用形态对、慢优化/续跑目标（拉伸萘
+  opt 约 5 分钟、萘 TD 单点、苯环 freq）、组合流候选（乙醇成队/甲醇
+  <2 失败分支）、失败注入（伪关键字 opt）与依赖校验对（环/悬引用/
+  前向引用），导入后打印带用途说明的候选清单。
 - 引擎相关运行级设置（并行窗口/待执行席位上限/g16_root/crest_root 等）
   在 WebUI 设置页调整；真机资产缺省定位 `~/g16`、`~/opt/crest-3.0.2`，
   无则派发时显式报错（不静默）。
