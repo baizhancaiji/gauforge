@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T01:17+0800",
+  "updated": "2026-10-14T01:23+08:00",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -53,8 +53,8 @@
     }
   ],
   "in_progress": {
-    "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B 执行中",
-    "note": "2026-10-14 开工：依赖序 评审→A→B（B 为 C 关键路径前置，D 独立）；A=契约 diff（ComboTemplate 四 schema+两端点+词表三 11 项+再生面四处小写化），B=①核验复核（2026-10-13 预核验已回填）→②③ v7 迁移+repo+config 常量→④词典扩充（必须实施项、最大化覆盖度）→⑤⑥ validate_and_normalize+端点→⑦测试；提交序列 #2–#5 随行 chore(progress) 登记"
+    "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B 完成，C/D/F1/F2 待执行",
+    "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）；B1/B2 留痕与 §8.1 具名清单回填随 docs(plans) 提交落；后续依赖序：C（前端，依赖 B）∥D（crest/xtb 部署）∥F1→F2，E 验收发布（#6 条件提交无需执行——词典已达标）"
   },
   "next_steps": [
     "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",
