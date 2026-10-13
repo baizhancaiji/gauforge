@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T01:15+0800",
+  "updated": "2026-10-14T01:17+0800",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -41,6 +41,13 @@
       "type": "changed",
       "scope": "api",
       "summary": "补录组合流模板更新契约：ComboTemplateUpdate 增 is_default（radio 语义）并全字段可选化（缺省/空值恢复初始值或置 NULL 的全量替换表达），计划 §3.2/§3.3 同步补录键值形拼写口径",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增组合流精修模板校验服务与端点：validate_and_normalize 单点（11 项 reason 全量校验、enforce 拼写拦截与豁免、casefold 归一化与 freq 联动温度补齐）与 GET/PUT /combo-templates，测试矩阵逐 reason 全绿",
       "breaking": false,
       "migration": null
     }

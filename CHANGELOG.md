@@ -10,6 +10,7 @@
 - 【api】新增组合流精修模板契约（GET /combo-templates、PUT /combo-templates/{templateId} 与四个 ComboTemplate schema、文件头词表三 11 项 reason 值域），models.py/contract.ts 再生产物随行入库，openapi 再生面 Link0 引用形态统一小写
 - 【web】新增组合流精修模板存储层：migration v7 combo_templates 表与 5 行幂等种子、ComboTemplatesRepo（is_default radio 语义同事务独占）、config 全小写 route 初始值常量，附迁移与 repo 层测试
 - 【parse】扩充 route 关键词词典提取面并再生：97→387 词条（gv6 对照表 route 词面、dft 具名泛函锚点与族正则、basissets 基组族与极化弥散形态生成），新增词典全小写去重排序与 enforce 达标判据①②③逐条断言
+- 【web】新增组合流精修模板校验服务与端点：validate_and_normalize 单点（11 项 reason 全量校验、enforce 拼写拦截与豁免、casefold 归一化与 freq 联动温度补齐）与 GET/PUT /combo-templates，测试矩阵逐 reason 全绿
 
 ### 变更
 
