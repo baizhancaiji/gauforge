@@ -14,6 +14,7 @@
 ### 变更
 
 - 【docs】拆分 development.md §6 为纯界面冒烟与人工测试实例两口径，新增引擎开+G16WEB_HQ_BIN 钉死仓库内核的拉起命令与 PATH 旧版 hq 抢占踩坑注记
+- 【api】补录组合流模板更新契约：ComboTemplateUpdate 增 is_default（radio 语义）并全字段可选化（缺省/空值恢复初始值或置 NULL 的全量替换表达），计划 §3.2/§3.3 同步补录键值形拼写口径
 
 ## v3.1.0（2026-10-13T00:42+0800 发布，minor）
 

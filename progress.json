@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T00:58+0800",
+  "updated": "2026-10-14T01:15+0800",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -34,6 +34,13 @@
       "type": "added",
       "scope": "parse",
       "summary": "扩充 route 关键词词典提取面并再生：97→387 词条（gv6 对照表 route 词面、dft 具名泛函锚点与族正则、basissets 基组族与极化弥散形态生成），新增词典全小写去重排序与 enforce 达标判据①②③逐条断言",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "api",
+      "summary": "补录组合流模板更新契约：ComboTemplateUpdate 增 is_default（radio 语义）并全字段可选化（缺省/空值恢复初始值或置 NULL 的全量替换表达），计划 §3.2/§3.3 同步补录键值形拼写口径",
       "breaking": false,
       "migration": null
     }
