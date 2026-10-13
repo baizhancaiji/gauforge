@@ -24,6 +24,7 @@ from .sse import fanout_task  # type: ignore[attr-defined]
 from .routers import (
     analysis,
     candidates,
+    combo_templates,
     events,
     executions,
     history,
@@ -46,7 +47,7 @@ def build_app() -> FastAPI:
 
     for r in (system, settings, candidates, queues, pending, executions,
               history, analysis, storage, update, ui_prefs, events,
-              workflows):
+              workflows, combo_templates):
         app.include_router(r.router, prefix="/api/v1")
 
     # ---------- 契约 SSOT：/openapi.json 回读落盘 yaml ----------
