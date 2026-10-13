@@ -9,6 +9,7 @@ import threading
 
 from .. import config
 from .db import Database
+from .combo_templates_repo import ComboTemplatesRepo
 from .executions_repo import ExecutionsRepo
 from .migrations import run_migrations
 from .queues_repo import QueuesRepo
@@ -21,7 +22,8 @@ from .workflows_repo import WorkflowsRepo
 
 __all__ = ["Database", "run_migrations", "get_db", "set_db", "reset_db",
            "SettingsRepo", "TasksRepo", "QueuesRepo", "SeatsRepo",
-           "ExecutionsRepo", "SseSeqRepo", "UiPrefsRepo", "WorkflowsRepo"]
+           "ExecutionsRepo", "SseSeqRepo", "UiPrefsRepo", "WorkflowsRepo",
+           "ComboTemplatesRepo"]
 
 _db: Database | None = None
 _lock = threading.Lock()
@@ -84,3 +86,7 @@ def ui_prefs() -> UiPrefsRepo:
 
 def workflows() -> WorkflowsRepo:
     return WorkflowsRepo(get_db())
+
+
+def combo_templates() -> ComboTemplatesRepo:
+    return ComboTemplatesRepo(get_db())

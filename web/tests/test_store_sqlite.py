@@ -41,12 +41,12 @@ def repos(db):
 
 def test_migration_sets_version(db):
     row = db.one("SELECT version FROM schema_version")
-    assert row is not None and row["version"] == 6  # v6: 组合流派发承载列
+    assert row is not None and row["version"] == 7  # v7: 组合流精修模板表
 
 
 def test_migration_idempotent(db):
     run_migrations(db)  # 重复执行不报错、版本不变
-    assert db.one("SELECT version FROM schema_version")["version"] == 6
+    assert db.one("SELECT version FROM schema_version")["version"] == 7
 
 
 def test_v4_tasks_kind_column(db):
@@ -76,6 +76,19 @@ def test_v3_resumed_from_and_workflows(db):
     assert row is not None and row["refine_queue_pending"] == 0
     with pytest.raises(Exception):  # 非法 state 被 CHECK 拒绝
         db.run("UPDATE workflows SET state = 'bogus' WHERE workflow_id = 'wf0001'")
+
+
+def test_v7_combo_templates_seed(db):
+    # v7（插波 3.2.0）：combo_templates 表 + 5 行种子（INSERT OR IGNORE 幂等）
+    rows = db.query("SELECT * FROM combo_templates ORDER BY template_id")
+    assert [r["template_id"] for r in rows] == [1, 2, 3, 4, 5]
+    from web.src import config
+    assert all(r["route"] == config.COMBO_TEMPLATE_INITIAL_ROUTE
+               for r in rows)
+    assert all(r["nproc"] is None and r["mem_gb"] is None and r["cpu"] is None
+               for r in rows)  # link0 三字段初始全空
+    assert [r["template_id"] for r in rows if r["is_default"] == 1] == [1]
+    assert all(r["updated_at"] for r in rows)
 
 
 def test_wal_mode_file_db(db):

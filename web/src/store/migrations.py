@@ -4,7 +4,8 @@ M1 起版本 1；DDL 全部 IF NOT EXISTS 保证半途崩溃后重跑幂等。
 """
 from __future__ import annotations
 
-from .db import Database
+from .. import config
+from .db import Database, now_iso
 
 SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS queues (
@@ -157,6 +158,33 @@ ALTER TABLE tasks ADD COLUMN crest_nproc INTEGER;
 ALTER TABLE workflows ADD COLUMN top_n INTEGER;
 """
 MIGRATIONS[6] = SCHEMA_V6
+
+# v7（2026-10-14，插波 3.2.0 批次 B）：combo_templates 表——组合流精修模板
+# 5 套方案（GET/PUT /combo-templates，m4-combo-template-deploy-plan §3.1）。
+# 种子 5 行 INSERT OR IGNORE（id 1–5、name=配置n、route=初始值、link0 全空、
+# is_default 仅 id=1）；种子落库不走校验链（validate_and_normalize 仅作用于
+# 用户编辑保存路径）。is_default 恒有且仅有一行 =1（repo 置 1 同事务清其余，
+# radio 语义）。route 为仓库内常量、不含单引号，executescript 无参数化直拼安全。
+_SEED_COMBO_TEMPLATES = "INSERT OR IGNORE INTO combo_templates\n" + \
+    "  (template_id, name, route, nproc, mem_gb, cpu, is_default, updated_at)\nVALUES\n" + \
+    ",\n".join(
+        f"  ({i}, '配置{i}', '{config.COMBO_TEMPLATE_INITIAL_ROUTE}',"
+        f" NULL, NULL, NULL, {1 if i == 1 else 0}, '{now_iso()}')"
+        for i in range(1, 6))
+
+SCHEMA_V7 = """
+CREATE TABLE IF NOT EXISTS combo_templates (
+  template_id INTEGER PRIMARY KEY,   -- 1–5 显式方案 id，不可变
+  name        TEXT NOT NULL,         -- 初始「配置n」
+  route       TEXT NOT NULL,         -- 初始 COMBO_TEMPLATE_INITIAL_ROUTE（含 #，全小写）
+  nproc       INTEGER,               -- %nprocshared；NULL=未配置
+  mem_gb      REAL,                  -- %mem（GB）；NULL=未配置
+  cpu         TEXT,                  -- %cpu proc-list；NULL=未配置
+  is_default  INTEGER NOT NULL DEFAULT 0,  -- 恒有且仅有一行 =1
+  updated_at  TEXT NOT NULL
+);
+""" + _SEED_COMBO_TEMPLATES + "\n"
+MIGRATIONS[7] = SCHEMA_V7
 
 
 def run_migrations(db: Database) -> None:

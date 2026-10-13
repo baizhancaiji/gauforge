@@ -146,6 +146,13 @@ UI_PREF_KEYS: dict[str, frozenset[str]] = {
 PROJECT_ROOT = CONTRACT_PATH.parent.parent.parent
 
 
+# ---------- 组合流精修模板（插波 3.2.0，m4-combo-template-deploy-plan §3.1） ----------
+# route 初始值单一来源（全小写，全部方案共用）：v7 迁移种子与 GET
+# /combo-templates 的 initial.route 均取此值；前端 ComboFlowDialog 默认值
+# 经批次 F2 改为引用契约回传，不再各自硬编码。
+COMBO_TEMPLATE_INITIAL_ROUTE = "#p b3lyp/6-31g(d) opt freq"
+
+
 # ---------- 版本单一事实来源（v2.1.0 功能更新，version-update-impl-plan B1） ----------
 # 三级解析链：部署目录 VERSION 文件 → git describe --tags（源码形态）→
 # CHANGELOG.jsonl 最新 released 行兜底；进程启动时一次完成（模块级常量，不做
