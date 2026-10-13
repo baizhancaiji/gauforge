@@ -101,11 +101,59 @@ WebUI 更新在部署目录留下三份伴生文件，排障先看它们：
 
 到 Releases 下载旧版本的 `gauforge-deploy-vX.Y.Z-linux-x64.tar.gz`（带版本号的附件），解压覆盖后重跑 `./install.sh` 即可；数据仍在工作区不受影响。
 
-## 6. 许可提示
+## 6. CREST/xtb 接入（组合流依赖）
+
+组合流（构象搜索 + 精修）的运行必需项**仅 crest 一个二进制**：crest 3.0.2
+静态内嵌 tblite，运行时不消费 `XTB_PATH`；**xtb 为可选安装、非运行必需**
+（`xtb_root` 仅为未来独立 xtb 计算的定位锚，不装不影响组合流）。第三方
+二进制不随部署包分发，由 `setup_deps.sh` 引导下载安装（部署目录根脚本，
+升级链自动补装）。
+
+### 6.1 在线安装（推荐）
+
+```bash
+./setup_deps.sh                 # 安装 crest 3.0.2 到 ~/opt
+./setup_deps.sh --xtb           # 同时安装 xtb 6.7.1（可选）
+./setup_deps.sh --dest /data/opt   # 自定义安装根目录
+```
+
+下载通道与升级脚本同约定：`--proxy`（默认 `https://v4.gh-proxy.org`）、
+`--no-proxy` 直连、环境变量 `GAUFORGE_PROXY` 等效 `--proxy <值>`。脚本幂等：
+二进制 `--version` 冒烟通过即跳过；目录存在但冒烟失败视为半成品残留，
+清理后重装。校验：xtb 与上游官方 `.sha256` 对照；crest 上游未发布校验和
+文件，按发布 tag 与资产字节数对照。
+
+### 6.2 离线安装（手动路径）
+
+网络不可达时在上游 Releases 手动下载（crest-lab/crest `v3.0.2` 的
+`crest-gnu-12-ubuntu-latest.tar.xz`；可选 grimme-lab/xtb `v6.7.1` 的
+`xtb-6.7.1-linux-x86_64.tar.xz` 及其 `.sha256`），按以下布局解压：
+
+- crest：解压到 `~/opt/crest-3.0.2/`（tar 内为平铺文件，二进制位于
+  `~/opt/crest-3.0.2/crest`，须有执行位）；
+- xtb（可选）：解压到 `~/opt/`（tar 内顶层即 `xtb-6.7.1/` 目录，二进制
+  位于 `~/opt/xtb-6.7.1/bin/xtb`）。
+
+### 6.3 设置页配置与验证闭环
+
+安装布局与运行级默认值一致（`crest_root` 默认 `~/opt/crest-3.0.2`、
+`xtb_root` 默认 `~/opt/xtb-6.7.1`），**默认路径零配置可用**；自定义
+`--dest` 安装时在设置页把运行级参数 `crest_root`（及 `xtb_root`）指向
+实际目录（保存后对新任务生效）。验证闭环：
+
+1. 未部署 crest 时提交组合流 → `503 CREST_EXECUTABLE_MISSING`（零副作用）；
+2. 执行 `./setup_deps.sh`（或离线手动安装）；
+3. 重新提交组合流 → 返回 `200` 且响应含 `workflow_id`，候选页出现
+   「组合流进度」入口。
+
+许可：crest/xtb 为第三方独立项目（LGPL 系），由用户自行下载使用，请
+遵循其各自许可条款；本部署包不再分发其二进制。
+
+## 7. 许可提示
 
 包按分层许可分发：自有代码为 PolyForm Noncommercial 1.0.0（**仅限非商业使用**，商用需另行授权）；内核 `bin/hq` 及其随附的 `crates/LICENSE` 为上游HyperQueue 的 MIT。详见包内 `LICENSE`。
 
-## 7. 发版侧（开发者）
+## 8. 发版侧（开发者）
 
 每次发版（tag 冻结后）在本机执行：
 
