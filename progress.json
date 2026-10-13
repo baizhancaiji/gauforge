@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T00:33+0800",
+  "updated": "2026-10-14T00:58+0800",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -27,6 +27,13 @@
       "type": "added",
       "scope": "web",
       "summary": "新增组合流精修模板存储层：migration v7 combo_templates 表与 5 行幂等种子、ComboTemplatesRepo（is_default radio 语义同事务独占）、config 全小写 route 初始值常量，附迁移与 repo 层测试",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "parse",
+      "summary": "扩充 route 关键词词典提取面并再生：97→387 词条（gv6 对照表 route 词面、dft 具名泛函锚点与族正则、basissets 基组族与极化弥散形态生成），新增词典全小写去重排序与 enforce 达标判据①②③逐条断言",
       "breaking": false,
       "migration": null
     }
