@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T02:14+08:00",
+  "updated": "2026-10-14T02:18+08:00",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -55,6 +55,13 @@
       "type": "added",
       "scope": "frontend",
       "summary": "新增组合流精修模板配置弹窗与设置页入口：5 方案框选择、route/link0 编辑保存（后端校验单点 422 全量回显、拼写豁免会话记忆、温度补齐与归一化提示）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "frontend",
+      "summary": "为组合流提交对话框新增精修模板方案下拉：打开并行拉取模板清单、默认选中默认方案、选择回填 route 与 link0 序列化行且保留手改",
       "breaking": false,
       "migration": null
     }

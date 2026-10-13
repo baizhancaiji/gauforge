@@ -12,6 +12,7 @@
 - 【parse】扩充 route 关键词词典提取面并再生：97→387 词条（gv6 对照表 route 词面、dft 具名泛函锚点与族正则、basissets 基组族与极化弥散形态生成），新增词典全小写去重排序与 enforce 达标判据①②③逐条断言
 - 【web】新增组合流精修模板校验服务与端点：validate_and_normalize 单点（11 项 reason 全量校验、enforce 拼写拦截与豁免、casefold 归一化与 freq 联动温度补齐）与 GET/PUT /combo-templates，测试矩阵逐 reason 全绿
 - 【frontend】新增组合流精修模板配置弹窗与设置页入口：5 方案框选择、route/link0 编辑保存（后端校验单点 422 全量回显、拼写豁免会话记忆、温度补齐与归一化提示）
+- 【frontend】为组合流提交对话框新增精修模板方案下拉：打开并行拉取模板清单、默认选中默认方案、选择回填 route 与 link0 序列化行且保留手改
 
 ### 变更
 
