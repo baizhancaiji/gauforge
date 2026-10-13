@@ -18,6 +18,7 @@ import { fmtTaskId } from "@/utils/format";
 
 type Candidate = components["schemas"]["Candidate"];
 type ConformerRefinementResponse = components["schemas"]["ConformerRefinementResponse"];
+type ComboTemplate = components["schemas"]["ComboTemplate"];
 
 /** 默认精修模板 route（A5 定稿组合流内置模板；用户可改）。 */
 const DEFAULT_ROUTE = "#p B3LYP/6-31G(d) Opt Freq";
@@ -32,21 +33,56 @@ const link0 = ref("");
 const busy = ref(false);
 const error = ref<string | null>(null);
 
+// ---------- 精修模板方案（插波 3.2.0，m4-combo-deploy-plan §3.4） ----------
+/** 5 套已保存模板（GET /combo-templates，打开时与 /settings 并行拉取）；
+ *  下拉默认选中 is_default 条，选择即回填 route 与 link0（保留手改）。 */
+const templates = ref<ComboTemplate[]>([]);
+const templateId = ref<number | null>(null);
+
+/** 结构化 link0 三字段 → 序列化行（全小写、仅非空项，§3.4）。 */
+function serializeLink0(t: ComboTemplate): string {
+  const lines: string[] = [];
+  if (t.nproc) lines.push(`%nprocshared=${t.nproc}`);
+  if (t.mem_gb) lines.push(`%mem=${t.mem_gb}GB`);
+  if (t.cpu) lines.push(`%cpu=${t.cpu}`);
+  return lines.join("\n");
+}
+
+/** 选中方案回填 route/link0；id=null（模板不可用）回落内置默认。 */
+function applyTemplate(id: number | null) {
+  templateId.value = id;
+  const t = templates.value.find((x) => x.template_id === id);
+  if (!t) {
+    route.value = DEFAULT_ROUTE;
+    link0.value = "";
+    return;
+  }
+  route.value = t.route;
+  link0.value = serializeLink0(t);
+}
+
 watch(
   () => props.open,
   async (v) => {
     if (!v) return;
     error.value = null;
     busy.value = false;
-    route.value = DEFAULT_ROUTE;
-    link0.value = "";
     topN.value = 2;
     nprocInvalid.value = false;
     routeInvalid.value = false;
-    // crest 核数默认取运行级 link0_default_nproc（§2.3 组合流资源声明）
-    const { data } = await client.GET("/settings");
-    const nprocDefault = data?.runtime.find((s) => s.key === "link0_default_nproc")?.value;
+    // crest 核数默认取运行级 link0_default_nproc（§2.3 组合流资源声明）；
+    // 模板方案并行拉取，默认选中 is_default 条（拉取失败回落内置默认 route）
+    const [settingsRes, tplRes] = await Promise.all([
+      client.GET("/settings"),
+      client.GET("/combo-templates"),
+    ]);
+    const nprocDefault = settingsRes.data?.runtime.find(
+      (s) => s.key === "link0_default_nproc",
+    )?.value;
     nproc.value = typeof nprocDefault === "number" ? nprocDefault : 2;
+    templates.value = tplRes.data?.templates ?? [];
+    const def = templates.value.find((t) => t.is_default);
+    applyTemplate(def?.template_id ?? null);
   },
 );
 
@@ -134,6 +170,20 @@ async function submit() {
       </div>
       <p v-if="topNInvalid" class="cf-error mono" role="alert">Top N 须在 2–10 范围内</p>
       <p v-else-if="nprocInvalid" class="cf-error mono" role="alert">crest 核数须为正整数</p>
+
+      <label class="cf-field">
+        <span class="cf-label mono">精修模板方案（选择即回填，可手改）</span>
+        <select @change="applyTemplate(Number(($event.target as HTMLSelectElement).value))">
+          <option
+            v-for="t in templates"
+            :key="t.template_id"
+            :value="t.template_id"
+            :selected="t.template_id === templateId"
+          >
+            {{ t.template_id }} · {{ t.name }}{{ t.is_default ? "（默认）" : "" }}
+          </option>
+        </select>
+      </label>
 
       <label class="cf-field">
         <span class="cf-label mono">精修模板 route</span>
