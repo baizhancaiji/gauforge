@@ -99,6 +99,15 @@ route 当前为前端硬编码默认值（`ComboFlowDialog.vue:23`
 > （openapi 再生面，contract.ts:1507 为其下游产物），其修订随
 > 批次 A 契约 diff 一并落（一次再生，避免契约产物二次再生与同文件并行冲突）；
 > F1 范围收窄为「非再生面文案/注释」，不含上述四处再生面。
+>
+> **R-8 补录（2026-10-14 批次 A 实施）**：`openapi.yaml` 文件头注释与
+> 对象级/路径 description 中的 Link0 引用形态同属表外违反处，已随批次 A
+> 同提交小写化——行号：71（错误码注 %Chk）、273/276（Task 对象级
+> description）、696/697（ResumeInjection 对象级 description）、1970
+> （PATCH /queues/{id} description）、2518（resume 路径 description）；
+> 上述行再生后 contract.ts JSDoc（原 611/1223 等处）随产物一并归一。
+> route 关键词片段引用（Opt=Restart、Guess=Read）非 Link0 指令名、不在
+> §0.3 定形集内，维持原样。
 
 ## 2. 任务分解（WBS）
 
@@ -483,6 +492,24 @@ D4 分列不重复登记；批次级验收留痕：AG1（A 批次词表三 vs §
 grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git diff 摘录，
 分别随提交 #7/#10 回填）；E 批次 3.2.0 冻结五步
 执行留痕（E1–E5，逐条对应 AGENTS.md §5.2 冻结五步）。
+
+### 已回填条目
+
+- 批次 / 条目：AG1（A 批次）
+- 前置：openapi.yaml 契约 diff 落盘（词表三 11 项文件头清单 + Error schema
+  计数行「三张」）
+- 步骤：逐 reason `grep -c <reason> docs/api/openapi.yaml`；`grep -n 两张`
+  查文件头残留
+- 预期：11 项逐一命中（≥1 处）且与 §3.2 reason 清单一一对应；「两张」零残留
+- 实测：**通过**（2026-10-14）
+- 留痕：grep 计数——route_must_start_with_hash 1／multi_line_route 1／
+  blank_line_in_route 1／keyword_not_in_dict 4（词表三+Update/MutationResult
+  description+路径说明）／temp_value_invalid 1／nproc_not_positive_int 1／
+  mem_value_invalid 1／cpu_list_invalid 1／mem_below_per_core_floor 1／
+  nproc_cpu_mismatch 1／link0_symbol_ref_forbidden 1；`grep -n 两张`
+  退出码 1（零残留）。契约闸门 test_openapi_ssot.py + test_error_codes.py
+  12 passed；models.py／contract.ts 重复再生零 diff（md5 一致）
+- 缺陷：无
 
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
 

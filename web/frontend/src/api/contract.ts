@@ -255,7 +255,7 @@ export interface paths {
         get?: never;
         /**
          * 分块编辑保存（M2 实施；id 跨形态延续）
-         * @description section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑。 形态守卫（m2-plan §2.1）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节 （队列编辑框「接续前置 chk」写 %OldChk 依赖行，DAG 校验读输入）， 其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。
+         * @description section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑。 形态守卫（m2-plan §2.1）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节 （队列编辑框「接续前置 chk」写 %oldchk 依赖行，DAG 校验读输入）， 其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。
          */
         put: operations["saveBlock"];
         post?: never;
@@ -608,7 +608,7 @@ export interface paths {
         put?: never;
         /**
          * 断点续跑确认（新建任务入待执行队列；物化随派发钩子）
-         * @description 两段式续跑的第二段（M4）。幂等重探：preview 与确认之间 chk 可能被 保留期/手动清理，确认时复跑探针（秒级），资产缺失或探针失败按 422 RESUME_NOT_ELIGIBLE 拒绝。确认即新建任务（新 task id + 注入改写后 输入副本，Link0 携带 %OldChk=@exec:<原执行id>），入待执行队列（在途 席位满员 409 PENDING_CAPACITY_FULL，与普通提交同待遇）；派发创建执行 记录时落 resumed_from 关联，物化随 B7 派发钩子复制原 chk 并重写实际 路径。原历史条目数据零变更（「已续跑」经 resumed_by 派生只读承载）。 freq 回落原样重跑：同样经本端点新建任务（保留 resumed_from 关联， 与「重新排队」语义等价、并存）。succeeded 条目 404 NOT_FOUND 无续跑 入口（重跑诉求由「重新排队」承载）。
+         * @description 两段式续跑的第二段（M4）。幂等重探：preview 与确认之间 chk 可能被 保留期/手动清理，确认时复跑探针（秒级），资产缺失或探针失败按 422 RESUME_NOT_ELIGIBLE 拒绝。确认即新建任务（新 task id + 注入改写后 输入副本，Link0 携带 %oldchk=@exec:<原执行id>），入待执行队列（在途 席位满员 409 PENDING_CAPACITY_FULL，与普通提交同待遇）；派发创建执行 记录时落 resumed_from 关联，物化随 B7 派发钩子复制原 chk 并重写实际 路径。原历史条目数据零变更（「已续跑」经 resumed_by 派生只读承载）。 freq 回落原样重跑：同样经本端点新建任务（保留 resumed_from 关联， 与「重新排队」语义等价、并存）。succeeded 条目 404 NOT_FOUND 无续跑 入口（重跑诉求由「重新排队」承载）。
          */
         post: operations["resumeFromCheckpoint"];
         delete?: never;
@@ -875,6 +875,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/combo-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取组合流精修模板（5 套方案全量 + 初始值）
+         * @description 组合流精修模板配置读取（插波 3.2.0）：5 套方案恒存在，按 template_id 升序返回；initial.route 为前端「route 清空恢复初始值」来源。无副作用、 不发 SSE 事件（对话框打开时拉取，ui-preferences 同口径）。
+         */
+        get: operations["getComboTemplates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/combo-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 保存组合流精修模板（全量替换；校验→归一化→落库）
+         * @description 全量替换语义：未携带/空值字段按规则恢复（name/route 恢复初始值、 link0 三字段置 null=未配置），不做部分更新。校验一次性全量执行、 errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[] reason 值域见文件头词表三；enforce 模式词典外 token 以 reason=keyword_not_in_dict 条目回传、message 含 token 原文，前端据该 reason 渲染「忽略拼写警告并保存」豁免按钮，ignore_spelling=true 时 该批 token 放行）。校验通过则 casefold 归一化（含 freq 自动补 temperature=298.15）落库，200 返回更新后条目 + notice。404= templateId ∉ {1..5}。并发取舍：单机单用户场景不设并发/乐观锁控制 （updated_at 仅审计）；不发 SSE 事件（ui-preferences 同口径）。
+         */
+        put: operations["updateComboTemplate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -962,7 +1002,7 @@ export interface components {
         EffectKind: "immediate" | "immediate_retroactive" | "new_submissions" | "on_restart";
         ErrorBody: {
             error: {
-                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，35 码 + 两张 reason 词表） */
+                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，35 码 + 三张 reason 词表） */
                 code: string;
                 message: string;
                 /** @description 错误附加信息（如越界值、逐字段错误数组） */
@@ -993,7 +1033,7 @@ export interface components {
             /** @description —；响应中实时解析注入（解析失败为 null），不落库（roadmap §2.6 ①） */
             title?: string | null;
         };
-        /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）。 依赖语义（M4 A4 定稿，单一真相）：成员的依赖关系由其 Link0 符号引用 **自动推导**（引用即依赖），无独立 depends_on 字段。文法：Link0 的 `%Chk=`/`%OldChk=` 取值支持两形态——`@task:<id>`（id=同队列成员任务 id， 队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>` （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。 `%Chk=@task:X`（续用）与 `%OldChk=@task:X`（只读接续）均产生对 X 的 依赖边。方向约束（M4）：X 须位于本成员队列序**之前**——派发保序不越位 （依赖未满足者停等且后继不越过），前向引用（引用目标在本成员之后） 永不满足，静态校验即拒（DEPENDENCY_UNREACHABLE）。 运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录 `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。 */
+        /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）。 依赖语义（M4 A4 定稿，单一真相）：成员的依赖关系由其 Link0 符号引用 **自动推导**（引用即依赖），无独立 depends_on 字段。文法：Link0 的 `%chk=`/`%oldchk=` 取值支持两形态——`@task:<id>`（id=同队列成员任务 id， 队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>` （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。 `%chk=@task:X`（续用）与 `%oldchk=@task:X`（只读接续）均产生对 X 的 依赖边。方向约束（M4）：X 须位于本成员队列序**之前**——派发保序不越位 （依赖未满足者停等且后继不越过），前向引用（引用目标在本成员之后） 永不满足，静态校验即拒（DEPENDENCY_UNREACHABLE）。 运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录 `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。 */
         Task: {
             /** @description C；同候选 id */
             id: number;
@@ -1198,7 +1238,7 @@ export interface components {
             archived: boolean;
             /** @description M3 起：succeeded 且 run/<id>/analysis.json 落盘成功（含 degraded 降级产物）时 = "analysis.json"（执行目录内相对引用，读取方 按 run/<执行id>/ 拼接）；落盘失败/缺失恒 null。非 succeeded 恒 null （口径 m3-plan §2.1，2026-09-30 三轮审查统一） */
             result_ref: string | null;
-            /** @description "M4；断点续跑关联（记录层，终态冻结前提早于创建——随新执行记录 创建时写入，原历史条目数据零变更）。仅经「从断点续跑」新建的 执行携带：{task_id, execution_id}=原执行的任务 id 与执行 id。 输入层关联另行以 Link0 %OldChk=@exec:<原执行id> 符号引用承载 （物化链技术关联）。" */
+            /** @description "M4；断点续跑关联（记录层，终态冻结前提早于创建——随新执行记录 创建时写入，原历史条目数据零变更）。仅经「从断点续跑」新建的 执行携带：{task_id, execution_id}=原执行的任务 id 与执行 id。 输入层关联另行以 Link0 %oldchk=@exec:<原执行id> 符号引用承载 （物化链技术关联）。" */
             resumed_from: {
                 /** @description 原执行归属任务 id */
                 task_id: number;
@@ -1220,14 +1260,14 @@ export interface components {
             /** @description formchk_ok=false 时的失败原因（无续跑资产 no_resume_asset/归档 archived/chk 损坏/探针超时）；探针成功为 null （无资产等探针未执行态恒返回对象、不返回 null probe） */
             reason: string | null;
         };
-        /** @description 单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加 %OldChk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加 %OldChk=@exec + route 追加 Guess=Read；freq=无注入、回落原样重跑）。 */
+        /** @description 单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加 %oldchk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加 %oldchk=@exec + route 追加 Guess=Read；freq=无注入、回落原样重跑）。 */
         ResumeInjection: {
             /**
              * @description link0_append=Link0 追加行（见 link0_lines）；route_rewrite=route 行整体改写（Opt=Restart，见 route_lines）；route_append=route 行追加关键词（Guess=Read，见 route_lines）
              * @enum {string}
              */
             type: "link0_append" | "route_rewrite" | "route_append";
-            /** @description 追加的 Link0 行（如 %OldChk=@exec:42） */
+            /** @description 追加的 Link0 行（如 %oldchk=@exec:42） */
             link0_lines?: string[] | null;
             /** @description 改写/追加后的 route 行全文 */
             route_lines?: string[] | null;
@@ -1310,6 +1350,65 @@ export interface components {
         /** @description GET /workflows?limit=20 响应（按 updated_at 倒序；页面刷新后 找回组合流、refine_queue_pending 满员提示回看的恢复路径） */
         WorkflowList: {
             workflows: components["schemas"]["Workflow"][];
+        };
+        /** @description 组合流精修模板条目（GET /combo-templates 列表项；5 套方案 id 1–5 固定 存在、不可增删）。nproc/mem_gb/cpu 为规范化字符串形态（string|null， null=未配置）：nproc="4"、mem_gb="8"（GB 数值去尾零）、cpu="1-4"； 值级合法性全部由保存校验单点给出 reason（值域见文件头词表三）。 route/link0 保存时 casefold 归一化入库（G16 大小写不敏感，不改语义）。 */
+        ComboTemplate: {
+            /** @description 方案唯一 id（显式数字 1–5，不可变） */
+            template_id: number;
+            /** @description 配置名（初始「配置n」；保存时清空恢复初始名，不报错） */
+            name: string;
+            /** @description 精修 route 行（单行、# 开头、归一化小写形态；含 freq 时温度恒显式 存在——未配置自动补 temperature=298.15；清空恢复初始 route） */
+            route: string;
+            /** @description %nprocshared 值（正整数字符串，如 "4"；null=未配置） */
+            nproc: string | null;
+            /** @description %mem 值（GB 数值字符串去尾零，如 "8"；null=未配置） */
+            mem_gb: string | null;
+            /** @description %cpu proc-list（如 "0-5"、"0,2,4"；null=未配置） */
+            cpu: string | null;
+            /** @description 默认方案标记（恒有且仅有一条 true；radio 语义不可取消、仅可改选） */
+            is_default: boolean;
+            /**
+             * Format: date-time
+             * @description 最近保存时间（审计用；单机单用户不做并发控制，见 PUT 端点说明）
+             */
+            updated_at: string;
+        };
+        /** @description GET /combo-templates 响应：5 套方案按 template_id 升序全量 + 初始值。 initial.route 为前端「route 清空恢复初始值」的唯一来源（link0 三字段 初始值为空，清空即恢复，无需来源）。 */
+        ComboTemplatesResponse: {
+            /** @description 模板条目（恒 5 条，按 template_id 升序） */
+            templates: components["schemas"]["ComboTemplate"][];
+            initial: {
+                /** @description route 初始值（全小写，全部方案共用；config 单一来源） */
+                route: string;
+            };
+        };
+        /** @description PUT /combo-templates/{templateId} 请求体（全量替换语义：未携带/空值 字段按规则恢复——name/route 清空恢复初始值、link0 三字段空置 null= 未配置，不做部分更新）。nproc/mem_gb/cpu 以文本形态提交，值级合法性 由校验单点给出 reason（词表三）；仅结构级类型错误（如 nproc 提交 JSON number）由框架 422 直接返回、不进 details.errors[] 细分。 */
+        ComboTemplateUpdate: {
+            /** @description 配置名（空 → 恢复「配置n」） */
+            name: string;
+            /** @description 精修 route 行（空 → 恢复初始 route；保存时 casefold 归一化） */
+            route: string;
+            /** @description %nprocshared 值（正整数字符串；null/空 → 未配置） */
+            nproc: string | null;
+            /** @description %mem 值（GB 数值字符串；null/空 → 未配置） */
+            mem_gb: string | null;
+            /** @description %cpu proc-list（如 "1-4"；null/空 → 未配置） */
+            cpu: string | null;
+            /**
+             * @description 拼写豁免（仅当次请求生效、不落库）：enforce 模式下放行本批 keyword_not_in_dict 的词典外 token；warn 模式无拦截语义。
+             * @default false
+             */
+            ignore_spelling: boolean;
+        };
+        ComboTemplateMutationResult: components["schemas"]["ComboTemplate"] & {
+            notice: {
+                /** @description 本次保存是否自动补齐 temperature=298.15 */
+                temp_applied: boolean;
+                /** @description 本次保存是否发生大小写归一化（casefold 入库） */
+                normalized: boolean;
+                /** @description 词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传） */
+                spelling_warnings?: string[];
+            };
         };
         /** @description 能量表单行。g16 行取 B1 解析末次 SCF 能量（hartree/eV 双单位，仅 succeeded 且解析可用者有值）；crest 行仅出现于 workflow 聚合（source= ensemble，给相对能量与绝对 hartree——提取自 crest 能量表输出）。 relative_kJ_mol 以**该查询范围内最低能量**为零点，部分完成态新增更低 能量行时已展示行随零点整体改写（接受漂移，前端标注「随完成进度重算」）。 */
         EnergySummaryRow: {
@@ -1502,9 +1601,9 @@ export interface components {
             filename: string;
             blocks: {
                 link0: {
-                    /** @description Link0 行。M4 起 %Chk=/%OldChk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/溯源 chk 已清理 422 CHK_SOURCE_MISSING），派发前由物化器重写为实际路径。 */
+                    /** @description Link0 行。M4 起 %chk=/%oldchk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/溯源 chk 已清理 422 CHK_SOURCE_MISSING），派发前由物化器重写为实际路径。 */
                     lines: string[];
-                    /** @description 缺失 %NProcShared/%Mem 等（驱动提交确认框琥珀警告） */
+                    /** @description 缺失 %nprocshared/%mem 等（驱动提交确认框琥珀警告） */
                     missing: string[];
                 };
                 route: string;
@@ -3058,6 +3157,70 @@ export interface operations {
                 };
             };
             404: components["responses"]["Error"];
+        };
+    };
+    getComboTemplates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 模板全量与初始值 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComboTemplatesResponse"];
+                };
+            };
+        };
+    };
+    updateComboTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComboTemplateUpdate"];
+            };
+        };
+        responses: {
+            /** @description 更新后条目（含 notice） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComboTemplateMutationResult"];
+                };
+            };
+            /** @description templateId 不在 1–5 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description 校验失败（details.errors 全量，词表三 reason 值域） */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
         };
     };
     sseEvents: {
