@@ -8,6 +8,7 @@
 
 - 【scripts】新增人工测试实例种子数据填充脚本与 16 个走查同款种子样本，development.md §6.2 补种子填充步骤
 - 【api】新增组合流精修模板契约（GET /combo-templates、PUT /combo-templates/{templateId} 与四个 ComboTemplate schema、文件头词表三 11 项 reason 值域），models.py/contract.ts 再生产物随行入库，openapi 再生面 Link0 引用形态统一小写
+- 【web】新增组合流精修模板存储层：migration v7 combo_templates 表与 5 行幂等种子、ComboTemplatesRepo（is_default radio 语义同事务独占）、config 全小写 route 初始值常量，附迁移与 repo 层测试
 
 ### 变更
 
