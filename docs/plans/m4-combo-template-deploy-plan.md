@@ -631,6 +631,101 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   数字+徽标/配置名两行结构、复选框移至 %nprocshared 输入框下方、标签
   精简）。修复后复测 A1–A24 相应条目全过，前端四闸门重跑全绿
 
+- 批次 / 条目：D1（D 批次，2026-10-14 真机走查：503 → 部署 → 200 闭环）
+- 前置：附录 B 环境检查全过——WSL2 就绪；上游 Releases 可达（GitHub API
+  直连实测、资产下载经 gh-proxy 代理）；`--dest` 目标 `~/opt/g16web-
+  walkthrough` 可写且不与既有 ~/opt 冲突；`target/release/hq` 在位
+  （17,957,408 字节，10-12 构建）；g16 可执行在位（~/g16/g16）；
+  种子候选 #133 etoh.gjf（组合流候选）；后端 v3.1.0-29 本地构建运行中
+- 步骤：① 运行级 crest_root 指向空目录 `~/opt/g16web-walkthrough/
+  crest-3.0.2`（模拟新机未部署）→ 候选页 etoh 行「组合流」一键提交 →
+  ② `./scripts/deploy/setup_deps.sh --dest ~/opt/g16web-walkthrough
+  --proxy` 真实下载部署 → ③ 重新一键提交 → ④ 终止走查 workflow
+- 预期：① 503 `CREST_EXECUTABLE_MISSING`；③ HTTP 200 且响应含
+  workflow_id；④ 走查 workflow 终止、无残留实跑
+- 实测：**通过**。① UI 报「crest 可执行不可用 — 请检查运行级设置
+  crest_root 后重试」（POST 返回 503，零副作用；截图 D1-predeploy-
+  503.png）；③ POST /api/v1/workflows/conformer-refinement 返回 200，
+  响应 `{"workflow_id":"KB7N32","state":"crest_running",
+  "crest_task_id":141,"seat_id":38}`（截图 D1-postdeploy-200.png）；
+  ④ 乙醇构象搜索 ~20s 自然完成（crest_task 141 succeeded，能量
+  -11.394 hartree 入 energy_summary），workflow 推进 refining 后对精修
+  执行主动终止：POST /executions/52/stop → 204（执行 52=精修成员 143
+  转 failed；成员 142 在停止前已自然 succeeded），队列 R6JX3Q 收敛
+  unsubmitted、workflow KB7N32 停留 refining 不再推进——精修实际运行
+  不在 D 走查范围，终止处置达成；crest_root 已恢复 ~/opt/crest-3.0.2
+- 留痕：截图 docs/plans/assets/m4-combo-deploy/D1-predeploy-503.png、
+  D1-postdeploy-200.png；响应体与 stop 返回码摘录如上
+- 缺陷：无（本条目范围）
+
+- 批次 / 条目：D2（D 批次，脚本幂等重跑）
+- 前置：同 D1
+- 步骤：`setup_deps.sh --dest ~/opt/g16web-walkthrough --proxy` 连续执行
+  ≥2 次；另测半成品残留路径（crest 冒烟失败态重跑）与 `--force` 重装
+- 预期：已安装（`--version` 冒烟通过）重跑跳过下载；半成品清理后重装；
+  `--force` 重装成功
+- 实测：**通过**。重跑输出「已安装（冒烟通过），跳过」且无下载请求；
+  首次部署曾因 crest 资产布局缺陷冒烟失败，重跑自动清理半成品后重装
+  成功（清理路径真机复现）；`--xtb --force` 重装 crest+xtb 成功
+- 留痕：命令输出摘录（「[setup] crest 3.0.2 已安装（冒烟通过），跳过：
+  /home/keepoux/opt/g16web-walkthrough/crest-3.0.2/crest」）
+- 缺陷：2 项，走查实测抓出、随 #12（提交 2129e931）落库修复：
+  ① 上游 crest tar 顶层为 `crest/` 目录（非平铺——既有 ~/opt 平铺布局
+  系人工整理产物），且顶层目录与内层二进制同名（crest/crest）致首版
+  上移逻辑 mv 被目录自身挡路；修复为「整体改名 .crest-inner 后上移」
+  布局归一，对齐运行级 crest_root 语义；② 上游 xtb tar 顶层为
+  `xtb-dist/` 目录（非 xtb-6.7.1/），修复为解压临时区后内容落
+  `<dest>/xtb-6.7.1/`。两缺陷均有沙箱测试锁定（假资产改按真实上游布局）
+
+- 批次 / 条目：D3（D 批次，xtb 可选装与非运行必需说明）
+- 前置：同 D1
+- 步骤：`setup_deps.sh --xtb --dest ~/opt/g16web-walkthrough --proxy`；
+  核对脚本帮助、deployment.md §6 与设置页指引中「crest 3.0.2 内嵌
+  tblite、组合流运行无需 xtb」口径
+- 预期：不带 `--xtb` 时零 xtb 下载；携带时装出 `xtb-6.7.1/bin/xtb`
+  （官方 .sha256 对照通过）；三处口径一致
+- 实测：**通过**。默认安装 curl 请求日志零 xtb URL（沙箱用例锁定）；
+  真机 `--xtb` 安装成功（xtb-6.7.1/bin/xtb --version 输出版本横幅，
+  「xtb 官方校验和通过」）；脚本输出、--help、deployment.md §6 均含
+  「crest 3.0.2 已内嵌 tblite，组合流运行无需 xtb」口径
+- 留痕：命令输出摘录（安装完成行 + 指引行）
+- 缺陷：无
+
+- 批次 / 条目：D4（D 批次，上游资产校验和与许可核验留痕）
+- 前置：GitHub Release API 可达（直连实测）
+- 步骤：API 实测两项目发布资产清单 → 真机下载对照 → 许可文件核对
+- 预期：资产名/URL/校验和（或对照口径）与上游一致；许可无再分发限制
+  冲突（R-12）
+- 实测：**通过**。**crest**：Release API 实测 tag v3.0.2（2024-08-25
+  发布），资产 `crest-gnu-12-ubuntu-latest.tar.xz` 官方字节数 8,764,012，
+  部署下载实测一致（体积对照通过）；**上游未发布校验和文件**——按
+  §3.5 定案口径记录发布 tag 与资产体积为对照源（本条目即该口径标注）；
+  附注：本机既有 `~/opt/crest-3.0.2/crest`（sha256 25b2cb66…）与本次
+  部署二进制（sha256 201db794…）不同，既有安装系非 gnu-12 资产原件
+  （历史人工安装），不影响官方对照口径。**xtb**：tag v6.7.1
+  （2024-07-23 发布），资产 `xtb-6.7.1-linux-x86_64.tar.xz` 官方字节数
+  27,128,568，部署实测上游官方 `.sha256` 对照通过（sha256sum -c 输出
+  「xtb 官方校验和通过」）。**许可**（R-12 核对）：crest gnu-12 资产内
+  LICENSE=GPL-3.0、另附 LICENSE.LESSER（LGPL-3.0 文本）；xtb 发布资产
+  内不含许可文件、上游 repo 声明 LGPL-3.0——两项目均为 FSF 开源许可，
+  本项目采 download-at-install 口径（不随包再分发二进制、仅引导用户
+  自行下载使用），不构成再分发，无附加义务冲突，R-12 不触发
+- 留痕：API 响应摘录（/tmp/crest_release.json、/tmp/xtb_release.json
+  抓取的 tag/date/assets 清单）、sha256sum 输出、LICENSE 头部
+- 缺陷：无
+
+- 批次 / 条目：D5（D 批次，部署包内含 deployment.md）
+- 前置：#12/#13 提交落库后工作区干净（package_release.sh 要求）
+- 步骤：`scripts/package_release.sh`（HEAD 验证包，不上传）→ 解包断言
+- 预期：部署包含根脚本 `setup_deps.sh`（update.sh 对新增根脚本自动补装，
+  旧部署升级即得）与单文件 `docs/references/deployment.md`（含「CREST/
+  xtb 接入」节）
+- 实测：**通过**。`tar -tzf target/deploy/gauforge-deploy-linux-x64.tar.gz`
+  命中 `gauforge/setup_deps.sh` 与 `gauforge/docs/references/
+  deployment.md`；验证包版本 v3.1.0-29-gb5dd42f5
+- 留痕：tar -tzf 输出摘录
+- 缺陷：无
+
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
 
 | # | 维度 | 判据 |
