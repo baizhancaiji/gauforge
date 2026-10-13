@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T02:37+08:00",
+  "updated": "2026-10-14T02:46+08:00",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -74,8 +74,8 @@
     }
   ],
   "in_progress": {
-    "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B/C 完成，D 真机走查收口中，F1/F2 待执行",
-    "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）；B1/B2 留痕与 §8.1 具名清单回填随 docs(plans) 提交落；后续依赖序：C（前端，依赖 B）∥D（crest/xtb 部署）∥F1→F2，E 验收发布（#6 条件提交无需执行——词典已达标）。2026-10-14 批次 C/D 开工：C=①ComboTemplatesModal→②SettingsView 入口→③ComboFlowDialog 下拉回填，附附录 A 浏览器视觉实测（playwright）；D=①上游资产核验→②setup_deps.sh→③打包接线→④deployment.md→⑤真机走查 D1–D5；2026-10-14 批次 C 收口：①②③实现+四闸门+附录 A 走查 A1–A23 全过（A7a enforce 执行、A24 待 F2）+5 提交（136b7663/299b2ec1/f81477a6/f23aa417/e6884c24）。批次 D 实现+测试落库（setup_deps.sh/打包接线/deployment.md §6），真机走查 D1 闭环与 D2/D3 已实测，D5 打包验证与附录 B 回填进行中"
+    "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B/C/D 完成，F1/F2 待执行",
+    "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）；B1/B2 留痕与 §8.1 具名清单回填随 docs(plans) 提交落；后续依赖序：C（前端，依赖 B）∥D（crest/xtb 部署）∥F1→F2，E 验收发布（#6 条件提交无需执行——词典已达标）。2026-10-14 批次 C/D 开工：C=①ComboTemplatesModal→②SettingsView 入口→③ComboFlowDialog 下拉回填，附附录 A 浏览器视觉实测（playwright）；D=①上游资产核验→②setup_deps.sh→③打包接线→④deployment.md→⑤真机走查 D1–D5；2026-10-14 批次 C 收口：①②③实现+四闸门+附录 A 走查 A1–A23 全过（A7a enforce 执行、A24 待 F2）+5 提交（136b7663/299b2ec1/f81477a6/f23aa417/e6884c24）。批次 D 实现+测试落库（setup_deps.sh/打包接线/deployment.md §6），真机走查 D1 闭环与 D2/D3 已实测。2026-10-14 批次 D 收口：①上游资产核验（crest v3.0.2 资产 8764012 字节对照、xtb v6.7.1 官方 sha256 对照、许可 GPL/LGPL 无再分发冲突）→②③setup_deps.sh+打包接线（2129e931，走查抓出 crest/crest 与 xtb-dist 顶层目录布局缺陷当场修复+5 沙箱用例）→④deployment.md §6（47e0c071）→⑤真机走查 D1–D5 全过（503→200 闭环 workflow KB7N32、终止处置执行 52 stop、D5 打包断言），附录 B 留痕随 docs(plans) 提交落；b5dd42f5 随行登记。F1/F2 待执行，E 验收发布收口"
   },
   "next_steps": [
     "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",
