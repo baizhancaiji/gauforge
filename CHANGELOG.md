@@ -13,6 +13,7 @@
 - 【web】新增组合流精修模板校验服务与端点：validate_and_normalize 单点（11 项 reason 全量校验、enforce 拼写拦截与豁免、casefold 归一化与 freq 联动温度补齐）与 GET/PUT /combo-templates，测试矩阵逐 reason 全绿
 - 【frontend】新增组合流精修模板配置弹窗与设置页入口：5 方案框选择、route/link0 编辑保存（后端校验单点 422 全量回显、拼写豁免会话记忆、温度补齐与归一化提示）
 - 【frontend】为组合流提交对话框新增精修模板方案下拉：打开并行拉取模板清单、默认选中默认方案、选择回填 route 与 link0 序列化行且保留手改
+- 【scripts】新增 crest/xtb 依赖部署脚本：幂等冒烟安装与半成品清理重装、上游 tar 顶层目录布局归一、代理通道同 update.sh 约定、xtb 官方校验和对照，部署包接线纳入脚本与 deployment.md 单文件
 
 ### 变更
 
