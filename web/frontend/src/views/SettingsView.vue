@@ -11,6 +11,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
+import ComboTemplatesModal from "@/components/ComboTemplatesModal.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import LongPressButton from "@/components/LongPressButton.vue";
 import UpdateCard from "@/components/UpdateCard.vue";
@@ -30,6 +31,8 @@ const errors = ref<Record<string, string>>({});
 /** 实际变更且 on_restart 的 key（保存后琥珀提示条）。 */
 const restartKeys = ref<string[]>([]);
 const shrink = ref<{ from: number; to: number } | null>(null);
+/** 组合流模板配置弹窗（插波 3.2.0：运行级参数区入口，§3.4）。 */
+const comboOpen = ref(false);
 
 const events = useEventsStore();
 
@@ -266,6 +269,13 @@ const restartLabels = computed(() =>
             <p v-if="errors[s.key]" class="err mono">值越界或非法：{{ errors[s.key] }}</p>
           </div>
         </div>
+        <!-- 组合流模板入口（插波 3.2.0）：配置弹窗承载 5 套精修模板方案，不铺在面板上 -->
+        <div class="combo-entry">
+          <button class="btn btn--secondary" type="button" @click="comboOpen = true">
+            组合流模板
+          </button>
+          <span class="combo-entry-note">配置组合流精修的 5 套模板方案（route 与 Link0）</span>
+        </div>
       </section>
 
       <div class="savebar">
@@ -303,6 +313,9 @@ const restartLabels = computed(() =>
       </section>
     </div>
     <p v-else class="loading mono">读取设置 …</p>
+
+    <!-- 组合流精修模板配置弹窗（插波 3.2.0） -->
+    <ComboTemplatesModal :open="comboOpen" @close="comboOpen = false" />
 
     <!-- 席位上限调小 → 挤出确认（C7） -->
     <ConfirmModal
@@ -494,6 +507,16 @@ const restartLabels = computed(() =>
   display: flex;
   align-items: center;
   gap: var(--space-4);
+}
+.combo-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.combo-entry-note {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
 }
 .restart-note {
   flex: 1;
