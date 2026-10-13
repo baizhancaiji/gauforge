@@ -368,3 +368,172 @@ def test_restart_delegates_to_systemd(tmp_path):
     finally:
         dummy.terminate()
         dummy.wait(timeout=5)
+
+
+# ---------------- setup_deps.sh（crest/xtb 第三方依赖安装） ----------------
+
+# 按下载 URL 落对应假资产并记录请求 URL（代理改写断言用）；未知 URL 即失败，
+# 防沙箱静默走真网络。
+FAKE_DEPS_CURL = """#!/bin/bash
+prev=""; out=""
+for a in "$@"; do
+  if [ "$prev" = "-o" ]; then out="$a"; fi
+  prev="$a"
+done
+url="${@: -1}"
+[ -n "${CURL_LOG:-}" ] && printf '%s\\n' "$url" >> "$CURL_LOG"
+case "$url" in
+  *.tar.xz.sha256) cp "$FAKE_XTB_TAR.sha256" "$out" ;;
+  *crest-gnu-12-ubuntu-latest.tar.xz) cp "$FAKE_CREST_TAR" "$out" ;;
+  *xtb-6.7.1-linux-x86_64.tar.xz) cp "$FAKE_XTB_TAR" "$out" ;;
+  *) echo "unexpected url: $url" >&2; exit 1 ;;
+esac
+"""
+# 必失败版：幂等跳过用例用（若脚本仍发起下载即失败，证明判据走冒烟）
+FAILING_CURL = "#!/bin/bash\nexit 18\n"
+# 假 crest / xtb 二进制：--version 输出命中 smoke 判据子串
+FAKE_CREST_BIN = "#!/bin/sh\necho ' crest version 3.0.2 (fake)'\n"
+FAKE_XTB_BIN = "#!/bin/sh\necho 'xtb version 6.7.1'\n"
+
+
+def _make_deps_fixture(tmp: Path) -> dict[str, str]:
+    """假 crest/xtb 资产（真 tar.xz，布局同上游）+ 假 curl 沙箱环境。"""
+    bin_dir = tmp / "fakebin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+
+    # 上游 tar 顶层为 crest/ 目录（真机走查实测 2026-10-14，非平铺）
+    crest_stage = tmp / "crest_stage" / "crest"
+    crest_stage.mkdir(parents=True)
+    _write(crest_stage / "crest", FAKE_CREST_BIN, 0o755)
+    _write(crest_stage / "LICENSE", "LGPL\n")
+    crest_tar = tmp / "crest-gnu-12-ubuntu-latest.tar.xz"
+    subprocess.run(
+        ["tar", "-cJf", str(crest_tar), "-C", str(crest_stage.parent), "crest"],
+        check=True)
+
+    # 上游 tar 顶层为 xtb-dist/ 目录（真机走查实测 2026-10-14，非 xtb-6.7.1/）
+    xtb_stage = tmp / "xtb_stage" / "xtb-dist" / "bin"
+    xtb_stage.mkdir(parents=True)
+    _write(xtb_stage / "xtb", FAKE_XTB_BIN, 0o755)
+    xtb_tar = tmp / "xtb-6.7.1-linux-x86_64.tar.xz"
+    subprocess.run(
+        ["tar", "-cJf", str(xtb_tar), "-C", str(tmp / "xtb_stage"), "xtb-dist"],
+        check=True)
+    digest = hashlib.sha256(xtb_tar.read_bytes()).hexdigest()
+    xtb_tar.with_name(xtb_tar.name + ".sha256").write_text(
+        f"{digest}  {xtb_tar.name}\n", encoding="utf-8")
+
+    env = dict(os.environ)
+    env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+    env["FAKE_CREST_TAR"] = str(crest_tar)
+    env["FAKE_XTB_TAR"] = str(xtb_tar)
+    env["CURL_LOG"] = str(tmp / "curl.log")
+    # 体积对照隔离：期望值 = 假资产实际字节数（真实值写死在脚本内）
+    env["GAUFORGE_CREST_SIZE"] = str(crest_tar.stat().st_size)
+    # 隔离开发者环境可能残留的代理选择
+    env.pop("GAUFORGE_PROXY", None)
+    return env
+
+
+def _run_setup_deps(tmp: Path, dest: Path, env: dict[str, str],
+                    *args: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["bash", str(SCRIPTS_DIR / "setup_deps.sh"), "--dest", str(dest), *args],
+        env=env, capture_output=True, text=True, timeout=120)
+
+
+def test_setup_deps_installs_crest_and_smokes(tmp_path):
+    """首装：crest 解压到 <dest>/crest-3.0.2/crest（平铺布局同运行级默认
+    ~/opt/crest-3.0.2），体积对照通过、--version 冒烟通过、打印设置页指引。"""
+    dest = tmp_path / "opt"
+    env = _make_deps_fixture(tmp_path)
+    _write(tmp_path / "fakebin" / "curl", FAKE_DEPS_CURL, 0o755)
+    proc = _run_setup_deps(tmp_path, dest, env)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert (dest / "crest-3.0.2" / "crest").stat().st_mode & 0o111
+    ver = subprocess.run([str(dest / "crest-3.0.2" / "crest"), "--version"],
+                         capture_output=True, text=True)
+    assert "crest" in ver.stdout
+    assert "crest_root" in proc.stdout
+    # 默认布局（--dest 指向的根 == 运行级默认 ~/opt 形态）无需改设置页提示
+    assert "crest-3.0.2" in proc.stdout
+
+
+def test_setup_deps_idempotent_smoke_skip(tmp_path):
+    """幂等：已安装（冒烟通过）重跑跳过下载——假 curl 换必失败版仍成功。"""
+    dest = tmp_path / "opt"
+    env = _make_deps_fixture(tmp_path)
+    _write(tmp_path / "fakebin" / "curl", FAKE_DEPS_CURL, 0o755)
+    first = _run_setup_deps(tmp_path, dest, env)
+    assert first.returncode == 0, first.stdout + first.stderr
+    _write(tmp_path / "fakebin" / "curl", FAILING_CURL, 0o755)
+    second = _run_setup_deps(tmp_path, dest, env)
+    assert second.returncode == 0, second.stdout + second.stderr
+    assert "已安装（冒烟通过），跳过" in second.stdout
+
+
+def test_setup_deps_broken_install_reinstall(tmp_path):
+    """半成品残留（目录在但 --version 冒烟失败）→ 清理后重装成功。"""
+    dest = tmp_path / "opt"
+    env = _make_deps_fixture(tmp_path)
+    _write(tmp_path / "fakebin" / "curl", FAKE_DEPS_CURL, 0o755)
+    broken = dest / "crest-3.0.2"
+    _write(broken / "crest", "#!/bin/sh\nexit 1\n", 0o755)
+    proc = _run_setup_deps(tmp_path, dest, env)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "半成品残留" in proc.stdout
+    ver = subprocess.run([str(dest / "crest-3.0.2" / "crest"), "--version"],
+                         capture_output=True, text=True)
+    assert "crest" in ver.stdout
+
+
+def test_setup_deps_proxy_channel_conventions(tmp_path):
+    """代理约定与 update.sh 同款：GAUFORGE_PROXY / --proxy [URL] 前缀改写、
+    --no-proxy 直连原始 URL。"""
+    dest = tmp_path / "opt"
+    env = _make_deps_fixture(tmp_path)
+    _write(tmp_path / "fakebin" / "curl", FAKE_DEPS_CURL, 0o755)
+    raw = ("https://github.com/crest-lab/crest/releases/download/v3.0.2/"
+           "crest-gnu-12-ubuntu-latest.tar.xz")
+
+    log = Path(env["CURL_LOG"])
+    # ① 环境变量 GAUFORGE_PROXY
+    env["GAUFORGE_PROXY"] = "https://p-env.example"
+    assert _run_setup_deps(tmp_path, dest, env, "--force").returncode == 0
+    assert log.read_text(encoding="utf-8").strip().splitlines()[-1] == \
+        f"https://p-env.example/{raw}"
+    # ② --proxy 自定义 URL（参数优先于环境变量）
+    assert _run_setup_deps(tmp_path, dest, env, "--force",
+                           "--proxy", "https://p-arg.example").returncode == 0
+    assert log.read_text(encoding="utf-8").strip().splitlines()[-1] == \
+        f"https://p-arg.example/{raw}"
+    # ③ --no-proxy 直连
+    assert _run_setup_deps(tmp_path, dest, env, "--force",
+                           "--no-proxy").returncode == 0
+    assert log.read_text(encoding="utf-8").strip().splitlines()[-1] == raw
+    # 代理选择不持久化到工作区（无 update 通道语义）
+    assert not (tmp_path / "home" / ".update-proxy").exists()
+
+
+def test_setup_deps_xtb_optional_and_checksum(tmp_path):
+    """--xtb 可选装：默认不装（无下载请求）；携带时装出 xtb-6.7.1/bin/xtb
+    （顶层目录布局同运行级默认 ~/opt/xtb-6.7.1）且官方 .sha256 对照通过。"""
+    dest = tmp_path / "opt"
+    env = _make_deps_fixture(tmp_path)
+    _write(tmp_path / "fakebin" / "curl", FAKE_DEPS_CURL, 0o755)
+    # ① 不带 --xtb：xtb 资产零请求
+    proc = _run_setup_deps(tmp_path, dest, env)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "xtb" not in Path(env["CURL_LOG"]).read_text(encoding="utf-8")
+    assert not (dest / "xtb-6.7.1").exists()
+    # ② 带 --xtb：解压 bin/xtb + 官方 sha256 通道被拉取
+    proc = _run_setup_deps(tmp_path, dest, env, "--force", "--xtb")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert (dest / "xtb-6.7.1" / "bin" / "xtb").stat().st_mode & 0o111
+    assert "官方校验和通过" in proc.stdout
+    assert Path(env["CURL_LOG"]).read_text(encoding="utf-8").count(".sha256") == 1
+    # ③ 安装布局与运行级 crest_root/xtb_root 默认值形态对齐（config.py
+    #    ~/opt/crest-3.0.2、~/opt/xtb-6.7.1；自定义 --dest 时打印改指指引）
+    assert "自定义安装路径" in proc.stdout and "crest_root" in proc.stdout
+    assert str(dest / "crest-3.0.2") in proc.stdout
+    assert str(dest / "xtb-6.7.1") in proc.stdout

@@ -54,7 +54,12 @@ install -m 644 crates/LICENSE "$pkg/crates/LICENSE"   # 保持 crates/ 路径：
 install -m 755 target/release/hq "$pkg/bin/hq"
 install -m 755 scripts/deploy/install.sh scripts/deploy/update.sh \
   scripts/deploy/self_update.sh scripts/deploy/restart_g16web.sh \
-  scripts/deploy/stop_all.sh scripts/deploy/systemd_install.sh "$pkg/"
+  scripts/deploy/stop_all.sh scripts/deploy/systemd_install.sh \
+  scripts/deploy/setup_deps.sh "$pkg/"
+# 部署指引单文件随包分发（离线机/新部署机可获得「CREST/xtb 接入」节，
+# m4-combo-deploy-plan §3.5 D5；显式单文件 copy、不整目录拷 docs/references）
+mkdir -p "$pkg/docs/references"
+install -m 644 docs/references/deployment.md "$pkg/docs/references/deployment.md"
 printf '%s\n' "$version" > "$pkg/VERSION"
 
 mkdir -p "$out"
