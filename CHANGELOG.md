@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+### 新增
+
+- 【scripts】新增人工测试实例种子数据填充脚本与 16 个走查同款种子样本，development.md §6.2 补种子填充步骤
+
 ### 变更
 
 - 【docs】拆分 development.md §6 为纯界面冒烟与人工测试实例两口径，新增引擎开+G16WEB_HQ_BIN 钉死仓库内核的拉起命令与 PATH 旧版 hq 抢占踩坑注记
