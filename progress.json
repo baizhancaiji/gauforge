@@ -53,8 +53,8 @@
     }
   ],
   "in_progress": {
-    "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B 完成，C/D/F1/F2 待执行",
-    "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）；B1/B2 留痕与 §8.1 具名清单回填随 docs(plans) 提交落；后续依赖序：C（前端，依赖 B）∥D（crest/xtb 部署）∥F1→F2，E 验收发布（#6 条件提交无需执行——词典已达标）"
+    "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B 完成，C/D 执行中，F1/F2 待执行",
+    "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）；B1/B2 留痕与 §8.1 具名清单回填随 docs(plans) 提交落；后续依赖序：C（前端，依赖 B）∥D（crest/xtb 部署）∥F1→F2，E 验收发布（#6 条件提交无需执行——词典已达标）。2026-10-14 批次 C/D 开工：C=①ComboTemplatesModal→②SettingsView 入口→③ComboFlowDialog 下拉回填，附附录 A 浏览器视觉实测（playwright）；D=①上游资产核验→②setup_deps.sh→③打包接线→④deployment.md→⑤真机走查 D1–D5"
   },
   "next_steps": [
     "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",
