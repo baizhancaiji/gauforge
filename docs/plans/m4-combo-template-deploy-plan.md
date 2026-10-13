@@ -569,6 +569,68 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   `pp?$` 笔误、弥散 + 位置误置于 g 后〔应为 6-31+g〕、反序锚点句首英文词
   误捕〔加技术词守卫〕）
 
+- 批次 / 条目：A1–A24（C 批次，2026-10-14 浏览器视觉实测，playwright MCP；
+  当前 mode=enforce——A7a 执行、A7b 不适用、A24 属 F2 #8 收口范围待补）
+- 前置：WSL2 真机；后端 v3.1.0-19-g1be6c461（uv run python -m web.src.main，
+  127.0.0.1:8300）；前端本地构建（npm run build 产物经 FastAPI 托管）；
+  种子候选 16 个（scripts/seed_manual_workspace.py 灌入，组合流候选
+  etoh.gjf=#133）；运行级 crest_root 全程 ~/opt/crest-3.0.2（A21 期间临时
+  指向不存在路径以 503 零副作用抓载荷，走查后已恢复）
+- 步骤与实测（逐条）：
+  A1 通过——打开配置页自动选中方案 1，编辑区「配置1」+ 初始 route 小写
+  （留痕 A1-modal-layout-v3.png）；A2 通过——顶部 5 矩形框显式数字 1–5、
+  初始命名「配置n」（同上截图）；A3 通过——默认徽标全页仅方案 1 一处，
+  改选方案 5 保存后唯一迁移（A3-default-migrated-scheme5.png），已改回
+  方案 1；A4 通过——默认「设为默认」点击不可取消、仅可改选（5→1 迁回
+  实测）；A5 通过——route 清空保存 GET 恢复初始 route（叠加 §0.4 口径 1
+  温度补齐形态 `#p b3lyp/6-31g(d) opt freq temperature=298.15`，恢复语义
+  成立）；name 清空保存恢复「配置5」；A6 通过——UI 走查非 # 开头分支
+  422 route_must_start_with_hash 一条全报；多行/空行分支按条目备注经
+  API 直调断言（test_combo_templates.py B 批次全绿，前端 @input 单行化
+  致 UI 不可构造）；A7a 通过——词典外 token mycustomkeyword → 422
+  keyword_not_in_dict 拦截 + 豁免按钮出现（A7a-keyword-blocked-exempt-
+  button.png）→ 点「忽略拼写警告并保存」落库 + notice.spelling_warnings
+  展示 → 关闭重开同 token 重新拦截（豁免清空）→ 同会话切方案 4 同
+  token 直接放行（跨方案共享）；A7b 不适用（enforce 已上线，无降级）；
+  A8 通过——freq 无温度保存补 temperature=298.15、notice temp_applied
+  提示「已补齐」、回显归一化 route；已含 temperature=310 保存不重复补；
+  A9 通过——temperature=abc / -1 / 300,310 三变体均 422 temp_value_invalid；
+  A10 通过——mem=0.5/nproc=1 → mem_below_per_core_floor；nproc=8/cpu=1-4
+  → nproc_cpu_mismatch；nproc=4/cpu=1-5 多于默许 200 放行（相等 4/1-4
+  亦放行）；A11 通过——方案下拉选 2 回填三行 %nprocshared=4 / %mem=8GB /
+  %cpu=1-5 与 GET 值一一对应、全小写、仅非空项（A11-A20-A21-comboflow-
+  dialog.png）；A12 通过——未保存本地改动切方案/重开均回已保存值；A13
+  通过——route 含 @task: → 422 link0_symbol_ref_forbidden；A14 通过——
+  %cpu 默认置灰（disabled），勾选「指定CPU核心」后可填；A15/A16/A17
+  通过——nproc=0 / mem=abc / cpu=a-b 三错误一次全报（422 details 三条
+  reason 全展示）+ 三编辑框红描边（A15-A16-A17-final.png）；A18 通过——
+  豁免后再次保存不再拦截且落库；保存失败（nproc=0）重试豁免记忆不丢失，
+  修复后重试成功落库；A19 通过——运行级参数区「组合流模板」入口按钮，
+  点击弹出配置弹窗（A19-settings-entry.png）；A20 通过——ComboFlowDialog
+  方案下拉含 5 条配置名、默认选中 is_default 条（打开即选「1 · 配置1
+  （默认）」）；A21 通过——回填后手改 route 提交，抓包 POST 载荷
+  template.route 为手改值、link0 三行为回填值、契约结构与既有
+  POST /workflows/conformer-refinement 一致（503 零副作用）；A22 通过——
+  混合大小写 route 保存后回显归一化小写 +「已归一化」提示（A22-
+  normalized-notice.png）；A23 通过——link0 三字段清空保存 GET 返回
+  NULL（curl 实测方案 3），ComboFlowDialog 选 NULL 方案回填无 link0 行
+  （方案 1 实测）；A24 待 F2（候选提交确认框黄警文案小写化属 §1.1 #8
+  F2 #10 提交范围，随 F2 走查补录）
+- 留痕：截图 docs/plans/assets/m4-combo-deploy/（A19-settings-entry.png、
+  A1-modal-layout-v3.png、A15-A16-A17-final.png、A7a-keyword-blocked-
+  exempt-button.png、A22-normalized-notice.png、A3-default-migrated-
+  scheme5.png、A11-A20-A21-comboflow-dialog.png；该目录已入 .gitignore，
+  仅留路径）；载荷抓包 POST /api/v1/workflows/conformer-refinement
+  request-body：`{"candidate_id":133,"crest":{"nproc":4,"top_n":2},
+  "template":{"route":"#p b3lyp/6-31g(d) opt freq temperature=333",
+  "link0":["%nprocshared=4","%mem=8GB","%cpu=1-5"]}}`
+- 缺陷：2 项，均走查中当场修复、随本批次提交落库（未产生提交后 fix）：
+  ① A4 首测「设为默认」可被取消——原生 checkbox DOM 取反与受控状态脱节，
+  修复 toggleDefault 显式回写 checked；② 视觉——「指定CPU核心」标签溢出
+  与 %mem 标签重叠、方案框配置名被默认徽标挤压截断，修复布局（方案框改
+  数字+徽标/配置名两行结构、复选框移至 %nprocshared 输入框下方、标签
+  精简）。修复后复测 A1–A24 相应条目全过，前端四闸门重跑全绿
+
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
 
 | # | 维度 | 判据 |
