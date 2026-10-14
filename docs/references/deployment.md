@@ -129,10 +129,12 @@ WebUI 更新在部署目录留下三份伴生文件，排障先看它们：
 `crest-gnu-12-ubuntu-latest.tar.xz`；可选 grimme-lab/xtb `v6.7.1` 的
 `xtb-6.7.1-linux-x86_64.tar.xz` 及其 `.sha256`），按以下布局解压：
 
-- crest：解压到 `~/opt/crest-3.0.2/`（tar 内为平铺文件，二进制位于
-  `~/opt/crest-3.0.2/crest`，须有执行位）；
-- xtb（可选）：解压到 `~/opt/`（tar 内顶层即 `xtb-6.7.1/` 目录，二进制
-  位于 `~/opt/xtb-6.7.1/bin/xtb`）。
+- crest：tar 顶层为 `crest/` 目录、二进制嵌套同名（`crest/crest`）——
+  解压后须把 `crest/` 内全部内容上移至 `~/opt/crest-3.0.2/`，使二进制
+  位于 `~/opt/crest-3.0.2/crest` 且有执行位；
+- xtb（可选）：tar 顶层为 `xtb-dist/` 目录——须将其改名为
+  `~/opt/xtb-6.7.1/`（或把内容移入该目录），二进制位于
+  `~/opt/xtb-6.7.1/bin/xtb`。
 
 ### 6.3 设置页配置与验证闭环
 
