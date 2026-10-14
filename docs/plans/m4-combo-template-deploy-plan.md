@@ -829,6 +829,50 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   BlockEditor.vue:476 `%Chk=` → `%chk=`
 - 缺陷：无
 
+- 批次 / 条目：RG1–RG6（独立审查整改走查补录，2026-10-14——批次 A/B/C/D/F1/F2
+  走查留痕之后另执行的四轮独立审查〔报告 docs/plans/m4-combo-deploy-review-
+  A-B.md／-C.md／-D.md／-F1F2.md／-E.md〕之发现与修复，按附录 B 同格式补录）
+- 前置：各轮审查报告结论与整改提交（619842d3／22d437c0／4a72f5b6／47bd0793/
+  7a15d6df／bffba5a2）；HEAD 工作区干净
+- 步骤与实测（逐条）：
+  RG1 通过——F-1（P0）is_default 缺省/false 保存清掉唯一默认行：repo 层
+  改 CASE WHEN 保持语义（缺省/false 保持现有默认归属、true 迁移并同事务清
+  其余），补 repo 级与 API 级断言（test_is_default_false_preserves_row_state、
+  test_is_default_omitted_or_false_preserves_default_owner）；审查 C 四保存
+  路径实测兼容、审查 E 全量回归含此断言（739 passed）。
+  RG2 通过——F-2（P2）契约再生时间戳头致零 diff 闸门字面不可复现：
+  gen_models.py 固定 `--disable-timestamp`，双重再生 md5 一致；审查 E 闸门 #7
+  再生后工作区零残留（字节幂等字面成立）。
+  RG3 通过——C-1（P2）豁免粒度：会话豁免集非空即整批放行，同会话新词典外
+  token 被静默落库（API 探针复现）；修复为两段式按 token 粒度（先不带豁免
+  直存，422 词典外 token 全在豁免集才自动携 ignore_spelling 重试）。主代理
+  playwright 浏览器复测（临时隔离实例 127.0.0.1:8302，G16WEB_ENGINE=0，
+  用毕清理）：新 token 同会话仍拦截 + 豁免按钮出现、已豁免 token 跨方案自动
+  放行（已补齐/已归一化提示正常）、A4 radio 不可取消、A12 未保存丢弃、A11/
+  A20 下拉回填三行与 GET 一致、C-3 重开重置无残留——本条同时即为审查 C
+  报告第六节浏览器抽检清单的处置留痕（抽检已由主代理完成；A24 视觉面以
+  FG2 浏览器留痕 + 审查 C API 级交叉印证为准，不再复测）；A7a/A18 原走查
+  行为经两段式重构后语义不变（同 token 免再拦、新 token 须显式豁免——
+  比修复前的「豁免集非空即全放」更严格、与 §3.3 按 token 粒度口径对齐）。
+  另 C-2 打开读取失败错误态（禁用保存）与 C-3 ComboFlowDialog 重开回落
+  初始 route/清空 link0 同提交落库。
+  RG4 通过——D-1/D-2（P1）deployment.md §6.2 离线安装布局说明失实（crest
+  「平铺文件」、xtb「顶层即 xtb-6.7.1/」）：修正为「crest 顶层 crest/ 目录
+  嵌套同名二进制须上移、xtb 顶层 xtb-dist/ 须改名 xtb-6.7.1」，修正段与
+  审查 D 真资产实测布局逐字对照一致。
+  RG5 通过——D-3/D-4/D-5（P3 顺手收口）：--dest 缺值用法提示 exit 2、
+  --help 截取范围收紧、执行位仅加 crest 二进制；沙箱用例
+  test_setup_deps_usage_guards 锁定，test_deploy_scripts.py 12 passed。
+  RG6 通过——F1F2-1/F1F2-2（P3 留痕措辞）：FG1 crates 复扫口径与
+  test_dispatch_engine 断言计数口径补注随报告落盘同提交修正（本文件 FG1
+  条目内补注）。
+- 留痕：各审查报告原文与整改提交 git show；RG3 浏览器复测在临时隔离实例
+  （/tmp/g16web-verify-c，已清理）；审查 E 报告（-E.md）第五节闸门终跑
+  12 项全绿（739 passed、e2e 3 例、契约再生零 diff、前端四闸门、治理脚本）
+- 缺陷：D-6（--dest 退化值防护）维持备案不修、下次触批收口；E1–E5 执行
+  注意（审查 E 报告 §8 #5）：冻结按 changelog-spec §1.6 六步走（含 README
+  版本表述刷新 v3.1.0→v3.2.0 与 §2.3 发布复核），非 §5.2 字面五条目
+
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
 
 | # | 维度 | 判据 |
