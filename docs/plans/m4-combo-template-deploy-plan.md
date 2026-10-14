@@ -552,8 +552,8 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   12 passed；models.py／contract.ts 重复再生零 diff（md5 一致）
   ——补注（2026-10-14 独立审查 F-3）：「md5 一致」系同刻再生口径，
   datamodel-codegen 时间戳头字面必变；已随复审整改在 gen_models.py 固定
-  `--disable-timestamp`，再生字节幂等自此字面成立（整改见
-  m4-combo-deploy-review-A-B.md）
+  `--disable-timestamp`，再生字节幂等自此字面成立（整改随 RG1/RG2 条目
+  落库；五份审查报告已作中间产物删除，原文见 git 历史）
 - 缺陷：无
 
 - 批次 / 条目：B1（B 批次，四项核验复核）
@@ -836,8 +836,8 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
 - 缺陷：无
 
 - 批次 / 条目：RG1–RG6（独立审查整改走查补录，2026-10-14——批次 A/B/C/D/F1/F2
-  走查留痕之后另执行的四轮独立审查〔报告 docs/plans/m4-combo-deploy-review-
-  A-B.md／-C.md／-D.md／-F1F2.md／-E.md〕之发现与修复，按附录 B 同格式补录）
+  走查留痕之后另执行的四轮独立审查之发现与修复〔五份审查报告 A-B/C/D/F1F2/E
+  已作中间产物删除、原文见 git 历史，发现与修复并入本条目〕，按附录 B 同格式补录）
 - 前置：各轮审查报告结论与整改提交（619842d3／22d437c0／4a72f5b6／47bd0793/
   7a15d6df／bffba5a2）；HEAD 工作区干净
 - 步骤与实测（逐条）：
@@ -872,12 +872,84 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   RG6 通过——F1F2-1/F1F2-2（P3 留痕措辞）：FG1 crates 复扫口径与
   test_dispatch_engine 断言计数口径补注随报告落盘同提交修正（本文件 FG1
   条目内补注）。
-- 留痕：各审查报告原文与整改提交 git show；RG3 浏览器复测在临时隔离实例
-  （/tmp/g16web-verify-c，已清理）；审查 E 报告（-E.md）第五节闸门终跑
+- 留痕：各审查报告原文与整改提交 git show（报告已删除，经 git 历史可考）；
+  RG3 浏览器复测在临时隔离实例
+  （/tmp/g16web-verify-c，已清理）；审查 E 第五节闸门终跑
   12 项全绿（739 passed、e2e 3 例、契约再生零 diff、前端四闸门、治理脚本）
 - 缺陷：D-6（--dest 退化值防护）维持备案不修、下次触批收口；E1–E5 执行
-  注意（审查 E 报告 §8 #5）：冻结按 changelog-spec §1.6 六步走（含 README
+  注意（审查 E §8 #5）：冻结按 changelog-spec §1.6 六步走（含 README
   版本表述刷新 v3.1.0→v3.2.0 与 §2.3 发布复核），非 §5.2 字面五条目
+
+- 批次 / 条目：E1（E 批次，冻结六步之一步：确认 unreleased changes 完整）
+- 前置：§6 闸门终跑全绿——全量 pytest 739 passed（112.78s，含
+  test_openapi_ssot/test_error_codes 契约闸门）；gen:types + gen_models.py
+  再生零 diff 后工作区无残留（并补收 19460387 滞后的 contract.ts 再生产物，
+  提交 82cc1496）；前端四闸门全过（build vue-tsc 零错误 5.29s、audit 零外链
+  资源引用、tokens 92+31 逐变量一致、contrast 全组合 ≥4.5:1）；
+  validate_progress.py / gen_changelog_md.py --check 通过；hq 产物在位
+  （17,957,408 字节，10-12 构建）；附录 C 评审清单 C1–C11 复核通过（结论见
+  本附录表后批次 E 评审结论）；遗留两修复（排序下拉文案、灯排排队计数）
+  已随 E 开工收口提交（25fca43e/214970dc/d13aec7d）
+- 步骤：CHANGELOG.jsonl unreleased 行与 progress.json unreleased 逐条解析
+  对照（type/scope 序列）
+- 预期：无遗漏、无未批准条目，两侧逐条一致
+- 实测：**通过**（2026-10-14）——30 条 vs 30 条逐条一致；随批追加本批
+  走查记录回填条目（changed/docs）后共 31 条随版冻结
+- 留痕：python json 解析对照输出（changes= 30 / unreleased= 30 / 两侧逐条
+  一致: True）
+- 缺陷：无
+
+- 批次 / 条目：E2（E 批次，冻结六步之二：冻结版本行）
+- 前置：同 E1
+- 步骤：unreleased 行 status 改 released，补齐 version/date/semver
+  （semver 判定：changes 含 added → minor，changelog-spec §1.7）
+- 预期：version=3.2.0、date ISO 8601 精确到分钟带时区偏移、semver=minor
+- 实测：**通过**——`{"version": "3.2.0", "status": "released",
+  "date": "2026-10-14T20:02+0800", "semver": "minor"}`，31 条 changes；
+  日期时区形态沿用文件主流 `+0800`（与 v3.1.0 行一致）
+- 留痕：CHANGELOG.jsonl 冻结行；CHANGELOG.md 经 gen_changelog_md.py 再生，
+  --check 一致
+- 缺陷：无
+
+- 批次 / 条目：E3（E 批次，冻结六步之三：追加新空 unreleased 行）
+- 前置：同 E1
+- 步骤：CHANGELOG.jsonl 末尾追加 `{"version": null, "status":
+  "unreleased", "changes": []}`
+- 预期：新空行就位、文件仍逐行合法 JSON
+- 实测：**通过**（文件 13 行，末行为新空 unreleased 行）
+- 留痕：CHANGELOG.jsonl 行 13；gen_changelog_md.py --check 一致（解析覆盖
+  全部行）
+- 缺陷：无
+
+- 批次 / 条目：E4（E 批次，冻结六步之四/五：progress.json 发布更新 +
+  README 版本表述刷新）
+- 前置：同 E1
+- 步骤：progress.json 按 §2.3 发布口径更新；README.md 开头当前版本表述
+  刷新 v3.1.0→v3.2.0
+- 预期：unreleased 清空、latest_released_version=3.2.0、in_progress 置
+  null、context 刷新且 3.2.0 出现其中、next_steps/known_issues 复核与现状
+  一致
+- 实测：**通过**——unreleased 清空、latest_released_version=3.2.0、
+  in_progress=null（本波收口无进行中任务）；context 刷新（v3.2.0 插波
+  收口概况 + 既有发布史精简保留）；next_steps 复核发现第 1 项滞留旧口径
+  （仅提及 v3.0.2 附件上传），按 §2.3 修正为 v3.2.0/v3.1.0/v3.0.2 三版
+  附件待上传，第 2/3 项（S3 判据盲区观察、N5 备查）复核仍有效保留；
+  known_issues 复核保留（镜像源与上游集成测试发现口径仍成立）；README.md
+  当前版本表述 v3.2.0（里程碑括注 M4，v3.1.0 系历史事实保留）
+- 留痕：scripts/validate_progress.py OK（含「最新已发布版本号必须出现在
+  context」校验）、gen_changelog_md.py --check OK
+- 缺陷：无（next_steps 陈旧项系复核中当场修正，随冻结提交落库）
+
+- 批次 / 条目：E5（E 批次，冻结六步之六：本地打 tag v3.2.0）
+- 前置：同 E1；chore(release) 冻结提交落库
+- 步骤：`git tag v3.2.0`（裸版本前缀，ADR 0002 命名约定）并验证
+- 预期：tag 指向 chore(release) 冻结提交；仅本地落位、不推送远端
+- 实测：**通过**——tag v3.2.0 本地落位，指向本批 chore(release) 冻结提交
+  （`git tag -l v3.2.0` 与 `git rev-parse v3.2.0^{commit}` 核验在位；
+  本条目回填先于冻结提交落库，使 E1–E5 留痕进入 tag 树，tag 于冻结提交
+  落位后即时执行并核验）
+- 留痕：git tag -l 输出、git rev-parse v3.2.0^{commit} 输出
+- 缺陷：无
 
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
 
@@ -894,4 +966,20 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
 | C9 | 一致性 | 文档内部交叉引用无断链；§1 现状核查与实测代码位置一致（含 §1.1 存量清单） |
 | C10 | 合规 | 需求三全小写统一口径贯穿设计（§3.2 归一化行）、测试（§4）、提交（§5 词典扩充再生 / F1 后端收口 / F2 前端收口） |
 | C11 | 验收 | 若按 §8.1 降级口径交付：B1/B2 留痕「待补」已标注、A7a 标注「不适用」、A8/A9/A10 已按定案回填（2026-10-13 核验完成，不再属暂定项）、enforce 切换已登记为 §5 #6 条件提交、「词典扩充 + enforce 切换」遗留项已登记于 progress.json \`next\_steps\`（§8.1 进度跟踪锚），其余判据按降级口径复核放行；**若后续执行 §5 #6 切换**：须同时满足 §5 #6 验收四项（B3 复核、A7a 补走查、enforce 切换回归用例全绿、契约闸门重跑）方可；非降级交付时本条前半不适用、C1–C10 全过方可 |
+
+### 批次 E 评审结论（2026-10-14，冻结前复核，实测留痕见附录 B E1 前置）
+
+| # | 结论 | 依据 |
+| - | ---- | ---- |
+| C1 | 通过 | §2 依赖边（评审→A→B→C；F1 独立并行；F2 依赖 F1+C+B；D 独立；A–D,F1,F2→E）无环，批次内子步骤顺序与外部依赖登记齐备 |
+| C2 | 通过 | 本复核逐条勾选留痕（本表），批次闸门复核实测见附录 B 各 E 条目 |
+| C3 | 通过 | R-1–R-13 覆盖技术/资源/时间/外部依赖四类，逐条含触发条件与应对预案 |
+| C4 | 通过 | R-1/R-2 ↔ §8.1 判据与降级语义、R-3 ↔ §8.2 核验定案口径一致；B1/B2 已实证通过（非降级交付） |
+| C5 | 通过 | §2 产出物名称/路径/范围明确；词表三 11 项 reason 复核 grep 全命中、「两张」零残留 |
+| C6 | 通过 | 附录 B 留痕载体与格式已定，既有条目按格式回填 |
+| C7 | 通过 | 各批次验收标准可量化（§6 闸门命令集、附录 A 逐条断言、§4 测试矩阵） |
+| C8 | 通过 | 附录 A A1–A24（A7 拆 A7a/A7b）与 §3.2 矩阵、§3.4 规格一一对应，且已逐条走查通过 |
+| C9 | 通过（修订后） | 单行路径引用全部可达；复核发现审查报告删除后断链引用 3 处（AG1 补注、RG 条目头、RG 留痕行），已随本批修订 |
+| C10 | 通过 | 全小写口径贯穿 §3.2 归一化行、§4 测试、§5 #4/#7/#10 提交，FG1/FG2 实证清零 |
+| C11 | 前半不适用 | 非降级交付（词典 387 词达标、enforce 已上线，B2/A7a 留痕实证）；C1–C10 全过 → 评审通过，发布经用户当次授权（§8 开放事项 4） |
 
