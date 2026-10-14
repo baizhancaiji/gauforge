@@ -115,6 +115,16 @@ route 当前为前端硬编码默认值（`ComboFlowDialog.vue:23`
 > （「# %Mem 值」注释）；处置原则同上（仅改写形态、不改语义）。
 > 另注：`blocks.py:134`/`candidates.py:327` 的 `"NProcShared"`/`"Mem"` 系
 > missing 指令名载荷值（#8 定案前端小写归一）、非违反处，维持原样。
+>
+> **R-8 补录（2026-10-14 批次 F2 实施）**：前端表外违反 8 处随修复同批
+> 小写化——`QueueEditorModal.vue:18-19`（docstring `%OldChk` 精确形态与
+> `%Chk` 续用形态）、`:33`（removeOldChkTaskRef docstring）、`:100`
+> （initTarget 注释）、`:131`（linkTitle UI title 文案）、`:201`
+> （**运行值**：persistLinkChanges 生成行 `%OldChk=@task:` →
+> `%oldchk=@task:`）、`:492`（成员行勾选注释）、`BlockEditor.vue:476`
+> （样式注释 `%Chk=`）；解析/移除正则（:26/:36）与 loadLinkStates 初始
+> 化正则（:164）均带 `i` 标志大小写不敏感，生成行切小写对存量内容安全。
+> 处置原则同上（仅改写形态、不改语义）。
 
 ## 2. 任务分解（WBS）
 
@@ -577,7 +587,8 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   误捕〔加技术词守卫〕）
 
 - 批次 / 条目：A1–A24（C 批次，2026-10-14 浏览器视觉实测，playwright MCP；
-  当前 mode=enforce——A7a 执行、A7b 不适用、A24 属 F2 #8 收口范围待补）
+  当前 mode=enforce——A7a 执行、A7b 不适用；A24 属 F2 #8 收口范围、
+  已随 FG2 走查补录通过）
 - 前置：WSL2 真机；后端 v3.1.0-19-g1be6c461（uv run python -m web.src.main，
   127.0.0.1:8300）；前端本地构建（npm run build 产物经 FastAPI 托管）；
   种子候选 16 个（scripts/seed_manual_workspace.py 灌入，组合流候选
@@ -621,8 +632,11 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   混合大小写 route 保存后回显归一化小写 +「已归一化」提示（A22-
   normalized-notice.png）；A23 通过——link0 三字段清空保存 GET 返回
   NULL（curl 实测方案 3），ComboFlowDialog 选 NULL 方案回填无 link0 行
-  （方案 1 实测）；A24 待 F2（候选提交确认框黄警文案小写化属 §1.1 #8
-  F2 #10 提交范围，随 F2 走查补录）
+  （方案 1 实测）；A24 通过（F2 批次 2026-10-14 浏览器实测补录：
+  #109 CVL_orig.gjf 双缺黄警「⚠ %nprocshared、%mem 未声明 · 执行时将按
+  默认值补齐（%nprocshared=4、%mem=8GB）」、#133 etoh.gjf 单缺黄警
+  「⚠ %mem 未声明 · 执行时将按默认值补齐（%mem=8GB）」，DOM 逐字提取
+  与后端注入行形态一致、零大写残留，详痕见 FG2 条目）
 - 留痕：截图 docs/plans/assets/m4-combo-deploy/（A19-settings-entry.png、
   A1-modal-layout-v3.png、A15-A16-A17-final.png、A7a-keyword-blocked-
   exempt-button.png、A22-normalized-notice.png、A3-default-migrated-
@@ -762,6 +776,44 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   148 `%OldChk=@exec:` → `%oldchk=@exec:`；materialize.py:101
   `return head + sep + dep_name` → `return head.casefold() + sep +
   dep_name`
+- 缺陷：无
+
+- 批次 / 条目：FG2（F2 批次，2026-10-14，§1.1 前端逐条 git diff 核对 +
+  A24 浏览器实测）
+- 前置：F1+C+B 已收口（d9504f8f）；种子候选 #109 CVL_orig.gjf
+  （missing=NProcShared+Mem）与 #133 etoh.gjf（missing=Mem，计划指定
+  种子）；后端运行级默认 link0_default_nproc=4 / link0_default_mem_gb=8
+- 步骤：#6/#7/#8 逐处修改后 git diff 核对；grep
+  `%[A-Z][A-Za-z]*[=\s（(、]` 复扫 web/frontend/src；前端四闸门
+  （npm run build、scripts/audit_frontend_offline.sh、
+  scripts/check_tokens.py、scripts/check_contrast.py）；浏览器实测 A24
+  （127.0.0.1:8300 构建产物经 FastAPI 托管，DOM 逐字提取黄警文案）
+- 预期：§1.1 前端条目全部清零；黄警文案形态与后端注入行一致；四闸门过
+- 实测：**通过**。#6 ComboFlowDialog.vue：DEFAULT_ROUTE → FALLBACK_ROUTE
+  小写常量 + initialRoute ref（watch 中取 GET /combo-templates 响应
+  initial.route，applyTemplate 回落分支与清空恢复共用——单值来源对齐
+  COMBO_TEMPLATE_INITIAL_ROUTE）；#7 模板 placeholder `%nprocshared=4`；
+  #8 CandidatesView.vue submitWarnText：head 项 `%${m.toLowerCase()}`
+  归一、缺省补齐行 `%nprocshared=${nproc}`/`%mem=${mem}GB` 无空格；
+  R-8 表外补录 8 处（QueueEditorModal.vue 7 处含生成行 :201
+  `%OldChk=@task:` → `%oldchk=@task:`、BlockEditor.vue:476）随修复同批
+  落库（§1.1 表后补录注）。复扫：web/frontend/src 零大写残留（missing
+  载荷值 "NProcShared"/"Mem" 为后端契约、前端归一后展示，非残留）。
+  四闸门：build 零错误（vue-tsc + vite 5.04s）、audit 零外链资源引用、
+  tokens 92+31 逐变量一致、contrast 全组合 ≥4.5:1。A24 实测：#109 黄警
+  「⚠ %nprocshared、%mem 未声明 · 执行时将按默认值补齐（%nprocshared=4、
+  %mem=8GB）」、#133 黄警「⚠ %mem 未声明 · 执行时将按默认值补齐
+  （%mem=8GB）」——逐字一致、零大写残留
+- 留痕：git diff 摘录（feat(frontend) 提交 d5c6ef2a，4 文件 +26/-19）——
+  ComboFlowDialog.vue:26 `const FALLBACK_ROUTE = "#p b3lyp/6-31g(d) opt
+  freq"`、:45 `const initialRoute = ref(FALLBACK_ROUTE)`、:89
+  `initialRoute.value = tplRes.data?.initial?.route ?? FALLBACK_ROUTE`、
+  :61 `route.value = initialRoute.value`；CandidatesView.vue
+  submitWarnText `parts.push(\`%nprocshared=${submitDefaults.value.nproc}\`)`
+  / `parts.push(\`%mem=${submitDefaults.value.mem}GB\`)` /
+  `submitMissing.value.map((m) => \`%${m.toLowerCase()}\`)`；
+  QueueEditorModal.vue:201 `lines.push(\`%oldchk=@task:${prevId}\`)`；
+  BlockEditor.vue:476 `%Chk=` → `%chk=`
 - 缺陷：无
 
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
