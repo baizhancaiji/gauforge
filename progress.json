@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-14T23:59+08:00",
+ "updated": "2026-10-14T17:33+08:00",
  "latest_released_version": "3.1.0",
  "unreleased": [
   {
@@ -195,11 +195,25 @@
    "summary": "development.md 隔离冒烟实例新增重启纪律：路由表/迁移启动时固化而静态文件实时读盘，「新前端+旧后端」错位实证，测试实例拉起时建议同步重启后端",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "frontend",
+   "summary": "排序下拉默认项去掉括注内部语义（回退置前不持久），仅保留用户可感知形态「默认 · 时间新→旧」",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "frontend",
+   "summary": "顶栏灯排「排队」计数剔除在跑成员（在跑不追溯下 running 成员仍驻待执行席位，原按席位全量计数与「在跑」灯重复计同一实体）；仅改灯排派生逻辑，待执行快照与席位语义不变",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
-  "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B/C/D/F1/F2 完成，待 E 验收发布收口",
-  "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）；B1/B2 留痕与 §8.1 具名清单回填随 docs(plans) 提交落；后续依赖序：C（前端，依赖 B）∥D（crest/xtb 部署）∥F1→F2，E 验收发布（#6 条件提交无需执行——词典已达标）。2026-10-14 批次 C/D 开工：C=①ComboTemplatesModal→②SettingsView 入口→③ComboFlowDialog 下拉回填，附附录 A 浏览器视觉实测（playwright）；D=①上游资产核验→②setup_deps.sh→③打包接线→④deployment.md→⑤真机走查 D1–D5；2026-10-14 批次 C 收口：①②③实现+四闸门+附录 A 走查 A1–A23 全过（A7a enforce 执行、A24 待 F2）+5 提交（136b7663/299b2ec1/f81477a6/f23aa417/e6884c24）。批次 D 实现+测试落库（setup_deps.sh/打包接线/deployment.md §6），真机走查 D1 闭环与 D2/D3 已实测。2026-10-14 批次 D 收口：①上游资产核验（crest v3.0.2 资产 8764012 字节对照、xtb v6.7.1 官方 sha256 对照、许可 GPL/LGPL 无再分发冲突）→②③setup_deps.sh+打包接线（2129e931，走查抓出 crest/crest 与 xtb-dist 顶层目录布局缺陷当场修复+5 沙箱用例）→④deployment.md §6（47e0c071）→⑤真机走查 D1–D5 全过（503→200 闭环 workflow KB7N32、终止处置执行 52 stop、D5 打包断言），附录 B 留痕随 docs(plans) 提交落；b5dd42f5 随行登记。2026-10-14 批次 F1/F2 开工：F1=§1.1 后端清单逐处修正（#1–#5 运行值 + #9 后端文案/注释，表外违反处按 R-8 补录）→受影响断言刷新→全量回归+闸门；F2=§1.1 前端 #6–#8→A24 走查→前端四闸门，依赖 F1+C+B 已就绪，E 验收发布随后收口。2026-10-14 批次 F2 收口：§1.1 前端 #6 默认 route 单值来源（initialRoute 经 GET /combo-templates，FALLBACK_ROUTE 小写兜底）/#7 placeholder %nprocshared=4/#8 黄警文案小写归一（%nprocshared=4、%mem=8GB 无空格）；R-8 表外补录 QueueEditorModal.vue（含生成行 %OldChk→%oldchk，解析正则已带 i 标志存量安全）与 BlockEditor.vue:476 共 8 处文案注释 + 2 处运行值；前端四闸门全过（build 零错误/audit 零外链/tokens 92+31 一致/contrast 全组合 ≥4.5:1）；A24 走查 PASS（#109 双缺黄警 %nprocshared、%mem 逐字一致、#133 %mem 一致、零大写残留）；提交序列 feat(frontend) d5c6ef2a → chore(progress) → docs(plans) A24+FG2 回填。2026-10-14 插波修复：待执行页展开队列席位首帧余席不挤开（部署机 3.0.1 反馈）——根因为宿主 watch(expanded) 的 nextTick 重测先于子表组件自量测、席位行高度缺成员列表，修复为子表量测落定 emit layout、宿主 nextTick 重测前缀和；隔离实例浏览器实测复现（重叠 -102px）并复验（展开/收起/三席同开/成员移除后间距均 ≈8px），四闸门全过。"
+  "task": "组合流模板配置与 crest/xtb 部署插波（m4-combo-template-deploy-plan，目标版本 3.2.0）——批次 A/B/C/D/F1/F2 完成，批次 E 验收发布进行中",
+  "note": "2026-10-14 批次 A/B 收口：A=契约 diff（提交 1f09471b，词表三 11 项+四 schema+两端点+AG1 留痕）；B=①四项核验复核通过（B1）→②③ v7 迁移+repo（f6165113）→④词典扩充 97→387（07da49c0，判据①②③全过、B2 留痕）→契约补录 is_default（cd529130）→⑤⑥⑦ validate_and_normalize+端点+29 用例矩阵（e8b5d4ca，§3.2 逐 reason 全绿、默认 enforce）。批次 C 收口：①②③实现+四闸门+附录 A 走查 A1–A23 全过+5 提交。批次 D 收口：上游资产核验→setup_deps.sh+打包接线（2129e931）→deployment.md §6（47e0c071）→真机走查 D1–D5 全过。批次 F1/F2 收口：§1.1 清单逐处修正+R-8 表外补录+断言刷新，A24 走查 PASS，前端四闸门全过。独立审查四轮整改闭环（RG1–RG6，P0–P2 全清）。插波外修复两批：待执行页展开席位首帧量测时序（部署机 3.0.1 反馈）、错误响应中文收口与展示层内部枚举清理。2026-10-14 批次 E 开工：E 开工前收口遗留两修复（排序下拉默认项去内部语义括注、顶栏灯排「排队」计数剔除在跑成员——在跑不追溯语义下 running 成员仍驻待执行席位，原全量计数与「在跑」灯重复计同一实体），前端四闸门与治理脚本全过；随后 §6 闸门终跑→附录 C 评审清单复核→3.2.0 冻结（#6 条件提交无需执行——词典已达标、enforce 已上线）。"
  },
  "next_steps": [
   "上传 v3.0.2 Release 附件：安装并认证 gh CLI 后执行 scripts/package_release.sh v3.0.2 --upload",

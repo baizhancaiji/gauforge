@@ -40,6 +40,8 @@
 - 【frontend】错误展示去除 reason 枚举原文透出：组合流模板弹窗 422 清单仅显示自足中文 message（reason 保留豁免逻辑判定），设置页保存失败字段级 reason 映射中文标签（unknown_setting/readonly/range/type）
 - 【frontend】全小写收口补遗（m4-combo 计划 R-8 走查补录）：候选详情 LINK 0 缺失黄警行 toLowerCase 归一展示（原样透出载荷大写 %NProcShared/%Mem），后端 missing 载荷维持定案原样，计划文档 R-8 同步补录
 - 【frontend】历史详情抽屉 chk 保全行去语义重复：location 恒为 protected 与「已保全」重复，去掉「（protected/）」括注与「— protected」后缀，仅保留「已保全/未保全」
+- 【frontend】排序下拉默认项去掉括注内部语义（回退置前不持久），仅保留用户可感知形态「默认 · 时间新→旧」
+- 【frontend】顶栏灯排「排队」计数剔除在跑成员（在跑不追溯下 running 成员仍驻待执行席位，原按席位全量计数与「在跑」灯重复计同一实体）；仅改灯排派生逻辑，待执行快照与席位语义不变
 
 ## v3.1.0（2026-10-13T00:42+0800 发布，minor）
 
