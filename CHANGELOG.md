@@ -20,6 +20,7 @@
 - 【docs】拆分 development.md §6 为纯界面冒烟与人工测试实例两口径，新增引擎开+G16WEB_HQ_BIN 钉死仓库内核的拉起命令与 PATH 旧版 hq 抢占踩坑注记
 - 【api】补录组合流模板更新契约：ComboTemplateUpdate 增 is_default（radio 语义）并全字段可选化（缺省/空值恢复初始值或置 NULL 的全量替换表达），计划 §3.2/§3.3 同步补录键值形拼写口径
 - 【web】Link0/route 全小写收口（后端，F1）：派发缺省注入行、续跑注入行与响应行、物化改写前缀统一小写形态，错误消息与注释引用同步归一并按 R-8 补录表外违反 5 处，受影响测试断言随行刷新
+- 【frontend】Link0/route 全小写收口（前端，F2）：组合流默认 route 改经 GET /combo-templates 响应 initial.route 单值来源（后端 COMBO_TEMPLATE_INITIAL_ROUTE），候选提交黄警文案指令名归一小写且缺省补齐行与注入形态对齐，队列接续勾选生成行切小写，注释与 UI 文案同步并按 R-8 补录表外违反
 
 ## v3.1.0（2026-10-13T00:42+0800 发布，minor）
 
