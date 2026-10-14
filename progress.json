@@ -99,6 +99,13 @@
       "summary": "修正契约模型再生字节幂等：gen_models.py 传 --disable-timestamp 去除 datamodel-codegen 时间戳头，再生产物任意时刻重复再生字节一致",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "frontend",
+      "summary": "修正组合流模板拼写豁免粒度：保存改两段式按 token 粒度豁免（先直存、422 词典外 token 全在会话豁免集时自动重试），修复已豁免他 token 后新词典外 token 被整批静默放行的缺陷；补模板弹窗读取失败错误态与组合流对话框重开重置",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
