@@ -537,3 +537,18 @@ def test_setup_deps_xtb_optional_and_checksum(tmp_path):
     assert "自定义安装路径" in proc.stdout and "crest_root" in proc.stdout
     assert str(dest / "crest-3.0.2") in proc.stdout
     assert str(dest / "xtb-6.7.1") in proc.stdout
+
+
+def test_setup_deps_usage_guards():
+    """参数防线：--dest 缺值 → 用法提示 exit 2（非 set -u 裸报）；
+    --help 仅输出头注用法、不混入代码行。"""
+    script = SCRIPTS_DIR / "setup_deps.sh"
+    proc = subprocess.run(["bash", str(script), "--dest"],
+                          capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 2
+    assert "用法" in proc.stderr
+    help_proc = subprocess.run(["bash", str(script), "--help"],
+                               capture_output=True, text=True, timeout=30)
+    assert help_proc.returncode == 0
+    assert "--dest" in help_proc.stdout
+    assert "set -euo pipefail" not in help_proc.stdout

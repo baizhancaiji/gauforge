@@ -41,7 +41,12 @@ want_xtb=0
 force=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --dest) dest="$2"; shift 2 ;;
+    --dest)
+      if [ $# -lt 2 ]; then
+        echo "用法: --dest DIR（缺安装根目录）" >&2
+        exit 2
+      fi
+      dest="$2"; shift 2 ;;
     --xtb) want_xtb=1; shift ;;
     --force) force=1; shift ;;
     --proxy)
@@ -50,7 +55,7 @@ while [ $# -gt 0 ]; do
       else proxy="$DEFAULT_PROXY"; fi
       ;;
     --no-proxy) proxy=""; shift ;;
-    -h|--help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "未知参数: $1（可用 --dest DIR / --xtb / --proxy [URL] / --no-proxy / --force）" >&2; exit 2 ;;
   esac
 done
@@ -112,7 +117,8 @@ install_crest() {
     mv "$crest_dir/.crest-inner"/* "$crest_dir/"
     rmdir "$crest_dir/.crest-inner"
   fi
-  chmod +x "$crest_dir"/* 2>/dev/null || true
+  # 仅二进制加执行位（目录内附带的 LICENSE 等不需要）
+  chmod +x "$crest_bin" 2>/dev/null || true
   rm -rf "$tmp"
   trap - EXIT
   smoke "$crest_bin" "crest" || {
