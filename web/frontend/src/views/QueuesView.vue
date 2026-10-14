@@ -7,7 +7,8 @@
  * 「重新提交」、新鲜队列「提交」，roadmap §2.1 明确区分；响应 normalized=true
  * 显「已自动规范化」中性注记）、删除（二次确认；executing 不渲染——后端 409）。
  * 顶部控制行（2026-09-27 验收修正）：状态筛选（四态+全部，中文措辞）与排序
- * （默认=回退置顶·创建时间新→旧；名称 A→Z/Z→A），/queues 全量返回 → 前端
+ * （默认=时间新→旧，键=回退时刻??创建时间——回退置前不持久；名称
+ * A→Z/Z→A），/queues 全量返回 → 前端
  * 过滤/排序/切片。
  * 回退标记与次数显著标识；失败成员与各自归因列表（last_failure.members 驱动，
  * submitted 队列从待执行席位交叉文件名/标题）；失败回退队列（unsubmitted 且
@@ -49,7 +50,7 @@ const loading = ref(false);
 const expanded = ref(<Record<string, boolean>>{});
 
 // ---------- 状态筛选与排序（2026-09-27 验收修正：与历史页 controls 同款；
-// /queues 全量返回 → 纯前端过滤/排序，默认序=回退置顶·创建时间倒序） ----------
+// /queues 全量返回 → 纯前端过滤/排序，默认序=时间新→旧（回退置前不持久） ----------
 type QueueStateFilter = "all" | "unsubmitted" | "submitted" | "executing" | "completed";
 type QueueSortKey = "default" | "name_asc" | "name_desc";
 
@@ -57,11 +58,6 @@ const stateFilter = ref<QueueStateFilter>("all");
 // 排序规则经视图偏好域持久化（键 queues.sort），重启/更新/断联后不回默认
 const sortKey = useSortPref<QueueSortKey>(
   "queues.sort", "default", ["default", "name_asc", "name_desc"]);
-
-/** 回退队列判定（与提交动作文案 submitLabel 同口径：标记或次数任一）。 */
-function isRolledBack(q: Queue): boolean {
-  return q.rollback_flag || (q.rollback_count ?? 0) > 0;
-}
 
 const filtered = computed(() => {
   const rows =
@@ -74,12 +70,14 @@ const filtered = computed(() => {
   } else if (sortKey.value === "name_desc") {
     sorted.sort((a, b) => b.name.localeCompare(a.name, "zh-Hans-CN"));
   } else {
-    // 默认（openapi /candidates 同规则映射到队列）：回退置顶，组内创建时间
-    // 倒序（created_at 恒定时区 ISO，字典序即时序），出错队列一眼可见
-    sorted.sort((a, b) => {
-      const g = Number(isRolledBack(b)) - Number(isRolledBack(a));
-      return g !== 0 ? g : b.created_at.localeCompare(a.created_at);
-    });
+    // 默认（openapi QueueSortKey default）：时间倒序，键=回退时刻??
+    // 创建时间（ISO 带时区，字典序即时序）——回退发生时该队列以其
+    // rolled_back_at 跃居最前（晚于一切既有 created_at），其后新队列
+    // 按创建时间自然排上，「置前」不持久；回退标记/次数仅作徽标与
+    // 提交文案，不参与排序
+    sorted.sort((a, b) =>
+      (b.rolled_back_at ?? b.created_at).localeCompare(
+        a.rolled_back_at ?? a.created_at));
   }
   return sorted;
 });
@@ -334,7 +332,7 @@ async function confirmDelete() {
       <label class="mono filter">
         <span>排序</span>
         <select v-model="sortKey" @change="resetPage">
-          <option value="default">默认 · 回退置顶·创建时间新→旧</option>
+          <option value="default">默认 · 时间新→旧（回退置前不持久）</option>
           <option value="name_asc">名称 · A→Z</option>
           <option value="name_desc">名称 · Z→A</option>
         </select>

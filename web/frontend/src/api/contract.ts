@@ -1101,6 +1101,11 @@ export interface components {
              * @description T；补充字段提案
              */
             updated_at?: string;
+            /**
+             * Format: date-time
+             * @description T；最近一次失败回退时刻（持久不清除，队列页默认序「回退置前」键）；null=未发生过回退
+             */
+            rolled_back_at: string | null;
         };
         /** @description C；Link0 声明与补齐标记（roadmap §2.6）；defaulted=true 表示运行级缺省值补齐 */
         Resources: {
