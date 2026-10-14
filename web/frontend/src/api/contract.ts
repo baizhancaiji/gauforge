@@ -967,7 +967,7 @@ export interface components {
          */
         HistorySort: "submitted_desc" | "finished_desc" | "finished_asc" | "filename_asc" | "filename_desc";
         /**
-         * @description 队列页排序：default 默认序（回退置顶、组内创建时间倒序）； name_asc / name_desc 队列名称 zh-Hans-CN 字典序升/降序。
+         * @description 队列页排序：default 默认序（时间倒序，键=rolled_back_at ?? created_at ——回退发生时该队列以回退时刻跃居最前，其后新队列按创建时间自然排上， 置前不持久）；name_asc / name_desc 队列名称 zh-Hans-CN 字典序升/降序。
          * @enum {string}
          */
         QueueSortKey: "default" | "name_asc" | "name_desc";
@@ -1105,7 +1105,7 @@ export interface components {
              * Format: date-time
              * @description T；最近一次失败回退时刻（持久不清除，队列页默认序「回退置前」键）；null=未发生过回退
              */
-            rolled_back_at: string | null;
+            rolled_back_at?: string | null;
         };
         /** @description C；Link0 声明与补齐标记（roadmap §2.6）；defaulted=true 表示运行级缺省值补齐 */
         Resources: {
