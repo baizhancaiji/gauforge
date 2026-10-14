@@ -332,7 +332,7 @@ async function confirmDelete() {
       <label class="mono filter">
         <span>排序</span>
         <select v-model="sortKey" @change="resetPage">
-          <option value="default">默认 · 时间新→旧（回退置前不持久）</option>
+          <option value="default">默认 · 时间新→旧</option>
           <option value="name_asc">名称 · A→Z</option>
           <option value="name_desc">名称 · Z→A</option>
         </select>
