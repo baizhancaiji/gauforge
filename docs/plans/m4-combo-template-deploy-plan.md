@@ -108,6 +108,13 @@ route 当前为前端硬编码默认值（`ComboFlowDialog.vue:23`
 > 上述行再生后 contract.ts JSDoc（原 611/1223 等处）随产物一并归一。
 > route 关键词片段引用（Opt=Restart、Guess=Read）非 Link0 指令名、不在
 > §0.3 定形集内，维持原样。
+>
+> **R-8 补录（2026-10-14 批次 F1 实施）**：表外违反 5 处随修复同批小写化——
+> `workspace.py:5`（docstring「%Mem 已声明时」）、`:35`（「G16 %Mem 值」）、
+> `:51`（「%CPU proc-list」）、`:77`（「仅 %CPU 时」）、`candidates.py:40`
+> （「# %Mem 值」注释）；处置原则同上（仅改写形态、不改语义）。
+> 另注：`blocks.py:134`/`candidates.py:327` 的 `"NProcShared"`/`"Mem"` 系
+> missing 指令名载荷值（#8 定案前端小写归一）、非违反处，维持原样。
 
 ## 2. 任务分解（WBS）
 
@@ -724,6 +731,37 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   命中 `gauforge/setup_deps.sh` 与 `gauforge/docs/references/
   deployment.md`；验证包版本 v3.1.0-29-gb5dd42f5
 - 留痕：tar -tzf 输出摘录
+- 缺陷：无
+
+- 批次 / 条目：FG1（F1 批次，2026-10-14，§1.1 后端逐条 git diff 核对）
+- 前置：工作区干净（d3718360 开工登记后）；F1 与 B/C 并行线无涉
+- 步骤：逐条修改后 `git diff` 核对；全库 grep `%[A-Z]` 复扫
+  （web/src、crates/、docs/api/openapi.yaml）
+- 预期：§1.1 后端条目全部清零（#1–#5 运行值 + #9 后端文案/注释；不含
+  models.py:361/393/663/666 再生面——已随批次 A 落）；既有派发/续跑/
+  物化链回归全绿
+- 实测：**通过**。#1 workspace.py:111 → `%nprocshared=`、#2 :115 →
+  `%mem=`、#3/#4 resume.py:146/148 → `%oldchk=@exec:`、#5
+  materialize._rewrite_line 前缀 casefold（改写行归一 `%chk=`/`%oldchk=`，
+  无引用行前缀原样——test_materialize `%Chk=own.chk` 断言锁定）；#9
+  后端：config.py:99/103、candidates.py:233/236/239/285、resume.py:16/
+  21/27、dispatcher.py:12、gateway.py:73、workspace.py:4/74/76、
+  blocks.py:128-132、finalize.py:5/6/77、dependencies.py:3/6、
+  reconcile.py:11 全部小写归一；**R-8 表外补录 5 处**（workspace.py:5/
+  35/51/77、candidates.py:40）随修复同批落库（§1.1 表后补录注）。复扫：
+  web/src 仅余 strftime `%Y%m%d` 与文法占位 `%Key=` 两非违反项、crates/
+  与 openapi.yaml 零命中；`blocks.py:134`/`candidates.py:327` 的
+  "NProcShared"/"Mem" 系 missing 指令名载荷值（#8 定案前端小写归一）、
+  维持原样。测试刷新：test_dispatch_engine（注入行 4 断言）、test_resume
+  （注入行 3 断言）、test_materialize（改写行 3 断言）随行小写化，输入侧
+  大写夹具保留覆盖大小写不敏感解析；全量回归 736 passed，e2e 3 例真实
+  运行（hq 产物 17,957,408 字节在位，§6 必检项满足）
+- 留痕：git diff 摘录（feat(web) 提交 b953de99，14 文件 +60/-59）——
+  workspace.py:111 `-f"%NProcShared={declared}"` →
+  `+f"%nprocshared={declared}"`、:115 `%Mem=` → `%mem=`；resume.py:146/
+  148 `%OldChk=@exec:` → `%oldchk=@exec:`；materialize.py:101
+  `return head + sep + dep_name` → `return head.casefold() + sep +
+  dep_name`
 - 缺陷：无
 
 ## 附录 C：评审清单（批次闸门判据，逐条勾选方可通过评审;已通过评审,文档定稿,进入待执行态）
