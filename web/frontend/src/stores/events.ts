@@ -50,9 +50,12 @@ export const useEventsStore = defineStore("events", () => {
 
   // 灯排（§3/§4.1）：派生 computed——直接从 executions/pending/stalled 计算，
   // 任何路径塞卡/撤卡/心跳都自动同步，不再依赖手改 reactive + syncLamps()。
+  // 排队灯=席位内未在跑成员数：在跑不追溯语义下 running 成员仍驻席位，
+  // 此处剔除以免与「在跑」灯对同一实体重复计数（待执行快照本身不变）。
   const lamps = computed(() => ({
     running: executions.size,
-    queued: pending.value?.seats.length ?? 0,
+    queued: (pending.value?.seats ?? []).reduce(
+      (n, s) => n + s.members.filter((m) => m.state !== "running").length, 0),
     alarm: stalled.size,
   }));
 
