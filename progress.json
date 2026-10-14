@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T02:46+08:00",
+  "updated": "2026-10-14T11:30+08:00",
   "latest_released_version": "3.1.0",
   "unreleased": [
     {
@@ -69,6 +69,13 @@
       "type": "added",
       "scope": "scripts",
       "summary": "新增 crest/xtb 依赖部署脚本：幂等冒烟安装与半成品清理重装、上游 tar 顶层目录布局归一、代理通道同 update.sh 约定、xtb 官方校验和对照，部署包接线纳入脚本与 deployment.md 单文件",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "Link0/route 全小写收口（后端，F1）：派发缺省注入行、续跑注入行与响应行、物化改写前缀统一小写形态，错误消息与注释引用同步归一并按 R-8 补录表外违反 5 处，受影响测试断言随行刷新",
       "breaking": false,
       "migration": null
     }
