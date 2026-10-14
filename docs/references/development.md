@@ -129,6 +129,27 @@ uv run python scripts/validate_progress.py     # 进度两文件校验
 临时实例。端口无法用环境变量覆盖（listen_port 属运行级设置），临时实例以内联
 uvicorn 指定；用完 `kill` 该进程即可，临时工作区目录可随时整体删除。
 
+**重启纪律（2026-10-14 实测踩坑沉淀）**：后端进程的**路由表与库迁移在启动时
+固化于内存**，而前端静态文件挂载是按请求实时读磁盘——只重建前端、不重启
+后端，实例即呈「新前端 + 旧后端」错位：新前端调用新增路由命中 404、新迁移
+未执行，表现为前端功能报错（典型：弹窗报「模板读取失败」一类读取失败）。
+因此**测试实例拉起时建议同步进行后端重启**：凡 `web/src` 或 `web/frontend`
+构建产物有更新，先停止旧进程、再按原命令重新拉起；仅改前端且后端零改动时
+dist 即时生效，可豁免重启。
+
+后端**关闭 + 重启**指令（以 §6.2 人工测试实例 ：8398 为例；§6.1 冒烟实例
+改 `G16WEB_HOME=/tmp/g16web-dev G16WEB_ENGINE=0`、端口 8399、去掉
+`G16WEB_HQ_BIN` 与 nohup 后缀即可）：
+
+```bash
+# 关闭后端（按端口定位 pid 后 kill）
+PID=$(ss -ltnp | grep ':8398' | grep -oP 'pid=\K[0-9]+' | head -1); kill "$PID"
+
+# 重启后端（关闭后原命令拉起；G16WEB_HQ_BIN 钉内核的理由见 §6.2）
+G16WEB_HOME=/tmp/g16web-manual G16WEB_HQ_BIN="$PWD/target/release/hq" \
+  nohup uv run python -c "from web.src.main import app; import uvicorn; uvicorn.run(app, host='127.0.0.1', port=8398)" >>/tmp/g16web-manual.log 2>&1 &
+```
+
 ### 6.1 纯界面/契约冒烟（关引擎）
 
 ```bash
