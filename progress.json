@@ -1,10 +1,10 @@
 {
- "updated": "2026-10-14T20:02+0800",
+ "updated": "2026-10-14T21:18+0800",
  "latest_released_version": "3.2.0",
  "unreleased": [],
  "in_progress": null,
  "next_steps": [
-  "上传 Release 附件：安装并认证 gh CLI 后依次执行 scripts/package_release.sh v3.2.0 --upload、v3.1.0、v3.0.2（tags 均已本地落位）",
+  "上传 Release 附件（用户手动执行）：三版部署包已构建于 target/deploy/v3.2.0、v3.1.0、v3.0.2（各含版本包+固定名包 gauforge-deploy-linux-x64.tar.gz 及各自 sha256 与 VERSION），经 GitHub Web 逐版上传至对应 Release",
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
   "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
  ],
@@ -12,5 +12,5 @@
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "v3.2.0 已冻结（m4-combo 插波收口）：组合流精修模板配置（契约+存储+校验服务+前端弹窗与方案选择，enforce 拼写拦截）、crest/xtb 部署链（setup_deps.sh/打包接线/deployment.md §6）、Link0/route 全小写收口（后端注入行+前端文案）、契约模型再生字节幂等与拼写豁免按 token 粒度等审查整改随版发布；附录 A1–A24/D1–D5/E1–E5 走查留痕与四轮独立审查整改闭环（RG1–RG6）；tag v3.2.0 本地落位、Release 附件待上传。v3.1.0 已冻结（M4 收口，37 条变更随版发布，tag 本地落位、Release 附件待上传）；v3.0.2 已发布（更新域事故链四项修复与发布流程收口，附件待上传）；M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）。"
+ "context": "v3.2.0 已冻结（m4-combo 插波收口）：组合流精修模板配置（契约+存储+校验服务+前端弹窗与方案选择，enforce 拼写拦截）、crest/xtb 部署链（setup_deps.sh/打包接线/deployment.md §6）、Link0/route 全小写收口（后端注入行+前端文案）、契约模型再生字节幂等与拼写豁免按 token 粒度等审查整改随版发布；附录 A1–A24/D1–D5/E1–E5 走查留痕与四轮独立审查整改闭环（RG1–RG6）；tag v3.2.0 已推送远端、三版部署包已构建待手动上传附件。v3.1.0 已冻结（M4 收口，37 条变更随版发布，tag 已推送远端、部署包已构建待手动上传附件）；v3.0.2 已发布（更新域事故链四项修复与发布流程收口，附件待上传）；M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）。"
 }
