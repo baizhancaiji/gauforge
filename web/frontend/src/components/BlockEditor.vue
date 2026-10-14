@@ -473,7 +473,7 @@ async function saveSectionDelayed(section: string) {
 .dim {
   color: var(--text-secondary);
 }
-/* Link0 逐行：指令名弱化（样板语义 %Chk= dim + 值亮） */
+/* Link0 逐行：指令名弱化（样板语义 %chk= dim + 值亮） */
 .l0-line {
   display: block;
 }

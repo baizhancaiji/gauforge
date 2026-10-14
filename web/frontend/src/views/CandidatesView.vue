@@ -240,15 +240,16 @@ async function openSubmit(c: Candidate) {
   };
 }
 
-/** 黄警文案：缺失项 + 设置面板缺省值（验收路径第 3 步）。
- *  后端 missing 为不带 % 前缀的指令名（如 "NProcShared"、"Mem"）。 */
+/** 黄警文案：缺失项 + 设置面板缺省值（验收路径第 3 步；F2 #8 收口——
+ *  指令名展示一律小写、与后端注入行形态一致；后端 missing 为不带 % 前缀
+ *  的大写指令名（如 "NProcShared"、"Mem"），构造行时归一）。 */
 const submitWarnText = computed(() => {
   const parts: string[] = [];
   if (submitMissing.value.includes("NProcShared") && submitDefaults.value.nproc != null)
-    parts.push(`%NProcShared=${submitDefaults.value.nproc}`);
+    parts.push(`%nprocshared=${submitDefaults.value.nproc}`);
   if (submitMissing.value.includes("Mem") && submitDefaults.value.mem != null)
-    parts.push(`%Mem=${submitDefaults.value.mem} GB`);
-  const head = submitMissing.value.map((m) => `%${m}`).join("、");
+    parts.push(`%mem=${submitDefaults.value.mem}GB`);
+  const head = submitMissing.value.map((m) => `%${m.toLowerCase()}`).join("、");
   return parts.length ? `${head} 未声明 · 执行时将按默认值补齐（${parts.join("、")}）` : `${head} 未声明 · 执行时将按默认值补齐`;
 });
 

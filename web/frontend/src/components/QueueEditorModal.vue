@@ -15,8 +15,8 @@ export interface MemberRow {
 /**
  * Link0 符号引用行解析/改写（m4-plan §4.9 C5「接续前置 chk」勾选的落盘工具）。
  * 解析规则与后端 dependencies.parse_link0_refs 同源：跳过前导空行/!注释后的
- * 连续 % 行，keyword 大小写不敏感；此处仅识别 `%OldChk=@task:<id>` 精确形态
- * （勾选只承载 %OldChk 只读形态，续用形态 `%Chk=@task:id` 无前端生成入口）。
+ * 连续 % 行，keyword 大小写不敏感；此处仅识别 `%oldchk=@task:<id>` 精确形态
+ * （勾选只承载 %oldchk 只读形态，续用形态 `%chk=@task:id` 无前端生成入口）。
  */
 export function oldChkTaskRefTargets(lines: string[]): number[] {
   const targets: number[] = [];
@@ -30,7 +30,7 @@ export function oldChkTaskRefTargets(lines: string[]): number[] {
   return targets;
 }
 
-/** 移除指向 target 的 `%OldChk=@task:<target>` 行（精确撤销勾选写入）。 */
+/** 移除指向 target 的 `%oldchk=@task:<target>` 行（精确撤销勾选写入）。 */
 export function removeOldChkTaskRef(lines: string[], target: number): string[] {
   return lines.filter(
     (l) => !new RegExp(`^%oldchk\\s*=\\s*@task:${target}$`, "i").exec(l.trim()),
@@ -97,7 +97,7 @@ const done = ref(false);
 // ---------- 依赖勾选（m4-plan §4.9 C5「接续前置 chk」） ----------
 /** per-member 勾选状态：打开对话框时拉取成员预览初始化。
  *  original=写盘前基线（DAG 校验失败回滚用）；initTarget=打开时已含的
- *  %OldChk=@task:<前驱> 引用目标（按加载时顺序判定，重排不重算——
+ *  %oldchk=@task:<前驱> 引用目标（按加载时顺序判定，重排不重算——
  *  重排不改既有 id 引用，仅勾选动作过的成员按保存时位置写入）；
  *  dirty=本会话勾选动作标记（uncheck→重排→recheck 等序列以动作为准，
  *  不以「checked 与初值相等」判定——否则重排后复勾会跳过持久化，
@@ -128,7 +128,7 @@ function linkTitle(i: number): string {
   }
   const prev = members.value[i - 1];
   return prev
-    ? `接续前置成员 ${fmtTaskId(prev.id)} 的 chk（写入 %OldChk=@task:${prev.id}，只读接续）`
+    ? `接续前置成员 ${fmtTaskId(prev.id)} 的 chk（写入 %oldchk=@task:${prev.id}，只读接续）`
     : "接续前置 chk";
 }
 
@@ -198,7 +198,7 @@ async function persistLinkChanges(): Promise<void> {
     const prevId = i > 0 ? ids[i - 1] : null;
     let lines = [...st.baseline];
     if (st.initTarget != null) lines = removeOldChkTaskRef(lines, st.initTarget);
-    if (st.checked && prevId != null) lines.push(`%OldChk=@task:${prevId}`);
+    if (st.checked && prevId != null) lines.push(`%oldchk=@task:${prevId}`);
     if (JSON.stringify(lines) === JSON.stringify(st.baseline)) continue;
     const { error: e } = await client.PUT("/candidates/{id}/blocks/{section}", {
       params: { path: { id: m.id, section: "link0" } },
@@ -489,7 +489,7 @@ function tryClose() {
             <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
             <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
             <!-- 接续前置 chk（m4-plan §4.9 C5）：勾选=对前置成员写入
-                 %OldChk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
+                 %oldchk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
                  首成员无前驱不渲染；预览不可达（编辑态成员锁定/解析失败）
                  禁用并提示——不静默：原生勾选视觉态曾掩盖持久化失效；
                  pointerdown.stop 防拖拽误触 -->

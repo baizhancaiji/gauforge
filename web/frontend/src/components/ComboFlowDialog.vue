@@ -20,15 +20,17 @@ type Candidate = components["schemas"]["Candidate"];
 type ConformerRefinementResponse = components["schemas"]["ConformerRefinementResponse"];
 type ComboTemplate = components["schemas"]["ComboTemplate"];
 
-/** 默认精修模板 route（A5 定稿组合流内置模板；用户可改）。 */
-const DEFAULT_ROUTE = "#p B3LYP/6-31G(d) Opt Freq";
+/** 回落 route（仅 /combo-templates 不可达时兜底；常规路径取响应
+ *  initial.route——后端 config COMBO_TEMPLATE_INITIAL_ROUTE 单一来源，
+ *  A5 定稿组合流内置模板，全小写形态；用户可改）。 */
+const FALLBACK_ROUTE = "#p b3lyp/6-31g(d) opt freq";
 
 const props = defineProps<{ open: boolean; candidate: Candidate | null }>();
 const emit = defineEmits<{ close: []; submitted: [resp: ConformerRefinementResponse] }>();
 
 const nproc = ref<number>(2);
 const topN = ref<number>(2);
-const route = ref(DEFAULT_ROUTE);
+const route = ref(FALLBACK_ROUTE);
 const link0 = ref("");
 const busy = ref(false);
 const error = ref<string | null>(null);
@@ -38,6 +40,9 @@ const error = ref<string | null>(null);
  *  下拉默认选中 is_default 条，选择即回填 route 与 link0（保留手改）。 */
 const templates = ref<ComboTemplate[]>([]);
 const templateId = ref<number | null>(null);
+/** route 初始值（GET /combo-templates 响应 initial.route，后端 config
+ *  COMBO_TEMPLATE_INITIAL_ROUTE 单一来源；清空恢复/无方案回落共用）。 */
+const initialRoute = ref(FALLBACK_ROUTE);
 
 /** 结构化 link0 三字段 → 序列化行（全小写、仅非空项，§3.4）。 */
 function serializeLink0(t: ComboTemplate): string {
@@ -48,12 +53,12 @@ function serializeLink0(t: ComboTemplate): string {
   return lines.join("\n");
 }
 
-/** 选中方案回填 route/link0；id=null（模板不可用）回落内置默认。 */
+/** 选中方案回填 route/link0；id=null（模板不可用）回落初始 route。 */
 function applyTemplate(id: number | null) {
   templateId.value = id;
   const t = templates.value.find((x) => x.template_id === id);
   if (!t) {
-    route.value = DEFAULT_ROUTE;
+    route.value = initialRoute.value;
     link0.value = "";
     return;
   }
@@ -81,6 +86,7 @@ watch(
     )?.value;
     nproc.value = typeof nprocDefault === "number" ? nprocDefault : 2;
     templates.value = tplRes.data?.templates ?? [];
+    initialRoute.value = tplRes.data?.initial?.route ?? FALLBACK_ROUTE;
     const def = templates.value.find((t) => t.is_default);
     applyTemplate(def?.template_id ?? null);
   },
@@ -192,7 +198,7 @@ async function submit() {
       <p v-if="routeInvalid" class="cf-error mono" role="alert">精修模板 route 必填</p>
       <label class="cf-field">
         <span class="cf-label mono">精修模板 Link0（可选，每行一条；缺省按运行级补齐）</span>
-        <textarea v-model="link0" rows="2" class="mono" placeholder="%NProcShared=4"></textarea>
+        <textarea v-model="link0" rows="2" class="mono" placeholder="%nprocshared=4"></textarea>
       </label>
 
       <p v-if="error" class="cf-error mono" role="alert">{{ error }}</p>
