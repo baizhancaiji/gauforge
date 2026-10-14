@@ -27,6 +27,8 @@
 - 【web】修正组合流模板默认归属保存语义：is_default 缺省/false 保持该行现有默认归属，修复对默认行全量替换保存后全表零默认的缺陷，补 repo 级与 API 级唯一默认不变式断言
 - 【scripts】修正契约模型再生字节幂等：gen_models.py 传 --disable-timestamp 去除 datamodel-codegen 时间戳头，再生产物任意时刻重复再生字节一致
 - 【frontend】修正组合流模板拼写豁免粒度：保存改两段式按 token 粒度豁免（先直存、422 词典外 token 全在会话豁免集时自动重试），修复已豁免他 token 后新词典外 token 被整批静默放行的缺陷；补模板弹窗读取失败错误态与组合流对话框重开重置
+- 【docs】修正 crest/xtb 离线安装路径的两处 tar 布局说明：crest 顶层为 crest/ 目录嵌套同名二进制须上移、xtb 顶层为 xtb-dist/ 须改名 xtb-6.7.1，此前照文档操作会装出运行级找不到二进制的坏布局
+- 【scripts】crest/xtb 部署脚本参数防线收口：--dest 缺值给用法提示退出码 2、--help 不再混入代码行、执行位仅加在 crest 二进制，补沙箱用例锁定
 
 ## v3.1.0（2026-10-13T00:42+0800 发布，minor）
 
