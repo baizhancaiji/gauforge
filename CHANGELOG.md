@@ -22,6 +22,11 @@
 - 【web】Link0/route 全小写收口（后端，F1）：派发缺省注入行、续跑注入行与响应行、物化改写前缀统一小写形态，错误消息与注释引用同步归一并按 R-8 补录表外违反 5 处，受影响测试断言随行刷新
 - 【frontend】Link0/route 全小写收口（前端，F2）：组合流默认 route 改经 GET /combo-templates 响应 initial.route 单值来源（后端 COMBO_TEMPLATE_INITIAL_ROUTE），候选提交黄警文案指令名归一小写且缺省补齐行与注入形态对齐，队列接续勾选生成行切小写，注释与 UI 文案同步并按 R-8 补录表外违反
 
+### 修复
+
+- 【web】修正组合流模板默认归属保存语义：is_default 缺省/false 保持该行现有默认归属，修复对默认行全量替换保存后全表零默认的缺陷，补 repo 级与 API 级唯一默认不变式断言
+- 【scripts】修正契约模型再生字节幂等：gen_models.py 传 --disable-timestamp 去除 datamodel-codegen 时间戳头，再生产物任意时刻重复再生字节一致
+
 ## v3.1.0（2026-10-13T00:42+0800 发布，minor）
 
 ### 新增
