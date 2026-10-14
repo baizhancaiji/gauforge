@@ -120,6 +120,20 @@
       "summary": "crest/xtb 部署脚本参数防线收口：--dest 缺值给用法提示退出码 2、--help 不再混入代码行、执行位仅加在 crest 二进制，补沙箱用例锁定",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "新增组合流模板配置与 crest/xtb 部署插波实施计划文档（评审定稿）并逐批回填走查留痕：附录 B 条目（词表三对照、四项核验、词典扩充、A1–A24 浏览器走查、D1–D5 部署闭环、F1/F2 全小写逐条核对）与独立审查口径补录",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "docs",
+      "summary": "落盘五份独立审查报告（批次 A-B/C/D/F1F2/E 复核）并补录审查整改走查条目 RG1–RG6：P0–P2 发现全部闭环（is_default 缺省语义、契约再生字节幂等、拼写豁免按 token 粒度两段式、离线安装布局说明、部署脚本参数防线），批次 E 复核为有条件就绪",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": {
