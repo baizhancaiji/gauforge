@@ -1,6 +1,7 @@
 """chk 物化器与 formchk 探针测试（M4 B7，m4-plan §4.4/§5 test_materialize）。
 
-覆盖：物化重写内容断言（%OldChk=@task:X → dep-<X>.chk、零符号残留）、
+覆盖：物化重写内容断言（%oldchk=@task:X → dep-<X>.chk、前缀小写归一、
+零符号残留）、
 上游原件零改动（哈希前后一致）、缺源失败分支（MaterializeError）、
 哈希跳过溯源（当前输入哈希匹配的被沿用执行）、@exec 资产取数
 （protected 优先）、formchk 探针三分支（正常 chk/损坏 chk/空 fchk 段/
@@ -75,8 +76,8 @@ def test_rewrite_oldchk_and_no_leftover(tmp_path):
     run_d.mkdir()
     out = materialize_chk(run_d, text, nproc_default=NPROC_DEFAULT,
                           mem_gb_default=MEM_DEFAULT)
-    assert f"%OldChk=dep-{upstream}.chk" in out
-    assert "%Chk=own.chk" in out  # 续用/只读两行互不干扰
+    assert f"%oldchk=dep-{upstream}.chk" in out
+    assert "%Chk=own.chk" in out  # 续用/只读两行互不干扰（无引用行前缀原样）
     assert (run_d / f"dep-{upstream}.chk").read_bytes() == b"upstream-chk"
     assert not needs_materialization(out)  # 零符号残留
 
@@ -148,7 +149,7 @@ def test_exec_asset_protected_first(tmp_path):
     out_d.mkdir()
     out = materialize_chk(out_d, text)
     assert (out_d / f"dep-exec-{eid}.chk").read_bytes() == b"protected-chk"
-    assert f"%OldChk=dep-exec-{eid}.chk" in out
+    assert f"%oldchk=dep-exec-{eid}.chk" in out
 
 
 # ---------------- formchk 探针三分支 ----------------
@@ -221,7 +222,7 @@ def test_dispatch_materializes_and_disables_retry(tmp_path):
     run_d = Path(dep["cwd"])
     text = (run_d / "input.gjf").read_text(encoding="utf-8")
     assert "@task:" not in text  # 物化后零符号残留
-    assert f"%OldChk=dep-{u}.chk" in text
+    assert f"%oldchk=dep-{u}.chk" in text
     assert (run_d / f"dep-{u}.chk").read_bytes() == b"upstream-chk"
 
 

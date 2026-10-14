@@ -2,8 +2,8 @@
 formchk、保全快照、异常收尸、过期/全量清理。
 
 - formchk：succeeded 后以 <g16_root>/formchk 将 chk 转 .fchk 留在
-  run/<id>/；chk 路径取实际执行副本 Link0 %Chk（相对值相对 run/<id>/），
-  无声明回落 input.chk（g16 无 %Chk 不产 chk，转换失败记日志不阻断）；
+  run/<id>/；chk 路径取实际执行副本 Link0 %chk（相对值相对 run/<id>/），
+  无声明回落 input.chk（g16 无 %chk 不产 chk，转换失败记日志不阻断）；
 - 保全快照：非正常终止（failed，含程序报错/外部中断/手动停止）时
   run/<id>/ 顶层 chk 改名移入 protected/ 并落库 chk_snapshot
   （M1 落地保全，M4 断点续跑消费）——保全仅 chk（rwf 无续跑消费
@@ -74,7 +74,7 @@ def _iso(ts: str) -> datetime:
 
 
 def resolve_chk(run_dir: Path) -> Path:
-    """实际执行副本 input.gjf 的 Link0 %Chk → chk 路径。
+    """实际执行副本 input.gjf 的 Link0 %chk → chk 路径。
 
     相对值相对 run/<id>/ 解析；无扩展名时 g16 自动追加 .chk
     （g16 手册规则，实测 run/<id>/ 产物旁证），此处对齐；

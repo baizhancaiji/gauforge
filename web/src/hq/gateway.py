@@ -70,7 +70,7 @@ class Gateway(ABC):
         经 HQ 下发（§2.3 ④：等价 g16.profile，不依赖 worker 侧全局态）。
 
         resources（B6 资源双账第二账，roadmap §2.1）：{"cpus": int,
-        "mem_mib": int} → HQ 资源请求（%NProcShared→cpus、%Mem GB→MiB）；
+        "mem_mib": int} → HQ 资源请求（%nprocshared→cpus、%mem GB→MiB）；
         time_limit_s≠0 时设 HQ time_limit（0=不设，默认）。
 
         crash_limit（M4 重入①，m4-plan §2.1）：per-job 重试上限——0=禁用

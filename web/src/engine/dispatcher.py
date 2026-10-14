@@ -9,7 +9,7 @@
    （输入哈希、Link0 解析均在该时点）；
    ① 哈希跳过：存在 succeeded 执行且当前输入哈希 == 该次 input_hash
      → 沿用既有结果不建执行记录（成员状态保持 succeeded）；
-   ② Link0 解析补齐：%NProcShared/%Mem 缺失按设置缺省注入；
+   ② Link0 解析补齐：%nprocshared/%mem 缺失按设置缺省注入；
    ③ 声明资源停等：声明 > 空闲（worker 总资源 − 在跑声明值之和）→
      窗口停在该任务等待释放，不越位取其后小任务（队头阻塞显式接受）；
    ④⑤ 物化 run/<id>/ → Gateway.submit（资源双账第二账：cpus/mem_mib

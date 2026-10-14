@@ -3,12 +3,12 @@
 派发前物化钩子（「自我续跑同源」的工程落点）：把 Link0 符号引用重写为
 实际路径——
 
-- `%Chk=@task:X`（续用形态）：复制 X 溯源 chk 至本执行目录 `dep-<X>.chk`
-  并改写 `%Chk=dep-<X>.chk`——G16 运行会重写 %Chk 目标文件，复制语义
+- `%chk=@task:X`（续用形态）：复制 X 溯源 chk 至本执行目录 `dep-<X>.chk`
+  并改写 `%chk=dep-<X>.chk`——G16 运行会重写 %chk 目标文件，复制语义
   保护上游原件（roadmap §8.6 教训）；
-- `%OldChk=@task:X`（只读接续）：复制至 `dep-<X>.chk`、改写 `%OldChk=`，
-  本任务自身 `%Chk` 保持默认 `input.chk`；
-- `%OldChk=@exec:<eid>`（断点续跑）：复制该执行的 chk 资产（protected/
+- `%oldchk=@task:X`（只读接续）：复制至 `dep-<X>.chk`、改写 `%oldchk=`，
+  本任务自身 `%chk` 保持默认 `input.chk`；
+- `%oldchk=@exec:<eid>`（断点续跑）：复制该执行的 chk 资产（protected/
   保全优先，回落保留期内 input.chk）至 `dep-exec-<eid>.chk`。
 
 物化完成后输入文件内**零符号残留**；输入哈希按物化前的符号形式计算
@@ -96,9 +96,9 @@ def resolve_upstream_chk(task_id: int, *, nproc_default: int = 1,
 
 
 def _rewrite_line(line: str, dep_name: str) -> str:
-    """符号行值替换（保留 %Key= 前缀原样，仅替换取值）。"""
+    """符号行值替换（前缀 casefold 归一小写形态，仅取值改写）。"""
     head, sep, _ = line.partition("=")
-    return head + sep + dep_name
+    return head.casefold() + sep + dep_name
 
 
 def materialize_chk(run_dir: Path, text: str, *, nproc_default: int = 1,

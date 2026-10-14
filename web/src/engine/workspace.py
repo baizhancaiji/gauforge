@@ -1,8 +1,8 @@
 """执行工作区：run/<id>/ 物化、Link0 补齐换算、g16 子进程环境（m1-plan §4.3 B6）。
 
 - 物化：输入副本（含补齐行）写入 run/<执行id>/input.gjf，哈希对拷贝内容计算；
-- Link0：解析 %NProcShared/%Mem，缺失项按运行级设置缺省注入（value+defaulted
-  记入执行记录，roadmap §2.6）；%Mem 已声明时按 G16 单位（KB/MB/GB/TB、
+- Link0：解析 %nprocshared/%mem，缺失项按运行级设置缺省注入（value+defaulted
+  记入执行记录，roadmap §2.6）；%mem 已声明时按 G16 单位（KB/MB/GB/TB、
   W/MW/QW，1024 进制、word=8B）换算为 GB 供资源记账；
 - g16 环境：按 roadmap §2.5 实测结论等价构造（GAUSS_EXEDIR/GAUSS_BSDDIR/
   G16BASIS/GAUSS_ARCHDIR/GAUSS_LEXEDIR + 库与可执行搜索路径），不 source
@@ -32,7 +32,7 @@ _MEM_TO_GB = {"kb": 1 / 1024 / 1024, "mb": 1 / 1024, "gb": 1.0, "tb": 1024.0,
 
 
 def _mem_to_gb(raw: str) -> float | None:
-    """G16 %Mem 值 → GB 浮点；无法识别返回 None。"""
+    """G16 %mem 值 → GB 浮点；无法识别返回 None。"""
     tok = raw.strip().upper()
     for unit in ("QW", "MW", "KW", "TB", "GB", "MB", "KB", "W"):
         if tok.endswith(unit):
@@ -48,7 +48,7 @@ def _fmt_gb(v: float) -> str:
 
 
 def _cpu_list_count(raw: str) -> int | None:
-    """%CPU proc-list → 核数：单项 3、列表 0,2,4、区间 0-5 及混合均可
+    """%cpu proc-list → 核数：单项 3、列表 0,2,4、区间 0-5 及混合均可
     （gaussian.com/run，绑定具体逻辑处理器）；无法识别返回 None。"""
     total = 0
     for tok in raw.replace(" ", "").split(","):
@@ -71,10 +71,10 @@ def resolve_link0(text: str, nproc_default: int,
     """解析 Link0 区 → 声明资源 + 补齐后的实际执行文本。
 
     返回 {"completed_text", "nproc": {value, defaulted}, "mem_gb": {…}}；
-    缺失/不可识别的 %NProcShared/%Mem 按运行级设置缺省值注入（defaulted=True）。
+    缺失/不可识别的 %nprocshared/%mem 按运行级设置缺省值注入（defaulted=True）。
     核资源两类声明并行不混同：%nproc 系给分配核数（%nproc 前缀超集，判定依据
-    见 parse/blocks.py），%CPU 给具体逻辑处理器（不注入 %NProcShared，会与
-    核位绑定冲突）；记账核数优先取 %nproc，仅 %CPU 时取 proc-list 推导值。
+    见 parse/blocks.py），%cpu 给具体逻辑处理器（不注入 %nprocshared，会与
+    核位绑定冲突）；记账核数优先取 %nproc，仅 %cpu 时取 proc-list 推导值。
     """
     lines = text.replace("\r\n", "\n").split("\n")
     # Link 0 = 前导空行/注释后的连续 % 行（与 parse/blocks 同规则，其后无空行要求）
@@ -108,11 +108,11 @@ def resolve_link0(text: str, nproc_default: int,
     nproc_defaulted = declared is None
     if nproc_defaulted:
         declared = int(nproc_default)
-        inject.append(f"%NProcShared={declared}")
+        inject.append(f"%nprocshared={declared}")
     mem_defaulted = mem_gb is None
     if mem_defaulted:
         mem_gb = float(mem_gb_default)
-        inject.append(f"%Mem={_fmt_gb(mem_gb)}GB")
+        inject.append(f"%mem={_fmt_gb(mem_gb)}GB")
 
     completed = "\n".join(lines[:end] + inject + lines[end:])
     return {"completed_text": completed,

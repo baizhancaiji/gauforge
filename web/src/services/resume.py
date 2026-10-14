@@ -13,18 +13,18 @@ RESUME_NOT_ELIGIBLE、满员 409 PENDING_CAPACITY_FULL）。
 注入矩阵（route 判定复用 M0 输入分块解析器取 route 节文本，token 化
 大小写不敏感；§2.2 规则）：
 - 含 Opt（一切变体，Opt+Freq 并存归优化行）→ 优化行：Link0 追加
-  `%OldChk=@exec:<原执行id>` + route 的 opt 项改写为 `Opt=Restart`
+  `%oldchk=@exec:<原执行id>` + route 的 opt 项改写为 `Opt=Restart`
   （原选项保留——G16 Opt=Restart 语义：整个 route 仅 Opt 关键字与其
   原选项 + Restart）；
 - 不含 Opt 但含 Freq → freq 行：无注入、回落原样重跑（弹窗明示；
   经 resume 链路新建任务保留 resumed_from 关联）；
-- 其余 → 单点行：Link0 追加 `%OldChk=@exec` + route 追加 `Guess=Read`；
+- 其余 → 单点行：Link0 追加 `%oldchk=@exec` + route 追加 `Guess=Read`；
 - route 缺失/不可解析 → ineligible（unknown_kind）。
 
  ineligible 原因五态：no_resume_asset / chk_corrupted / probe_timeout /
 unknown_kind / chained_ref（输入含 @task: 链内引用——注入前置检测，
 先于 chk 资产判定）。任务身份：resume 新建任务（新 task id + 注入改写
-后输入副本），两层关联——输入层 %OldChk=@exec 符号引用（物化链技术
+后输入副本），两层关联——输入层 %oldchk=@exec 符号引用（物化链技术
 关联，随 B7 派发钩子物化）+ 记录层 resumed_from（派发创建执行记录时
 写入）；原历史条目数据零变更（「已续跑」经 resumed_by 派生只读）。
 """
@@ -143,9 +143,9 @@ def _apply_injections(text: str, kind: str, source_eid: int) -> tuple[
     while i < n and lines[i].lstrip().startswith("%"):
         i += 1
     if kind in ("opt", "scf"):
-        lines.insert(i, f"%OldChk=@exec:{source_eid}")
+        lines.insert(i, f"%oldchk=@exec:{source_eid}")
         injections.append({"type": "link0_append",
-                           "link0_lines": [f"%OldChk=@exec:{source_eid}"],
+                           "link0_lines": [f"%oldchk=@exec:{source_eid}"],
                            "route_lines": None})
     # route 行改写：首条 # 开头行
     for j, ln in enumerate(lines):

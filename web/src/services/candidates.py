@@ -37,7 +37,7 @@ log = logging.getLogger(__name__)
 SUPPORTED_EXTS = (".gjf", ".com")
 _File = tuple[str, bytes]  # (filename, 原始字节)
 
-# %Mem 值：数值 + 可选单位后缀（G16 手册核查，m2-plan 决策点 7：缺省单位
+# %mem 值：数值 + 可选单位后缀（G16 手册核查，m2-plan 决策点 7：缺省单位
 # 为 8 字节字（MW 量纲），可选 KB/MB/GB/TB/KW/MW/GW/TW，无空格；类型错才 422）
 _MEM_VALUE_RE = re.compile(r"^\d+(?:\.\d+)?(?:KB|MB|GB|TB|KW|MW|GW|TW|W|B)?$",
                            re.IGNORECASE)
@@ -230,13 +230,13 @@ def _validate_section(section: str, content: list[str]) -> None:
                     positive = False
                 if not positive:
                     errors.append(_verr(section, k, "nproc_not_positive_int",
-                                        "%NProcShared 值须为正整数"))
+                                        "%nprocshared 值须为正整数"))
             elif key_cf == "mem" and not _MEM_VALUE_RE.match(val.strip()):
                 errors.append(_verr(section, k, "mem_value_invalid",
-                                    "%Mem 值须为数值（可选单位 KB/MB/GB/TB/KW/MW/GW/TW）"))
+                                    "%mem 值须为数值（可选单位 KB/MB/GB/TB/KW/MW/GW/TW）"))
             elif key_cf == "cpu" and _cpu_list_count(val) is None:
                 errors.append(_verr(section, k, "cpu_list_invalid",
-                                    "%CPU 值须为处理器列表（如 0,1,2 / 0-5）"))
+                                    "%cpu 值须为处理器列表（如 0,1,2 / 0-5）"))
     elif section == "route":
         if not content[0].lstrip().startswith("#"):
             errors.append(_verr(section, 1, "route_must_start_with_hash",
@@ -282,7 +282,7 @@ def _guard_editable(row: dict, task_id: int, section: str | None = None) -> None
     """形态守卫（m2-plan §2.1 守卫矩阵；编辑入口仅候选与失败回退队列）。
 
     M4 C5 增口：unsubmitted 队列成员限 link0 节可写（队列编辑框
-    「接续前置 chk」写 %OldChk 依赖行，DAG 校验读输入）；其余节仍锁定。
+    「接续前置 chk」写 %oldchk 依赖行，DAG 校验读输入）；其余节仍锁定。
     """
     form = row["form"]
     if form == "candidate":

@@ -80,14 +80,14 @@ def _set_g16(mode: str, tmp_path: Path) -> None:
 # ---------------- 注入矩阵三分支 ----------------
 
 def test_opt_injection(tmp_path):
-    """优化行：Link0 追加 %OldChk=@exec + route opt 项改 Opt=Restart。"""
+    """优化行：Link0 追加 %oldchk=@exec + route opt 项改 Opt=Restart。"""
     _set_g16("ok", tmp_path)
     tid, eid = _mk_source("#p opt b3lyp/6-31g(d)")
     out = preview_resume(eid)
     assert out["eligible"] is True and out["reason"] is None
     assert out["task_kind"] == "opt"
     assert out["probe"] == {"formchk_ok": True, "reason": None}
-    assert f"%OldChk=@exec:{eid}" in out["input_diff"]
+    assert f"%oldchk=@exec:{eid}" in out["input_diff"]
     assert "Opt=Restart" in out["input_diff"]
     assert "b3lyp/6-31g(d)" in out["input_diff"]  # 原选项保留
 
@@ -103,12 +103,12 @@ def test_opt_freq_combo_is_opt(tmp_path):
 
 
 def test_scf_injection(tmp_path):
-    """非优化 SCF：Link0 追加 %OldChk=@exec + route 追加 Guess=Read。"""
+    """非优化 SCF：Link0 追加 %oldchk=@exec + route 追加 Guess=Read。"""
     _set_g16("ok", tmp_path)
     tid, eid = _mk_source("#p hf/6-31g(d)")
     out = preview_resume(eid)
     assert out["task_kind"] == "scf"
-    assert f"%OldChk=@exec:{eid}" in out["input_diff"]
+    assert f"%oldchk=@exec:{eid}" in out["input_diff"]
     assert "Guess=Read" in out["input_diff"]
 
 
@@ -261,7 +261,7 @@ def test_confirm_capacity_full(tmp_path):
 
 def test_confirm_creates_task_and_materializes(tmp_path):
     """确认 → 新建任务（注入改写副本）入队 → 派发物化链复用：
-    resumed_from 随执行行落库、dep-exec chk 复制、%OldChk 重写零残留、
+    resumed_from 随执行行落库、dep-exec chk 复制、%oldchk 重写零残留、
     crash_limit=0。"""
     _set_g16("ok", tmp_path)
     tid, eid = _mk_source("#p opt b3lyp/6-31g(d)")
@@ -270,7 +270,7 @@ def test_confirm_creates_task_and_materializes(tmp_path):
     assert out["execution_id"] == eid
     new_text = (config.HOME_DIR / "inputs" / str(out["task_id"])
                 ).read_text(encoding="utf-8")
-    assert f"%OldChk=@exec:{eid}" in new_text
+    assert f"%oldchk=@exec:{eid}" in new_text
     assert "Opt=Restart" in new_text
     # 原历史条目数据零变更（文本/关联不受 confirm 影响）
     src_text = (config.HOME_DIR / "inputs" / str(tid)).read_text(
