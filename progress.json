@@ -176,6 +176,25 @@
    "summary": "历史详情抽屉 chk 保全行去语义重复：location 恒为 protected 与「已保全」重复，去掉「（protected/）」括注与「— protected」后缀，仅保留「已保全/未保全」",
    "breaking": false,
    "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "队列新增 rolled_back_at 字段（契约 Queue 可空 date-time；迁移 v8 加列，_queue_rollback 回退时写入，持久不清除；mock 同步）",
+   "breaking": false,
+   "migration": "v8：queues 加列 rolled_back_at TEXT"
+  },
+  {
+   "type": "changed",
+   "scope": "frontend",
+   "summary": "队列页默认序改为时间倒序（键=rolled_back_at ?? created_at）：回退时以回退时刻跃居最前、其后新队列自然排上，废除「回退永久置顶」，排序下拉文案与注释同步；移除失效的 isRolledBack 辅助"
+  },
+  {
+   "type": "changed",
+   "scope": "docs",
+   "summary": "development.md 隔离冒烟实例新增重启纪律：路由表/迁移启动时固化而静态文件实时读盘，「新前端+旧后端」错位实证，测试实例拉起时建议同步重启后端",
+   "breaking": false,
+   "migration": null
   }
  ],
  "in_progress": {
