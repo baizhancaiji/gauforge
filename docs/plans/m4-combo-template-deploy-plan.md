@@ -772,9 +772,14 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   reconcile.py:11 全部小写归一；**R-8 表外补录 5 处**（workspace.py:5/
   35/51/77、candidates.py:40）随修复同批落库（§1.1 表后补录注）。复扫：
   web/src 仅余 strftime `%Y%m%d` 与文法占位 `%Key=` 两非违反项、crates/
-  与 openapi.yaml 零命中；`blocks.py:134`/`candidates.py:327` 的
-  "NProcShared"/"Mem" 系 missing 指令名载荷值（#8 定案前端小写归一）、
-  维持原样。测试刷新：test_dispatch_engine（注入行 4 断言）、test_resume
+  与 openapi.yaml 零命中——口径补注（2026-10-14 独立审查 F1F2-1）：「零
+  命中」系 Link0 指令域正则 `%(NProcShared|Mem|CPU|OldChk|Chk)[=A-Z]`
+  口径；广谱 `%[A-Z]` 下 crates/ 另余 19 处 chrono/strftime 日期格式串
+  （`%H:%M:%S` 等），非 Link0 违反项；`blocks.py:134`/`candidates.py:327`
+  的 "NProcShared"/"Mem" 系 missing 指令名载荷值（#8 定案前端小写归一）、
+  维持原样。测试刷新：test_dispatch_engine（注入行 4 断言——计数口径
+  补注 2026-10-14 独立审查 F1F2-2：另有物化文本复合断言 1 处含 2 原子
+  断言，合计 5 处 6 条）、test_resume
   （注入行 3 断言）、test_materialize（改写行 3 断言）随行小写化，输入侧
   大写夹具保留覆盖大小写不敏感解析；全量回归 736 passed，e2e 3 例真实
   运行（hq 产物 17,957,408 字节在位，§6 必检项满足）
