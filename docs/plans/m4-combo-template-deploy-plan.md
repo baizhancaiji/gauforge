@@ -107,7 +107,8 @@ route 当前为前端硬编码默认值（`ComboFlowDialog.vue:23`
 > （PATCH /queues/{id} description）、2518（resume 路径 description）；
 > 上述行再生后 contract.ts JSDoc（原 611/1223 等处）随产物一并归一。
 > route 关键词片段引用（Opt=Restart、Guess=Read）非 Link0 指令名、不在
-> §0.3 定形集内，维持原样。
+> §0.3 定形集内，维持原样。行号系撰写时基线口径，提交后随契约 diff
+> 漂移，以形态内容为准（独立审查 F-4 实测：HEAD 全文件大写形态零残留）。
 >
 > **R-8 补录（2026-10-14 批次 F1 实施）**：表外违反 5 处随修复同批小写化——
 > `workspace.py:5`（docstring「%Mem 已声明时」）、`:35`（「G16 %Mem 值」）、
@@ -543,6 +544,10 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   nproc_cpu_mismatch 1／link0_symbol_ref_forbidden 1；`grep -n 两张`
   退出码 1（零残留）。契约闸门 test_openapi_ssot.py + test_error_codes.py
   12 passed；models.py／contract.ts 重复再生零 diff（md5 一致）
+  ——补注（2026-10-14 独立审查 F-3）：「md5 一致」系同刻再生口径，
+  datamodel-codegen 时间戳头字面必变；已随复审整改在 gen_models.py 固定
+  `--disable-timestamp`，再生字节幂等自此字面成立（整改见
+  m4-combo-deploy-review-A-B.md）
 - 缺陷：无
 
 - 批次 / 条目：B1（B 批次，四项核验复核）
