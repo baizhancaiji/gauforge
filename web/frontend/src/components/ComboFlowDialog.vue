@@ -75,6 +75,10 @@ watch(
     topN.value = 2;
     nprocInvalid.value = false;
     routeInvalid.value = false;
+    // 重开先回落初始 route/清空 link0：并行拉取返回前不残留上一会话值
+    // （C-3 竞态窗口收口；拉取成功后 applyTemplate 立即覆盖）
+    route.value = initialRoute.value;
+    link0.value = "";
     // crest 核数默认取运行级 link0_default_nproc（§2.3 组合流资源声明）；
     // 模板方案并行拉取，默认选中 is_default 条（拉取失败回落内置默认 route）
     const [settingsRes, tplRes] = await Promise.all([

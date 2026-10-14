@@ -30,6 +30,7 @@ const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
 
 const loading = ref(false);
+const loadError = ref(false); // 打开时 GET 失败：错误态呈现，保存不可用
 const busy = ref(false);
 const templates = ref<ComboTemplate[]>([]);
 const initialRoute = ref("");
@@ -91,13 +92,17 @@ watch(
   async (v) => {
     if (!v) return;
     loading.value = true;
+    loadError.value = false;
     errors.value = [];
     warnings.value = [];
     notice.value = null;
     exemptTokens.value = new Set(); // 关闭即清空豁免记忆（重开重新校验）
     const { data } = await client.GET("/combo-templates");
     loading.value = false;
-    if (!data) return;
+    if (!data) {
+      loadError.value = true;
+      return;
+    }
     templates.value = data.templates;
     initialRoute.value = data.initial.route;
     selectScheme(templates.value[0]?.template_id ?? 1); // 打开自动选中方案 1
@@ -164,9 +169,19 @@ async function save(ignoreSpelling: boolean) {
   }
 }
 
-/** 「保存」：会话豁免集非空即携带 ignore_spelling（跨方案共享、本会话保持）。 */
-function saveNormal() {
-  void save(exemptTokens.value.size > 0);
+/** 「保存」：两段式按 token 粒度豁免（§3.3 豁免集＝该批该 reason 的 token 集）——
+ *  先不带豁免直存；422 的词典外 token 全部已在会话豁免集时才自动携
+ *  ignore_spelling 重试（已豁免 token 跨方案共享免再拦），新 token 仍须
+ *  显式点「忽略拼写警告并保存」。 */
+async function saveNormal() {
+  await save(false);
+  if (
+    errors.value.length &&
+    hasKeywordErrors.value &&
+    oovTokensFromErrors(errors.value).every((t) => exemptTokens.value.has(t))
+  ) {
+    await save(true);
+  }
 }
 
 /** 「忽略拼写警告并保存」：本批词典外 token 记入豁免集后重试（仅当次落库，
@@ -284,6 +299,7 @@ const routeInitialHint = computed(() => `清空恢复初始值：${initialRoute.
           </label>
         </div>
       </div>
+      <p v-else-if="loadError" class="ct-error mono">模板读取失败，请关闭后重试</p>
       <p v-else class="ct-loading mono">读取模板 …</p>
     </div>
 
@@ -305,7 +321,7 @@ const routeInitialHint = computed(() => `清空恢复初始值：${initialRoute.
         class="btn btn--primary"
         type="button"
         :data-loading="busy || undefined"
-        :disabled="busy || loading"
+        :disabled="busy || loading || loadError"
         @click="saveNormal"
       >
         {{ busy ? "保存中 …" : "保存" }}
