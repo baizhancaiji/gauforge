@@ -53,7 +53,9 @@ def _mk_queue(n: int, *, qid: str = "QQ0001", rollback: bool = False,
     for pos, tid in enumerate(ids):
         tasks().enqueue(tid, qid, pos)
     if rollback:
-        queues().update(qid, rollback_flag=True)
+        # 模拟真实回退（dispatcher._queue_rollback 同形：标记+回退时刻）
+        queues().update(qid, rollback_flag=True,
+                        rolled_back_at="2026-10-12T08:00:00+00:00")
     if state:
         queues().set_state(qid, state)
     return ids
@@ -222,6 +224,7 @@ def test_auto_success_after_removing_all_failed_skipped():
     assert q["finish_reason"] == "success"
     assert q["last_failure"] is None  # 成功终态清 null
     assert bool(q["rollback_flag"]) is True  # 历史回退痕迹保留
+    assert q["rolled_back_at"] is not None  # 回退时刻持久不清除（默认序键）
 
 
 def test_auto_success_not_triggered_for_new_queue():

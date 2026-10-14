@@ -97,6 +97,7 @@ class MockState:
             "state": "unsubmitted",
             "rollback_flag": False,
             "rollback_count": 0,
+            "rolled_back_at": None,
             "last_failure": None,
             "finish_reason": None,
             "created_at": _now(),

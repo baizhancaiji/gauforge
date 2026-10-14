@@ -50,9 +50,9 @@ class QueuesRepo:
     def update(self, queue_id: str, *, bump_updated: bool = True,
                **fields: object) -> None:
         """白名单字段更新（name/skip_failed/rollback_flag/rollback_count/
-        last_failure/finish_reason）。"""
+        last_failure/finish_reason/rolled_back_at）。"""
         allowed = {"name", "skip_failed", "rollback_flag", "rollback_count",
-                   "last_failure", "finish_reason"}
+                   "last_failure", "finish_reason", "rolled_back_at"}
         keys = [k for k in fields if k in allowed]
         if not keys:
             return

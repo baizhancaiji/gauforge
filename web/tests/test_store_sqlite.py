@@ -41,12 +41,12 @@ def repos(db):
 
 def test_migration_sets_version(db):
     row = db.one("SELECT version FROM schema_version")
-    assert row is not None and row["version"] == 7  # v7: 组合流精修模板表
+    assert row is not None and row["version"] == 8  # v8: queues.rolled_back_at
 
 
 def test_migration_idempotent(db):
     run_migrations(db)  # 重复执行不报错、版本不变
-    assert db.one("SELECT version FROM schema_version")["version"] == 7
+    assert db.one("SELECT version FROM schema_version")["version"] == 8
 
 
 def test_v4_tasks_kind_column(db):

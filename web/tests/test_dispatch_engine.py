@@ -378,6 +378,7 @@ def test_queue_abort_on_failure(disp, rec):
     assert q["state"] == "unsubmitted"
     assert q["finish_reason"] == "abort_on_failure"
     assert q["rollback_flag"] == 1 and q["rollback_count"] == 1
+    assert q["rolled_back_at"] is not None  # 回退时刻（队列页默认序置前键）
     assert q["last_failure"]["failure_positions"] == [m1]
     assert q["last_failure"]["members"][0] == {
         "task_id": m1, "state": "failed", "cause": "program_error"}

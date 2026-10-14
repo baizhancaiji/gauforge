@@ -186,6 +186,15 @@ CREATE TABLE IF NOT EXISTS combo_templates (
 """ + _SEED_COMBO_TEMPLATES + "\n"
 MIGRATIONS[7] = SCHEMA_V7
 
+# v8（2026-10-14）：queues 加列 rolled_back_at——最近一次失败回退时刻
+# （可空 TEXT ISO；_queue_rollback 写入，持久不清除）。队列页默认序键
+# （openapi QueueSortKey default：回退发生时该队列以回退时刻跃居最前，
+# 其后新队列按创建时间自然排上，置前不持久——替代原「回退永久置顶」）。
+SCHEMA_V8 = """
+ALTER TABLE queues ADD COLUMN rolled_back_at TEXT;
+"""
+MIGRATIONS[8] = SCHEMA_V8
+
 
 def run_migrations(db: Database) -> None:
     with db.tx() as conn:

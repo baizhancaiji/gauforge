@@ -678,11 +678,14 @@ class Dispatcher:
 
         不重置 updated_at（周期基准=进入 submitted/executing 时点）：
         本周期已建 skipped/failed 记录须仍被 _executed_this_cycle 判为
-        「本周期已执行」，席位结算 undone 判定才收敛。"""
+        「本周期已执行」，席位结算 undone 判定才收敛。
+        rolled_back_at 记回退时刻（队列页默认序「回退置前」键，持久
+        不清除——openapi QueueSortKey default：置前不持久）。"""
         qid = queue["id"]
         count = int(queue.get("rollback_count") or 0) + 1
         queues().update(qid, bump_updated=False, finish_reason=reason,
                         rollback_flag=True, rollback_count=count,
+                        rolled_back_at=now_iso(),
                         last_failure={"finish_reason": reason,
                                       "failure_positions": [f[0] for f in failures],
                                       "members": [{"task_id": f[0],

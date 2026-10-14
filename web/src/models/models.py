@@ -192,6 +192,10 @@ class Queue(BaseModel):
     )
     created_at: AwareDatetime = Field(..., description='C；补充字段提案')
     updated_at: AwareDatetime | None = Field(None, description='T；补充字段提案')
+    rolled_back_at: AwareDatetime | None = Field(
+        None,
+        description='T；最近一次失败回退时刻（持久不清除，队列页默认序「回退置前」键）；null=未发生过回退',
+    )
 
 
 class Nproc(BaseModel):
