@@ -61,6 +61,14 @@ const effectLabel: Record<EffectKind, string> = {
 // 受理后模态锁定「重启中」：SSE 断开经看门狗重连（A-8），connection 恢复
 // open 即关闭模态；45s 未恢复按失败提示（不阻塞页面）。
 const RESTART_TIMEOUT_MS = 45000;
+// 设置保存 422/409 details.errors[].reason → 中文（reason 枚举不透出原文；
+// 词表二：unknown_setting/readonly/range/type）
+const REASON_LABEL: Record<string, string> = {
+  unknown_setting: "未知设置项",
+  readonly: "启动级只读，不可修改",
+  range: "值越界",
+  type: "类型错误",
+};
 const restartConfirm = ref(false);
 const restarting = ref(false);
 const runningCount = computed(() => events.lamps.running);
@@ -194,7 +202,9 @@ async function doSave() {
     ).error;
     if (detail?.details?.errors?.length) {
       saved.value = { ok: false, msg: "保存失败" };
-      detail.details.errors.forEach((d) => (errors.value[d.key] = d.reason));
+      // reason 枚举不透出原文，映射中文（未收录 reason 兜底中文）
+      detail.details.errors.forEach(
+        (d) => (errors.value[d.key] = REASON_LABEL[d.reason] ?? "设置值非法"));
     } else {
       saved.value = { ok: false, msg: detail?.message ?? "保存失败" };
     }
@@ -266,7 +276,7 @@ const restartLabels = computed(() =>
               <!-- 生效语义：中性 plain 徽标（§4.6）并入 hint 行（1080p 一屏预算） -->
               <span class="eff mono">{{ effectLabel[s.effect] }}</span>
             </p>
-            <p v-if="errors[s.key]" class="err mono">值越界或非法：{{ errors[s.key] }}</p>
+            <p v-if="errors[s.key]" class="err mono">{{ errors[s.key] }}</p>
           </div>
         </div>
         <!-- 组合流模板入口（插波 3.2.0）：配置弹窗承载 5 套精修模板方案，不铺在面板上 -->

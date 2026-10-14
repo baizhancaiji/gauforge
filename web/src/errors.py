@@ -33,8 +33,27 @@ def err(code: str, message: str, details: object | None = None,
     return ApiError(code, message, details, http)
 
 
+# not_found message 用中文显示名（不透出内部资源标识符）；
+# details.resource 保留内部标识（机器可读契约字段，非展示文本）。
+_RESOURCE_LABELS = {
+    "execution": "执行记录",
+    "history": "历史条目",
+    "task": "任务",
+    "candidate": "候选",
+    "input": "输入文件",
+    "output": "输出文件",
+    "queue": "队列",
+    "seat": "席位",
+    "workflow": "组合流",
+    "combo_template": "组合流模板",
+    "workspace_file": "工作区文件",
+    "cube": "cube 文件",
+}
+
+
 def not_found(resource: str, rid: object) -> ApiError:
-    return ApiError("NOT_FOUND", f"{resource} {rid} 不存在",
+    label = _RESOURCE_LABELS.get(resource, "目标资源")
+    return ApiError("NOT_FOUND", f"{label} {rid} 不存在",
                     {"resource": resource, "id": rid},
                     http=status.HTTP_404_NOT_FOUND)
 

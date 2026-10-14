@@ -257,7 +257,9 @@ async function saveSectionDelayed(section: string) {
           </div>
           <div v-else class="val mono dim">（无声明）</div>
           <div v-if="preview.blocks.link0.missing.length" class="note mono">
-            ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m}`).join("、") }} 未声明 · 执行时将按默认值补齐
+            <!-- 后端 missing 为大写指令名载荷（m4-combo 计划 §1.1 #8 定案
+                 维持原样），展示层小写归一（同 CandidatesView 口径） -->
+            ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m.toLowerCase()}`).join("、") }} 未声明 · 执行时将按默认值补齐
           </div>
         </template>
         <div v-if="editOf('link0')?.error" class="be-error mono" role="alert">

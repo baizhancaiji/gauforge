@@ -221,10 +221,11 @@ const routeInitialHint = computed(() => `清空恢复初始值：${initialRoute.
         </button>
       </div>
 
-      <!-- 顶部错误清单（422 全量一次报，reason 显式可见） -->
+      <!-- 顶部错误清单（422 全量一次报；message 自足中文，reason 枚举
+           不透出——仅用于豁免逻辑判定） -->
       <div v-if="errors.length" class="ct-errors" role="alert">
         <p v-for="(err, i) in errors" :key="i" class="ct-error mono">
-          <span class="ct-reason">{{ err.reason }}</span> — {{ err.message }}
+          {{ err.message }}
         </p>
       </div>
 
@@ -403,9 +404,6 @@ const routeInitialHint = computed(() => `清空恢复初始值：${initialRoute.
 }
 .ct-error {
   font-size: var(--text-sm);
-  color: var(--danger);
-}
-.ct-reason {
   color: var(--danger);
 }
 .ct-notices {

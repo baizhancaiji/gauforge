@@ -75,7 +75,7 @@ const nmoUpper = computed(() => props.data.nmo);
 
 // ---------- 渲染 ----------
 const rendering = ref(false);
-const error = ref<{ msg: string; detail?: string } | null>(null);
+const error = ref<{ msg: string } | null>(null);
 const loaded = ref<string | null>(null);
 
 function ensureViewer() {
@@ -135,16 +135,13 @@ async function generate() {
   if (genErr || !created) {
     rendering.value = false;
     const e = genErr as unknown as {
-      error?: { code?: string; message?: string; details?: { stderr_tail?: string } };
+      error?: { code?: string; message?: string };
     };
     const code = e?.error?.code;
     if (code === "CUBE_EXECUTABLE_MISSING") {
       error.value = { msg: "cubegen 不可用 — 请检查 g16_root 设置（503）" };
     } else if (code === "CUBE_GENERATION_FAILED") {
-      error.value = {
-        msg: "cube 生成失败（502）",
-        detail: e?.error?.details?.stderr_tail ?? e?.error?.message,
-      };
+      error.value = { msg: "cube 生成失败（502）" };
     } else {
       error.value = { msg: e?.error?.message ?? "请求失败" };
     }
@@ -273,7 +270,6 @@ onBeforeUnmount(() => {
 
     <p v-if="error" class="orb-note mono note--bad" role="alert">
       {{ error.msg }}
-      <span v-if="error.detail" class="orb-detail">{{ error.detail }}</span>
     </p>
     <p v-else-if="loaded" class="orb-note mono note--ok">已渲染：{{ loaded }}</p>
 
@@ -361,13 +357,6 @@ onBeforeUnmount(() => {
 }
 .note--ok {
   color: var(--state-succeeded);
-}
-.orb-detail {
-  display: block;
-  font-size: var(--text-xs);
-  color: var(--text-faint);
-  white-space: pre-wrap;
-  word-break: break-all;
 }
 .orb-viewer {
   /* vendored 3dmol canvas 为 absolute 定位，容器须自建定位上下文，

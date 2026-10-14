@@ -32,6 +32,11 @@
 - 【docs】修正 crest/xtb 离线安装路径的两处 tar 布局说明：crest 顶层为 crest/ 目录嵌套同名二进制须上移、xtb 顶层为 xtb-dist/ 须改名 xtb-6.7.1，此前照文档操作会装出运行级找不到二进制的坏布局
 - 【scripts】crest/xtb 部署脚本参数防线收口：--dest 缺值给用法提示退出码 2、--help 不再混入代码行、执行位仅加在 crest 二进制，补沙箱用例锁定
 - 【frontend】修正待执行页展开队列席位首帧其余席位不挤开的量测时序缺陷：子表成员行 absolute、子画布高度自量测后才写入，宿主 watch 内重测先于子组件自量测、量到未含成员列表的旧高（余席停留原位遮挡成员区，再点任一席位触发重测才恢复）；子表每次自量测落定后 emit layout、宿主 nextTick 重测席位前缀和，展开/收起/成员移除后首帧即正确让位（部署机 3.0.1 反馈，浏览器实测复现与复验）
+- 【web】错误响应收口：not_found message 资源名改中文显示名（details 保留内部标识）、框架 404/405 与未捕获异常兜底统一为「中文描述+错误码」裸 body（回溯仅入日志）、cubegen OSError 原文不再拼入 message
+- 【frontend】轨道等值面错误提示去除 cubegen stderr_tail 原始回溯透出，仅保留中文描述与 HTTP 码并清理死代码
+- 【frontend】错误展示去除 reason 枚举原文透出：组合流模板弹窗 422 清单仅显示自足中文 message（reason 保留豁免逻辑判定），设置页保存失败字段级 reason 映射中文标签（unknown_setting/readonly/range/type）
+- 【frontend】全小写收口补遗（m4-combo 计划 R-8 走查补录）：候选详情 LINK 0 缺失黄警行 toLowerCase 归一展示（原样透出载荷大写 %NProcShared/%Mem），后端 missing 载荷维持定案原样，计划文档 R-8 同步补录
+- 【frontend】历史详情抽屉 chk 保全行去语义重复：location 恒为 protected 与「已保全」重复，去掉「（protected/）」括注与「— protected」后缀，仅保留「已保全/未保全」
 
 ## v3.1.0（2026-10-13T00:42+0800 发布，minor）
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 from pathlib import Path
 
 import yaml
@@ -16,6 +17,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import config
 from .errors import ApiError
@@ -74,6 +76,27 @@ def build_app() -> FastAPI:
         return JSONResponse(status_code=422, content={"error": {
             "code": "VALIDATION_FAILED", "message": "字段级校验失败",
             "details": {"errors": []}}})
+
+    @app.exception_handler(StarletteHTTPException)
+    async def _http_exc_handler(_req, exc: StarletteHTTPException) -> JSONResponse:
+        # 框架路由层异常（未知路径 404、方法不允许 405 等）同样只给
+        # 中文描述 + 错误码，不透出框架英文默认文案。
+        if exc.status_code == 404:
+            body = {"code": "NOT_FOUND", "message": "接口路径不存在",
+                    "details": None}
+        else:
+            body = {"code": "INVALID_REQUEST",
+                    "message": f"请求被拒绝（HTTP {exc.status_code}）",
+                    "details": None}
+        return JSONResponse(status_code=exc.status_code, content={"error": body})
+
+    @app.exception_handler(Exception)
+    async def _unhandled_handler(_req, exc: Exception) -> JSONResponse:
+        # 未捕获异常兜底：客户端只见「服务端异常」+ 错误码，完整回溯仅入日志。
+        logging.getLogger("uvicorn.error").exception(
+            "未捕获异常（已按 INTERNAL_ERROR 返回）：%s", exc)
+        return JSONResponse(status_code=500, content={"error": {
+            "code": "INTERNAL_ERROR", "message": "服务端异常", "details": None}})
 
     # ---------- 静态前端 ----------
     dist = config.FRONTEND_DIST if config.FRONTEND_DIST.exists() else None

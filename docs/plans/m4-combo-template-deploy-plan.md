@@ -126,6 +126,12 @@ route 当前为前端硬编码默认值（`ComboFlowDialog.vue:23`
 > （样式注释 `%Chk=`）；解析/移除正则（:26/:36）与 loadLinkStates 初始
 > 化正则（:164）均带 `i` 标志大小写不敏感，生成行切小写对存量内容安全。
 > 处置原则同上（仅改写形态、不改语义）。
+>
+> **R-8 补录（2026-10-14 F2 走查补遗）**：`BlockEditor.vue:260` 候选详情
+> LINK 0 缺失黄警行漏归一——`preview.blocks.link0.missing.map((m) =>
+> \`%${m}\`)` 原样透出载荷大写形态（截图实证 `%NProcShared、%Mem`），
+> 补 `toLowerCase()` 归一（同 #8/CandidatesView 口径：后端载荷维持原样、
+> 展示层小写）。
 
 ## 2. 任务分解（WBS）
 

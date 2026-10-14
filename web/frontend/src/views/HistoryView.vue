@@ -645,9 +645,9 @@ async function confirmCleanup() {
         </dl>
         <dl class="cell">
           <dt class="mono">chk 保全</dt>
+          <!-- location 恒为 "protected"（与「已保全」语义重复），不再展示 -->
           <dd class="mono">
-            {{ selected.chk_snapshot.protected ? "已保全（protected/）" : "未保全"
-            }}{{ selected.chk_snapshot.location ? ` — ${selected.chk_snapshot.location}` : "" }}
+            {{ selected.chk_snapshot.protected ? "已保全" : "未保全" }}
           </dd>
         </dl>
         <!-- 断点续跑双向关联（M4 C6：resumed_from 记录层 / resumed_by 派生只读） -->

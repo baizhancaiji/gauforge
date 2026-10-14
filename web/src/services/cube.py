@@ -77,8 +77,9 @@ def generate(execution_id: int, kind: object, orbital: object,
                   f"cubegen 超时（>{CUBEGEN_TIMEOUT_S}s）",
                   {"reason": "timeout", "kind": kind_arg,
                    "npts": npts_v}, http=502)
-    except OSError as exc:
-        raise err("CUBE_EXECUTABLE_MISSING", f"cubegen 启动失败：{exc}",
+    except OSError:
+        # 客户端只给中文描述；OSError 细节（errno/路径）不入 message
+        raise err("CUBE_EXECUTABLE_MISSING", "cubegen 启动失败",
                   {"g16_root": str(g16_root)}, http=503)
     if proc.returncode != 0 or not (out.is_file() and out.stat().st_size > 0):
         tail = proc.stderr.decode(errors="replace").strip()[-400:]
