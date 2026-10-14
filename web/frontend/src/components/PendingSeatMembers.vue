@@ -10,6 +10,12 @@
  * 拖，仅 staged 成员可作拖源/落点（正在执行/已完成成员为既定历史），
  * 落点解析由 usePointerSort 跳过不可落槽位。提交走 PATCH /queues/{id}
  * member_ids 全量有序原子（契约 #15）。
+ *
+ * 子表量测落定上抛（2026-10-14 部署机 3.0.1 反馈修复）：成员行 absolute、
+ * 本画布高度由自量测后写入样式，席位行 offsetHeight 此刻才真正包含成员
+ * 列表——宿主仅在自身 watch 内重测会量到未含成员行的旧高（展开首帧其余
+ * 席位停留原位遮挡子表），故每次自量测后 emit layout，宿主 nextTick 重测
+ * 席位前缀和。
  */
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
@@ -26,6 +32,8 @@ const emit = defineEmits<{
   remove: [task_id: number];
   changed: [];
   error: [message: string];
+  /** 自量测落定（画布高度样式已排队写入）后通知宿主重测席位前缀和 */
+  layout: [];
 }>();
 
 const members = computed(() => props.seat.members ?? []);
@@ -92,11 +100,18 @@ const sort = usePointerSort({
 
 onMounted(() => {
   scrollerEl.value = subEl.value?.closest(".content") ?? null;
-  void nextTick(() => sort.measure());
+  void nextTick(measureAndNotify);
 });
 
 // SSE 快照成员集变化（重排/移除/状态推进）→ 行高重测（前缀和定位）
-watch(members, () => void nextTick(() => sort.measure()));
+watch(members, () => void nextTick(measureAndNotify));
+
+/** 自量测 + 上抛宿主：emit 发生于 rowHeights 赋值之后，宿主侧再经
+ *  nextTick 等本画布高度样式写入 DOM 后重测，量到的席位行高才完整。 */
+function measureAndNotify() {
+  sort.measure();
+  emit("layout");
+}
 </script>
 
 <template>

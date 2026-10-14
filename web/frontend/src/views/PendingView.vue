@@ -19,6 +19,11 @@
  * 展开子表（锁定席位反而可展开）；切换改由 .seat 行 pointerup 统一判定
  * （按压起于 .seat-line 且未发生实质拖动才切换），.seat-line 的 click
  * 绑定移除，等待/在途席位行为一致且不误触子表与行内按钮。
+ * 展开首帧让位修复（2026-10-14 部署机 3.0.1 反馈）：成员行 absolute、
+ * 子表画布高度由子组件自量测后才写入，宿主自身 watch 内的 nextTick 重测
+ * 先于子组件自量测执行，量到的席位行高不含成员列表（其余席位只让出表头
+ * 高度、成员区被遮挡，再点一下任一席位触发重测才恢复）——子表每次自量测
+ * 落定后 emit layout，宿主 nextTick 重测前缀和（等子表高度样式上 DOM）。
  */
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 
@@ -129,6 +134,13 @@ onMounted(() => {
 // 席位集变化（SSE 快照/重排提交）与子表展开收起 → 行高重测（前缀和定位）
 watch(seats, () => void nextTick(() => sort.measure()));
 watch(expanded, () => void nextTick(() => sort.measure()));
+
+/** 子表量测落定（layout 事件）后的席位行高重测：nextTick 等子表画布高度
+ *  样式写入 DOM 再量，展开/成员变化后其余席位首帧即正确让位（见文件头
+ *  说明）。多席位同时展开时各子表各自上抛，末次量测天然包含全部行高。 */
+function remeasureSeats() {
+  void nextTick(() => sort.measure());
+}
 
 /** 席位展开切换（pointerup 统一判定）：捕获期间 pointerup 被重定向到
  *  .seat 行、target 无法回查按下位置，故在按下时记录本次按压档案；组件级
@@ -313,6 +325,7 @@ async function confirmRemove() {
             @remove="(tid) => (removing = { seat: s, task_id: tid })"
             @changed="load"
             @error="(msg) => (orderError = msg)"
+            @layout="remeasureSeats"
           />
         </div>
 
