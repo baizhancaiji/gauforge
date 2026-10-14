@@ -53,6 +53,8 @@ def main() -> int:
         "--input-file-type", "openapi",
         "--output", str(output),
         "--output-model-type", "pydantic_v2.BaseModel",
+        # 去时间戳头：任意时刻重复再生字节一致（零 diff 闸门可字面复核）
+        "--disable-timestamp",
     ]
     print("生成命令: " + " ".join(cmd))
     return subprocess.call(cmd)
