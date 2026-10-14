@@ -65,7 +65,9 @@ def validate_and_normalize(template_id: int, data: dict, *,
     """校验并归一化一次模板保存载荷（PUT 全量替换语义）。
 
     返回 (fields, notice)：fields = {name, route, nproc(int|None),
-    mem_gb(float|None), cpu(str|None), is_default(bool)}（存储层形态）；
+    mem_gb(float|None), cpu(str|None), is_default(bool)}（存储层形态；
+    is_default 仅表达「本请求置默认」，False 时 repo 保持现有归属——契约：
+    缺省/false 不改变默认）；
     notice = {temp_applied, normalized, spelling_warnings?}（enforce 豁免
     放行与 warn 放行均携带词典外 token 清单）。任一校验失败 →
     validation_failed(errors)（全量一次返回）。

@@ -30,11 +30,14 @@ class ComboTemplatesRepo:
 
         fields 键：name/route/nproc(int|None)/mem_gb(float|None)/
         cpu(str|None)/is_default(bool)；值级合法性由校验服务先行保证。
+        is_default=False（请求缺省/显式 false）保持该行现有默认归属不变
+        （契约：radio 语义不可取消、只能改选，恒有且仅有一条默认）。
         """
         with self._db.tx() as conn:
             conn.execute(
                 "UPDATE combo_templates SET name = ?, route = ?, nproc = ?,"
-                " mem_gb = ?, cpu = ?, is_default = ?, updated_at = ?"
+                " mem_gb = ?, cpu = ?, is_default = CASE WHEN ? THEN 1"
+                " ELSE is_default END, updated_at = ?"
                 " WHERE template_id = ?",
                 (fields["name"], fields["route"], fields["nproc"],
                  fields["mem_gb"], fields["cpu"],

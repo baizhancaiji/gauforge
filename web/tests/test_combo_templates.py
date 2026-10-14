@@ -98,6 +98,17 @@ def test_is_default_exclusive_migration(repo):
     assert sum(r["is_default"] for r in rows) == 1
 
 
+def test_is_default_false_preserves_row_state(repo):
+    """is_default=False 保持该行现值：默认行不自摘、非默认行不自立
+    （契约：缺省/false 不改变现有默认归属）。"""
+    repo.update(1, _fields(is_default=False))
+    assert [r["template_id"] for r in repo.get_all() if r["is_default"]] == [1]
+    repo.update(2, _fields(is_default=False))
+    rows = repo.get_all()
+    assert [r["template_id"] for r in rows if r["is_default"]] == [1]
+    assert sum(r["is_default"] for r in rows) == 1
+
+
 def test_update_refreshes_updated_at(repo):
     before = repo.get(1)["updated_at"]
     row = repo.update(1, _fields(name="改名"))
@@ -156,6 +167,21 @@ def test_radio_default_via_put():
                 is_default=True).status_code == 200
     got = client.get("/api/v1/combo-templates").json()["templates"]
     assert [t["template_id"] for t in got if t["is_default"]] == [3]
+
+
+def test_is_default_omitted_or_false_preserves_default_owner():
+    """PUT 缺省/显式 false 不改变现有默认归属（契约明文）：对默认行自身
+    或非默认行保存均不清默认，恒有且仅有一个默认。"""
+    for body in ({"name": "配置1", "route": "#p hf opt"},
+                 {"name": "配置1", "route": "#p hf opt", "is_default": False}):
+        assert _put(1, **body).status_code == 200
+        got = client.get("/api/v1/combo-templates").json()["templates"]
+        assert [t["template_id"] for t in got if t["is_default"]] == [1]
+    # 对非默认行保存 → 默认归属不变；显式 true 才迁移（见 radio 用例）
+    assert _put(2, name="配置2", route="#p hf opt").status_code == 200
+    got = client.get("/api/v1/combo-templates").json()["templates"]
+    assert [t["template_id"] for t in got if t["is_default"]] == [1]
+    assert sum(t["is_default"] for t in got) == 1
 
 
 # ---------------- §3.2 校验矩阵逐 reason（11 项） ----------------
