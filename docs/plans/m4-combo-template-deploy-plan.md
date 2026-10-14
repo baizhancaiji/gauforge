@@ -623,7 +623,10 @@ grep 对照输出，随提交 #2 回填）、FG1/FG2（F1/F2 §1.1 逐条 git di
   亦放行）；A11 通过——方案下拉选 2 回填三行 %nprocshared=4 / %mem=8GB /
   %cpu=1-5 与 GET 值一一对应、全小写、仅非空项（A11-A20-A21-comboflow-
   dialog.png）；A12 通过——未保存本地改动切方案/重开均回已保存值；A13
-  通过——route 含 @task: → 422 link0_symbol_ref_forbidden；A14 通过——
+  通过——route 含 @task: → 422 link0_symbol_ref_forbidden（补注 2026-10-14
+  独立审查 C-4：link0 半支如 cpu 含 @exec: 先被 cpu_list_invalid 拦——
+  拒绝语义成立、reason 与断言字面漂移，系后端文法判定先于符号子串检测
+  的既定顺序，登记不修）；A14 通过——
   %cpu 默认置灰（disabled），勾选「指定CPU核心」后可填；A15/A16/A17
   通过——nproc=0 / mem=abc / cpu=a-b 三错误一次全报（422 details 三条
   reason 全展示）+ 三编辑框红描边（A15-A16-A17-final.png）；A18 通过——
