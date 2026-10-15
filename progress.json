@@ -1,7 +1,29 @@
 {
- "updated": "2026-10-14T21:18+0800",
+ "updated": "2026-10-15T11:05+0800",
  "latest_released_version": "3.2.0",
- "unreleased": [],
+ "unreleased": [
+  {
+   "type": "added",
+   "scope": "scripts",
+   "summary": "extract_keywords.py 新增面⑤选项面：keyword 页 Options 章节（##/### 层级）#### 条目规则提取，去占位符归一为「页slug=选项」组合词；章节名不含 option 的核实项（bd/opt/scrf/integral/sacci/dft 色散节）走白名单，dft 页四项按原文载体 EmpiricalDispersion 入典",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "changed",
+   "scope": "parse",
+   "summary": "重生成关键词词典 387→1164 词：补齐 scf=xqc/scf=yqc 等 777 个 KW=OPT 选项词条（全部 86 个正式关键词页），修复 scf=xqc 等正确选项写法被拼写检查误报的问题",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "面⑤选项面闸门测试：mini KB 选项提取与散文标题剔除断言（kb_scf.md fixture）、真实 KB 重生成一致性规模登记 387→1164、scf=xqc 等 14 项选项词条回归清单",
+   "breaking": false,
+   "migration": null
+  }
+ ],
  "in_progress": null,
  "next_steps": [
   "上传 Release 附件（用户手动执行）：三版部署包已构建于 target/deploy/v3.2.0、v3.1.0、v3.0.2（各含版本包+固定名包 gauforge-deploy-linux-x64.tar.gz 及各自 sha256 与 VERSION），经 GitHub Web 逐版上传至对应 Release",

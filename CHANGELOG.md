@@ -4,7 +4,14 @@
 
 ## Unreleased（未发布）
 
-_暂无条目。_
+### 新增
+
+- 【scripts】extract_keywords.py 新增面⑤选项面：keyword 页 Options 章节（##/### 层级）#### 条目规则提取，去占位符归一为「页slug=选项」组合词；章节名不含 option 的核实项（bd/opt/scrf/integral/sacci/dft 色散节）走白名单，dft 页四项按原文载体 EmpiricalDispersion 入典
+- 【web】面⑤选项面闸门测试：mini KB 选项提取与散文标题剔除断言（kb_scf.md fixture）、真实 KB 重生成一致性规模登记 387→1164、scf=xqc 等 14 项选项词条回归清单
+
+### 变更
+
+- 【parse】重生成关键词词典 387→1164 词：补齐 scf=xqc/scf=yqc 等 777 个 KW=OPT 选项词条（全部 86 个正式关键词页），修复 scf=xqc 等正确选项写法被拼写检查误报的问题
 
 ## v3.2.0（2026-10-14T20:02+0800 发布，minor）
 
