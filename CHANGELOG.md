@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.3.0（2026-10-15T22:51+0800 发布，minor）
+
 ### 新增
 
 - 【scripts】extract_keywords.py 新增面⑤选项面：keyword 页 Options 章节（##/### 层级）#### 条目规则提取，去占位符归一为「页slug=选项」组合词；章节名不含 option 的核实项（bd/opt/scrf/integral/sacci/dft 色散节）走白名单，dft 页四项按原文载体 EmpiricalDispersion 入典
