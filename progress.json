@@ -1,10 +1,10 @@
 {
- "updated": "2026-10-15T22:51+0800",
+ "updated": "2026-10-15T22:55+0800",
  "latest_released_version": "3.3.0",
  "unreleased": [],
  "in_progress": null,
  "next_steps": [
-  "上传 Release 附件（用户手动执行）：三版部署包已构建于 target/deploy/v3.2.0、v3.1.0、v3.0.2（各含版本包+固定名包 gauforge-deploy-linux-x64.tar.gz 及各自 sha256 与 VERSION），经 GitHub Web 逐版上传至对应 Release",
+  "上传 Release 附件（用户手动执行）：四版部署包已构建于 target/deploy/v3.3.0、v3.2.0、v3.1.0、v3.0.2（各含版本包+固定名包 gauforge-deploy-linux-x64.tar.gz 及各自 sha256 与 VERSION），经 GitHub Web 逐版上传至对应 Release",
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
   "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
  ],
