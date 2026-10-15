@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""G16 route 关键词字典生成（m2-plan B1 基座 + 插波 3.2.0 批次 B 扩面）。
+"""G16 route 关键词字典生成（m2-plan B1 基座 + 插波 3.2.0 批次 B 扩面
++ 3.3 unreleased 面⑤选项面）。
 
 数据源：gaussian-kb 结构化知识库数据目录（官方 HTML 经 gaussian-kb 抽取，
 与 MCP list_gaussian_pages/get_gaussian_page 同源同数）：
@@ -21,6 +22,13 @@
 - 面④（评估结论，不设规则）：gen/pseudo/extrabasis 等页正文为自由格式
   基组/ECP 输入与散文示例，无新增可规则化结构面（其 route 词面已由
   面①②③覆盖），按噪声可控原则不提取。
+- 面⑤（选项面，3.3 unreleased 批次：scf=xqc 词典缺失事故）：keyword 页
+  Options 章节（##/### 层级、章节名含 option）下的 #### 条目即官方选项名，
+  规范化去占位符后以「页 slug=选项」小写组合词入典（route 切分 [/\s#]+
+  同规：KW=OPT 为单 token）。章节名不含 option 的核实项走白名单（bd 页
+  Related Keywords 节 NewFCBD/OldFCBD、opt 页 Set Opt. Goal 节 QST2/QST3/
+  Saddle/Conical、scrf 页 Solvents 节 G03Defaults、dft 页 Empirical
+  Dispersion 节 GD2/GD3/GD3BJ/PFD——载体为 EmpiricalDispersion 关键词）。
 
 词条小写化、按码点排序、去重——确定性输出，重跑幂等。
 
@@ -227,6 +235,79 @@ _BASIS_VARIANTS: dict[str, tuple[str, ...]] = {
 }
 
 
+# 面⑤章节外核实项白名单（3.3 选项面全库审计，2026-10-15）：官方文档置于
+# 名称不含 option 的章节、但经原文核实确为该载体关键词选项的条目（键为
+# 载体关键词，可与页面 slug 不同）：bd 页 Related Keywords 节、opt 页
+# Set Opt. Goal 节、scrf 页 Solvents 节、dft 页 Empirical Dispersion 节
+# （原文「The EmpiricalDispersion keyword ... takes the following
+# options」）、integral 页 Relativistic Calculations 节、sacci 页 Input 节
+# （Spin State Options 章的延续）。
+_MANUAL_OPTIONS: dict[str, tuple[str, ...]] = {
+    "bd": ("NewFCBD", "OldFCBD"),
+    "opt": ("QST2", "QST3", "Saddle", "Conical"),
+    "scrf": ("G03Defaults",),
+    "empiricaldispersion": ("PFD", "GD2", "GD3", "GD3BJ"),
+    "integral": ("DKH", "DKH0", "DKHSO", "RESC"),
+    "sacci": ("TargetState", "AddElectron", "SubElectron", "TransitionFrom",
+              "AllProperties", "NoProperty", "SelectCISOnly", "SACOnly"),
+}
+
+# Options 章节：## 与 ### 层级（如 gen 页 ### Option、integral 页
+# ### General Basis Set-Related Options 均为三级）。捕获条件为两级
+# 章节名任一含 option：仅按最近一级判断会把 ## Options 内 ### 选项
+# 分组（组名可不含 option，如 freq 页各模式组）之后的条目整体漏掉。
+_CHAPTER_HEADING = re.compile(r"^(##|###)\s+(.+)$")
+_OPTION_HEADING = re.compile(r"^####\s+(.+)$")
+
+
+def _norm_option(heading: str) -> str | None:
+    """#### 选项标题 → 选项基名；不可规整为单 token 的返回 None。
+
+    去斜体占位符后剥参数形态：NDamp=*N*→ndamp、VShift[=N]→vshift、
+    Saddle=N→saddle、TargetState=(...)→targetstate；散文章节标题
+    （含空格）与占位符残留形态剔除。
+    """
+    text = heading.strip().replace("*", "").replace("_", "")
+    text = re.sub(r"\[=.*\]$", "", text)
+    text = re.sub(r"\([^)]*\)", "", text)
+    text = text.split("=", 1)[0].strip()
+    if len(text) < 2 or " " in text \
+            or not re.fullmatch(r"[A-Za-z0-9'-]+", text):
+        return None
+    return text
+
+
+def _option_words(markdown_dir: Path) -> set[str]:
+    """面⑤keyword 页：Options 章节 #### 条目规则提取 + 章节外白名单。"""
+    words: set[str] = set()
+    kdir = markdown_dir / "keyword"
+    if not kdir.is_dir():
+        return words
+    for page in sorted(kdir.glob("*.md")):
+        slug = page.stem
+        if slug in EXCLUDED_SLUGS:
+            continue
+        lv2 = lv3 = None
+        for line in page.read_text(encoding="utf-8").splitlines():
+            m = _CHAPTER_HEADING.match(line)
+            if m:
+                if m.group(1) == "##":
+                    lv2, lv3 = m.group(2).strip(), None
+                else:
+                    lv3 = m.group(2).strip()
+                continue
+            m = _OPTION_HEADING.match(line)
+            if m and ((lv2 and "option" in lv2.casefold())
+                      or (lv3 and "option" in lv3.casefold())):
+                opt = _norm_option(m.group(1))
+                if opt:
+                    words.add(f"{slug}={opt}".casefold())
+    for carrier, opts in _MANUAL_OPTIONS.items():
+        for opt in opts:
+            words.add(f"{carrier}={opt}".casefold())
+    return words
+
+
 def _basis_words(text: str) -> set[str]:
     """面③basissets 页：族正则全页扫描 + 极化/弥散形态规则生成。"""
     folded = text.casefold()
@@ -257,6 +338,7 @@ def extract(manifest_path: Path, markdown_dir: Path | None) -> list[str]:
         basis = markdown_dir / "structure" / "basissets.md"
         if basis.is_file():
             words |= _basis_words(basis.read_text(encoding="utf-8"))
+        words |= _option_words(markdown_dir)
     return sorted(words)
 
 

@@ -21,6 +21,9 @@
   {"id": 7, "slug": "oniom_technote", "title": "Investigating the Reactivity",
    "category": "keyword", "modified": "2025-06-05T14:51:57",
    "_status": "done", "image_count": 0, "images": [], "html_size": 1000},
+  {"id": 9, "slug": "scf", "title": "SCF", "category": "keyword",
+   "modified": "2025-06-05T14:51:57", "_status": "done", "image_count": 0,
+   "images": [], "html_size": 1000},
   {"id": 8, "slug": "running", "title": "Running Gaussian",
    "category": "structure", "modified": "2025-06-05T14:51:57",
    "_status": "done", "image_count": 0, "images": [], "html_size": 1000}

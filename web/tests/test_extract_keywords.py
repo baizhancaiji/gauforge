@@ -1,4 +1,5 @@
-"""关键词字典生成脚本与加载器测试（B1，m2-plan §2.1 + 插波 3.2.0 批次 B 扩面）。
+"""关键词字典生成脚本与加载器测试（B1，m2-plan §2.1 + 插波 3.2.0 批次 B 扩面
++ 3.3 unreleased 面⑤选项面）。
 
 脚本以子进程运行（sys.executable，AGENTS §十）；mini 知识库 fixtures
 为 gaussian-kb 数据目录同构样本（page_manifest.json + markdown/ 正文，
@@ -6,6 +7,9 @@
 
 插波 3.2.0 批次 B 增补断言（m4-combo-template-deploy-plan §4/§8.1）：
 词典全小写、无重复词、排序稳定；enforce 达标判据 ①②③ 的逐条精确匹配。
+
+3.3 unreleased 面⑤增补断言：Options 章节 #### 条目以「页slug=选项」组合词
+入典、散文标题剔除；scf=xqc 词典缺失事故回归（真实 KB 一致性测试）。
 """
 from __future__ import annotations
 
@@ -21,11 +25,11 @@ SCRIPT = REPO_ROOT / "scripts" / "extract_keywords.py"
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "keywords_page_manifest.json"
 FIX_MD = Path(__file__).resolve().parent / "fixtures"
 
-# mini 清单预期词条：keyword 分类 6 页，剔除文章页 thermo/oniom_technote；
-# slug 全集（opt/densityfit/cas/extrabasis/cbs）+ 标题等价变体
+# mini 清单预期词条：keyword 分类 7 页，剔除文章页 thermo/oniom_technote；
+# slug 全集（opt/densityfit/cas/extrabasis/cbs/scf）+ 标题等价变体
 # （nodensityfit/casscf/extradensitybasis；「CBS Methods」含空格不收）。
 EXPECTED = ["cas", "casscf", "cbs", "densityfit", "extrabasis",
-            "extradensitybasis", "nodensityfit", "opt"]
+            "extradensitybasis", "nodensityfit", "opt", "scf"]
 
 
 def _run(*args: str) -> subprocess.CompletedProcess:
@@ -52,6 +56,7 @@ def _make_kb_dir(tmp_path: Path, *, with_markdown: bool = False) -> Path:
                     md / "gv6" / "gv6-gaussian-calculation-setup-keywords-and-options.md")
         shutil.copy(FIX_MD / "kb_dft.md", md / "keyword" / "dft.md")
         shutil.copy(FIX_MD / "kb_basissets.md", md / "structure" / "basissets.md")
+        shutil.copy(FIX_MD / "kb_scf.md", md / "keyword" / "scf.md")
     return tmp_path
 
 
@@ -76,10 +81,12 @@ def test_mini_kb_markdown_faces(tmp_path):
     # 面③basissets 族 + 极化/弥散形态生成（+ 插于数字与 g 之间）
     assert {"sto-3g", "cc-pvtz", "aug-cc-pvtz", "def2svp", "lanl2dz",
             "6-31g(d)", "6-31+g(d,p)", "6-311++g(2d,2p)", "6-31g**"} <= words
-    # 噪声剔除：gv6 散文单元、句首英文词、Link0 行
+    # 面⑤Options 章节 #### 条目（占位符 NDamp=*N* 归一为基名）
+    assert {"scf", "scf=qc", "scf=xqc", "scf=yqc", "scf=ndamp"} <= words
+    # 噪声剔除：gv6 散文单元、句首英文词、Link0 行、面⑤散文标题
     prose = {"prefix", "fragment", "molecule", "specification", "included",
              "the", "functionals", "related", "specified", "r", "u",
-             "%mem", "%nprocshared"}
+             "%mem", "%nprocshared", "scf=usage"}
     assert not (words & prose)
 
 
@@ -115,7 +122,9 @@ def test_real_kb_inrepo_dictionary_matches_regeneration(tmp_path):
         "入库字典与重生成不一致：请重跑 scripts/extract_keywords.py"
     # 规模登记：97 词条（m2-plan 基座）→ 387（插波 3.2.0 批次 B 扩面，
     # 面①97 + 面②gv6 对照表与 dft 锚点 + 面③basissets 族与形态生成）
-    assert len(inrepo.decode("utf-8").splitlines()) == 387
+    # → 1164（3.3 面⑤选项面：86 页 Options 章节 #### 条目 + 章节外核实
+    # 白名单，含 scf=xqc/yqc 等全部 KW=OPT 组合词）
+    assert len(inrepo.decode("utf-8").splitlines()) == 1164
 
 
 def test_inrepo_dictionary_lowercase_unique_sorted():
@@ -167,11 +176,22 @@ def test_gate_named_methods_and_bases_in_dictionary():
     assert len(methods) >= 10 and len(bases) >= 10
 
 
+def test_gate_option_face_tokens_in_dictionary():
+    """面⑤选项面（3.3 unreleased：scf=xqc 缺失事故回归）：KW=OPT 组合词
+    与白名单载体（EmpiricalDispersion）代表项逐条精确匹配。"""
+    words = kw_mod.load_keywords(refresh=True)
+    for tok in ("scf=qc", "scf=xqc", "scf=yqc", "scf=conver", "scf=ndamp",
+                "opt=qst2", "td=nstates", "freq=readfc", "population=nbo",
+                "scrf=g03defaults", "empiricaldispersion=gd3bj",
+                "integral=dkh", "geom=connectivity", "stable=1opt"):
+        assert tok in words, tok
+
+
 # ---------------- parse.keywords 加载器 ----------------
 
 def test_loader_reads_inrepo_dictionary():
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 387
+    assert len(words) == 1164
     assert "opt" in words and "casscf" in words and "scrf" in words
     assert all(w == w.casefold() for w in words)
 
