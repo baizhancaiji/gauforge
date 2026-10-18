@@ -748,6 +748,20 @@ class InputBlock(BaseModel):
     )
 
 
+class Warning(BaseModel):
+    line: int = Field(..., description='全文件行号（1 起）')
+    keyword: str = Field(
+        ..., description='警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串'
+    )
+    kind: str = Field(
+        ...,
+        description='警告类别（当前词表：keyword_spell；后续批次按输入勘误计划 §4 扩容）',
+    )
+    message: str = Field(..., description='可直接展示的中文说明')
+    suggestion: str | None = Field(None, description='可选；仅拼写/选项近邻类警告提供')
+    task_id: int | None = Field(None, description='可选；仅队列/多任务提交聚合时填充')
+
+
 class Link0(BaseModel):
     lines: list[str] = Field(
         ...,
@@ -779,6 +793,10 @@ class InputPreview(BaseModel):
     blocks: Blocks
     parse_errors: list[ParseError] | None = Field(
         None, description='解析失败节信息（预览尽力而为；导入端点才严格校验）'
+    )
+    warnings: list[Warning] | None = Field(
+        None,
+        description='非阻断警告（默认空数组）。预览通道当前恒为空（后续批次随 parse_input 检测项扩容）；分块保存响应中为 route 拼写检查结果， 行号为全文件绝对行号。',
     )
 
 

@@ -1605,6 +1605,21 @@ export interface components {
             /** @description 该节是否需要终止空行（以手册 Section Ordering 表逐节为准） */
             terminator_blank: boolean;
         };
+        /** @description 非阻断警告（warnings 通道，输入勘误计划 G0；与阻断性 parse_errors 分离——parse_errors 使导入/提交 422，warnings 仅提示）。 全通道命名统一为 warnings。 */
+        Warning: {
+            /** @description 全文件行号（1 起） */
+            line: number;
+            /** @description 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串 */
+            keyword: string;
+            /** @description 警告类别（当前词表：keyword_spell；后续批次按输入勘误计划 §4 扩容） */
+            kind: string;
+            /** @description 可直接展示的中文说明 */
+            message: string;
+            /** @description 可选；仅拼写/选项近邻类警告提供 */
+            suggestion?: string;
+            /** @description 可选；仅队列/多任务提交聚合时填充 */
+            task_id?: number;
+        };
         /** @description 分块预览（M0 预览与 M2 编辑共用；重组空行不变式见 m0-plan §2.2） */
         InputPreview: {
             candidate_id: number;
@@ -1628,6 +1643,8 @@ export interface components {
                 line: number;
                 message: string;
             }[];
+            /** @description 非阻断警告（默认空数组）。预览通道当前恒为空（后续批次随 parse_input 检测项扩容）；分块保存响应中为 route 拼写检查结果， 行号为全文件绝对行号。 */
+            warnings?: components["schemas"]["Warning"][];
         };
         /** @description 设置项（元数据供前端数据驱动渲染） */
         SettingItem: {
@@ -2201,21 +2218,13 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 更新后的完整预览结构 + 非阻断警告 */
+            /** @description 更新后的完整预览结构（InputPreview 含非阻断 warnings：route 拼写 检查结果，行号为全文件绝对行号；InputPreview.warnings 通道， 输入勘误计划 G0 起不再使用外层包装） */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InputPreview"] & {
-                        warnings?: {
-                            line: number;
-                            keyword: string;
-                            /** @description 如 keyword_spell */
-                            kind: string;
-                            suggestion: string;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["InputPreview"];
                 };
             };
             400: components["responses"]["Error"];
