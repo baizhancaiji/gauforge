@@ -1,8 +1,8 @@
 {
- "updated": "2026-10-15T23:40+0800",
+ "updated": "2026-10-19T00:00+0800",
  "latest_released_version": "3.3.0",
  "unreleased": [],
- "in_progress": null,
+ "in_progress": {"task": "input-verify-gap-remediation-plan B1（G0+C1+C2+C3 正确性修复与 warnings 前置通道）", "note": "文档先行（roadmap §2.7 C1/C2 回补 + openapi Warning schema）→ 测试先行 → 实现 → 进度同步；验收与契约动作见 docs/plans/input-verify-gap-remediation-plan.md §3 B1"},
  "next_steps": [
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
   "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
