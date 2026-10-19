@@ -436,3 +436,31 @@ def test_spelling_words_loaded_and_gate_ready():
     assert {"p", "b3lyp", "6-31g(d)", "opt", "freq"} <= words
     assert svc.SPELLING_MODE == "enforce"
 
+
+
+# ---------------- B3 G2：模板 route 重复关键字检测 ----------------
+
+def test_template_route_duplicate_warning():
+    """warn 模式下重复关键字出 route_duplicate（非阻断）；enforce 模式
+    重复不属词典外词、不新增阻断理由（重复按警告通道，§2.11 模板列）。"""
+    from web.src.services import combo_templates as ct
+    payload = {"route": "#p mp2 mp2/6-31g(d)", "nproc": "4",
+               "mem_gb": "8", "cpu": "0-3"}
+    fields, notice = ct.validate_and_normalize(1, payload, mode="warn")
+    assert notice.get("route_duplicates"), "warn 模式应携带重复关键字清单"
+    assert notice["route_duplicates"][0]["keyword"] == "mp2"
+    # enforce 模式不因重复 422（mp2 在词典），响应 notice 同样携带
+    fields2, notice2 = ct.validate_and_normalize(2, payload, mode="enforce")
+    assert notice2.get("route_duplicates")
+
+
+def test_template_route_duplicate_exempt_shapes():
+    """容器头裸形+选项形与 IOp 并写在模板通道同样豁免。"""
+    from web.src.services import combo_templates as ct
+    for route in ("#p freq freq=readfcht b3lyp/6-31g(d)",
+                  "#p opt opt=(calcfc,ts)",
+                  "#p b3lyp/6-31g(d) iop(5/17=1) iop(6/50=1)"):
+        _, notice = ct.validate_and_normalize(
+            3, {"route": route, "nproc": "4", "mem_gb": "8", "cpu": "0-3"},
+            mode="enforce")
+        assert not notice.get("route_duplicates"), route

@@ -397,3 +397,79 @@ def test_g9_link1_without_preceding_blank_annotated():
     e = r["parse_errors"][0]
     assert e["section"] == "link1"
     assert "缺少空行" in e["message"]
+
+
+# ---------------- G2：route 重复关键字判定表（B3） ----------------
+
+def test_g2_route_duplicate_matrix():
+    """§2.6 判定表逐行：容器头白名单、裸形+选项形豁免、IOp 并写豁免。"""
+    from web.src.parse.keywords import check_route_duplicates
+
+    def kinds(route):
+        return [w["keyword"] for w in check_route_duplicates(route)]
+
+    # 同头部均裸 → 警告
+    assert kinds("#p mp2 mp2/6-31g(d)") == ["mp2"]
+    # 容器头裸形 + 选项形 → 豁免（官方追加取值）
+    assert kinds("#p freq freq=readfcht") == []
+    assert kinds("#p opt opt=(calcfc,ts)") == []
+    # 两个非空选项集 → 警告
+    assert kinds("#p freq=readfc freq=readfcht") == ["freq"]
+    assert kinds("#p opt=(calcfc,ts) opt=(qst3)") == ["opt"]
+    assert kinds("#p scf=tight scf=xqc") == ["scf"]
+    # IOp 多条目取值并列 → 豁免
+    assert kinds("#p b3lyp/6-31g(d) iop(5/17=1) iop(6/50=1)") == []
+    # 正常 route → 无
+    assert kinds("#p opt freq") == []
+    # 白名单外头部重复 → 警告（mark 等）
+    assert kinds("#p mark mark b3lyp/6-31g(d)") == ["mark"]
+    # 跨行 route 同样检测（token 管道跨行）
+    assert kinds("#p mp2\nmp2") == ["mp2"]
+
+
+def test_g2_route_duplicate_warning_shape():
+    from web.src.parse.keywords import check_route_duplicates
+    ws = check_route_duplicates("#p scf=tight scf=xqc", line_offset=3)
+    assert len(ws) == 1
+    w = ws[0]
+    assert w["kind"] == "route_duplicate"
+    assert w["line"] == 3 + 1
+    assert "scf" in w["message"] and w["keyword"] == "scf"
+    assert set(w) >= {"line", "keyword", "kind", "message"}
+
+
+# ---------------- G3：Link 0 错位检测（B3） ----------------
+
+def test_g3_link0_into_route_text_blocked():
+    """情形 1：route 后无空行直接跟 % 行 → 被吞入 route 文本，记
+    parse_errors（G16 必然误读）。"""
+    r = parse_input("%mem=1GB\n\n#p hf/sto-3g\n%chk=/tmp/x.chk\n\nt\n\n"
+                    "0 1\nO 0 0 0\n\n")
+    e = next(e for e in r["parse_errors"] if e["section"] == "route")
+    assert "route 之前" in e["message"]
+    assert "%chk=/tmp/x.chk" in r["blocks"]["route"]  # 吞并事实不变
+
+
+def test_g3_link0_as_title_first_line_blocked():
+    """情形 2：route 后有空行再跟 % 行 → 成 title 首行，记 parse_errors
+    （title 形态合法但几乎必为用户错误）。"""
+    r = parse_input("%mem=1GB\n\n#p hf/sto-3g\n\n%chk=/tmp/x.chk\n\n"
+                    "0 1\nO 0 0 0\n\n")
+    e = next(e for e in r["parse_errors"] if e["section"] == "title")
+    assert "Link 0" in e["message"]
+    assert r["blocks"]["title"] == "%chk=/tmp/x.chk"
+
+
+def test_g3_link0_at_title_position_without_route():
+    """route 缺失时 % 行出现在 title 位置同样按情形 2 记 parse_errors。"""
+    r = parse_input("%chk=/tmp/x.chk\n\n0 1\nO 0 0 0\n\n")
+    assert any(e["section"] == "title" and "Link 0" in e["message"]
+               for e in r["parse_errors"])
+
+
+def test_g3_link0_in_molecule_spec_not_scanned():
+    """检测范围限定 route 起点至 title 结束：分子说明后附加节中以 % 开头
+    的行不误报。"""
+    text = ("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n%foo=bar data\n\n")
+    r = parse_input(text)
+    assert not any("Link 0" in e["message"] for e in r["parse_errors"])

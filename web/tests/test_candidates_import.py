@@ -214,3 +214,44 @@ def test_delete_candidate_with_history_detaches_not_deletes(ind):
     with pytest.raises(ApiError) as ei:
         delete_candidate(tid, inputs_dir=ind)
     assert ei.value.body()["error"]["code"] == "NOT_FOUND"
+
+
+# ---------------- G1：导入通道拼写/重复 warnings（B3） ----------------
+
+SPELL_NOTE = """#p opf freq b3lyp/6-31g(d)
+
+拼错关键字导入
+
+0 1
+O 0.0 0.0 0.0
+H 0.0 0.0 0.96
+"""
+
+
+def test_import_carries_spell_warnings(ind):
+    """有近邻的拼错关键字导入不阻断，files[] 条目携带 warnings（行号全文件
+    1 起）。"""
+    out = import_files([("spell.gjf", SPELL_NOTE.encode())], inputs_dir=ind)
+    assert out[0]["warnings"], "导入成功条目应携带非阻断警告"
+    w = out[0]["warnings"][0]
+    assert w["kind"] == "keyword_spell"
+    assert w["line"] == 1 and w["suggestion"] == "opt"
+    assert w["message"]
+
+
+def test_import_rejected_batch_has_no_warnings_field(ind):
+    """整批 422 的 details.errors[] 保持既有逐文件错误形态，不新增 warnings。"""
+    from web.src.errors import ApiError
+    with pytest.raises(ApiError) as ei:
+        import_files([("bad.gjf", b"#p hf/sto-3g\n\nno title\n\nzero one\n")],
+                     inputs_dir=ind)
+    detail = ei.value.body()["error"]["details"]["errors"][0]
+    assert "warnings" not in detail
+
+
+def test_import_duplicate_keyword_warning(ind):
+    """route 重复关键字（mp2 mp2）在导入通道出 route_duplicate 警告。"""
+    text = "#p mp2 mp2/6-31g(d)\n\nt\n\n0 1\nO 0 0 0\n"
+    out = import_files([("dup.gjf", text.encode())], inputs_dir=ind)
+    kinds = {w["kind"] for w in out[0]["warnings"]}
+    assert "route_duplicate" in kinds

@@ -26,7 +26,6 @@ from pathlib import Path
 from .. import config
 from ..errors import err
 from ..store import executions, tasks
-from .candidates import default_inputs_dir
 
 _TERMINAL = ("succeeded", "failed", "skipped")
 _EXEC_UNITS = {"s": "执行", "t": "任务"}
@@ -37,6 +36,7 @@ _REF_KEYS = {"chk": "chk", "oldchk": "oldchk"}
 
 
 def inputs_path(task_id: int) -> Path:
+    from .candidates import default_inputs_dir  # 延迟导入防环（模块加载序依赖）
     return default_inputs_dir() / str(task_id)
 
 

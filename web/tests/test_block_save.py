@@ -389,3 +389,31 @@ def test_golden_inputs_edit_roundtrip(ind):
         assert isinstance(r["warnings"], list)
         checked += 1
     assert checked == 5
+
+
+# ---------------- B3：G3 分块保存 Link0 错位阻断 + G2 保存通道 ----------------
+
+def test_save_route_rejects_link0_line(ind):
+    """分块保存 route 节含 % 行 → 阻断（reason=route_line_link0_forbidden）。"""
+    tid = _mk(ind)
+    with pytest.raises(ApiError) as ei:
+        save_block(tid, "route", ["#p hf/sto-3g", "%chk=/tmp/x.chk"],
+                   inputs_dir=ind)
+    reasons = {e["reason"] for e in ei.value.body()["error"]["details"]["errors"]}
+    assert "route_line_link0_forbidden" in reasons
+
+
+def test_save_title_rejects_link0_first_line(ind):
+    """分块保存 title 节首行 % 开头 → 阻断（reason=link0_misplaced）。"""
+    tid = _mk(ind)
+    with pytest.raises(ApiError) as ei:
+        save_block(tid, "title", ["%chk=/tmp/x.chk"], inputs_dir=ind)
+    reasons = {e["reason"] for e in ei.value.body()["error"]["details"]["errors"]}
+    assert "link0_misplaced" in reasons
+
+
+def test_save_route_reports_duplicate_warning(ind):
+    """分块保存 route：重复关键字警告随响应 warnings 返回（非阻断）。"""
+    tid = _mk(ind)
+    out = save_block(tid, "route", ["#p mp2 mp2/6-31g(d)"], inputs_dir=ind)
+    assert any(w["kind"] == "route_duplicate" for w in out["warnings"])

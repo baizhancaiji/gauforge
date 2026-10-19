@@ -360,3 +360,92 @@ def test_golden_samples_normalize_without_damage():
         assert len(b1["parse_errors"]) <= len(b0["parse_errors"])
         checked += 1
     assert checked == 10
+
+
+# ---------------- G1：提交通道 warnings（B3） ----------------
+
+SPELL_CLEAN = (  # 拼错关键字（opf 近邻 opt）但结构规范
+    "%mem=1GB\n"
+    "%nprocshared=4\n"
+    "#p opf freq b3lyp/6-31g(d)\n"
+    "\n"
+    "水分子示例\n"
+    "\n"
+    "0 1\n"
+    "O 0.0 0.0 0.0\n"
+    "H 0.0 0.0 0.96\n"
+    "\n"
+)
+
+
+def test_inline_submit_carries_warnings(ind):
+    """行内提交响应携带非阻断 warnings（拼写近邻），不阻断提交。"""
+    tid = _mk(ind, SPELL_CLEAN)
+    out = submit_candidate(tid, None)
+    assert out["seat_id"] >= 1
+    assert out["normalized"] is False
+    kinds = {w["kind"] for w in out["warnings"]}
+    assert "keyword_spell" in kinds
+    assert all("task_id" not in w for w in out["warnings"])  # 单任务不填
+
+
+def test_queue_submit_collects_member_warnings_with_task_id(ind):
+    """队列提交逐成员收集 warnings，条目带 task_id；normalized 语义不变。"""
+    t1 = _mk(ind, SPELL_CLEAN, name="a.gjf")
+    t2 = _mk(ind, CLEAN, name="b.gjf")
+    qid = "QQ7777"
+    queues().create(qid, name="队列", skip_failed=False)
+    tasks().enqueue(t1, qid, 0)
+    tasks().enqueue(t2, qid, 1)
+    out = submit_queue(qid)
+    assert out["normalized"] is False
+    w1 = [w for w in out["warnings"] if w.get("task_id") == t1]
+    w2 = [w for w in out["warnings"] if w.get("task_id") == t2]
+    assert w1 and all(w["kind"] == "keyword_spell" for w in w1)
+    assert w2 == []
+
+
+def test_queue_submit_duplicate_warning_with_task_id(ind):
+    """队列提交重复关键字警告同样带成员 task_id。"""
+    dup = SPELL_CLEAN.replace("#p opf freq", "#p mp2 mp2 freq")
+    t1 = _mk(ind, dup, name="d.gjf")
+    t2 = _mk(ind, CLEAN, name="e.gjf")
+    qid = "QQ7778"
+    queues().create(qid, name="队列", skip_failed=False)
+    tasks().enqueue(t1, qid, 0)
+    tasks().enqueue(t2, qid, 1)
+    out = submit_queue(qid)
+    w1 = [w for w in out["warnings"] if w.get("task_id") == t1]
+    assert any(w["kind"] == "route_duplicate" for w in w1)
+
+
+def test_requeue_response_carries_warnings(ind):
+    """历史重新排队：normalized 从核验结果 dict 取值，warnings 随响应透传。"""
+    tid = _mk(ind, SPELL_CLEAN)
+    eid = executions().create(task_id=tid, filename="a.gjf",
+                              resources={"nproc": {"value": 4, "defaulted": False},
+                                         "mem_gb": {"value": 8.0, "defaulted": False}},
+                              state="running")
+    executions().finalize(execution_id=eid, state="failed",
+                          finished_at="2026-09-26T00:00:00+00:00",
+                          cause="program_error")
+    out = history_svc.requeue(eid)
+    assert out["normalized"] is False
+    assert any(w["kind"] == "keyword_spell" for w in out["warnings"])
+    assert tasks().get(tid)["form"] == "seat_task"
+
+
+def test_requeue_normalized_flag_from_dict_result(ind):
+    """真值语义回归（§7 风险：返回 dict 后 `if verify_and_store` 恒真）：
+    规范化历史副本，normalized 必须仍准确反映「有变化」。"""
+    tid = _mk(ind, CLEAN.replace("\n", "\r\n"))
+    eid = executions().create(task_id=tid, filename="a.gjf",
+                              resources={"nproc": {"value": 4, "defaulted": False},
+                                         "mem_gb": {"value": 8.0, "defaulted": False}},
+                              state="running")
+    executions().finalize(execution_id=eid, state="failed",
+                          finished_at="2026-09-26T00:00:00+00:00",
+                          cause="program_error")
+    out = history_svc.requeue(eid)
+    assert out["normalized"] is True  # CRLF→LF 有变化
+    assert b"\r" not in _file(ind, tid)

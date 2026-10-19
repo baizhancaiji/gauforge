@@ -353,3 +353,24 @@ def test_opt_atomic_options_preserved(tmp_path):
     _, eid = _mk_source("#p opt=ts) hf/6-31g(d)")
     diff = preview_resume(eid)["input_diff"]
     assert "Opt=Restart" in diff and "Opt=(Restart,ts))" not in diff
+
+
+def test_confirm_response_carries_warnings(tmp_path):
+    """B3 G1：确认响应对注入改写后输入透传非阻断 warnings（拼写近邻）。"""
+    _set_g16("ok", tmp_path)
+    # 源 route 拼错关键字（opf 近邻 opt），注入后仍保留 → 警告随确认响应透传
+    tid, eid = _mk_source("#p opf b3lyp/6-31g(d)")
+    out = resume_from_checkpoint(eid)
+    assert out["eligible"] if "eligible" in out else True  # confirm 无 eligible 键
+    assert any(w["kind"] == "keyword_spell" for w in out["warnings"])
+
+
+def test_confirm_dict_return_does_not_break_control_flow(tmp_path):
+    """B3 回归：verify_and_store 返回 dict 后 resume 链路控制流不变
+    （正常入队、席位创建）。"""
+    _set_g16("ok", tmp_path)
+    tid, eid = _mk_source("#p opt freq b3lyp/6-31g(d)")
+    out = resume_from_checkpoint(eid)
+    assert out["seat_id"] >= 1
+    from web.src.store import seats as seats_store
+    assert seats_store().count() >= 1
