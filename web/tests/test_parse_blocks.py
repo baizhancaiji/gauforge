@@ -520,7 +520,7 @@ def test_g8_line_offset_absolute():
     from web.src.parse.keywords import check_route_options
     ws = check_route_options("#p opt freq\ngeom=(allcheck,xyzzy)",
                              line_offset=4)
-    assert ws[0]["line"] == 5
+    assert ws[0]["line"] == 6  # geom= 位于 route 第 2 行(1 起)+ 偏移 4
 
 
 def test_spell_option_tokens_no_spurious_neighbor():
