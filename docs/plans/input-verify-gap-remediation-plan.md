@@ -1057,3 +1057,41 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   报告 §8。观察项两条随批留痕：`@file/2/3` 多级后缀宽容整词（放行方向
   无害）；`@dir/sub/file.dat/7` 含路径斜杠仍拆散——计划 §2.3 仅要求
   `/N` 后缀，属计划外形态，B2 起相关语料出现再议。
+
+### 8.2 B2 批次（2026-10-19 实施收口）
+
+- 实施序列：progress 开工 → 契约文档先行（roadmap §2.7 例外回补 + openapi
+  词表/description + 生成物零 diff）→ 测试先行（G4 表驱动 + G9 用例先红）
+  → 实现 → 进度同步，共 5 提交。
+- 验收：全量 **772 passed 0 skipped**（入口基线 751，新增 21）；语料基线
+  对照（1161 文件）：新增警告 0 文件（阈值 ≤58）；「附加节未以空行终止」
+  命中 1 文件（test0162）；「缺分子说明」6 文件全为 `#p restart`——
+  B2 前已被既有缺 title/电荷检查拒绝，非本批新增收窄。
+- **G16 Rev. C.01 冒烟**（Gen/Pseudo=Cards 附加节，语料 sha256 前缀随批）：
+
+  | 语料 | G16 实测 | B2 判定 | 结论 |
+  |---|---|---|---|
+  | test0006（Gen 带终止空行，a9cf8103） | Normal termination | 零错误 | ✓ |
+  | test0021（Gen 带终止空行，bb775297） | Normal termination | 零错误 | ✓ |
+  | test0006 去尾空行（Gen EOF，eac9e797） | 报 `End of file reading basis center` | 附加节未终止阻断 | ✓ 零漏报证实 |
+  | test0162（Guess=Cards EOF，1ee742b3） | Normal termination（容忍） | 附加节未终止阻断 | G16 宽于手册（见下） |
+  | test0356（gen+pseudo=read 多步，3f064472） | Normal ×3 | 多步拒绝（既有行为） | ✓ |
+  | test0491（oniom 括号内 genecp，8f84e772） | Normal ×2 | 零错误（触发不识别） | 官方表边界（见下） |
+
+- **观察项两条（随批登记，不改 B2 裁决）**：
+  - **Guess=Cards EOF 实测容忍**：官方表该行 terminator=yes，但 G16 实测
+    EOF 收尾正常结束——B2 按手册 SSOT 阻断属「宽于 G16 实际行为」的保守
+    收窄（金标准语料 1/1156）。按 §2.12 对「手册 vs 实测」的既定处理原则
+    （实测未拒绝不升级），G4 维持 parse_errors 级；若后续同类语料增多再议
+    降级为 warnings（需用户裁决，同决策点 3 变更）。
+  - **ONIOM 括号内 genecp 不识别**：`oniom(hf/genecp:pm3)` 的 genecp 是
+    模型化学值的一部分，非独立 route token——按 §7「禁裸子串」纪律不在
+    选项值内做子串匹配，触发词判定保守不报（该文件附加节靠启发式正确
+    归类、ECP 节 terminator 不校验）；官方表 GenECP 谓词按独立 token
+    口径维持。真实 GenECP 独立关键字形态（`# oniom(...) genecp`）仍可命中。
+  - 另登记计划外豁免形态：`#p restart` 任务官方语义「No other input is
+    required」（scan 页 Restart 选项），title/电荷/分子说明均可省——
+    与 Geom=AllCheck 同类的更强豁免档，现行实现（B1 前起）按缺节拒绝；
+    计划未覆盖，语料 6 文件，留痕待议（如需支持另批立项）。
+- B2 出口闸门：validate_progress / gen_changelog_md --check 通过；
+  B3 入口条件满足。
