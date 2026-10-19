@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-19T08:30+0800",
+ "updated": "2026-10-19T09:20+0800",
  "latest_released_version": "3.3.0",
  "unreleased": [
   {
@@ -19,7 +19,7 @@
   {
    "type": "fixed",
    "scope": "parse",
-   "summary": "route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道",
+   "summary": "route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）",
    "breaking": false,
    "migration": "模板 route 含 temperature=300,310 类逗号列表值时，拒绝理由由 temp_value_invalid 迁移为词典外关键词（逗号为官方分隔符，孤立 token 走拼写通道），422 拒绝语义不变"
   },

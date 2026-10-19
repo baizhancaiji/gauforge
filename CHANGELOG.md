@@ -12,7 +12,7 @@
 
 - 【parse】Geom 检查点豁免档位拆分（C1）：Geom=Checkpoint 仅豁免原子坐标，title 与电荷/多重度行缺失照常记 parse_errors 并在导入/提交通道拒绝，接受集收窄（G16 Rev.C.01 实测该形态 l101 报 Charge and Multiplicity card seems defective）；Geom=Check 同义同档
 - 【parse】Geom 括号/空格形态识别（C2）：geom=(allcheck,…)、geom = allcheck、geom (allcheck) 及大小写变体与裸形态豁免判定一致，消除 AllCheck 括号形合法文件的缺节误报
-- 【parse】route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道
+- 【parse】route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）
 
 ## v3.3.0（2026-10-15T22:51+0800 发布，minor）
 
