@@ -430,9 +430,10 @@ def test_refine_input_accepts_serialized_template():
 
 
 def test_spelling_words_loaded_and_gate_ready():
-    """校验单点依赖的词典在位（1164 词=3.3 面⑤选项面扩容，判据①token 全命中）。"""
+    """校验单点依赖的词典在位（1166 词=3.3 面⑤选项面 + B5 面⑥替代表单
+    扩容，判据①token 全命中）。"""
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 1164
+    assert len(words) == 1166
     assert {"p", "b3lyp", "6-31g(d)", "opt", "freq"} <= words
     assert svc.SPELLING_MODE == "enforce"
 

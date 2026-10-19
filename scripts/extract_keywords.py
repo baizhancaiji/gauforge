@@ -29,6 +29,10 @@
   Related Keywords 节 NewFCBD/OldFCBD、opt 页 Set Opt. Goal 节 QST2/QST3/
   Saddle/Conical、scrf 页 Solvents 节 G03Defaults、dft 页 Empirical
   Dispersion 节 GD2/GD3/GD3BJ/PFD——载体为 EmpiricalDispersion 关键词）。
+- 面⑥（route 替代表单，B5 G7）：route 页（structure/route.md）Alternate
+  Forms 章节的 #### #X 条目——#N/#P/#T 官方替代表单字母入典（p 已由
+  面②单字母白名单覆盖，去重）；仅在该章节内提取（后续 ## 章节截断），
+  #T/#N 模板不再被 enforce 误拒。
 
 词条小写化、按码点排序、去重——确定性输出，重跑幂等。
 
@@ -308,6 +312,26 @@ def _option_words(markdown_dir: Path) -> set[str]:
     return words
 
 
+# 面⑥route 页 Alternate Forms 章节（B5 G7）：章节锚点与 #### #X 单字母
+# 替代表单条目（#N/#P/#T）。
+_ALT_SECTION = re.compile(r"^##\s+Alternate Forms\s*$", re.MULTILINE)
+_ALT_ITEM = re.compile(r"^####\s+#([A-Za-z])\s*$", re.MULTILINE)
+
+
+def _route_alt_words(text: str) -> set[str]:
+    """面⑥route 页：Alternate Forms 章节 #### #X 条目字母（casefold）。
+
+    仅在该章节内提取（至下一个 ## 章节或文件尾），章节外 #### 条目不收。"""
+    m = _ALT_SECTION.search(text)
+    if not m:
+        return set()
+    section = text[m.end():]
+    nxt = re.search(r"^##\s", section, re.MULTILINE)
+    if nxt:
+        section = section[:nxt.start()]
+    return {x.casefold() for x in _ALT_ITEM.findall(section)}
+
+
 def _basis_words(text: str) -> set[str]:
     """面③basissets 页：族正则全页扫描 + 极化/弥散形态规则生成。"""
     folded = text.casefold()
@@ -325,7 +349,7 @@ def _basis_words(text: str) -> set[str]:
 
 
 def extract(manifest_path: Path, markdown_dir: Path | None) -> list[str]:
-    """产出排序去重的词条全集（四条提取面并集）。"""
+    """产出排序去重的词条全集（六条提取面并集）。"""
     words = extract_manifest(manifest_path)
     if markdown_dir is not None and markdown_dir.is_dir():
         gv6 = markdown_dir / "gv6" / \
@@ -338,6 +362,9 @@ def extract(manifest_path: Path, markdown_dir: Path | None) -> list[str]:
         basis = markdown_dir / "structure" / "basissets.md"
         if basis.is_file():
             words |= _basis_words(basis.read_text(encoding="utf-8"))
+        route = markdown_dir / "structure" / "route.md"
+        if route.is_file():
+            words |= _route_alt_words(route.read_text(encoding="utf-8"))
         words |= _option_words(markdown_dir)
     return sorted(words)
 

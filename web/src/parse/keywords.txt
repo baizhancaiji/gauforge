@@ -648,6 +648,7 @@ mp=twincore
 mpw1pw91
 mpw2plypd
 mtsmall
+n
 n12
 n12sx
 name
@@ -1083,6 +1084,7 @@ symmetry=pg
 symmetry=printorientation
 symmetry=saveorientation
 symmetry=scf
+t
 td
 td=50-50
 td=add

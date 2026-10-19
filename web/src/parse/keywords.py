@@ -262,14 +262,155 @@ def token_in_dict(tok: str, words: frozenset[str]) -> bool:
     return bool(sep) and bool(val.strip()) and key.strip().casefold() in words
 
 
+# ---------------- G8 子选项归属判定（B5） ----------------
+
+# 值形关键字白名单：括号内容为数值/模型化学组合/命令串，不做选项查典
+# （IOp(6/50=1) 取值列表、ONIOM(B3LYP/6-31G(d):AM1:UFF) 模型化学、
+# External="RunTink Amber" 命令名——warn 级宁漏勿误，§2.9）。
+_VALUE_FORM_HEADS = frozenset(("iop", "oniom", "external"))
+
+# 选项基名的尾部参数表（td=window(13,-12) → window）。
+_PAREN_TAIL = re.compile(r"\([^)]*\)")
+
+
+def _split_key_options(tok: str) -> tuple[str | None, str]:
+    """含选项 token → (键名 casefold, 选项区文本)；裸 token → (None, "")。
+
+    括号选项形 kw(...) / kw=(...)（= 缺省或紧邻 ( 之前）取最外层括号内
+    文本；= 取值形取值段（= 与 ( 之间有键外字符或无括号，值可再含括号，
+    如 td=window(13,-12)）。"""
+    t = tok.strip()
+    if not t:
+        return None, ""
+    p = t.find("(")
+    eq = t.find("=")
+    if p > 0 and (eq < 0 or p == eq + 1):
+        close = t.rfind(")")
+        return (t[:p].rstrip("=").strip().casefold(),
+                t[p + 1:close] if close > p else t[p + 1:])
+    if eq > 0:
+        return t[:eq].strip().casefold(), t[eq + 1:]
+    return None, ""
+
+
+def _key_options(key: str, words: frozenset[str]) -> frozenset[str]:
+    """键的官方选项基名集（词典 键=* 组合词条目，带值条目剥值归一）。
+
+    无组合词条目 → 空集：该键非选项型（基组/方法括号形如 6-31g(d,p)、
+    mp4(sdtq)、纯值形），不做选项查典。"""
+    prefix = key + "="
+    return frozenset(
+        w[len(prefix):].partition("=")[0]
+        for w in words if w.startswith(prefix) and len(w) > len(prefix))
+
+
+def _split_option_items(inner: str) -> list[str]:
+    """选项区文本 → 顶层逗号切分的选项序列（括号深度感知，保留原文）。"""
+    out: list[str] = []
+    cur: list[str] = []
+    depth = 0
+    for ch in inner:
+        if ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            out.append("".join(cur))
+            cur = []
+        else:
+            cur.append(ch)
+    out.append("".join(cur))
+    return [s.strip() for s in out if s.strip()]
+
+
+def _option_unknowns(tok: str, line: int, words: frozenset[str],
+                     cutoff: float) -> list[dict]:
+    """单 token 逐选项判定：未命中官方选项集的选项记 route_option_unknown。
+
+    判定链（全部通过则零警告）：键在典 → 非值形白名单 → 该键为选项型
+    （典有 键=* 组合词）→ 逐选项：键=基名 组合词在典（带值/嵌套一层取值
+    剥值归一）∨ 纯数字取值（temp=300 类值形）∨ 单字母基名（官方选项名
+    ≥2 字符——面⑤提取同规；ccsd(t) 微扰阶标记）∨ 该键选项集内唯一前缀
+    （官方最短唯一缩写，Syntax Rules「All keywords and options may be
+    shortened to their shortest unique abbreviation」；歧义前缀 G16 拒绝
+    ——Conv 非法例——不判活）。未命中者近邻于该键选项集附 suggestion。"""
+    key, inner = _split_key_options(tok)
+    if key is None or not key or key not in words \
+            or key in _VALUE_FORM_HEADS:
+        return []
+    opts = _key_options(key, words)
+    if not opts:
+        return []
+    ordered = sorted(opts)
+    out: list[dict] = []
+    for item in _split_option_items(inner):
+        base = _PAREN_TAIL.sub("", item.partition("=")[0]).strip().casefold()
+        if not base or f"{key}={base}" in words or base.isdigit():
+            continue
+        if len(base) < 2:
+            continue
+        if sum(1 for o in opts if o.startswith(base)) == 1:
+            continue  # 官方最短唯一缩写
+        near = difflib.get_close_matches(base, ordered, n=1, cutoff=cutoff)
+        w: dict = {
+            "line": line, "keyword": item, "kind": "route_option_unknown",
+            "message": f"「{item}」疑似非 {key.upper()} 的官方选项"
+                       f"（「{key}」的官方选项集中无「{base}」，"
+                       "请对照手册确认）"}
+        if near:
+            w["suggestion"] = near[0]
+        out.append(w)
+    return out
+
+
+def check_route_options(route_text: str, *, cutoff: float = 0.8,
+                        dictionary: frozenset[str] | None = None,
+                        line_offset: int = 0) -> list[dict]:
+    """route 子选项归属校验（G8，非阻断 warnings；决策点 6：仅 warn）。
+
+    面⑤组合词覆盖非全量，误报不阻断；enforce 化前置覆盖率评估另批立项。
+    line 为 route 节内行号 + line_offset（分块保存传 route 起始行换算的
+    全文件偏移）。"""
+    words = dictionary if dictionary is not None else load_keywords()
+    if not words or not route_text:
+        return []
+    out: list[dict] = []
+    for line_no, tok in tokenize_route(route_text):
+        t = tok.strip()
+        if not t or t.startswith("@"):
+            continue
+        out.extend(
+            _option_unknowns(tok, line_no + line_offset, words, cutoff))
+    return out
+    t = tok.strip()
+    if not t or t.startswith("@"):
+        return True
+    cf = t.casefold()
+    if cf in words:
+        return True
+    p = t.find("(")
+    if p > 0:
+        head = t[:p].strip()
+        if head.endswith("="):
+            head = head[:-1]
+        return head.casefold() in words and t[p:].strip() != "()"
+    key, sep, val = t.partition("=")
+    return bool(sep) and bool(val.strip()) and key.strip().casefold() in words
+
+
 def check_route_spelling(route_text: str, *, cutoff: float = 0.8,
                          dictionary: frozenset[str] | None = None,
                          line_offset: int = 0) -> list[dict]:
-    """route 节关键词拼写检查（非阻断，m2-plan §2.1 定稿；B1 换 token 管道）。
+    """route 节关键词拼写检查（非阻断，m2-plan §2.1 定稿；B1 换 token 管道，
+    B5 选项化——含选项 token 交 G8 逐选项判定）。
 
-    先走 token_in_dict 精确命中（整词/键名/括号形/@豁免），未命中且与某
-    词典条目接近（difflib.get_close_matches cutoff=0.80）→ kind=keyword_spell
-    + 首个近邻 suggestion；纯新词（无近邻）不警告——方法学与基组不在字典，
+    含选项 token（键在典、值形白名单外、键为选项型）跳过——其警告职责
+    单点归 check_route_options（G8 逐选项判定），本函数不再做整词近邻
+    （B1 C3 键名命中消除 opt=(calcfc,ts) 误报的口径延伸）；其余 token 先
+    走 token_in_dict 精确
+    命中（整词/键名/括号形/@豁免），未命中且与某词典条目接近
+    （difflib.get_close_matches cutoff=0.80）→ kind=keyword_spell + 首个
+    近邻 suggestion；纯新词（无近邻）不警告——方法学与基组不在字典，
     「未收录即警告」会使检查失效。line 为 route 节内行号（1 起）+
     line_offset（分块保存传 route 起始行号换算的全文件偏移）。
     """
@@ -279,6 +420,11 @@ def check_route_spelling(route_text: str, *, cutoff: float = 0.8,
     ordered = sorted(words)  # 排序保证近邻并列时结果确定
     out: list[dict] = []
     for line_no, tok in tokenize_route(route_text):
+        key, _ = _split_key_options(tok)
+        if (key is not None and key in words
+                and key not in _VALUE_FORM_HEADS
+                and _key_options(key, words)):
+            continue
         if token_in_dict(tok, words):
             continue
         near = difflib.get_close_matches(tok.casefold(), ordered, n=1,

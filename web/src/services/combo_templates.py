@@ -26,8 +26,8 @@ import re
 from .. import config
 from ..engine.workspace import _cpu_list_count
 from ..errors import validation_failed
-from ..parse.keywords import (check_route_duplicates, load_keywords,
-                              token_in_dict, tokenize_route)
+from ..parse.keywords import (check_route_duplicates, check_route_options,
+                              load_keywords, token_in_dict, tokenize_route)
 from .dependencies import parse_link0_refs
 
 # 每核内存下限 GB（§0.4 口径 3）
@@ -99,6 +99,10 @@ def validate_and_normalize(template_id: int, data: dict, *,
     # ---- 重复关键字（B3 G2：非阻断，enforce/warn 均随 notice 携带；
     # 裸形+选项形追加取值与 IOp 并写豁免与 check_route_duplicates 同源） ----
     duplicates = check_route_duplicates(route_cf)
+
+    # ---- 子选项归属（B5 G8：非阻断，随 notice.route_option_warnings 携带；
+    # 仅 warn——面⑤选项覆盖非全量，决策点 6） ----
+    option_warnings = check_route_options(route_cf)
 
     # ---- 温度（freq 联动；token 头部判定覆盖 freq / freq=x / freq(…) /
     # freq (…) 全形态——R2 审查整改，不漏 C3 放行的无等号括号形） ----
@@ -189,6 +193,8 @@ def validate_and_normalize(template_id: int, data: dict, *,
         notice["spelling_warnings"] = oov
     if duplicates:
         notice["route_duplicates"] = duplicates
+    if option_warnings:
+        notice["route_option_warnings"] = option_warnings
     return fields, notice
 
 

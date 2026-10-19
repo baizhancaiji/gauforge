@@ -30,7 +30,8 @@ from ..engine.workspace import _cpu_list_count
 from ..errors import ApiError, err, not_found, validation_failed
 from ..parse.blocks import (is_editable_section, parse_charge_tokens,
                             parse_input, reassemble, scan_spans, split_lines)
-from ..parse.keywords import check_route_duplicates, check_route_spelling
+from ..parse.keywords import (check_route_duplicates, check_route_options,
+                              check_route_spelling)
 from ..parse.link0_rules import (LINE_LENGTH_CAP, MEM_VALUE_RE,
                                  _NO_EQ_DIRECTIVES, directive_head)
 from ..store import executions, get_db, tasks
@@ -50,19 +51,20 @@ def _basename(filename: str) -> str:
 
 
 def _route_warnings(route_text: str, lines: list[str]) -> list[dict]:
-    """route 非阻断警告全集（G1/G2）：拼写近邻 + 重复关键字，行号为全文件
-    绝对行号（route 起始行换算）。"""
+    """route 非阻断警告全集（G1/G2/G8）：拼写近邻 + 重复关键字 + 子选项
+    归属，行号为全文件绝对行号（route 起始行换算）。"""
     span = scan_spans(lines).get("route")
     offset = span[0] if span else 0
     return (check_route_spelling(route_text, line_offset=offset)
-            + check_route_duplicates(route_text, line_offset=offset))
+            + check_route_duplicates(route_text, line_offset=offset)
+            + check_route_options(route_text, line_offset=offset))
 
 
 def file_warnings(parsed: dict, route_text: str, lines: list[str]) -> list[dict]:
-    """全文件非阻断警告全集（G0/G1/G2/G5 统一口径）：parse_input 产出
+    """全文件非阻断警告全集（G0/G1/G2/G5/G8 统一口径）：parse_input 产出
     （分子说明/变量区 EOF、Link 0 值域与指令、title 禁用字符、原子标签、
-    多组电荷对）+ route 拼写/重复（parse_input 不产拼写通道）。公共 API
-    （审查整改 R5：预览路由跨模块消费，去私有名）。"""
+    多组电荷对）+ route 拼写/重复/子选项（parse_input 不产拼写通道）。公共
+    API（审查整改 R5：预览路由跨模块消费，去私有名）。"""
     return parsed["warnings"] + _route_warnings(route_text, lines)
 
 
