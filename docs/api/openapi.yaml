@@ -1453,7 +1453,9 @@ components:
           description: 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串
         kind:
           type: string
-          description: 警告类别（当前词表：keyword_spell；后续批次按输入勘误计划 §4 扩容）
+          description: >-
+            警告类别（词表：keyword_spell、molecule_unterminated、
+            variables_unterminated；后续批次按输入勘误计划 §4 继续扩容）
         message:
           type: string
           description: 可直接展示的中文说明
@@ -1522,15 +1524,22 @@ components:
                 type: integer
               message:
                 type: string
-          description: 解析失败节信息（预览尽力而为；导入端点才严格校验）
+          description: >-
+            解析失败节信息（预览尽力而为；导入端点才严格校验）。含核心节
+            必需空行缺失（route/title 未以空行终止、电荷行后缺少分子说明节
+            ——Geom 检查点豁免档除外）与附加输入节未以空行终止（route 命中
+            的官方 Section Ordering 行全部要求终止空行时；混合例外保守不报）。
+            提交通道先行空行规范化：纯文件末尾（EOF）的未终止形态被规范化
+            消除后不再报，节内容被吞并或缺节的文件仍拒绝（两通道差异口径）。
         warnings:
           type: array
           items:
             $ref: '#/components/schemas/Warning'
           description: >-
-            非阻断警告（默认空数组）。预览通道当前恒为空（后续批次随
-            parse_input 检测项扩容）；分块保存响应中为 route 拼写检查结果，
-            行号为全文件绝对行号。
+            非阻断警告（默认空数组）。kind：keyword_spell（分块保存 route
+            拼写近邻，行号为全文件绝对行号）、molecule_unterminated
+            （分子说明未以空行终止；Geom 坐标豁免档不产生）、
+            variables_unterminated（Variables/Constants 区未以空行终止）。
 
     # ---------------- 设置 ----------------
     SettingItem:

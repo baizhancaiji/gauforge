@@ -289,7 +289,7 @@ run/<执行id>/  执行工作区：输入、输出、日志、scratch（chk/rwf 
 | Route 节（`#` 行） | 必须 | 计算类型、模型化学与选项；`!` 注释行可出现在输入任意处 |
 | Title 节 | 必须 | **至多 5 行**；避免 `@ # ! – _ \` 与控制字符；程序不解释、仅作输出标识（§2.6 ① 的 title 即此节）；仅 `Geom=AllCheck` 可省略（2026-10-18 据手册 input 页 Section Ordering 复核） |
 | 分子说明节 | 必须 | 首行 = 电荷 多重度，其后为笛卡尔坐标或 Z-matrix；`Geom=AllCheck` 时本节与 title 可整体省略，`Geom=Checkpoint` 时仅原子坐标可省，title 与电荷/多重度行仍必须存在（2026-10-18 据手册 geom 页复核） |
-| 附加输入节（可选） | 绝大多数必须 | 由 route 关键字触发（Opt=ModRedundant、Gen、Guess=Alter、SCRF=Read 等）；是否需要终止空行以手册 Section Ordering 表逐节为准，个别例外为 no（Guess=LowSymm、GVB、Pop=NBORead、Output=Pickett/WFN 等） |
+| 附加输入节（可选） | 绝大多数必须 | 由 route 关键字触发（Opt=ModRedundant、Gen、Guess=Alter、SCRF=Read 等）；是否需要终止空行以手册 Section Ordering 表逐节为准，例外全集 7 项为 no：Guess=LowSymm、GVB、CASSCF=SpinOrbit、Pop=NBORead、Pop=NBO6Read、Output=Pickett、Output=WFN（2026-10-19 据手册 input 页 Section Ordering 全表复核，59 行固化为 `web/src/parse/section_ordering.py`，见输入勘误计划 G4） |
 
 Z-matrix 变量区：原子定义行连续排列，其后以**空行**分隔 `Variables:` 变量区，
 再以**空行**分隔可选的 `Constants:` 常数区（部分优化的固定项）。
