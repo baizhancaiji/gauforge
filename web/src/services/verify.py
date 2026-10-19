@@ -10,9 +10,8 @@ import logging
 import os
 
 from ..errors import ApiError, err, not_found
-from ..parse.blocks import parse_input, scan_spans, split_lines, \
-    verify_and_normalize
-from .candidates import _route_warnings, default_inputs_dir
+from ..parse.blocks import parse_input, split_lines, verify_and_normalize
+from .candidates import _file_warnings, default_inputs_dir
 
 log = logging.getLogger(__name__)
 
@@ -60,5 +59,5 @@ def verify_and_store(task_id: int) -> dict:
         tmp.write_text(result["text"], encoding="utf-8")
         os.replace(tmp, path)
     return {"normalized": result["changed"],
-            "warnings": _route_warnings(parsed["blocks"]["route"],
-                                        split_lines(result["text"]))}
+            "warnings": _file_warnings(parsed, parsed["blocks"]["route"],
+                                       split_lines(result["text"]))}

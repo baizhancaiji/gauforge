@@ -31,17 +31,14 @@ from ..errors import ApiError, err, not_found, validation_failed
 from ..parse.blocks import (is_editable_section, parse_input, reassemble,
                             scan_spans, split_lines)
 from ..parse.keywords import check_route_duplicates, check_route_spelling
+from ..parse.link0_rules import (LINE_LENGTH_CAP, MEM_VALUE_RE,
+                                 _NO_EQ_DIRECTIVES, directive_head)
 from ..store import executions, get_db, tasks
 
 log = logging.getLogger(__name__)
 
 SUPPORTED_EXTS = (".gjf", ".com")
 _File = tuple[str, bytes]  # (filename, 原始字节)
-
-# %mem 值：数值 + 可选单位后缀（G16 手册核查，m2-plan 决策点 7：缺省单位
-# 为 8 字节字（MW 量纲），可选 KB/MB/GB/TB/KW/MW/GW/TW，无空格；类型错才 422）
-_MEM_VALUE_RE = re.compile(r"^\d+(?:\.\d+)?(?:KB|MB|GB|TB|KW|MW|GW|TW|W|B)?$",
-                           re.IGNORECASE)
 
 
 def default_inputs_dir() -> Path:
@@ -61,12 +58,20 @@ def _route_warnings(route_text: str, lines: list[str]) -> list[dict]:
             + check_route_duplicates(route_text, line_offset=offset))
 
 
+def _file_warnings(parsed: dict, route_text: str, lines: list[str]) -> list[dict]:
+    """全文件非阻断警告全集（G0/G1/G2/G5 统一口径）：parse_input 产出
+    （分子说明/变量区 EOF、Link 0 值域与指令、title 禁用字符、原子标签、
+    多组电荷对）+ route 拼写/重复（parse_input 不产拼写通道）。"""
+    return parsed["warnings"] + _route_warnings(route_text, lines)
+
+
 def _validate_one(filename: str, data: bytes) -> dict:
     """单文件校验（G1 改造）：始终返回 {"error": dict|None, "warnings": list}。
 
-    error 为 None 表示校验通过；warnings 为非阻断提示（拼写/重复关键字），
-    仅在通过时非空可携带（失败条目不带 warnings——422 details.errors[] 无
-    该字段）。"""
+    error 为 None 表示校验通过；warnings 为非阻断提示（全文件警告，
+    _file_warnings 统一口径），仅在通过时非空可携带（失败条目不带
+    warnings——422 details.errors[] 无该字段）。解码用 utf-8-sig：检测到
+    UTF-8 BOM 时剥离 BOM 字节后落盘（G5 项 6，静默行为）。"""
     name = _basename(filename)
     if not name:
         return {"error": {"filename": filename, "reason": "INVALID_FILENAME",
@@ -76,10 +81,12 @@ def _validate_one(filename: str, data: bytes) -> dict:
                           "message": "仅支持 .gjf/.com（不区分大小写）"},
                 "warnings": []}
     try:
-        text = data.decode("utf-8")
+        text = data.decode("utf-8-sig")
     except UnicodeDecodeError:
         return {"error": {"filename": name, "reason": "INVALID_ENCODING",
                           "message": "非 UTF-8 文本"}, "warnings": []}
+    stripped = data[len(b"\xef\xbb\xbf"):] if data.startswith(b"\xef\xbb\xbf") \
+        else data  # 其余字节原样保留（CRLF 不转），仅剥离 BOM 字节
     r = parse_input(text)
     if r["multistep"]:
         return {"error": {"filename": name,
@@ -93,9 +100,10 @@ def _validate_one(filename: str, data: bytes) -> dict:
                                      f"（第 {first['line']} 行）",
                           "parse_errors": r["parse_errors"]},
                 "warnings": []}
-    return {"error": None,
-            "warnings": _route_warnings(r["blocks"]["route"],
-                                        split_lines(text))}
+    return {"error": None, "bom_stripped": stripped is not data,
+            "data": stripped,
+            "warnings": _file_warnings(r, r["blocks"]["route"],
+                                       split_lines(text))}
 
 
 def _content_hash(data: bytes) -> str:
@@ -136,17 +144,20 @@ def import_files(files: list[_File], *, mode: str = "files",
     if errors:
         raise validation_failed(errors)
     warnings_by_file = [r["warnings"] for r in results]
+    # BOM 剥离后的落盘字节（G5 项 6：哈希与落盘以剥离后副本为准）
+    stored_by_file = [r["data"] for r in results]
 
     ind.mkdir(parents=True, exist_ok=True)
     out: list[dict] = []
     created: list[tuple[int, Path]] = []
     try:
-        for (fn, data), warns in zip(files, warnings_by_file):
+        for (fn, _raw), warns, stored in zip(files, warnings_by_file,
+                                             stored_by_file):
             name = _basename(fn)
-            dup = _is_duplicate(name, _content_hash(data), ind)
+            dup = _is_duplicate(name, _content_hash(stored), ind)
             tid = tasks().create_candidate(name, "imported")
             path = ind / str(tid)
-            path.write_bytes(data)  # 原文落盘，CRLF 不转
+            path.write_bytes(stored)  # 原文落盘（BOM 已剥离），CRLF 不转
             created.append((tid, path))
             out.append({"id": tid, "filename": name, "duplicate": dup,
                         "warnings": warns})
@@ -234,18 +245,26 @@ def _verr(section: str, line: int, reason: str, message: str) -> dict:
 
 
 def _validate_section(section: str, content: list[str]) -> None:
-    """逐节格式校验（阻断 422，m2-plan §2.1 校验表）。"""
+    """逐节格式校验（阻断 422，m2-plan §2.1 校验表；B4 值域与 G5 同源口径：
+    %mem 值域收紧并要求 >0、单行 ≤500、无等号官方指令合法）。"""
     errors: list[dict] = []
     if section == "link0":
         for k, ln in enumerate(content, 1):
             body = ln.strip()
-            if not body.startswith("%") or "=" not in body:
+            head, val = directive_head(body)
+            # 无等号官方指令（%save/%kjob l502 2 等）合法放行
+            if not body.startswith("%") or (
+                    "=" not in body and head not in _NO_EQ_DIRECTIVES):
                 errors.append(_verr(section, k, "must_be_key_value",
-                                    "%行应为 %Key=Value 形态"))
+                                    "%行应为 %Key=Value 或官方无等号指令形态"))
                 continue
-            key, _, val = body.lstrip("%").partition("=")
-            key_cf = key.strip().casefold()
-            if not val.strip():
+            if len(body) > LINE_LENGTH_CAP:
+                errors.append(_verr(section, k, "link0_line_too_long",
+                                    f"Link 0 单行超长（官方上限 "
+                                    f"{LINE_LENGTH_CAP} 字符）"))
+                continue
+            key_cf = head
+            if not val.strip() and "=" in body:
                 errors.append(_verr(section, k, "empty_value",
                                     "值不可为空"))
             elif key_cf.startswith("nproc"):
@@ -256,12 +275,18 @@ def _validate_section(section: str, content: list[str]) -> None:
                 if not positive:
                     errors.append(_verr(section, k, "nproc_not_positive_int",
                                         "%nprocshared 值须为正整数"))
-            elif key_cf == "mem" and not _MEM_VALUE_RE.match(val.strip()):
-                errors.append(_verr(section, k, "mem_value_invalid",
-                                    "%mem 值须为数值（可选单位 KB/MB/GB/TB/KW/MW/GW/TW）"))
+            elif key_cf == "mem":
+                m = MEM_VALUE_RE.match(val.split(",")[0].strip())
+                num_ok = m is not None and float(
+                    re.match(r"^\d+(?:\.\d+)?", val).group()) > 0
+                if not num_ok:
+                    errors.append(_verr(section, k, "mem_value_invalid",
+                                        "%mem 值须为正数（可选单位 "
+                                        "KB/MB/GB/TB/KW/MW/GW/TW）"))
             elif key_cf == "cpu" and _cpu_list_count(val) is None:
                 errors.append(_verr(section, k, "cpu_list_invalid",
-                                    "%cpu 值须为处理器列表（如 0,1,2 / 0-5）"))
+                                    "%cpu 值须为处理器列表"
+                                    "（如 0,1,2 / 0-5 / 0-5/2）"))
     elif section == "route":
         if not content[0].lstrip().startswith("#"):
             errors.append(_verr(section, 1, "route_must_start_with_hash",
@@ -295,19 +320,25 @@ def _validate_section(section: str, content: list[str]) -> None:
             errors.append(_verr(section, 1, "must_be_single_line",
                                 "电荷/多重度恰为一行"))
         else:
+            # G5 项 1：多组电荷-多重度对同口径（偶数个整数；首组 mult ≥1、
+            # 后续组 mult≠0；负多重度官方仅 Guess=Fragment，宽容放行）
             toks = content[0].replace(",", " ").split()
-            if len(toks) != 2:
-                errors.append(_verr(section, 1, "must_be_two_integers",
-                                    "应为电荷与多重度两个整数"))
-            else:
+            nums: list[int] = []
+            ok = bool(toks) and len(toks) % 2 == 0
+            if ok:
                 try:
-                    ok = int(toks[1]) > 0
-                    int(toks[0])
+                    nums = [int(t) for t in toks]
                 except ValueError:
                     ok = False
-                if not ok:
-                    errors.append(_verr(section, 1, "must_be_two_integers",
-                                        "电荷为整数、多重度须为正整数"))
+            if ok:
+                for g in range(0, len(nums), 2):
+                    if (g == 0 and nums[g + 1] < 1) or \
+                            (g > 0 and nums[g + 1] == 0):
+                        ok = False
+            if not ok:
+                errors.append(_verr(section, 1, "must_be_integer_pairs",
+                                    "应为电荷-多重度整数对（首组多重度为正"
+                                    "整数，后续组多重度不得为 0）"))
     # additional-<n>：自由文本，无阻断校验
     if errors:
         raise validation_failed(errors)
@@ -368,10 +399,15 @@ def _expected_blocks(blocks: dict, section: str,
         expected["title"] = "\n".join(ln.strip() for ln in content)
     elif section == "charge_mult":
         cm = content[0].strip()
+        # G5 多组对同口径：偶数个整数全组规范化（空格分隔），否则原样
         parts = cm.replace(",", " ").split()
         try:
-            expected["charge_mult"] = f"{int(parts[0])} {int(parts[1])}"
-        except (IndexError, ValueError):
+            nums = [int(t) for t in parts]
+            if len(nums) % 2 == 0 and nums:
+                expected["charge_mult"] = " ".join(str(v) for v in nums)
+            else:
+                expected["charge_mult"] = cm
+        except ValueError:
             expected["charge_mult"] = cm
     else:  # additional-<n>
         idx = int(section.split("-", 1)[1])
@@ -437,10 +473,10 @@ def save_block(task_id: int, section: str, lines: list[str], *,
         _atomic_write_text(path, new_text)  # ④ 原子写
         after = parse_input(new_text)
         filename = row["filename"]
-    # ⑤ 非阻断警告：拼写检查 + 重复关键字（G1/G2 统一走 _route_warnings，
-    # 警告行号换算为全文件绝对行号——G0 口径，五通道一致）
-    warnings = _route_warnings(after["blocks"]["route"],
-                               split_lines(new_text))
+    # ⑤ 非阻断警告全集（G0/G1/G2/G5 五通道统一口径）：parse_input 产出 +
+    # route 拼写/重复，行号全文件绝对（_file_warnings 单点）
+    warnings = _file_warnings(after, after["blocks"]["route"],
+                              split_lines(new_text))
     return {"candidate_id": task_id, "filename": filename,
             "blocks": after["blocks"], "parse_errors": after["parse_errors"],
             "warnings": warnings}

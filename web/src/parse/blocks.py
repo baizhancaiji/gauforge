@@ -19,6 +19,7 @@ import re
 
 from . import section_ordering
 from .keywords import tokenize_route
+from .link0_rules import check_link0_lines
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +29,15 @@ _ADDITIONAL_RE = re.compile(r"additional-\d+$")
 
 _REQUIRED_BLOCKS = {"link0", "route", "title", "charge_mult", "molecule",
                     "additional_sections"}
+
+
+def _tokenize_atom_line(line: str) -> list[str]:
+    """原子行 → token 序列（G6 首字段取词基座）。
+
+    自由格式分隔符（空白/逗号/斜杠）任意组合，括号/引号感知——保住
+    C(Iso=13,Fragment=2) 参数表整词；行内引号外 ! 起截断（注释任意处）。"""
+    from .keywords import _tokenize_line
+    return _tokenize_line(line)
 
 
 def _hill_formula(counts: dict[str, int]) -> str:
@@ -56,18 +66,67 @@ _ELEMENTS = (
     "Rg", "Cn", "Nh", "Fl", "Mc", "Lv", "Ts", "Og",
 )
 
+_ELEMENTS_LOWER = frozenset(e.lower() for e in _ELEMENTS)
+
 
 def _atom_symbol(tok: str) -> str | None:
-    """原子行首 token → 规范元素符号；无法识别返回 None。
+    """原子行首 token → 规范元素符号；无法识别返回 None（G5 前旧口径，
+    保留供兼容调用；parse_input 现走 _classify_atom 文法）。"""
+    sym, _kind = _classify_atom(tok)
+    return sym
 
-    元素符号（可带尾部数字标签，如 C1）归一为首字母大写；纯数字按
-    原子序数映射，超界序数不识别（容错不抛异常）。"""
-    name = tok.rstrip("0123456789")
-    if name.isalpha():
-        return name.capitalize()
-    if tok.isdigit() and 1 <= int(tok) <= len(_ELEMENTS):
-        return _ELEMENTS[int(tok) - 1]
-    return None
+
+def _classify_atom(tok: str) -> tuple[str | None, str]:
+    """原子行首字段 → (规范元素符号 | None, 类别)（G6 文法，B4）。
+
+    类别：element（计入分子式）/ ghost（鬼原子 -Bq：占一行不计式）/
+    dummy（哑原子 X：占一行不计式）/ unknown（无元素前缀：不计式）。
+    官方 zmat/oniom 页文法：Element-label（元素符号或原子序数，可后接
+    字母数字标签，总长 ≤4）[–Atom-type–Charge][(param=value,…)]。
+    - 先剥尾部 (…) 参数表（括号平衡）；
+    - 鬼原子判定先于元素识别（分段含 Bq 原子类型，如 O-Bq）；
+    - Element-label 取首个 –/- 之前片段（覆盖 C-CT--0.06 类 MM 行）；
+    - 元素识别用最长符号前缀（不区分大小写：Cl1→Cl、C1→C、Foo→F+标签
+      oo 不告警）；剩余部分须字母数字；找不到任何前缀（Zz）→ unknown；
+    - 原子序数形态维持界内映射（1..118）；
+    - X / X<数字> 识别为哑原子（Z-matrix 中心，无元素无核电荷）。
+    """
+    t = tok.strip()
+    # 剥尾部 (…) 参数表（如 C(Iso=13,Fragment=2)）
+    if t.endswith(")"):
+        depth = 0
+        for k in range(len(t) - 1, -1, -1):
+            if t[k] == ")":
+                depth += 1
+            elif t[k] == "(":
+                depth -= 1
+                if depth == 0:
+                    t = t[:k]
+                    break
+    # 鬼原子：按 –/- 分段后含 Bq 原子类型（计入行数、不计分子式）
+    segs = [s for s in t.replace("–", "-").split("-") if s]
+    if any(s.casefold() == "bq" for s in segs):
+        return None, "ghost"
+    label = segs[0] if segs else t
+    # 哑原子：X 及重复 X 标签（XX——官方测试语料形态）、`-`（同前一原子
+    # 位置的哑原子标记），可带尾部数字；无元素、不计分子式
+    core = label.rstrip("0123456789")
+    if t == "-" or (set(core.casefold()) == {"x"} and core
+                    and (label == core or label[len(core):].isdigit())):
+        return None, "dummy"
+    if label.isdigit():
+        if 1 <= int(label) <= len(_ELEMENTS):
+            return _ELEMENTS[int(label) - 1], "element"
+        return None, "unknown"
+    # 最长元素符号前缀（≤2 字符），剩余部分须字母数字或为空（标签总长 ≤4
+    # 由官方文法约定，超出不额外拒绝——前缀识别已保证元素归属）
+    for n in (2, 1):
+        if len(label) >= n and label[:n].casefold() in _ELEMENTS_LOWER:
+            rest = label[n:]
+            if not rest or rest.isalnum():
+                return label[:n].capitalize(), "element"
+            return None, "unknown"
+    return None, "unknown"
 
 
 def split_lines(text: str) -> list[str]:
@@ -134,7 +193,12 @@ def _geom_exemption_tier(route_text: str) -> str | None:
 
 def parse_input(text: str) -> dict:
     """解析输入文本 → {"blocks": …, "parse_errors": […], "warnings": […],
-    "multistep": bool}；warnings 为非阻断提示通道（G0；B2 起检测项扩容）。"""
+    "multistep": bool}；warnings 为非阻断提示通道（G0；B2/B4 检测项扩容）。
+
+    入口防御性剥离 UTF-8 BOM（\\ufeff——导入/提交读取路径 utf-8-sig 之外的
+    兜底，B4 G5 项 6）。"""
+    if text.startswith("\ufeff"):
+        text = text[1:]
     lines = split_lines(text)
     errors: list[dict] = []
     warnings: list[dict] = []
@@ -185,6 +249,10 @@ def parse_input(text: str) -> dict:
         nm for nm, pats in (("NProcShared", ("%nproc", "%cpu")),
                             ("Mem", ("%mem",)))
         if not any(p in ln for ln in low for p in pats)]
+    # G5 项 2/3/4：Link 0 值域（%mem 值域与 >0、%nproc 正整数、%cpu proc-list
+    # 含 /n）、单行 ≤500、指令文法与重复——非阻断警告（link0_rules 单点）
+    for w in check_link0_lines(blocks["link0"]["lines"]):
+        warnings.append(w)
 
     # Route：# 行起连续非空行，终止空行必需
     while i < n and (blank(i) or comment(i)):
@@ -233,6 +301,16 @@ def parse_input(text: str) -> dict:
                 errors.append({"section": "title", "line": title_start + k + 1,
                                "message": "疑似 Link 0 命令错置于 title 节"
                                           "（% 命令必须位于 route 节之前）"})
+            # G5 项 5：title 禁用字符（@ # ! – _ \ 与控制字符）——编辑保存
+            # 保持阻断，导入/提交通道记非阻断警告
+            if any(c in tl for c in "@#!–_\\") or any(ord(c) < 32 for c in tl):
+                bad = next(c for c in tl
+                           if c in "@#!–_\\" or ord(c) < 32)
+                warnings.append({"line": title_start + k + 1, "keyword": bad,
+                                 "kind": "title_forbidden_char",
+                                 "message": "title 含官方建议避免的字符"
+                                            f"「{bad!r}」（控制字符不可见时"
+                                            "以转义显示）"})
         if len(title_lines) > 5:
             errors.append({"section": "title", "line": i - len(title_lines) + 1,
                            "message": "title 节超过 5 行"})
@@ -253,31 +331,103 @@ def parse_input(text: str) -> dict:
     if i < n:
         cm = lines[i].strip()
         i += 1
-        parts = cm.replace(",", " ").split()
-        try:
-            blocks["charge_mult"] = f"{int(parts[0])} {int(parts[1])}"
-        except (IndexError, ValueError):
+        # G5 项 1：自由格式分词（空白/逗号/斜杠任意组合）得偶数个整数——
+        # 首组 charge 有符号整数、mult ≥1；后续组为 fragment 层（mult≠0，
+        # 负值官方仅 Guess=Fragment 合法，宽容放行 + 佐证警告）
+        toks = [t for t in cm.replace("–", "-").replace(",", " ")
+                .replace("/", " ").split()]
+        nums: list[int] = []
+        parse_ok = bool(toks) and len(toks) % 2 == 0
+        if parse_ok:
+            for t in toks:
+                try:
+                    nums.append(int(t))
+                except ValueError:
+                    parse_ok = False
+                    break
+        if parse_ok:
+            blocks["charge_mult"] = " ".join(str(v) for v in nums)
+            charge_line_no = i  # 1 起行号（i 已自增到下一行）
+            neg_or_frag = False
+            for g in range(0, len(nums), 2):
+                chg, mult = nums[g], nums[g + 1]
+                if g == 0:
+                    if mult < 1:
+                        parse_ok = False
+                        break
+                elif mult == 0:
+                    parse_ok = False
+                    break
+                if mult < 0 or (g > 0 and chg != 0):
+                    neg_or_frag = True
+            if parse_ok and (len(nums) > 2 or neg_or_frag):
+                # G6 多组电荷对佐证判定：route 含 Counterpoise/ONIOM 或分子
+                # 说明含 Fragment 参数则视为 intended，否则信息级警告
+                route_l = blocks["route"].casefold()
+                has_evidence = ("counterpoise" in route_l
+                                or "oniom" in route_l
+                                or "guess=fragment" in route_l)
+                mol_text = "\n".join(lines[i:n])
+                if not has_evidence and "(fragment=" not in mol_text.casefold():
+                    pairs = " ".join(toks)
+                    warnings.append({
+                        "line": charge_line_no, "keyword": pairs,
+                        "kind": "molecule_multiple_charge_pairs",
+                        "message": "多组电荷-多重度对通常仅用于 "
+                                   "Counterpoise/ONIOM/Guess=Fragment 计算"
+                                   "（route 未含相应关键字且分子说明无 "
+                                   "Fragment 参数），请确认" +
+                                   ("；负多重度组官方仅 Guess=Fragment 有"
+                                    "语义" if any(v < 0 for v in nums[1::2])
+                                    else "")})
+        if not parse_ok:
             blocks["charge_mult"] = cm
             errors.append({"section": "charge_mult", "line": i,
-                           "message": "电荷/多重度行无法解析（应为两个整数；"
-                                      "若上一节未以空行收尾，本行可能是误并内容）"})
+                           "message": "电荷/多重度行无法解析（应为整数对："
+                                      "首组多重度须为正整数，后续组多重度"
+                                      "不得为 0；若上一节未以空行收尾，"
+                                      "本行可能是误并内容）"})
     elif geom_tier != "allcheck":
         errors.append({"section": "charge_mult", "line": n,
                        "message": "缺少电荷/多重度行"})
 
-    # 分子说明：原子定义行连续排列至终止空行
+    # 分子说明：原子定义行连续排列至终止空行（Variables:/Constants: 头即使
+    # 无空行分隔也构成边界——官方测试语料常见无空行直接跟变量区的形态；
+    # pbc 的 Tv 平移向量行与哑原子/鬼原子一样占行不计分子式）
     atoms: list[str] = []
     mol_start = i
     while i < n and not blank(i):
         ln = lines[i].strip()
-        if ln and not ln.startswith("!"):
-            atoms.append(ln)
+        if ln.startswith("!"):
+            i += 1
+            continue
+        first_tok = _tokenize_atom_line(ln)
+        first = first_tok[0] if first_tok else ""
+        if first.rstrip(":").casefold() in ("variables", "variable",
+                                            "constants", "constant"):
+            break  # 变量/常数区头（含单数形态）即原子块边界
+        if first.casefold() == "tv":
+            i += 1
+            continue  # pbc 平移向量：非原子行，不计原子数
+        atoms.append(ln)
         i += 1
     counts: dict[str, int] = {}
-    for ln in atoms:
-        sym = _atom_symbol(ln.split()[0])
-        if sym:
+    for k, ln in enumerate(atoms):
+        # G6：首字段按自由格式分隔取词（括号/引号感知，复用 route token
+        # 管道的单行切分——保住 C(Iso=13,Fragment=2) 整词），再按官方文法
+        # 分类（鬼/哑原子占一行不计分子式；无元素前缀记警告不计式）
+        toks = _tokenize_atom_line(ln)
+        sym, kind = _classify_atom(toks[0]) if toks else (None, "unknown")
+        if kind == "element" and sym:
             counts[sym] = counts.get(sym, 0) + 1
+        elif kind == "unknown":
+            warnings.append({"line": mol_start + k + 1,
+                             "keyword": toks[0] if toks else ln,
+                             "kind": "atom_label_unknown",
+                             "message": f"原子标签「{toks[0] if toks else ln}」"
+                                        "找不到元素符号前缀（官方文法：元素"
+                                        "符号或原子序数 + 可选标签），请确认"
+                                        "拼写或元素归属"})
     blocks["molecule"]["atom_count"] = len(atoms)
     blocks["molecule"]["formula"] = _hill_formula(counts)
     if not atoms and geom_tier is None:

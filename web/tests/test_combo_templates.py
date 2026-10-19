@@ -471,7 +471,8 @@ def test_template_route_duplicate_exempt_shapes():
 def test_template_mem_gb_must_be_positive():
     """%mem=0 拒绝（决策点 8：模板 mem_gb 阻断）。"""
     from web.src.services import combo_templates as ct
-    with pytest.raises(ct.validation_failed):
+    from web.src.errors import ApiError
+    with pytest.raises(ApiError):
         ct.validate_and_normalize(
             9, {"route": "#p opt", "nproc": "4", "mem_gb": "0"}, mode="enforce")
     fields, _ = ct.validate_and_normalize(

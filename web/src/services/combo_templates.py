@@ -133,11 +133,12 @@ def validate_and_normalize(template_id: int, data: dict, *,
 
     mem_gb: float | None = None
     if mem_txt:
-        if _NUM_RE.match(mem_txt):
+        if _NUM_RE.match(mem_txt) and float(mem_txt) > 0:
             mem_gb = float(mem_txt)  # 模板域限 GB 单一单位记账（刻意简化）
         else:
+            # %mem=0 拒绝（决策点 8：模板 mem_gb 阻断）
             errors.append(_verr("mem_gb", "mem_value_invalid",
-                                "%mem 须为 GB 数值"))
+                                "%mem 须为正数（GB 数值）"))
 
     cpu: str | None = None
     cpu_count: int | None = None

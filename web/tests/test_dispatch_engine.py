@@ -106,11 +106,12 @@ def test_link0_declared_kept_and_units(home):
     r = resolve_link0(DECLARED, 4, 8)
     assert r["nproc"] == {"value": 2, "defaulted": False}
     assert r["mem_gb"] == {"value": 1.0, "defaulted": False}
-    # G16 单位换算：MB→GB（1024 进制）、MW→GB（word=8B）
+    # G16 单位换算：MB→GB（1024 进制）、MW→GB（word=8B：1MW=8MB。
+    # B4 修正旧表 mw 差 1024 倍——2MW=16MB 而非 16KB）
     assert resolve_link0("%Mem=512MB\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)["mem_gb"] == {
         "value": 0.5, "defaulted": False}
     assert resolve_link0("%Mem=2MW\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)["mem_gb"] == {
-        "value": 2 * 8 * 1024 / 1024**3, "defaulted": False}
+        "value": 2 * 8 / 1024, "defaulted": False}
 
 
 def test_link0_nproc_synonyms_extracted(home):
@@ -525,10 +526,11 @@ def test_mem_to_gb_official_units_only():
     """记账换算单位集与值域同源（官方 KB..TW/KW/MW/GW）：QW 删除、GW/TW
     补齐——%mem=2GW 不再回落缺省注入误记 defaulted。"""
     from web.src.engine.workspace import _mem_to_gb
-    assert _mem_to_gb("2GW") == 2048.0
-    assert _mem_to_gb("1TW") == 1024.0 * 1024.0
+    assert _mem_to_gb("2GW") == 16.0  # 2 gigawords = 16GB
+    assert _mem_to_gb("1TW") == 8192.0  # terawords
     assert _mem_to_gb("800MB") == 800 / 1024
-    assert _mem_to_gb("500KB") == 500 / 1024 / 1024
+    assert _mem_to_gb("500KB") == 500 / 1024**2
+    assert _mem_to_gb("1KW") == 8 / 1024**2  # kiloword = 8KB
     assert _mem_to_gb("100") == 100 * 8 / 1024**3
-    assert _mem_to_gb("2W") == 16 / 1024**3
+    assert _mem_to_gb("2W") is None  # W 已出官方值域（B4 收紧）
     assert _mem_to_gb("2QW") is None  # 官方值域外

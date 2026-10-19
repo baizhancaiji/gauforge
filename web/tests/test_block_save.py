@@ -342,12 +342,13 @@ def test_spell_official_forms_not_flagged(ind):
 
 def test_spell_warning_absolute_line_offset(ind):
     """G0：route 不在文件首行时，拼写警告行号为全文件绝对行号（1 起）。"""
-    tid = _mk(ind, "%mem=1GB\n\n#p opt freq oppt\n\nt\n\n0 1\nO\n")
+    tid = _mk(ind, "%mem=1GB\n\n#p opt freq oppt\n\nt\n\n0 1\nO\n\n")
     assert parse_input(_file_text(ind, tid))["blocks"]["route"] \
         .splitlines()[0] == "#p opt freq oppt"  # route 首行 = 全文件第 3 行
     r = save_block(tid, "route", ["#p opt freq oppt"], inputs_dir=ind)
-    assert len(r["warnings"]) == 1
-    assert r["warnings"][0]["line"] == 3
+    spell = [w for w in r["warnings"] if w["kind"] == "keyword_spell"]
+    assert len(spell) == 1
+    assert spell[0]["line"] == 3
 
 
 # ---------------- 金标准输入编辑回写 ----------------

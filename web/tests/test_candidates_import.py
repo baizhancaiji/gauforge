@@ -225,6 +225,7 @@ SPELL_NOTE = """#p optt freq b3lyp/6-31g(d)
 0 1
 O 0.0 0.0 0.0
 H 0.0 0.0 0.96
+
 """
 
 

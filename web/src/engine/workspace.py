@@ -26,21 +26,12 @@ def content_hash(text: str) -> str:
 
 # ---------------- Link0 解析与补齐 ----------------
 
-_MEM_TO_GB = {"kb": 1 / 1024 / 1024, "mb": 1 / 1024, "gb": 1.0, "tb": 1024.0,
-              "w": 8 / 1024**3, "mw": 8 * 1024 / 1024**3,
-              "qw": 8 * 1024**2 / 1024**3}
-
-
 def _mem_to_gb(raw: str) -> float | None:
-    """G16 %mem 值 → GB 浮点；无法识别返回 None。"""
-    tok = raw.strip().upper()
-    for unit in ("QW", "MW", "KW", "TB", "GB", "MB", "KB", "W"):
-        if tok.endswith(unit):
-            try:
-                return float(tok[: -len(unit)]) * _MEM_TO_GB[unit.lower()]
-            except ValueError:
-                return None
-    return None
+    """G16 %mem 值 → GB 浮点；无法识别返回 None。
+
+    单位集与值域同源（parse/link0_rules，B4：QW 删除、GW/TW 补齐）。"""
+    from ..parse.link0_rules import mem_to_gb
+    return mem_to_gb(raw)
 
 
 def _fmt_gb(v: float) -> str:
@@ -48,22 +39,10 @@ def _fmt_gb(v: float) -> str:
 
 
 def _cpu_list_count(raw: str) -> int | None:
-    """%cpu proc-list → 核数：单项 3、列表 0,2,4、区间 0-5 及混合均可
-    （gaussian.com/run，绑定具体逻辑处理器）；无法识别返回 None。"""
-    total = 0
-    for tok in raw.replace(" ", "").split(","):
-        if not tok:
-            return None
-        lo, sep, hi = tok.partition("-")
-        try:
-            a = int(lo)
-            b = int(hi) if sep else a
-        except ValueError:
-            return None
-        if b < a:
-            return None
-        total += b - a + 1
-    return total or None
+    """%cpu proc-list → 核数（薄封装：解析核心下沉 parse/link0_rules，
+    B4 与值域/记账同源；区间步长 /n 后缀官方合法）。"""
+    from ..parse.link0_rules import cpu_list_count
+    return cpu_list_count(raw)
 
 
 def resolve_link0(text: str, nproc_default: int,
