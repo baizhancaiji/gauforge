@@ -36,7 +36,9 @@ SAMPLE = (
     "eps=4.0\n"
 )
 
-SAMPLE_VC = (  # Variables + Constants 分隔 + gen 触发附加节
+SAMPLE_VC = (  # Variables + Constants 分隔 + gen 触发附加节（B2 起末附加节
+    # 须以空行终止——官方 Section Ordering 表 Gen 行全 yes，导入校验拒收
+    # 无终止空行形态；样例按官方规范补终止空行）
     "%mem=1GB\n"
     "%nprocshared=4\n"
     "\n"
@@ -58,6 +60,7 @@ SAMPLE_VC = (  # Variables + Constants 分隔 + gen 触发附加节
     "S 3 1.0\n"
     "0.5 1.0\n"
     "****\n"
+    "\n"
 )
 
 

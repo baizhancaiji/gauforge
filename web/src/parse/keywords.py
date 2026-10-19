@@ -156,6 +156,33 @@ def tokenize_route(route_text: str) -> list[tuple[int, str]]:
     return _merge_pairs(pairs)
 
 
+def token_head(tok: str) -> str:
+    """token → 关键字头部（首个 ( 或 = 前，去尾 =、casefold）。
+
+    opt=(calcfc,ts) → opt；geom=allcheck → geom；gen → gen；
+    iop(6/50=1) → iop（B2 G4 触发词判定与 G2 重复检测共用的头部口径）。"""
+    t = tok.strip()
+    p = t.find("(")
+    head = t[:p] if p > 0 else t.partition("=")[0]
+    return head.rstrip("=").strip().casefold()
+
+
+def token_options(tok: str) -> frozenset[str]:
+    """token → 选项集（casefold、strip；裸 token 为空集）。
+
+    括号形按逗号切分（iop(6/50=1) 括号内无逗号整体保留为 {'6/50=1'}）；
+    = 取值形取值为单项；scrf=(solvent=water,read) → {'solvent=water','read'}。"""
+    t = tok.strip()
+    p = t.find("(")
+    if p > 0:
+        inner = t[p:].lstrip("(").rstrip(")")
+        items = inner.split(",")
+    else:
+        _, sep, val = t.partition("=")
+        items = [val] if sep else []
+    return frozenset(s.strip().casefold() for s in items if s.strip())
+
+
 def token_in_dict(tok: str, words: frozenset[str]) -> bool:
     """token 词典命中判定（精确匹配，不近似；缩写不识别——输入勘误计划
     决策点 5）：整词命中 ∨ key=value 键名命中且值非空 ∨ kw(opt)/kw=(opt)

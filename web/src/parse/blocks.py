@@ -4,16 +4,23 @@
 + warnings（非阻断，输入勘误计划 G0）+ multistep 标记；预览（尽力而为）
 与导入校验（严格，B3）共用。解析器自身绝不抛异常：坏文件回落默认分块并以
 parse_errors 标注。
+
+B2（输入勘误计划 G4/G9）：附加节触发识别改由官方 Section Ordering 表驱动
+（section_ordering.any_trigger，含 prop=wrf 兼容触发）；核心节必需空行
+缺失显式检测（route/title EOF 阻断、空分子说明缺节阻断、分子说明与
+变量/常数区 EOF 非阻断警告、--Link1-- 前空行附注）。scan_spans/split_lines
+为公共 API（服务层节起始行取数，B1 审查 R5 整改——不再以下划线私有名
+跨模块导入）。
 """
 from __future__ import annotations
 
+import logging
 import re
 
+from . import section_ordering
 from .keywords import tokenize_route
 
-# 附加输入节触发的 route 关键词（小写子串匹配，覆盖常见读取类节）
-_EXTRA_KEYWORDS = ("gen", "modredundant", "guess=alter", "scrf=read",
-                   "pop=nbo", "prop=wrf")
+log = logging.getLogger(__name__)
 
 # 可编辑节名（契约 PUT blocks/{section}；molecule 与未知节名不可编辑）
 _FIXED_SECTIONS = ("link0", "route", "title", "charge_mult")
@@ -63,7 +70,11 @@ def _atom_symbol(tok: str) -> str | None:
     return None
 
 
-def _split_lines(text: str) -> list[str]:
+def split_lines(text: str) -> list[str]:
+    """全文件逻辑行（换行归一 + 末尾换行切分产物剥离）。
+
+    公共 API（B1 审查 R5 整改）：服务层节起始行取数与解析层共用同一
+    行化口径。"""
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     if lines and lines[-1] == "":  # 末尾换行符的切分产物不是空行
         lines.pop()
@@ -98,7 +109,7 @@ def _geom_exemption_tier(route_text: str) -> str | None:
     括号形（geom=(allcheck,modredundant)）、= 两侧空格（geom = allcheck）、
     键名与括号间空格（geom (allcheck)）及大小写变体；allcheck 与
     checkpoint 并出时 allcheck 优先。本判定仅在 parse_input 消费——
-    _scan_spans/verify_and_normalize 无 geom 语义，勿在此同步。
+    scan_spans/verify_and_normalize 无 geom 语义，勿在此同步。
     """
     tier: str | None = None
     for _, tok in tokenize_route(route_text):
@@ -123,17 +134,21 @@ def _geom_exemption_tier(route_text: str) -> str | None:
 
 def parse_input(text: str) -> dict:
     """解析输入文本 → {"blocks": …, "parse_errors": […], "warnings": […],
-    "multistep": bool}；warnings 为非阻断提示通道（G0，B1 起常备、默认空）。"""
-    lines = _split_lines(text)
+    "multistep": bool}；warnings 为非阻断提示通道（G0；B2 起检测项扩容）。"""
+    lines = split_lines(text)
     errors: list[dict] = []
+    warnings: list[dict] = []
 
     # 多步任务：解析在首个 --Link1-- 处截断，仅覆盖第一步
     stop = next((k for k, ln in enumerate(lines)
                  if ln.strip().casefold() == "--link1--"), None)
     multistep = stop is not None
     if multistep:
+        msg = "多步任务（--Link1--）不支持"
+        if stop > 0 and lines[stop - 1].strip():  # G9 项 7：官方前导空行要求
+            msg += "（--Link1-- 前缺少空行，官方要求）"
         errors.append({"section": "link1", "line": stop + 1,
-                       "message": "多步任务（--Link1--）不支持"})
+                       "message": msg})
         lines = lines[:stop]
     n = len(lines)
 
@@ -175,10 +190,16 @@ def parse_input(text: str) -> dict:
     while i < n and (blank(i) or comment(i)):
         i += 1
     route_lines: list[str] = []
+    route_start = i
+    route_unterminated = False
     if i < n and lines[i].lstrip().startswith("#"):
         while i < n and not blank(i):
             route_lines.append(lines[i].rstrip())
             i += 1
+        if i >= n:  # G9 项 1：route 延展至 EOF（其后内容已被吞并）
+            route_unterminated = True
+            errors.append({"section": "route", "line": route_start + 1,
+                           "message": "route 节未以空行终止"})
     else:
         errors.append({"section": "route", "line": min(i + 1, n),
                        "message": "缺少 route 节（# 开头）"})
@@ -192,6 +213,7 @@ def parse_input(text: str) -> dict:
     while i < n and (blank(i) or comment(i)):
         i += 1
     title_lines: list[str] = []
+    title_start = i
     while i < n and not blank(i):
         title_lines.append(lines[i].strip())
         i += 1
@@ -200,9 +222,15 @@ def parse_input(text: str) -> dict:
             errors.append({"section": "title", "line": i - len(title_lines) + 1,
                            "message": "title 节超过 5 行"})
         blocks["title"] = "\n".join(title_lines)
+        if i >= n and geom_tier != "allcheck":  # G9 项 2（AllCheck 豁免集不报）
+            errors.append({"section": "title", "line": title_start + 1,
+                           "message": "title 节未以空行终止"})
     elif geom_tier != "allcheck":
+        msg = "缺少 title 节（仅 Geom=AllCheck 可省略）"
+        if route_unterminated:  # G9 项 1：归因提示，不再误导为单纯缺节
+            msg += "（route 未以空行终止时其后内容会并入 route）"
         errors.append({"section": "title", "line": min(i + 1, n),
-                       "message": "缺少 title 节（仅 Geom=AllCheck 可省略）"})
+                       "message": msg})
 
     # 电荷/多重度：title 终止空行后首个内容行
     while i < n and (blank(i) or comment(i)):
@@ -216,13 +244,15 @@ def parse_input(text: str) -> dict:
         except (IndexError, ValueError):
             blocks["charge_mult"] = cm
             errors.append({"section": "charge_mult", "line": i,
-                           "message": "电荷/多重度行无法解析（应为两个整数）"})
+                           "message": "电荷/多重度行无法解析（应为两个整数；"
+                                      "若上一节未以空行收尾，本行可能是误并内容）"})
     elif geom_tier != "allcheck":
         errors.append({"section": "charge_mult", "line": n,
                        "message": "缺少电荷/多重度行"})
 
     # 分子说明：原子定义行连续排列至终止空行
     atoms: list[str] = []
+    mol_start = i
     while i < n and not blank(i):
         ln = lines[i].strip()
         if ln and not ln.startswith("!"):
@@ -235,14 +265,26 @@ def parse_input(text: str) -> dict:
             counts[sym] = counts.get(sym, 0) + 1
     blocks["molecule"]["atom_count"] = len(atoms)
     blocks["molecule"]["formula"] = _hill_formula(counts)
+    if not atoms and geom_tier is None:
+        # G9 项 4：电荷行后分子说明整体缺失（Geom 检查点豁免档坐标可省不报）
+        errors.append({"section": "molecule", "line": min(i + 1, n),
+                       "message": "缺少分子说明节（原子定义行）"})
+    elif atoms and i >= n and geom_tier is None:
+        # G9 项 5：原子行非空且 EOF 告终（非阻断，避免历史文件误拒）
+        warnings.append({"line": mol_start + 1, "keyword": "",
+                         "kind": "molecule_unterminated",
+                         "message": "分子说明节未以空行终止（建议补终止空行）"})
 
     # 变量/常数区与附加节：其后以空行分隔的各区域
-    wants_extra = any(kw in route_cf for kw in _EXTRA_KEYWORDS)
+    # G4：附加节识别改由官方 Section Ordering 表驱动（含 prop=wrf 兼容触发）
+    wants_extra = section_ordering.any_trigger(blocks["route"])
+    last_addl_start: int | None = None
     while i < n:
         while i < n and (blank(i) or comment(i)):
             i += 1
         if i >= n:
             break
+        region_start = i
         region: list[str] = []
         while i < n and not blank(i):
             ln = lines[i].strip()
@@ -251,17 +293,40 @@ def parse_input(text: str) -> dict:
             i += 1
         ran_to_eof = i >= n
         head = region[0].rstrip(":").casefold() if region else ""
+        var_like = False
         if head == "variables":
             blocks["molecule"]["variables_present"] = True
+            var_like = True
         elif head == "constants":
             blocks["molecule"]["constants_present"] = True
+            var_like = True
         elif not wants_extra and _looks_like_variables(region):
             blocks["molecule"]["variables_present"] = True
+            var_like = True
         else:
             blocks["additional_sections"].append(
                 {"lines": region, "terminator_blank": not ran_to_eof})
+            last_addl_start = region_start
+        if var_like and ran_to_eof:
+            # G9 项 6：变量/常数/隐式变量区 EOF 告终（非阻断）
+            warnings.append({"line": region_start + 1, "keyword": "",
+                             "kind": "variables_unterminated",
+                             "message": "变量/常数区未以空行终止"
+                                        "（建议补终止空行）"})
 
-    return {"blocks": blocks, "parse_errors": errors, "warnings": [],
+    # G4 项 3：最后一个附加节以 EOF 收尾 → 官方表终止空行判定
+    # （非 EOF 位置缺空行在结构上不可观测——会与下一节合并为同一 region）
+    if blocks["additional_sections"] and \
+            not blocks["additional_sections"][-1]["terminator_blank"]:
+        if section_ordering.terminator_missing(blocks["route"]):
+            errors.append({"section": "additional",
+                           "line": (last_addl_start or 0) + 1,
+                           "message": "附加输入节未以空行终止"})
+        else:
+            log.debug("附加节终止空行按官方表保守不报（混合/例外/无命中）："
+                      "route=%r", route_cf)
+
+    return {"blocks": blocks, "parse_errors": errors, "warnings": warnings,
             "multistep": multistep}
 
 
@@ -272,8 +337,8 @@ def is_editable_section(name: str) -> bool:
     return name in _FIXED_SECTIONS or bool(_ADDITIONAL_RE.match(name))
 
 
-def _scan_spans(logical: list[str]) -> dict[str, tuple[int, int]]:
-    """节内容行区间（[start, end)，不含节间空行）。
+def scan_spans(logical: list[str]) -> dict[str, tuple[int, int]]:
+    """节内容行区间（[start, end)，不含节间空行）——公共 API（B1 审查 R5）。
 
     与 parse_input 同一套扫描规则（同一 blank/comment 判定与节识别顺序），
     供区间替换重组与提交前空行规约共用；molecule 相关区间
@@ -321,8 +386,8 @@ def _scan_spans(logical: list[str]) -> dict[str, tuple[int, int]]:
     spans["molecule_atoms"] = (mol_start, i)
 
     route = spans.get("route")
-    route_cf = "\n".join(logical[route[0]:route[1]]).casefold() if route else ""
-    wants_extra = any(kw in route_cf for kw in _EXTRA_KEYWORDS)
+    wants_extra = (section_ordering.any_trigger(
+        "\n".join(logical[route[0]:route[1]])) if route else False)
     idx = 0
     while i < n:
         while i < n and (blank(i) or comment(i)):
@@ -358,7 +423,7 @@ def reassemble(text: str, section: str, lines: list[str]) -> str:
     logical = text.split(eol)
     if logical and logical[-1] == "":  # 结尾换行符的切分产物不是内容行
         logical.pop()
-    spans = _scan_spans(logical)
+    spans = scan_spans(logical)
     if section not in spans:
         raise KeyError(section)
     content = list(lines)
@@ -402,8 +467,8 @@ def verify_and_normalize(text: str) -> dict:
     返回 {"text", "changed"}；解析校验（③④）由调用方执行。
     """
     normalized = text.replace("\r\n", "\n").replace("\r", "\n")
-    logical = _split_lines(normalized)
-    spans = _scan_spans(logical)
+    logical = split_lines(normalized)
+    spans = scan_spans(logical)
     keys = list(spans)
     if not keys:
         return {"text": normalized, "changed": normalized != text}

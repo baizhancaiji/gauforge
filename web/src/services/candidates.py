@@ -28,7 +28,7 @@ from pathlib import Path
 from .. import config
 from ..engine.workspace import _cpu_list_count
 from ..errors import ApiError, err, not_found, validation_failed
-from ..parse.blocks import (_scan_spans, _split_lines, is_editable_section,
+from ..parse.blocks import (is_editable_section, scan_spans, split_lines,
                             parse_input, reassemble)
 from ..parse.keywords import check_route_spelling
 from ..store import executions, get_db, tasks
@@ -405,7 +405,7 @@ def save_block(task_id: int, section: str, lines: list[str], *,
         filename = row["filename"]
     # ⑤ 拼写检查：警告行号换算为全文件绝对行号（route 起始行 - 1 为偏移；
     # G0 口径——导入/提交/预览/分块保存统一全文件 1 起）
-    route_span = _scan_spans(_split_lines(new_text)).get("route")
+    route_span = scan_spans(split_lines(new_text)).get("route")
     offset = route_span[0] if route_span else 0
     warnings = check_route_spelling(after["blocks"]["route"],
                                     line_offset=offset)

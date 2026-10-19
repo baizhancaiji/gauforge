@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pytest
 
+from web.src.parse.blocks import parse_input
 from web.src import config
 from web.src.engine import Dispatcher, FakeGateway
 from web.src.engine.crest import CrestExtractError, extract_ensemble
@@ -531,3 +532,19 @@ def test_draft_discard_tolerates_step_failure(tmp_path, monkeypatch):
     wf_svc._discard_refine_draft(qid, [tid, tid + 1])
     assert calls == [tid, tid + 1]  # 首步失败未阻断次步
     assert queues().get(qid) is None  # 队列行仍回收
+
+
+def test_extract_molecule_block_aligned_with_parse_input_b2():
+    """B2 同步回归（输入勘误计划 §2.10）：_extract_molecule_block 的节扫描
+    规则与 parse_input 保持同构——G4/G9 只增检测不改扫描，电荷/坐标提取
+    结果不受影响；附加节触发词（gen）在场时坐标行止于终止空行，附加节
+    内容不混入。"""
+    text = ("%mem=1GB\n\n#p hf/sto-3g gen\n\nt\n\n0 1\nO 0 0 0\n"
+            "H 0 0 0.96\nH 0 0.96 -0.24\n\nH 0\nS 3 1.0\n****\n\n")
+    cm, coords = wf_svc._extract_molecule_block(text)
+    assert cm == "0 1"
+    assert coords == ["O 0 0 0", "H 0 0 0.96", "H 0 0.96 -0.24"]
+    # 与 parse_input 的分子说明口径一致（atom_count 同源）
+    parsed = parse_input(text)
+    assert parsed["blocks"]["molecule"]["atom_count"] == len(coords)
+    assert parsed["blocks"]["additional_sections"]  # gen 附加节已识别

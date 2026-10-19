@@ -243,24 +243,40 @@ def test_multistep_rejected(ind):
 
 
 def test_pure_eof_unterminated_normalized_on_submit(ind):
-    """G9 提交通道口径：纯 EOF（route 后无其他内容、文件以 route 行收尾）
-    的未终止经空行规范化消除，不拒提交（预览/导入通道则记 parse_errors）；
-    route 已吞并 title 的文件规范化无法拆分，仍拒。"""
-    pure_eof = ("%mem=1GB\n#p hf/sto-3g\n")  # route 直达 EOF，无吞并
-    tid = _mk(ind, pure_eof)
+    """G9 提交通道口径（§2.11 矩阵「缺节/吞并仍拒」）：分子说明以 EOF
+    收尾的警告级形态经空行规范化消除、可提交且 normalized=True；route
+    直达 EOF 的文件「route 未终止」经规范化消除但缺节仍拒——错误归类
+    为缺 title 而非 route 未终止（与预览/导入通道差异的实证）。样例为
+    B2 之前入库的历史文件形态——绕过导入校验直接落盘建行（「不回溯
+    改写已存文件」口径）。"""
+    mol_eof = ("%mem=1GB\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n"
+               "H 0 0 0.96\n")  # 原子行直达 EOF（G9 警告级形态）
+    tid = tasks().create_candidate("eof.gjf", "imported")
+    (ind / str(tid)).write_text(mol_eof, encoding="utf-8")
+    assert parse_input(mol_eof)["warnings"] != []  # 预览通道有警告
     out = submit_candidate(tid, None)
     assert out["normalized"] is True
     assert verify_and_store(tid) is False  # 规范化后已稳定
-    from web.src.parse.blocks import parse_input as _pi
-    assert _pi(_file(ind, tid).decode())["parse_errors"] == []
-    # route 吞并 title 至 EOF：规范化不可拆 → 仍缺节拒绝
-    swallowed = "%mem=1GB\n#p hf/sto-3g\n标题行\n"
-    tid2 = _mk(ind, swallowed)
+    assert parse_input(_file(ind, tid).decode())["parse_errors"] == []
+    assert parse_input(_file(ind, tid).decode())["warnings"] == []
+    # route 直达 EOF、后无其他内容：未终止经规范化消除，缺节仍拒
+    # （错误归类=缺 title，非 route 未终止）
+    route_eof = "%mem=1GB\n#p hf/sto-3g\n"
+    tid2 = tasks().create_candidate("routeeof.gjf", "imported")
+    (ind / str(tid2)).write_text(route_eof, encoding="utf-8")
+    assert any(e["section"] == "route" for e in
+               parse_input(route_eof)["parse_errors"])  # 预览通道报未终止
     before = _file(ind, tid2)
     with pytest.raises(ApiError) as ei:
         submit_candidate(tid2, None)
-    assert ei.value.body()["error"]["code"] == "INPUT_PARSE_FAILED"
+    body = ei.value.body()["error"]
+    assert body["code"] == "INPUT_PARSE_FAILED"
+    assert body["details"]["section"] == "title"
     assert _file(ind, tid2) == before
+    # 导入通道对 route 未终止直接拒收（G9 阻断口径）
+    with pytest.raises(ApiError) as ei:
+        import_files([("eof.gjf", route_eof.encode())], inputs_dir=ind)
+    assert ei.value.body()["error"]["code"] == "VALIDATION_FAILED"
 
 
 # ---------------- 三条提交路径统一 ----------------
