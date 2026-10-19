@@ -267,9 +267,13 @@ def token_in_dict(tok: str, words: frozenset[str]) -> bool:
 # 值形关键字白名单：括号内容为数值/模型化学组合/命令串，不做选项查典
 # （IOp(6/50=1) 取值列表、ONIOM(B3LYP/6-31G(d):AM1:UFF) 模型化学、
 # External="RunTink Amber" 命令名——warn 级宁漏勿误，§2.9）。
+# iop 成员实际不判活：IOp(6/50=1) 按 = 拆键得 iop(6/50（含括号），键名
+# 不在典即零警告；成员保留为键名恰为裸 iop 时的防御。
 _VALUE_FORM_HEADS = frozenset(("iop", "oniom", "external"))
 
-# 选项基名的尾部参数表（td=window(13,-12) → window）。
+# 选项基名的尾部参数括号剥离（如 window(13,-12) → window）；仅剥参数，
+# 不回查括号内。td=window 为官方 TD=Window 选项但词典暂缺 td=* 组合词
+# 条目，该形态仍会报 unknown（B 类面⑤覆盖缺口，登记另批扩面）。
 _PAREN_TAIL = re.compile(r"\([^)]*\)")
 
 
@@ -382,20 +386,6 @@ def check_route_options(route_text: str, *, cutoff: float = 0.8,
         out.extend(
             _option_unknowns(tok, line_no + line_offset, words, cutoff))
     return out
-    t = tok.strip()
-    if not t or t.startswith("@"):
-        return True
-    cf = t.casefold()
-    if cf in words:
-        return True
-    p = t.find("(")
-    if p > 0:
-        head = t[:p].strip()
-        if head.endswith("="):
-            head = head[:-1]
-        return head.casefold() in words and t[p:].strip() != "()"
-    key, sep, val = t.partition("=")
-    return bool(sep) and bool(val.strip()) and key.strip().casefold() in words
 
 
 def check_route_spelling(route_text: str, *, cutoff: float = 0.8,
