@@ -1027,3 +1027,28 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | 字典重生成依赖 gaussian-kb 数据目录在机 | extract_keywords 已有缺失降级与 `--kb-dir` 参数；重生成后跑一致性闸门；skip 记录 |
 | 附加节顺序/PDB 自动触发无法校验 | 已在 §2.12 登记为已知限制，交 G16/testrt；不承诺顺序检测 |
 | MM/ONIOM、鬼原子、哑原子、多电荷对误报 | G6 文法边界用例先行；未知标签仅 warn；鬼原子/哑原子不入分子式；多电荷对按同一行解析 |
+
+## 8. 实施与审查留痕
+
+### 8.1 B1 批次（2026-10-19 实施收口）
+
+- 实施序列：progress 开工 → 契约文档先行（含生成物）→ 测试先行（10 用例先红）→ 实现 → 进度同步，共 5 提交。
+- 验收：全量 750 passed 0 skipped（入口基线 740）；真实 G16 Rev. C.01 冒烟——
+  Checkpoint 缺 title/电荷被拒（l101 报 `Charge and Multiplicity card seems defective`）、
+  AllCheck 全省略正常结束（语料 sha256 前缀：t1=3e00da1c、t2=3860904a）。
+- 独立审查：报告见 [input-verify-gap-b1-review.md](input-verify-gap-b1-review.md)
+  （AGENTS §6.2 四查 + 前端浏览器实测），结论**有条件通过**。
+- 审查发现处置：
+  - **R1（P1）已修**：`@file/N` 抑制回显后缀并入 @ token（`_AT_SUFFIX_N` 吸附），
+    enforce/warn 通道补回归用例；
+  - **R2（P2）已修**：combo 模板 `has_freq` 改按 token 头部判定
+    （`partition("=")[0].split("(")[0]`），覆盖无等号括号形，补 `temp_applied`
+    断言；
+  - **R3（P3）已处置**：`!` 截断实现口径（括号内不截断，视为值的一部分）
+    已注明于 `keywords.py` docstring 并指向本节；
+  - **R4（P3）登记**：实现提交内修正两处测试断言（绝对行号 5、temperature
+    逗号列表 reason 迁移）——教训：可预判的口径变化应在测试先行提交写对，
+    后续批次执行；
+  - **R5（P3）登记**：`services/candidates.py` 导入 `parse.blocks` 私有名
+    （`_scan_spans`/`_split_lines`）属封装穿透，功能正确；B2 起 `wants_extra`
+    改造触及同区域时一并提为公共 API，本批不动。
