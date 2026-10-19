@@ -1026,7 +1026,8 @@ components:
             notice。temp_applied=本次保存自动补齐 temperature=298.15（route 含
             freq 且未配置温度）；normalized=保存值经 casefold 归一化入库；
             spelling_warnings=词典外 token 原文清单（warn 模式未豁免放行与
-            enforce 豁免放行两种情形均回传，供前端提示）。
+            enforce 豁免放行两种情形均回传，供前端提示）；route_duplicates=
+            route 重复关键字非阻断警告（G2 判定表，Warning 结构数组）。
           required: [notice]
           properties:
             notice:
@@ -1044,6 +1045,11 @@ components:
                   items:
                     type: string
                   description: 词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传）
+                route_duplicates:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Warning'
+                  description: route 重复关键字警告（kind=route_duplicate；模板保存通道触发，line 为模板 route 文本行号）
 
     EnergySummaryRow:
       type: object
@@ -1551,10 +1557,10 @@ components:
           items:
             $ref: '#/components/schemas/Warning'
           description: >-
-            非阻断警告（默认空数组）。kind：keyword_spell（分块保存 route
-            拼写近邻，行号为全文件绝对行号）、molecule_unterminated
-            （分子说明未以空行终止；Geom 坐标豁免档不产生）、
-            variables_unterminated（Variables/Constants 区未以空行终止）。
+            非阻断警告（默认空数组；kind 词表以 Warning.kind 为准，行号为
+            全文件绝对行号）。通道口径：预览/导入/提交/分块保存四通道返回
+            全文件警告全集（parse_input 产出 + route 拼写/重复）；队列提交
+            聚合时逐条附 task_id。
 
     # ---------------- 设置 ----------------
     SettingItem:
@@ -2200,6 +2206,14 @@ paths:
         rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节
         （队列编辑框「接续前置 chk」写 %oldchk 依赖行，DAG 校验读输入），
         其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。
+        422 校验 reason 词表（按分节）：link0=must_be_key_value、empty_value、
+        nproc_not_positive_int、mem_value_invalid、cpu_list_invalid、
+        link0_line_too_long；route=route_must_start_with_hash、
+        route_line_link0_forbidden（G3 情形 1：% 行错置 route 节内）、
+        blank_line_in_route；title=title_too_long、link0_misplaced（G3 情形 2：
+        % 行错置 title 节）、title_forbidden_char；charge_mult=must_be_single_line、
+        must_be_integer_pairs（多组电荷-多重度对同口径，自由格式分隔符）；
+        通用=empty_section。
       parameters:
         - $ref: '#/components/parameters/CandidateId'
         - name: section

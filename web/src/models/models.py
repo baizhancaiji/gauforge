@@ -540,23 +540,6 @@ class ComboTemplateUpdate(BaseModel):
     )
 
 
-class Notice(BaseModel):
-    temp_applied: bool = Field(
-        ..., description='本次保存是否自动补齐 temperature=298.15'
-    )
-    normalized: bool = Field(
-        ..., description='本次保存是否发生大小写归一化（casefold 入库）'
-    )
-    spelling_warnings: list[str] | None = Field(
-        None,
-        description='词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传）',
-    )
-
-
-class ComboTemplateMutationResult(ComboTemplate):
-    notice: Notice
-
-
 class Source(Enum):
     analysis = 'analysis'
     ensemble = 'ensemble'
@@ -789,7 +772,7 @@ class InputPreview(BaseModel):
     )
     warnings: list[Warning] | None = Field(
         None,
-        description='非阻断警告（默认空数组）。kind：keyword_spell（分块保存 route 拼写近邻，行号为全文件绝对行号）、molecule_unterminated （分子说明未以空行终止；Geom 坐标豁免档不产生）、 variables_unterminated（Variables/Constants 区未以空行终止）。',
+        description='非阻断警告（默认空数组；kind 词表以 Warning.kind 为准，行号为 全文件绝对行号）。通道口径：预览/导入/提交/分块保存四通道返回 全文件警告全集（parse_input 产出 + route 拼写/重复）；队列提交 聚合时逐条附 task_id。',
     )
 
 
@@ -963,6 +946,27 @@ class Workflow(BaseModel):
 
 class WorkflowList(BaseModel):
     workflows: list[Workflow]
+
+
+class Notice(BaseModel):
+    temp_applied: bool = Field(
+        ..., description='本次保存是否自动补齐 temperature=298.15'
+    )
+    normalized: bool = Field(
+        ..., description='本次保存是否发生大小写归一化（casefold 入库）'
+    )
+    spelling_warnings: list[str] | None = Field(
+        None,
+        description='词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传）',
+    )
+    route_duplicates: list[Warning] | None = Field(
+        None,
+        description='route 重复关键字警告（kind=route_duplicate；模板保存通道触发，line 为模板 route 文本行号）',
+    )
+
+
+class ComboTemplateMutationResult(ComboTemplate):
+    notice: Notice
 
 
 class Result(BaseModel):
