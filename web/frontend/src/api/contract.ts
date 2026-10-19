@@ -1301,6 +1301,8 @@ export interface components {
             seat_id: number;
             /** @description 关联的原执行 id（resumed_from.execution_id 回显，便于前端提示） */
             execution_id?: number | null;
+            /** @description 可选；对注入改写后输入的非阻断警告（拼写/重复关键字），不阻断入队 */
+            warnings?: components["schemas"]["Warning"][];
         };
         /**
          * @description 组合流状态机（M4）：迁移单向 crest_running → refining → completed； 任一阶段失败（crest 执行失败、ensemble 构象数 <2 无法成队等）→ failed （终态）。精修队列失败回退期间停留 refining（回退重提属队列既有语义， 终态判据=精修队列成功记 completed）；精修队列最终被放弃/删除同样停留 refining（不设放弃终态、记录不级联删除，单点端点聚合按缺失成员处理、 crest 结果仍可查）。
@@ -1611,7 +1613,7 @@ export interface components {
             line: number;
             /** @description 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串 */
             keyword: string;
-            /** @description 警告类别（词表：keyword_spell、molecule_unterminated、 variables_unterminated；后续批次按输入勘误计划 §4 继续扩容） */
+            /** @description 警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated；后续批次按输入勘误 计划 §4 继续扩容） */
             kind: string;
             /** @description 可直接展示的中文说明 */
             message: string;
@@ -1713,6 +1715,8 @@ export interface components {
                 filename?: string;
                 /** @description 与既有候选同名且内容哈希一致的提示（不阻断导入，另行建目） */
                 duplicate?: boolean;
+                /** @description 可选；导入通道的非阻断警告（route 拼写近邻/重复关键字， 行号全文件 1 起）。仅随导入成功的 files[] 条目返回；整批 422 的 details.errors[] 不携带 warnings。警告不阻断入库。 */
+                warnings?: components["schemas"]["Warning"][];
             }[];
             /** @description M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队）为 null */
             queue?: {
@@ -1731,6 +1735,8 @@ export interface components {
              * @default false
              */
             normalized: boolean;
+            /** @description 可选；提交核验的非阻断警告（route 拼写近邻/重复关键字）。行内 提交与历史重新排队为该任务输入的警告；队列提交逐成员收集并在 条目 task_id 填成员任务 id（单任务提交不填 task_id）。警告不阻断 提交。 */
+            warnings?: components["schemas"]["Warning"][];
         };
     };
     responses: {

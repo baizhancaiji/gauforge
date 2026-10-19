@@ -429,17 +429,6 @@ class ResumePreviewResponse(BaseModel):
     input_diff: str | None = Field(None, description='注入前后完整输入的统一 diff 文本')
 
 
-class ResumeConfirmResponse(BaseModel):
-    task_id: int = Field(
-        ..., description='新建任务 id（新任务新输入副本=注入改写后文本）'
-    )
-    seat_id: int = Field(..., description='待执行席位 id')
-    execution_id: int | None = Field(
-        None,
-        description='关联的原执行 id（resumed_from.execution_id 回显，便于前端提示）',
-    )
-
-
 class WorkflowState(Enum):
     crest_running = 'crest_running'
     refining = 'refining'
@@ -755,7 +744,7 @@ class Warning(BaseModel):
     )
     kind: str = Field(
         ...,
-        description='警告类别（词表：keyword_spell、molecule_unterminated、 variables_unterminated；后续批次按输入勘误计划 §4 继续扩容）',
+        description='警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated；后续批次按输入勘误 计划 §4 继续扩容）',
     )
     message: str = Field(..., description='可直接展示的中文说明')
     suggestion: str | None = Field(None, description='可选；仅拼写/选项近邻类警告提供')
@@ -894,6 +883,10 @@ class File(BaseModel):
     duplicate: bool | None = Field(
         None, description='与既有候选同名且内容哈希一致的提示（不阻断导入，另行建目）'
     )
+    warnings: list[Warning] | None = Field(
+        None,
+        description='可选；导入通道的非阻断警告（route 拼写近邻/重复关键字， 行号全文件 1 起）。仅随导入成功的 files[] 条目返回；整批 422 的 details.errors[] 不携带 warnings。警告不阻断入库。',
+    )
 
 
 class Queue1(BaseModel):
@@ -919,6 +912,25 @@ class SubmitResponse(BaseModel):
     normalized: bool | None = Field(
         False,
         description='M2；本次提交核验对输入副本执行了 CRLF→LF 或空行规约变更（queue 提交逐成员核验，任一成员规范化即 true）；前端据此展示「已自动规范化」注记，不自行实现规约检测',
+    )
+    warnings: list[Warning] | None = Field(
+        None,
+        description='可选；提交核验的非阻断警告（route 拼写近邻/重复关键字）。行内 提交与历史重新排队为该任务输入的警告；队列提交逐成员收集并在 条目 task_id 填成员任务 id（单任务提交不填 task_id）。警告不阻断 提交。',
+    )
+
+
+class ResumeConfirmResponse(BaseModel):
+    task_id: int = Field(
+        ..., description='新建任务 id（新任务新输入副本=注入改写后文本）'
+    )
+    seat_id: int = Field(..., description='待执行席位 id')
+    execution_id: int | None = Field(
+        None,
+        description='关联的原执行 id（resumed_from.execution_id 回显，便于前端提示）',
+    )
+    warnings: list[Warning] | None = Field(
+        None,
+        description='可选；对注入改写后输入的非阻断警告（拼写/重复关键字），不阻断入队',
     )
 
 

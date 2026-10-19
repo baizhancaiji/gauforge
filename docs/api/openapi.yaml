@@ -782,6 +782,11 @@ components:
           type: integer
           nullable: true
           description: 关联的原执行 id（resumed_from.execution_id 回显，便于前端提示）
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          description: 可选；对注入改写后输入的非阻断警告（拼写/重复关键字），不阻断入队
 
     WorkflowState:
       type: string
@@ -1454,8 +1459,9 @@ components:
         kind:
           type: string
           description: >-
-            警告类别（词表：keyword_spell、molecule_unterminated、
-            variables_unterminated；后续批次按输入勘误计划 §4 继续扩容）
+            警告类别（词表：keyword_spell、route_duplicate、
+            molecule_unterminated、variables_unterminated；后续批次按输入勘误
+            计划 §4 继续扩容）
         message:
           type: string
           description: 可直接展示的中文说明
@@ -1683,6 +1689,14 @@ components:
               duplicate:
                 type: boolean
                 description: 与既有候选同名且内容哈希一致的提示（不阻断导入，另行建目）
+              warnings:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Warning'
+                description: >-
+                  可选；导入通道的非阻断警告（route 拼写近邻/重复关键字，
+                  行号全文件 1 起）。仅随导入成功的 files[] 条目返回；整批 422
+                  的 details.errors[] 不携带 warnings。警告不阻断入库。
         queue:
           type: object
           nullable: true
@@ -1710,6 +1724,15 @@ components:
           type: boolean
           default: false
           description: "M2；本次提交核验对输入副本执行了 CRLF→LF 或空行规约变更（queue 提交逐成员核验，任一成员规范化即 true）；前端据此展示「已自动规范化」注记，不自行实现规约检测"
+        warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/Warning'
+          description: >-
+            可选；提交核验的非阻断警告（route 拼写近邻/重复关键字）。行内
+            提交与历史重新排队为该任务输入的警告；队列提交逐成员收集并在
+            条目 task_id 填成员任务 id（单任务提交不填 task_id）。警告不阻断
+            提交。
 
   parameters:
     PageParam:
