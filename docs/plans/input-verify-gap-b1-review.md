@@ -107,3 +107,68 @@ check_tokens/check_contrast 仅作佐证）。
    `_scan_spans` 私有名封装。
 
 修复后仅需针对 R1/R2 复审（复跑全量 pytest + 新增用例 + enforce 实测），无需重做全量审查。
+
+## 八、整改复审（R1/R2 针对性复审，2026-10-19）
+
+复审范围：git 区间 `42ca49fe..a3f28538`（b9c244f7 测试先行红、cd7947c5 计划留痕 §8.1、
+93cbac04 实现、a20348d6 进度登记、a3f28538 本报告入库）。仅针对第七节条件 1)/2)，
+按第七节约定不重做全量审查；全部结论来自独立实测，不采信实施自述。
+
+### 8.1 R1（P1：`@file/N` 后缀豁免）——已修复，验证通过
+
+- **原失败形态复测**：`validate_and_normalize(1, {"route": "#p opt freq @mols.dat/3"})`
+  → 200 放行（修复前 422 字段级校验失败，本次实测通过）；warn 通道
+  `check_route_spelling("#p opt freq @mols.dat/3")` → `[]` 零误报。
+- **实现审查**（`web/src/parse/keywords.py:53-54、95-98`）：深度 0 遇 `/` 且当前
+  token 以 `@` 开头、`/` 后匹配 `_AT_SUFFIX_N`（`\d+(?=$|[\s,/#])`，数字后为行尾
+  或分隔符）时并入 token。`re.match(head, j+1)` 的 `$` 锚定全串末尾，不会在行中
+  误命中；`cur[0] == "@"` 保证非 `@` token 不受影响。
+- **边界矩阵实测（16 例）**：
+  - 目标形态 `@mols.dat/3` 整词豁免；`@a/3/b` 吸附 `@a/3`、`b` 独立（与处置说明一致）；
+  - 不误吸附：`@x/`（尾随孤立 `/`）、`@a/3.5`（小数非 N）、`@a/33abc`、
+    `@file/3freq`（数字后跟字母）、`@a /3`、`@a/,3`（空格/逗号隔断后 `/3` 非后缀）；
+  - 零回归：`b3lyp/6-31g(d,p)`、`IOp(6/50=1)`、`External="a/b/2"`（引号内斜杠）、
+    geom 档位判定（allcheck/checkpoint）均不受影响；
+  - warn 通道 `@a/3/b` 的 `b` 无近邻不警告。
+- **测试**：`test_enforce_official_forms_pass` 追加 `"#p opt freq @mols.dat/3"`、
+  `test_spell_official_forms_not_flagged` 同步追加，两者独立单跑 PASSED。
+- **观察项（不阻断）**：① `@file/2/3` 多级 `/N` 宽容整词豁免（非官方形态向放行
+  方向倾斜，与 R1「不误拒」目标同向，无副作用）；② `@dir/sub/file.dat/7` 含路径
+  斜杠的 @file 仍拆散（`sub`/`file.dat` 词典外）——官方 @filename 语法未明确支持
+  路径形式，计划 §2.3 仅要求 `/N` 后缀，属计划外形态；如后续语料出现再议。
+
+### 8.2 R2（P2：`has_freq` 括号形漏判）——已修复，验证通过
+
+- **原失败形态复测**（`web/src/services/combo_templates.py:98-100`，改按 token 头部
+  `t.partition("=")[0].split("(", 1)[0] == "freq"` 判定）：
+  `freq(readanharmonic)`、`freq (readanharmonic)`、`FREQ(ReadFC)` 三态均
+  `temp_applied=True` 且 route 末尾补 `temperature=298.15`。
+- **不回归**：`freq`、`freq=readanharmonic`、`freq,readanharmonic`（warn 模式对照
+  B1 基线）仍正确补温；`frequency`、`freqx`、`opt=(freq)`、`IOp(6/50=1)` 均不误判
+  （temp_applied=False）；已配置 `temperature=310`/`temp=300` 时不重复补。
+- **温度校验回归**：`freq(readanharmonic)` 组合下 `temperature=abc/-1/0` 三态仍 422
+  拒绝（`temp_value_invalid` 路径完好）。
+- **测试**：`test_temp_auto_apply_bracket_form_freq` 独立单跑 PASSED。
+
+### 8.3 R3–R5 处置核查
+
+- R3：`keywords.py` 模块与 `_tokenize_line` docstring 已注明「括号/引号内 `!` 属值的
+  一部分不截断」口径并指向审查报告 R3；计划 §8.1 同步登记——处置符合第七节条件 3)。
+- R4/R5：登记于计划 §8.1（R4 教训「可预判口径变化在测试先行提交写对」；R5 约定
+  B2 触及同区域时提公共 API）——按第七节「登记」口径接受。
+
+### 8.4 闸门复跑（独立执行）
+
+| 闸门 | 实测结果 |
+|---|---|
+| `uv run pytest -q` | **751 passed, 0 skipped**（107.60s；= 750 + 新增 `test_temp_auto_apply_bracket_form_freq`，hq 产物在位） |
+| `uv run python scripts/validate_progress.py` | OK |
+| `uv run python scripts/gen_changelog_md.py --check` | OK（C3 条目补登 R1/R2 后两文件一致） |
+| 工作树 | clean（区间改动全部入库，无未跟踪残留） |
+
+### 8.5 复审结论
+
+**闭环。** 第七节条件 1)（R1）与 2)（R2）均已修复并经独立实测验证，条件 3)（R3–R5）
+按约定处置/登记完毕；全量闸门复跑通过，无残留阻断项。两条观察项（`@file/2/3`
+宽容整词、`@` 路径形态不豁免）均为计划外边界的方向性备注，不构成问题，随 §8.1
+留痕即可，B2 起若相关语料出现再议。

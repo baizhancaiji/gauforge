@@ -1052,3 +1052,8 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   - **R5（P3）登记**：`services/candidates.py` 导入 `parse.blocks` 私有名
     （`_scan_spans`/`_split_lines`）属封装穿透，功能正确；B2 起 `wants_extra`
     改造触及同区域时一并提为公共 API，本批不动。
+- 整改复审（同日）：**闭环，无残留问题**——R1 边界矩阵 16 例、R2 三态
+  补温与不误判矩阵均独立实测通过，全量 751 passed 0 skipped，详见审查
+  报告 §8。观察项两条随批留痕：`@file/2/3` 多级后缀宽容整词（放行方向
+  无害）；`@dir/sub/file.dat/7` 含路径斜杠仍拆散——计划 §2.3 仅要求
+  `/N` 后缀，属计划外形态，B2 起相关语料出现再议。
