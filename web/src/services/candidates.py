@@ -28,9 +28,9 @@ from pathlib import Path
 from .. import config
 from ..engine.workspace import _cpu_list_count
 from ..errors import ApiError, err, not_found, validation_failed
-from ..parse.blocks import (is_editable_section, scan_spans, split_lines,
-                            parse_input, reassemble)
-from ..parse.keywords import check_route_spelling
+from ..parse.blocks import (is_editable_section, parse_input, reassemble,
+                            scan_spans, split_lines)
+from ..parse.keywords import check_route_duplicates, check_route_spelling
 from ..store import executions, get_db, tasks
 
 log = logging.getLogger(__name__)
@@ -52,30 +52,50 @@ def _basename(filename: str) -> str:
     return Path(filename).name
 
 
-def _validate_one(filename: str, data: bytes) -> dict | None:
-    """单文件校验：通过返回 None；否则返回逐文件错误条目。"""
+def _route_warnings(route_text: str, lines: list[str]) -> list[dict]:
+    """route 非阻断警告全集（G1/G2）：拼写近邻 + 重复关键字，行号为全文件
+    绝对行号（route 起始行换算）。"""
+    span = scan_spans(lines).get("route")
+    offset = span[0] if span else 0
+    return (check_route_spelling(route_text, line_offset=offset)
+            + check_route_duplicates(route_text, line_offset=offset))
+
+
+def _validate_one(filename: str, data: bytes) -> dict:
+    """单文件校验（G1 改造）：始终返回 {"error": dict|None, "warnings": list}。
+
+    error 为 None 表示校验通过；warnings 为非阻断提示（拼写/重复关键字），
+    仅在通过时非空可携带（失败条目不带 warnings——422 details.errors[] 无
+    该字段）。"""
     name = _basename(filename)
     if not name:
-        return {"filename": filename, "reason": "INVALID_FILENAME",
-                "message": "文件名为空"}
+        return {"error": {"filename": filename, "reason": "INVALID_FILENAME",
+                          "message": "文件名为空"}, "warnings": []}
     if Path(name).suffix.casefold() not in SUPPORTED_EXTS:
-        return {"filename": name, "reason": "UNSUPPORTED_EXTENSION",
-                "message": "仅支持 .gjf/.com（不区分大小写）"}
+        return {"error": {"filename": name, "reason": "UNSUPPORTED_EXTENSION",
+                          "message": "仅支持 .gjf/.com（不区分大小写）"},
+                "warnings": []}
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:
-        return {"filename": name, "reason": "INVALID_ENCODING",
-                "message": "非 UTF-8 文本"}
+        return {"error": {"filename": name, "reason": "INVALID_ENCODING",
+                          "message": "非 UTF-8 文本"}, "warnings": []}
     r = parse_input(text)
     if r["multistep"]:
-        return {"filename": name, "reason": "INPUT_MULTISTEP_UNSUPPORTED",
-                "message": "多步任务（--Link1--）不支持"}
+        return {"error": {"filename": name,
+                          "reason": "INPUT_MULTISTEP_UNSUPPORTED",
+                          "message": "多步任务（--Link1--）不支持"},
+                "warnings": []}
     if r["parse_errors"]:
         first = r["parse_errors"][0]
-        return {"filename": name, "reason": "INPUT_PARSE_FAILED",
-                "message": f"解析失败：{first['message']}（第 {first['line']} 行）",
-                "parse_errors": r["parse_errors"]}
-    return None
+        return {"error": {"filename": name, "reason": "INPUT_PARSE_FAILED",
+                          "message": f"解析失败：{first['message']}"
+                                     f"（第 {first['line']} 行）",
+                          "parse_errors": r["parse_errors"]},
+                "warnings": []}
+    return {"error": None,
+            "warnings": _route_warnings(r["blocks"]["route"],
+                                        split_lines(text))}
 
 
 def _content_hash(data: bytes) -> str:
@@ -100,8 +120,9 @@ def import_files(files: list[_File], *, mode: str = "files",
                  inputs_dir: Path | None = None) -> list[dict]:
     """整批导入：校验全部通过才建行+拷贝；任一失败抛 422（details 逐文件）。
 
-    返回 CandidateCreate.files 条目 [{"id", "filename", "duplicate"}]；
-    duplicate 为契约之外的提示字段（§5 测试表语义）。
+    返回 CandidateCreate.files 条目 [{"id", "filename", "duplicate",
+    "warnings"}]；duplicate 为契约之外的提示字段（§5 测试表语义）；warnings
+    为该文件 route 的非阻断警告（G1，仅成功条目携带，失败 422 不返回）。
     """
     if mode not in ("files", "folder"):
         raise validation_failed([{"field": "mode",
@@ -110,22 +131,25 @@ def import_files(files: list[_File], *, mode: str = "files",
         raise validation_failed([{"field": "files", "reason": "empty"}])
     ind = inputs_dir if inputs_dir is not None else default_inputs_dir()
 
-    errors = [e for e in (_validate_one(fn, data) for fn, data in files) if e]
+    results = [_validate_one(fn, data) for fn, data in files]
+    errors = [r["error"] for r in results if r["error"]]
     if errors:
         raise validation_failed(errors)
+    warnings_by_file = [r["warnings"] for r in results]
 
     ind.mkdir(parents=True, exist_ok=True)
     out: list[dict] = []
     created: list[tuple[int, Path]] = []
     try:
-        for fn, data in files:
+        for (fn, data), warns in zip(files, warnings_by_file):
             name = _basename(fn)
             dup = _is_duplicate(name, _content_hash(data), ind)
             tid = tasks().create_candidate(name, "imported")
             path = ind / str(tid)
             path.write_bytes(data)  # 原文落盘，CRLF 不转
             created.append((tid, path))
-            out.append({"id": tid, "filename": name, "duplicate": dup})
+            out.append({"id": tid, "filename": name, "duplicate": dup,
+                        "warnings": warns})
     except Exception:
         # 补偿回滚：兑现整批原子（磁盘故障等运行期异常也不留半批）
         for tid, path in created:
@@ -243,6 +267,11 @@ def _validate_section(section: str, content: list[str]) -> None:
             errors.append(_verr(section, 1, "route_must_start_with_hash",
                                 "route 首行须以 # 开头"))
         for k, ln in enumerate(content, 1):
+            if k > 1 and ln.lstrip().startswith("%"):
+                # G3 情形 1：分块保存通道同步阻断（reason 按端点词表）
+                errors.append(_verr(section, k, "route_line_link0_forbidden",
+                                    "Link 0 命令必须位于 route 节之前"
+                                    "（% 行不得出现在 route 节内）"))
             if not ln.strip():
                 errors.append(_verr(section, k, "blank_line_in_route",
                                     "route 节内不得出现空行（空行即节终止）"))
@@ -251,6 +280,11 @@ def _validate_section(section: str, content: list[str]) -> None:
             errors.append(_verr(section, 1, "title_too_long",
                                 "title 至多 5 行"))
         for k, ln in enumerate(content, 1):
+            if ln.lstrip().startswith("%"):
+                # G3 情形 2：分块保存通道同步阻断（reason 按端点词表）
+                errors.append(_verr(section, k, "link0_misplaced",
+                                    "疑似 Link 0 命令错置于 title 节"
+                                    "（% 命令必须位于 route 节之前）"))
             bad = any(c in ln for c in "@#!–_\\") or any(
                 ord(c) < 32 for c in ln)
             if bad:
@@ -403,12 +437,10 @@ def save_block(task_id: int, section: str, lines: list[str], *,
         _atomic_write_text(path, new_text)  # ④ 原子写
         after = parse_input(new_text)
         filename = row["filename"]
-    # ⑤ 拼写检查：警告行号换算为全文件绝对行号（route 起始行 - 1 为偏移；
-    # G0 口径——导入/提交/预览/分块保存统一全文件 1 起）
-    route_span = scan_spans(split_lines(new_text)).get("route")
-    offset = route_span[0] if route_span else 0
-    warnings = check_route_spelling(after["blocks"]["route"],
-                                    line_offset=offset)
+    # ⑤ 非阻断警告：拼写检查 + 重复关键字（G1/G2 统一走 _route_warnings，
+    # 警告行号换算为全文件绝对行号——G0 口径，五通道一致）
+    warnings = _route_warnings(after["blocks"]["route"],
+                               split_lines(new_text))
     return {"candidate_id": task_id, "filename": filename,
             "blocks": after["blocks"], "parse_errors": after["parse_errors"],
             "warnings": warnings}

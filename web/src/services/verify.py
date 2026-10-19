@@ -10,8 +10,9 @@ import logging
 import os
 
 from ..errors import ApiError, err, not_found
-from ..parse.blocks import parse_input, verify_and_normalize
-from .candidates import default_inputs_dir
+from ..parse.blocks import parse_input, scan_spans, split_lines, \
+    verify_and_normalize
+from .candidates import _route_warnings, default_inputs_dir
 
 log = logging.getLogger(__name__)
 
@@ -24,12 +25,15 @@ def _mask(blocks: dict) -> dict:
     return masked
 
 
-def verify_and_store(task_id: int) -> bool:
-    """对 inputs/<id> 执行提交前核验，返回 normalized 标记。
+def verify_and_store(task_id: int) -> dict:
+    """对 inputs/<id> 执行提交前核验（G1 改造），返回
+    {"normalized": bool, "warnings": list}。
 
     ①② 规范化有变化 → 原子写回；③ 解析失败 → 422 INPUT_PARSE_FAILED；
     ④ 多步 → 422 INPUT_MULTISTEP_UNSUPPORTED；规范化致结构变化 →
-    500 拒绝（不落盘，m2-plan §9 风险 11 防线）。
+    500 拒绝（不落盘，m2-plan §9 风险 11 防线）。warnings 为规范化后文本
+    的非阻断警告（拼写/重复关键字，B3——不改变任何阻断语义）。
+    调用方须知：返回值为 dict（恒真值）——真值判断一律取 ["normalized"]。
     """
     path = default_inputs_dir() / str(task_id)
     try:
@@ -55,4 +59,6 @@ def verify_and_store(task_id: int) -> bool:
         tmp = path.parent / (path.name + ".tmp")
         tmp.write_text(result["text"], encoding="utf-8")
         os.replace(tmp, path)
-    return result["changed"]
+    return {"normalized": result["changed"],
+            "warnings": _route_warnings(parsed["blocks"]["route"],
+                                        split_lines(result["text"]))}

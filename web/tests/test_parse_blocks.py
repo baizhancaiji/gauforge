@@ -445,8 +445,9 @@ def test_g3_link0_into_route_text_blocked():
     parse_errors（G16 必然误读）。"""
     r = parse_input("%mem=1GB\n\n#p hf/sto-3g\n%chk=/tmp/x.chk\n\nt\n\n"
                     "0 1\nO 0 0 0\n\n")
-    e = next(e for e in r["parse_errors"] if e["section"] == "route")
-    assert "route 之前" in e["message"]
+    e = next(e for e in r["parse_errors"] if e["section"] == "route"
+             and "Link 0" in e["message"])
+    assert "route 节之前" in e["message"]
     assert "%chk=/tmp/x.chk" in r["blocks"]["route"]  # 吞并事实不变
 
 
@@ -461,8 +462,9 @@ def test_g3_link0_as_title_first_line_blocked():
 
 
 def test_g3_link0_at_title_position_without_route():
-    """route 缺失时 % 行出现在 title 位置同样按情形 2 记 parse_errors。"""
-    r = parse_input("%chk=/tmp/x.chk\n\n0 1\nO 0 0 0\n\n")
+    """route 缺失时 % 行落在 title 节（标题行之后）同样按情形 2 记
+    parse_errors（文件开头的 % 行归 Link0 收集，不在本检测面）。"""
+    r = parse_input("水分子标题\n%chk=/tmp/x.chk\n\n0 1\nO 0 0 0\n\n")
     assert any(e["section"] == "title" and "Link 0" in e["message"]
                for e in r["parse_errors"])
 

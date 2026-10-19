@@ -359,7 +359,7 @@ def test_confirm_response_carries_warnings(tmp_path):
     """B3 G1：确认响应对注入改写后输入透传非阻断 warnings（拼写近邻）。"""
     _set_g16("ok", tmp_path)
     # 源 route 拼错关键字（opf 近邻 opt），注入后仍保留 → 警告随确认响应透传
-    tid, eid = _mk_source("#p opf b3lyp/6-31g(d)")
+    tid, eid = _mk_source("#p optt b3lyp/6-31g(d)")
     out = resume_from_checkpoint(eid)
     assert out["eligible"] if "eligible" in out else True  # confirm 无 eligible 键
     assert any(w["kind"] == "keyword_spell" for w in out["warnings"])

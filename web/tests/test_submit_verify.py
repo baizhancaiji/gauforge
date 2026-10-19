@@ -81,7 +81,7 @@ def test_crlf_normalized_on_inline_submit(ind):
 
 def test_lone_cr_normalized(ind):
     tid = _mk(ind, CLEAN.replace("\n", "\r"))
-    assert verify_and_store(tid) is True
+    assert verify_and_store(tid)["normalized"] is True
     assert b"\r" not in _file(ind, tid)
 
 
@@ -256,7 +256,7 @@ def test_pure_eof_unterminated_normalized_on_submit(ind):
     assert parse_input(mol_eof)["warnings"] != []  # 预览通道有警告
     out = submit_candidate(tid, None)
     assert out["normalized"] is True
-    assert verify_and_store(tid) is False  # 规范化后已稳定
+    assert verify_and_store(tid)["normalized"] is False  # 规范化后已稳定
     assert parse_input(_file(ind, tid).decode())["parse_errors"] == []
     assert parse_input(_file(ind, tid).decode())["warnings"] == []
     # route 直达 EOF、后无其他内容：未终止经规范化消除，缺节仍拒
@@ -337,7 +337,7 @@ def test_normalized_write_keeps_structure(ind):
              "\r\nVariables:\r\nR1 0.96\r\n")
     tid = _mk(ind, messy)
     before = _mask(parse_input(messy)["blocks"])
-    assert verify_and_store(tid) is True
+    assert verify_and_store(tid)["normalized"] is True
     after = parse_input(_file(ind, tid).decode("utf-8"))["blocks"]
     assert _mask(after) == before
 
@@ -367,7 +367,7 @@ def test_golden_samples_normalize_without_damage():
 SPELL_CLEAN = (  # 拼错关键字（opf 近邻 opt）但结构规范
     "%mem=1GB\n"
     "%nprocshared=4\n"
-    "#p opf freq b3lyp/6-31g(d)\n"
+    "#p optt freq b3lyp/6-31g(d)\n"
     "\n"
     "水分子示例\n"
     "\n"
@@ -407,7 +407,7 @@ def test_queue_submit_collects_member_warnings_with_task_id(ind):
 
 def test_queue_submit_duplicate_warning_with_task_id(ind):
     """队列提交重复关键字警告同样带成员 task_id。"""
-    dup = SPELL_CLEAN.replace("#p opf freq", "#p mp2 mp2 freq")
+    dup = SPELL_CLEAN.replace("#p optt freq", "#p mp2 mp2 freq")
     t1 = _mk(ind, dup, name="d.gjf")
     t2 = _mk(ind, CLEAN, name="e.gjf")
     qid = "QQ7778"

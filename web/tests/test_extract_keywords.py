@@ -198,5 +198,13 @@ def test_loader_reads_inrepo_dictionary():
 
 def test_loader_missing_file_degrades_to_empty(tmp_path, monkeypatch):
     monkeypatch.setattr(kw_mod, "DICT_PATH", tmp_path / "absent.txt")
-    words = kw_mod.load_keywords(refresh=True)
-    assert words == frozenset()  # 缺失降级零警告，不抛异常
+    try:
+        words = kw_mod.load_keywords(refresh=True)
+        assert words == frozenset()  # 缺失降级零警告，不抛异常
+    finally:
+        # 恢复模块级缓存：refresh 会把空集写入 _cache，不清回会污染
+        # 其后依赖词典的用例（B3 实测：拼写通道全量跑时零警告）；
+        # undo 须先行——finally 早于 monkeypatch teardown，此时 DICT_PATH
+        # 仍指向失效路径，直接 refresh 读到的仍是空集
+        monkeypatch.undo()
+        kw_mod.load_keywords(refresh=True)

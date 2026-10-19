@@ -183,6 +183,58 @@ def token_options(tok: str) -> frozenset[str]:
     return frozenset(s.strip().casefold() for s in items if s.strip())
 
 
+# 容器头白名单（G2，官方允许追加取值的关键字——裸形与选项形并出不告警；
+# IOp 文法为多条目取值列表并列取值语义，同豁免；白名单外头部重复即警告）
+_CONTAINER_HEADS = frozenset((
+    "opt", "freq", "scrf", "geom", "guess", "pop", "irc", "td", "nmr",
+    "prop", "cas", "cphf", "ept", "output", "charge", "iop"))
+
+
+def check_route_duplicates(route_text: str, *,
+                           line_offset: int = 0) -> list[dict]:
+    """route 重复关键字检测（G2，非阻断 warnings）。
+
+    token 头部聚合后按 §2.6 判定表：同头部 ≥2 次时——
+    - 均裸形 → 警告 route_duplicate（官方 testrt 自认盲区：重复 MP2 跑成 MP4）；
+    - 容器头白名单内（opt/freq/scrf/geom/guess/pop/irc/td/nmr/prop/cas/
+      cphf/ept/output/charge/iop）裸形 + 选项形并出 → 豁免（官方允许的
+      追加取值；B3 G16 冒烟待确认，证实裸形被拒则回退为警告）；
+    - 同头部两个非空选项集 → 警告；
+    - iop 两个取值 token 并写 → 豁免（多条目取值列表）。
+    白名单外头部只要重复即警告。line 为 route 节内行号 + line_offset。
+    """
+    if not route_text.strip():
+        return []
+    groups: dict[str, list[tuple[int, str, frozenset[str]]]] = {}
+    for line_no, tok in tokenize_route(route_text):
+        head = token_head(tok)
+        if not head or head.startswith("@"):
+            continue
+        groups.setdefault(head, []).append(
+            (line_no, tok, token_options(tok)))
+    out: list[dict] = []
+    for head, hits in groups.items():
+        if len(hits) < 2:
+            continue
+        bare = sum(1 for _, _, opts in hits if not opts)
+        valued = len(hits) - bare
+        # 白名单容器头「裸形 + 选项形」混合 = 官方允许的追加取值；同头部
+        # 两个裸形或两个非空选项集仍警告；iop 多条目取值并列恒豁免
+        exempt = (head == "iop"
+                  or (head in _CONTAINER_HEADS and bare >= 1 and valued >= 1))
+        if exempt:
+            continue
+        first_line = hits[0][0]
+        names = "、".join(t for _, t, _ in hits[:3])
+        out.append({
+            "line": first_line + line_offset, "keyword": head,
+            "kind": "route_duplicate",
+            "message": f"route 中关键字「{head}」出现 {len(hits)} 次"
+                       f"（{names}），官方 testrt 不检测重复（重复 MP2 会跑成"
+                       "MP4 类意外结果），请确认是否 intended"})
+    return out
+
+
 def token_in_dict(tok: str, words: frozenset[str]) -> bool:
     """token 词典命中判定（精确匹配，不近似；缩写不识别——输入勘误计划
     决策点 5）：整词命中 ∨ key=value 键名命中且值非空 ∨ kw(opt)/kw=(opt)

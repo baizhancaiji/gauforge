@@ -218,7 +218,7 @@ def test_delete_candidate_with_history_detaches_not_deletes(ind):
 
 # ---------------- G1：导入通道拼写/重复 warnings（B3） ----------------
 
-SPELL_NOTE = """#p opf freq b3lyp/6-31g(d)
+SPELL_NOTE = """#p optt freq b3lyp/6-31g(d)
 
 拼错关键字导入
 

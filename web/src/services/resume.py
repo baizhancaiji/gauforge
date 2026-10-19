@@ -252,12 +252,13 @@ def confirm(execution_id: int) -> dict:
     path = default_inputs_dir() / str(new_tid)
     path.write_text(out["text"], encoding="utf-8")
     # 既有提交核验链（规范化 + B6 载体校验：@exec 三点已被 _evaluate
-    # 重探保证，此处对改写文本再过解析校验）
-    verify_svc.verify_and_store(new_tid)
+    # 重探保证，此处对改写文本再过解析校验）；B3：warnings 非阻断随响应透传
+    res = verify_svc.verify_and_store(new_tid)
     validate_single_seat_input(new_tid)
     sid = seats().append(kind="task", task_id=new_tid)
     return {"task_id": new_tid, "seat_id": sid,
-            "execution_id": row["id"], "task_kind": out["task_kind"]}
+            "execution_id": row["id"], "task_kind": out["task_kind"],
+            "warnings": res["warnings"]}
 
 
 def _g16_root() -> Path:

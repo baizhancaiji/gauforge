@@ -182,10 +182,13 @@ def save_block(id: int, section: str, payload: dict) -> dict:
 @router.post("/candidates/{id}/submit")
 def submit_candidate(id: int, payload: dict | None = None) -> dict:
     _candidate_row(id)  # 404 语义先行（非候选形态同按不存在处理）
-    normalized = verify_svc.verify_and_store(id)  # 提交核验：先落盘后建席
+    # 提交核验：先落盘后建席；warnings 非阻断随响应返回（B3 G1，单任务不填
+    # task_id）
+    res = verify_svc.verify_and_store(id)
     dependencies_svc.validate_single_seat_input(id)  # B6 符号引用载体校验
     sid = pending_svc.append_task(id)
     get_state().emit("candidates.changed",
                      {"action": "moved_out", "candidate_id": id})
     get_state().emit("pending.snapshot", pending_svc.snapshot())
-    return {"seat_id": sid, "task_id": id, "normalized": normalized}
+    return {"seat_id": sid, "task_id": id,
+            "normalized": res["normalized"], "warnings": res["warnings"]}

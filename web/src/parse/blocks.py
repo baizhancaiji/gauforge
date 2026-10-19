@@ -194,7 +194,14 @@ def parse_input(text: str) -> dict:
     route_unterminated = False
     if i < n and lines[i].lstrip().startswith("#"):
         while i < n and not blank(i):
-            route_lines.append(lines[i].rstrip())
+            ln = lines[i].rstrip()
+            if i > route_start and ln.lstrip().startswith("%"):
+                # G3 情形 1：Link 0 命令错置 route 之后（无空行分隔被吞入，
+                # G16 必然误读——阻断）
+                errors.append({"section": "route", "line": i + 1,
+                               "message": "Link 0 命令必须位于 route 节之前"
+                                          "（该 % 行会被并入 route 误读）"})
+            route_lines.append(ln)
             i += 1
         if i >= n:  # G9 项 1：route 延展至 EOF（其后内容已被吞并）
             route_unterminated = True
@@ -218,6 +225,14 @@ def parse_input(text: str) -> dict:
         title_lines.append(lines[i].strip())
         i += 1
     if title_lines:
+        for k, tl in enumerate(title_lines):
+            if tl.lstrip().startswith("%"):
+                # G3 情形 2：% 行落入 title 节（route 后有空行分隔时 % 成为
+                # title 首行；route 缺失时同样落 title——形态合法但几乎必为
+                # 用户错误）；Link0 收集规则只认前导 % 行，此处覆盖其后错置
+                errors.append({"section": "title", "line": title_start + k + 1,
+                               "message": "疑似 Link 0 命令错置于 title 节"
+                                          "（% 命令必须位于 route 节之前）"})
         if len(title_lines) > 5:
             errors.append({"section": "title", "line": i - len(title_lines) + 1,
                            "message": "title 节超过 5 行"})

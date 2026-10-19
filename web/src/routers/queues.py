@@ -129,11 +129,16 @@ def submit_queue(id: str) -> dict:
     if q["state"] != "unsubmitted":
         raise err("QUEUE_STATE_CONFLICT", "仅未提交队列可提交", http=409)
     # 提交核验逐成员统一执行（m2-plan §2.5）：任一失败整队拒绝并指明成员，
-    # 核验在提交事务内先于建席位；有变化的副本规范化写回。
+    # 核验在提交事务内先于建席位；有变化的副本规范化写回。B3：逐成员收集
+    # 非阻断 warnings 并在条目 task_id 填成员任务 id（队列聚合口径）。
     normalized = False
+    collected: list[dict] = []
     for m in tasks_store().list_queue_members(id):
-        if verify_svc.verify_and_store(m["id"]):
+        res = verify_svc.verify_and_store(m["id"])
+        if res["normalized"]:
             normalized = True
+        for w in res["warnings"]:
+            collected.append({**w, "task_id": m["id"]})
     # B6 依赖 DAG 静态校验（回退编辑可能改写成员输入，提交时点重校验）
     from ..services import dependencies as dependencies_svc
     dependencies_svc.validate_queue_members(
@@ -145,4 +150,5 @@ def submit_queue(id: str) -> dict:
                                       "to": "submitted"})
     get_state().emit("pending.snapshot", pending_svc.snapshot())
     first = tasks_store().list_queue_members(id)[0]
-    return {"seat_id": seat_id, "task_id": first["id"], "normalized": normalized}
+    return {"seat_id": seat_id, "task_id": first["id"], "normalized": normalized,
+            "warnings": collected}

@@ -312,7 +312,7 @@ def test_requeue_failed_reuses_task_id(home):
     assert r.status_code == 200
     body = r.json()
     # M2 起响应含提交核验规范化标记（SubmitResponse 契约增量）
-    assert set(body) == {"seat_id", "task_id", "normalized"}
+    assert set(body) == {"seat_id", "task_id", "normalized", "warnings"}
     assert body["task_id"] == tid
     assert isinstance(body["normalized"], bool)
     assert_contract_schema(spec, "POST", "/history/{id}/requeue", 200, body)

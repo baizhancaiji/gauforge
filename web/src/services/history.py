@@ -198,12 +198,14 @@ def requeue(execution_id: int) -> dict:
     if seats().count() >= limit:
         raise err("PENDING_CAPACITY_FULL", "在途席位满员",
                   {"limit": limit}, http=409)
-    normalized = verify_svc.verify_and_store(tid)  # 核验先于建席
+    # 核验先于建席；B3：warnings 非阻断随响应透传（normalized 取 dict 值）
+    res = verify_svc.verify_and_store(tid)
     from .dependencies import validate_single_seat_input
     validate_single_seat_input(tid)  # B6：单任务席位载体符号引用校验
     sid = seats().append(kind="task", task_id=tid)
     tasks().to_seat_task(tid)  # finished → seat_task（沿用原 id）
-    return {"seat_id": sid, "task_id": tid, "normalized": normalized}
+    return {"seat_id": sid, "task_id": tid,
+            "normalized": res["normalized"], "warnings": res["warnings"]}
 
 
 def return_candidate(execution_id: int) -> dict:

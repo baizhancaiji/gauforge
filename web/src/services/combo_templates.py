@@ -26,7 +26,8 @@ import re
 from .. import config
 from ..engine.workspace import _cpu_list_count
 from ..errors import validation_failed
-from ..parse.keywords import load_keywords, token_in_dict, tokenize_route
+from ..parse.keywords import (check_route_duplicates, load_keywords,
+                              token_in_dict, tokenize_route)
 from .dependencies import parse_link0_refs
 
 # 每核内存下限 GB（§0.4 口径 3）
@@ -94,6 +95,10 @@ def validate_and_normalize(template_id: int, data: dict, *,
     if mode == "enforce" and oov and not bool(data.get("ignore_spelling")):
         errors.extend(_verr("route", "keyword_not_in_dict",
                             f"词典外关键词：{t}") for t in oov)
+
+    # ---- 重复关键字（B3 G2：非阻断，enforce/warn 均随 notice 携带；
+    # 裸形+选项形追加取值与 IOp 并写豁免与 check_route_duplicates 同源） ----
+    duplicates = check_route_duplicates(route_cf)
 
     # ---- 温度（freq 联动；token 头部判定覆盖 freq / freq=x / freq(…) /
     # freq (…) 全形态——R2 审查整改，不漏 C3 放行的无等号括号形） ----
@@ -181,6 +186,8 @@ def validate_and_normalize(template_id: int, data: dict, *,
                     "normalized": route.casefold() != route}
     if oov:
         notice["spelling_warnings"] = oov
+    if duplicates:
+        notice["route_duplicates"] = duplicates
     return fields, notice
 
 
