@@ -438,6 +438,29 @@ def test_save_route_reports_duplicate_warning(ind):
     assert any(w["kind"] == "route_duplicate" for w in out["warnings"])
 
 
+# ---------------- B5：G8 分块保存子选项警告 ----------------
+
+def test_save_route_reports_option_unknown_warning(ind):
+    """分块保存 route：子选项归属警告随响应 warnings 返回（非阻断），
+    行号为全文件绝对行号（SAMPLE route 首行 = 全文件第 5 行）。"""
+    tid = _mk(ind)
+    out = save_block(tid, "route", ["#p opt freq geom=(allcheck,xyzzy)"],
+                     inputs_dir=ind)
+    ws = [w for w in out["warnings"] if w["kind"] == "route_option_unknown"]
+    assert len(ws) == 1
+    assert ws[0]["keyword"] == "xyzzy" and ws[0]["line"] == 5
+    assert "GEOM" in ws[0]["message"]
+
+
+def test_save_route_option_forms_zero_warning(ind):
+    """分块保存 route：合法选项形零警告（唯一前缀缩写/在典括号形/IOp 白名单）。"""
+    tid = _mk(ind)
+    for route in ("#p opt freq density=curr", "#p opt=(calcfc,ts)",
+                  "#p IOp(6/50=1)"):
+        out = save_block(tid, "route", [route], inputs_dir=ind)
+        assert out["warnings"] == [], (route, out["warnings"])
+
+
 # ---------------- B4：G5 保存通道值域阻断 ----------------
 
 def test_save_link0_rejects_w_unit_and_zero_mem(ind):

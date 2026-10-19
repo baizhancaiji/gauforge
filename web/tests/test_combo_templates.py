@@ -486,3 +486,48 @@ def test_template_cpu_slash_n_accepted():
     fields, _ = ct.validate_and_normalize(
         10, {"route": "#p opt", "cpu": "0-5/2", "mem_gb": "8"}, mode="enforce")
     assert fields["cpu"] == "0-5/2"
+
+
+# ---------------- B5：G7 面⑥替代表单 + G8 子选项归属警告 ----------------
+
+def test_enforce_route_alternate_forms_pass():
+    """G7：#N/#P/#T 官方替代表单（route 页 Alternate Forms）enforce 通过
+    （B5 前缺 n/t 词条，#T/#N 模板被误拒）。"""
+    for route in ("#t b3lyp/6-31g(d) opt", "#n b3lyp/6-31g(d) opt",
+                  "#p b3lyp/6-31g(d) opt"):
+        r = _put(1, route=route)
+        assert r.status_code == 200, (route, _reasons(r))
+
+
+def test_enforce_bare_abbreviation_rejected():
+    """G7 决策点 5：裸词缩写（fre/geo）词典精确匹配失败 → enforce 拒绝
+    （不做最短唯一前缀近似）。"""
+    r = _put(1, route="#p fre geo")
+    assert r.status_code == 422
+    reasons = _reasons(r)
+    assert reasons.count("keyword_not_in_dict") == 2
+
+
+def test_notice_route_option_warnings():
+    """G8：子选项归属警告不阻断（enforce 键名命中 token 照常放行），随
+    notice.route_option_warnings 回传（契约 B5 新增可选字段）。"""
+    r = _put(1, route="#p opt=(readfcht) freq")
+    assert r.status_code == 200, _reasons(r)
+    ws = r.json()["notice"]["route_option_warnings"]
+    assert len(ws) == 1
+    assert ws[0]["kind"] == "route_option_unknown"
+    assert ws[0]["keyword"] == "readfcht"
+    assert ws[0]["line"] == 1  # 模板 route 单行
+
+
+def test_notice_route_option_warnings_ambiguous_prefix():
+    """G8 歧义缩写：scf=conv（Conver/Conventional 歧义，官方明文非法）
+    enforce 键名命中放行，随 notice 提示；唯一前缀缩写 scf=conven 判活
+    零警告（官方 Syntax Rules 正面例）。"""
+    r = _put(1, route="#p scf=conv opt")
+    assert r.status_code == 200
+    assert [w["keyword"] for w in r.json()["notice"]["route_option_warnings"]] \
+        == ["conv"]
+    r = _put(1, route="#p scf=conven opt")
+    assert r.status_code == 200
+    assert r.json()["notice"].get("route_option_warnings") in (None, [])

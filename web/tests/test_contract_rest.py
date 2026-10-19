@@ -498,3 +498,19 @@ def test_update_proxy_invalid_400(update_env):
     r = client.put("/api/v1/update/proxy", json={})
     assert r.status_code == 400  # 缺 proxy 字段
     assert r.json()["error"]["code"] == "INVALID_REQUEST"
+
+
+def test_contract_route_option_unknown_registered():
+    """B5：Warning.kind 词表增 route_option_unknown；模板 notice 增可选
+    route_option_warnings（Warning 数组载体）。"""
+    import yaml
+    from web.src import config
+    with config.CONTRACT_PATH.open(encoding="utf-8") as fh:
+        raw = yaml.safe_load(fh)
+    warning = raw["components"]["schemas"]["Warning"]
+    assert "route_option_unknown" \
+        in warning["properties"]["kind"]["description"]
+    notice = raw["components"]["schemas"]["ComboTemplateMutationResult"] \
+        ["allOf"][1]["properties"]["notice"]["properties"]
+    assert notice["route_option_warnings"]["items"]["$ref"] \
+        == "#/components/schemas/Warning"

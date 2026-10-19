@@ -56,6 +56,7 @@ def _make_kb_dir(tmp_path: Path, *, with_markdown: bool = False) -> Path:
                     md / "gv6" / "gv6-gaussian-calculation-setup-keywords-and-options.md")
         shutil.copy(FIX_MD / "kb_dft.md", md / "keyword" / "dft.md")
         shutil.copy(FIX_MD / "kb_basissets.md", md / "structure" / "basissets.md")
+        shutil.copy(FIX_MD / "kb_route.md", md / "structure" / "route.md")
         shutil.copy(FIX_MD / "kb_scf.md", md / "keyword" / "scf.md")
     return tmp_path
 
@@ -83,6 +84,10 @@ def test_mini_kb_markdown_faces(tmp_path):
             "6-31g(d)", "6-31+g(d,p)", "6-311++g(2d,2p)", "6-31g**"} <= words
     # 面⑤Options 章节 #### 条目（占位符 NDamp=*N* 归一为基名）
     assert {"scf", "scf=qc", "scf=xqc", "scf=yqc", "scf=ndamp"} <= words
+    # 面⑥route 替代表单（B5 G7）：Alternate Forms 章节 #### #N/#P/#T →
+    # n/p/t（p 已由面②单字母白名单覆盖，去重）；章节外 #### #Z 不收
+    assert {"n", "p", "t"} <= words
+    assert "z" not in words
     # 噪声剔除：gv6 散文单元、句首英文词、Link0 行、面⑤散文标题
     prose = {"prefix", "fragment", "molecule", "specification", "included",
              "the", "functionals", "related", "specified", "r", "u",
@@ -124,7 +129,9 @@ def test_real_kb_inrepo_dictionary_matches_regeneration(tmp_path):
     # 面①97 + 面②gv6 对照表与 dft 锚点 + 面③basissets 族与形态生成）
     # → 1164（3.3 面⑤选项面：86 页 Options 章节 #### 条目 + 章节外核实
     # 白名单，含 scf=xqc/yqc 等全部 KW=OPT 组合词）
-    assert len(inrepo.decode("utf-8").splitlines()) == 1164
+    # → 1166（B5 面⑥：route 页 Alternate Forms 替代表单 n/t；p 已由
+    # 面②覆盖去重——#T/#N 模板不再被 enforce 误拒）
+    assert len(inrepo.decode("utf-8").splitlines()) == 1166
 
 
 def test_inrepo_dictionary_lowercase_unique_sorted():
@@ -187,11 +194,19 @@ def test_gate_option_face_tokens_in_dictionary():
         assert tok in words, tok
 
 
+def test_gate_route_alt_forms_in_dictionary():
+    """面⑥替代表单（B5 G7）：#N/#P/#T 官方替代形式（route 页 Alternate
+    Forms 章节逐条）入典，#T/#N 模板不再被 enforce 误拒。"""
+    words = kw_mod.load_keywords(refresh=True)
+    for tok in ("n", "p", "t"):
+        assert tok in words, tok
+
+
 # ---------------- parse.keywords 加载器 ----------------
 
 def test_loader_reads_inrepo_dictionary():
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 1164
+    assert len(words) == 1166
     assert "opt" in words and "casscf" in words and "scrf" in words
     assert all(w == w.casefold() for w in words)
 

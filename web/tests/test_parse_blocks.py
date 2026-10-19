@@ -449,6 +449,120 @@ def test_g2_container_bare_plus_multiple_valued_forms_exempt():
     assert [w["kind"] for w in ws] == ["route_duplicate"]
 
 
+# ---------------- G8：route 子选项归属判定（B5） ----------------
+
+def test_g8_option_unknown_matrix():
+    """§2.9 用例清单：在典零警告/嵌套取值/带值选项/未知选项/跨关键字误置/
+    部分命中仅报未命中/近邻建议/值形白名单零警告。"""
+    from web.src.parse.keywords import check_route_options
+
+    # 在典零警告（opt=calcfc/opt=ts 均在典；B5 前整词近邻会误报
+    # keyword_spell suggestion=opt=calcfc——选项化后消除）
+    assert check_route_options("#p opt=(calcfc,ts)") == []
+    # 嵌套一层取值：solvent=water 剥值查 scrf=solvent（在典）、read 查 scrf=read
+    assert check_route_options("#p scrf=(solvent=water,read)") == []
+    # 带值选项剥值查典：td=nstates/td=root 在典
+    assert check_route_options("#p td=(nstates=6,root=2)") == []
+    # 未知选项 → route_option_unknown（keyword=出错选项原文）
+    ws = check_route_options("#p geom=(allcheck,xyzzy)")
+    assert [(w["kind"], w["keyword"]) for w in ws] \
+        == [("route_option_unknown", "xyzzy")]
+    # 跨关键字误置：readfcht 是 Freq 选项（freq=readfcht 在典、opt=readfcht 不在）
+    ws = check_route_options("#p opt=(readfcht)")
+    assert [(w["kind"], w["keyword"]) for w in ws] \
+        == [("route_option_unknown", "readfcht")]
+    # 同族合法值零警告（opt=readfc 在典）
+    assert check_route_options("#p opt=(readfc)") == []
+    # 部分命中只报未命中选项（不因 calcfc 命中整体放行）
+    ws = check_route_options("#p opt=(calcfc,xyzzy)")
+    assert [w["keyword"] for w in ws] == ["xyzzy"]
+    # 选项级拼写建议：近邻于该键选项集（cutoff 同 keyword_spell）
+    ws = check_route_options("#p opt=(calfcf)")
+    assert len(ws) == 1 and ws[0].get("suggestion") == "calcfc"
+    # 值形白名单：括号内容为取值/模型化学/命令串，不做选项查典
+    assert check_route_options("#p IOp(6/50=1)") == []
+    assert check_route_options("#p ONIOM(B3LYP/6-31G(d):AM1:UFF)") == []
+    assert check_route_options('#p External="RunTink Amber"') == []
+    # message 同时给出选项与左侧关键字（大写键名，官方书写惯例）
+    msg = check_route_options("#p geom=(allcheck,xyzzy)")[0]["message"]
+    assert "GEOM" in msg and "xyzzy" in msg
+    assert set(check_route_options("#p opt=(xyzzy)")[0]) \
+        >= {"line", "keyword", "kind", "message"}
+
+
+def test_g8_unique_prefix_and_non_option_heads():
+    """官方最短唯一缩写判活与豁免面（B5 口径修正：input 页 Syntax Rules
+    明文「All keywords and options may be shortened to their shortest unique
+    abbreviation」——计划 §1.1 摘录漏 "and options"，原「缩写选项按未命中」
+    口径在官方语料实测 45.7% 文件误报，按官方原文修正）。"""
+    from web.src.parse.keywords import check_route_options
+
+    # 唯一前缀判活：curr→current（density）、numer→numerical（freq）、
+    # lowsym→lowsymm（guess）
+    assert check_route_options("#p density=curr") == []
+    assert check_route_options("#p freq=numer") == []
+    assert check_route_options("#p guess=(cards,lowsym)") == []
+    # 歧义前缀：conv 同前缀于 conver/conventional——官方明文非法
+    # （「may be abbreviated to Conven, but not to Conv」），报未知
+    ws = check_route_options("#p scf=conv")
+    assert [(w["kind"], w["keyword"]) for w in ws] \
+        == [("route_option_unknown", "conv")]
+    # 非选项型键（典无 键=* 组合词条目）：基组/方法括号形不做选项查典
+    assert check_route_options("#p b3lyp/6-31g(d,p) mp4(sdtq) sto-3g(*)") == []
+    # ccsd 有组合词条目（readamplitudes 等）但 (t) 是方法微扰阶标记：
+    # 单字母非官方选项名形态（面⑤提取规则选项基名 ≥2 字符）
+    assert check_route_options("#p ccsd(t) ccsd(t,q)") == []
+    # 整词在典的基组括号形整 token 豁免
+    assert check_route_options("#p 6-31g(3df,3pd)") == []
+
+
+def test_g8_line_offset_absolute():
+    from web.src.parse.keywords import check_route_options
+    ws = check_route_options("#p opt freq\ngeom=(allcheck,xyzzy)",
+                             line_offset=4)
+    assert ws[0]["line"] == 5
+
+
+def test_spell_option_tokens_no_spurious_neighbor():
+    """B5 拼写选项化：含选项 token 不再做整词近邻（键名命中即交选项判定）。"""
+    from web.src.parse import keywords as kw
+    assert kw.check_route_spelling("#p opt=(calcfc,ts)") == []
+    assert kw.check_route_spelling("#p freq=readfcht") == []
+
+
+# ---------------- G7：字典扩面与缩写精确匹配口径（B5） ----------------
+
+def test_g7_route_alt_forms_in_dictionary():
+    """面⑥：route 页 Alternate Forms（#N/#P/#T）替代表单 n/t 入典
+    （p 已由面②单字母白名单覆盖）。"""
+    from web.src.parse import keywords as kw
+    assert {"n", "p", "t"} <= kw.load_keywords(refresh=True)
+
+
+def test_g7_abbreviation_exact_match_scope():
+    """决策点 5：词典精确匹配——组合词 scf=conven/scf=conv 与裸词 fre/geo
+    均不在典（面⑤只收 scf=conver/conventional）；= 形 token 按 C3 键名
+    精确命中放行（决策点 5 原文「保持整词与键名精确命中」，scf 键在典，
+    enforce 不拒——§2.8「scf=conven enforce 拒绝」与 §2.3 键名命中规则
+    冲突，以决策点 5 原文为准，实现口径随批登记），裸词缩写查典失败。"""
+    from web.src.parse import keywords as kw
+    words = kw.load_keywords(refresh=True)
+    for tok in ("scf=conven", "scf=conv", "fre", "geo"):
+        assert tok not in words, tok
+    assert kw.token_in_dict("scf=conven", words)
+    assert not kw.token_in_dict("fre", words)
+    assert not kw.token_in_dict("geo", words)
+
+
+def test_g7_bare_abbreviations_spell_near_neighbor():
+    """warn 通道：裸词缩写按拼写近邻提示（fre→freq、geo→geom），
+    不做前缀近似放行（决策点 5）。"""
+    from web.src.parse import keywords as kw
+    sug = {w["keyword"]: w.get("suggestion")
+           for w in kw.check_route_spelling("#p fre geo")}
+    assert sug == {"fre": "freq", "geo": "geom"}
+
+
 # ---------------- G3：Link 0 错位检测（B3） ----------------
 
 def test_g3_link0_into_route_text_blocked():
