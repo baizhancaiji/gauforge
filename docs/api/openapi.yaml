@@ -1027,7 +1027,9 @@ components:
             freq 且未配置温度）；normalized=保存值经 casefold 归一化入库；
             spelling_warnings=词典外 token 原文清单（warn 模式未豁免放行与
             enforce 豁免放行两种情形均回传，供前端提示）；route_duplicates=
-            route 重复关键字非阻断警告（G2 判定表，Warning 结构数组）。
+            route 重复关键字非阻断警告（G2 判定表，Warning 结构数组）；
+            route_option_warnings=route 子选项归属非阻断警告（G8 逐选项查典，
+            Warning 结构数组）。
           required: [notice]
           properties:
             notice:
@@ -1050,6 +1052,11 @@ components:
                   items:
                     $ref: '#/components/schemas/Warning'
                   description: route 重复关键字警告（kind=route_duplicate；模板保存通道触发，line 为模板 route 文本行号）
+                route_option_warnings:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Warning'
+                  description: route 子选项归属警告（kind=route_option_unknown；模板保存通道触发，line 为模板 route 文本行号）
 
     EnergySummaryRow:
       type: object
@@ -1465,7 +1472,7 @@ components:
         kind:
           type: string
           description: >-
-            警告类别（词表：keyword_spell、route_duplicate、
+            警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、
             molecule_unterminated、variables_unterminated、link0_value_invalid、
             link0_line_too_long、link0_directive_unknown、
             link0_directive_duplicate、title_forbidden_char、

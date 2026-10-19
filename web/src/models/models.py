@@ -727,7 +727,7 @@ class Warning(BaseModel):
     )
     kind: str = Field(
         ...,
-        description='警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容）',
+        description='警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容）',
     )
     message: str = Field(..., description='可直接展示的中文说明')
     suggestion: str | None = Field(None, description='可选；仅拼写/选项近邻类警告提供')
@@ -962,6 +962,10 @@ class Notice(BaseModel):
     route_duplicates: list[Warning] | None = Field(
         None,
         description='route 重复关键字警告（kind=route_duplicate；模板保存通道触发，line 为模板 route 文本行号）',
+    )
+    route_option_warnings: list[Warning] | None = Field(
+        None,
+        description='route 子选项归属警告（kind=route_option_unknown；模板保存通道触发，line 为模板 route 文本行号）',
     )
 
 

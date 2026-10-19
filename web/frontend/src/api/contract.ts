@@ -1422,6 +1422,8 @@ export interface components {
                 spelling_warnings?: string[];
                 /** @description route 重复关键字警告（kind=route_duplicate；模板保存通道触发，line 为模板 route 文本行号） */
                 route_duplicates?: components["schemas"]["Warning"][];
+                /** @description route 子选项归属警告（kind=route_option_unknown；模板保存通道触发，line 为模板 route 文本行号） */
+                route_option_warnings?: components["schemas"]["Warning"][];
             };
         };
         /** @description 能量表单行。g16 行取 B1 解析末次 SCF 能量（hartree/eV 双单位，仅 succeeded 且解析可用者有值）；crest 行仅出现于 workflow 聚合（source= ensemble，给相对能量与绝对 hartree——提取自 crest 能量表输出）。 relative_kJ_mol 以**该查询范围内最低能量**为零点，部分完成态新增更低 能量行时已展示行随零点整体改写（接受漂移，前端标注「随完成进度重算」）。 */
@@ -1615,7 +1617,7 @@ export interface components {
             line: number;
             /** @description 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串 */
             keyword: string;
-            /** @description 警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容） */
+            /** @description 警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容） */
             kind: string;
             /** @description 可直接展示的中文说明 */
             message: string;
