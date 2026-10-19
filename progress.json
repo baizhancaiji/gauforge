@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-19T09:20+0800",
+ "updated": "2026-10-19T10:30+0800",
  "latest_released_version": "3.3.0",
  "unreleased": [
   {
@@ -31,7 +31,7 @@
    "migration": null
   }
  ],
- "in_progress": null,
+ "in_progress": {"task": "input-verify-gap-remediation-plan B2（G4 Section Ordering 固化 + G9 核心节空行检测）", "note": "文档先行（roadmap §2.7 例外回补 + openapi warnings kind 词表）→ 测试先行 → 实现（section_ordering.py + parse_input/_scan_spans 接入 + scan_spans 公共化——B1 审查 R5 随批整改）→ 进度同步；验收与契约动作见 docs/plans/input-verify-gap-remediation-plan.md §3 B2"},
  "next_steps": [
   "B1 已验收收口（2026-10-19）：input-verify-gap-remediation-plan 下一批为 B2（G4 Section Ordering 固化 + G9 核心节空行检测），入口条件已满足，待用户启动",
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
