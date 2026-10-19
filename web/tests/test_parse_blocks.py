@@ -438,6 +438,17 @@ def test_g2_route_duplicate_warning_shape():
     assert set(w) >= {"line", "keyword", "kind", "message"}
 
 
+def test_g2_container_bare_plus_multiple_valued_forms_exempt():
+    """审查整改 R7 登记口径：容器头「1 裸形 + 多个选项形」并出整体豁免
+    （官方追加取值语义的推广；0 裸形 + 2 选项形仍警告——判定表原行）。"""
+    from web.src.parse.keywords import check_route_duplicates
+    assert check_route_duplicates(
+        "#p freq freq=readfcht freq=readanharmonic") == []
+    assert check_route_duplicates("#p opt opt=maxcycle=50 opt=restart") == []
+    ws = check_route_duplicates("#p freq=readfcht freq=readanharmonic")
+    assert [w["kind"] for w in ws] == ["route_duplicate"]
+
+
 # ---------------- G3：Link 0 错位检测（B3） ----------------
 
 def test_g3_link0_into_route_text_blocked():
@@ -563,6 +574,19 @@ def test_g5_link0_directive_grammar_and_duplicates():
                         "0 1\nO 0 0 0\n\n")
     assert not any(w["kind"] == "link0_directive_unknown"
                    for w in multi["warnings"])
+
+
+def test_g5_link0_warning_lines_are_file_absolute():
+    """审查整改 R1：Link0 警告 line 为全文件绝对行号（G0 口径）——前导
+    空行场景不回落块内序号，重复指令取首次出现行。"""
+    r = parse_input("\n\n%mem=2W\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+    w = next(w for w in r["warnings"] if w["kind"] == "link0_value_invalid")
+    assert w["line"] == 3  # %mem=2W 在全文件第 3 行（块内序号应为 1）
+    dup = parse_input("\n%mem=2GB\n%mem=4GB\n\n#p hf/sto-3g\n\nt\n\n"
+                      "0 1\nO 0 0 0\n\n")
+    d = next(w for w in dup["warnings"]
+             if w["kind"] == "link0_directive_duplicate")
+    assert d["line"] == 2  # 首个 %mem 的全文件行号（原恒为 1）
 
 
 def test_g5_cpu_slash_n_suffix():

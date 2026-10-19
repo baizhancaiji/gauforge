@@ -167,6 +167,24 @@ def test_preview_response_carries_warnings(tmp_path, monkeypatch):
     assert body["warnings"] == []
 
 
+def test_preview_carries_route_spell_and_duplicate_warnings(tmp_path,
+                                                            monkeypatch):
+    """审查整改 R5：预览通道对齐 §2.11 矩阵——route 拼写/重复警告随预览
+    返回（原只回传 parse_input 产物）。"""
+    from web.src.services.candidates import import_files
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    (tmp_path / "inputs").mkdir()
+    sample = ("%mem=1GB\n%nprocshared=4\n#p optt mp2 mp2\n\nt\n\n"
+              "0 1\nO 0 0 0\n\n")
+    cid = import_files([("h2o.gjf", sample.encode("utf-8"))],
+                       inputs_dir=tmp_path / "inputs")[0]["id"]
+    r = client.get(f"/api/v1/candidates/{cid}/preview")
+    assert r.status_code == 200
+    kinds = {w["kind"] for w in r.json()["warnings"]}
+    assert "keyword_spell" in kinds
+    assert "route_duplicate" in kinds
+
+
 def test_put_blocks_response_against_schema(tmp_path, monkeypatch):
     cid = _seed_candidate(tmp_path, monkeypatch)
     r = client.put(f"/api/v1/candidates/{cid}/blocks/route",

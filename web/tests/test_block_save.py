@@ -148,6 +148,18 @@ def test_edit_preserves_crlf_verbatim(ind):
     assert parse_input(data.decode("utf-8"))["blocks"]["route"] == "#p hf/sto-3g"
 
 
+def test_bom_disk_copy_route_save_strips_bom(ind):
+    """审查整改 R2：分块保存读取路径 utf-8-sig——带 BOM 磁盘副本可保存
+    （原 decode("utf-8") 下 scan_spans 对首行 \\ufeff#p 判定失效、route 节
+    丢失致 400），落盘副本不含 BOM。"""
+    tid = _mk(ind)
+    path = ind / str(tid)
+    path.write_bytes(b"\xef\xbb\xbf" + SAMPLE.encode("utf-8"))
+    r = save_block(tid, "route", ["#p hf/sto-3g opt"], inputs_dir=ind)
+    assert r["blocks"]["route"] == "#p hf/sto-3g opt"
+    assert not path.read_bytes().startswith(b"\xef\xbb\xbf")
+
+
 # ---------------- round-trip 自证 ----------------
 
 def test_roundtrip_reparse_matches_saved_blocks(ind):
@@ -211,6 +223,12 @@ def test_charge_mult_validation(ind):
         with pytest.raises(ApiError):
             save_block(tid, "charge_mult", bad, inputs_dir=ind)
     save_block(tid, "charge_mult", ["0, 3"], inputs_dir=ind)
+    # 审查整改 R3：斜杠分隔与 parse_input 同口径（自由格式分隔符各通道
+    # 一致——无法解析才阻断，§2.11 矩阵）；en-dash 宽容换负号（–1 2 ≡
+    # -1 2，负电荷合法）
+    save_block(tid, "charge_mult", ["0/3"], inputs_dir=ind)
+    save_block(tid, "charge_mult", ["0,1/0,1"], inputs_dir=ind)
+    save_block(tid, "charge_mult", ["–1 2"], inputs_dir=ind)
 
 
 def test_section_name_guards_400(ind):

@@ -79,6 +79,19 @@ def test_crlf_normalized_on_inline_submit(ind):
     assert parse_input(data.decode("utf-8"))["blocks"] == parse_input(CLEAN)["blocks"]
 
 
+def test_bom_disk_copy_stripped_on_submit(ind):
+    """审查整改 R2：读取路径统一 utf-8-sig（§2.7 项 6）——磁盘副本带 BOM
+    时提交核验正常、规范化写回的副本不含 BOM（静默剥离）。"""
+    tid = _mk(ind, CLEAN.replace("\n", "\r\n"))
+    (ind / str(tid)).write_bytes(
+        b"\xef\xbb\xbf" + CLEAN.replace("\n", "\r\n").encode("utf-8"))
+    out = verify_and_store(tid)
+    assert out["normalized"] is True
+    data = _file(ind, tid)
+    assert not data.startswith(b"\xef\xbb\xbf")
+    assert b"\r" not in data
+
+
 def test_lone_cr_normalized(ind):
     tid = _mk(ind, CLEAN.replace("\n", "\r"))
     assert verify_and_store(tid)["normalized"] is True
