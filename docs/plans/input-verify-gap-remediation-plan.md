@@ -1190,3 +1190,55 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 - 整改出口：全量 **820 passed 0 skipped**（815 + R1/R2×2/R3/R5 新增 5；
   R7 登记口径用例随批固化现有自洽行为）；警告发射集经逻辑等价证明不变
   （R1 只改行号、R11 ②条件化简等价），语料基线无需重算。
+
+### 8.6 B5 批次（2026-10-19 实施收口）
+
+- 实施序列：progress 开工 → 契约文档先行（Warning.kind 词表增
+  `route_option_unknown` + 模板 notice 增 `route_option_warnings` 载体 +
+  gen_models/gen:types 再生零 diff）→ 测试先行（9 用例先红）→ 实现 →
+  进度同步，共 6 提交（bbbdc390 开工、0ec1e484 契约、af0cf810 测试、
+  57b34225 实现、5473f537 进度、本条留痕）。
+- 验收：全量 **835 passed 0 skipped**（入口基线 820 + B5 新增 15）。
+  字典重生成幂等闸门通过（真实 gaussian-kb 在机，重生成逐字节一致实测
+  通过、**无 skip**；1166 = 1164 + n + t）；`#t`/`#n` 模板 enforce 通过；
+  §2.9 G8 用例清单全绿；warnings kind 词表增 `route_option_unknown`。
+  G16 冒烟：§3.1 未设 B5 节点，未执行。
+- **口径修正三处（实施期依据官方原文/实现自洽裁决，随批登记）**：
+  1. **官方最短唯一缩写判活（G8）**：input 页 Syntax Rules 原文为
+     「**All keywords and options** may be shortened to their shortest
+     unique abbreviation」——§1.1 摘录漏 "and options"，§2.9 据此推导的
+     「缩写选项按未命中记 unknown」与官方原文不符；官方语料实测原口径
+     **45.7% 文件误报**（density=curr、freq=numer、guess=lowsym 等官方
+     合法缩写被报为非官方选项）。修正为：在该键官方选项集（词典 `键=*`
+     组合词）内唯一前缀判活（`scrf=conven` 官方正面例合法、`scf=conv`
+     歧义前缀 G16 拒绝仍报）；词级拼写通道（决策点 5）不变。
+  2. **`scf=conven` enforce 口径（G7）**：§2.8「scf=conven/conv enforce
+     拒绝」与 §2.3/决策点 5「保持整词与键名精确命中」冲突（= 形 token
+     键名命中即放行，B1 起如此）——以决策点 5 原文为准：组合词
+     `scf=conven`/`scf=conv` **不在典**（词典层面缩写不识别成立）但
+     enforce 经键名命中放行；`fre`/`geo` 裸词 enforce 拒绝、warn 近邻
+     提示 `freq`/`geom`（测试固化现有自洽行为）。
+  3. **词条规模断言三处**：§2.8 登记「两处 1164 断言」实为三处
+     （test_extract_keywords 两处 + test_combo_templates
+     `test_spelling_words_loaded_and_gate_ready`），先行提交漏改第三处，
+     实现提交补齐（R8 教训口径：commit message 逐条列明）。
+- **语料基线（`~/g16/tests/com` 1156 文件，两维度）**：
+  `route_option_unknown` 命中 **420 文件/36.33%（507 条、69 个去重形态）**，
+  超文件数阈值（5%=58）**接受**，归因两类——
+  - **A 类（主体）：G03 时代官方测试语料旧形态选项**（G16 手册已删、
+    引擎向后兼容）：`geom=modela` 265 条居首（占过半），`scf=novaracc`
+    43、`scf=noincore` 20、`units=bohr` 14、`cphf=ultrafine` 14 等；
+    手册 SSOT 无据，报「官方选项集中无此项」与 G8 立题（对照官方手册）
+    一致，属词典口径固有边界而非误报；warn 级不改变任何阻断语义。
+  - **B 类（少量）：面⑤覆盖缺口**——手册明文存在但面⑤按 Options 章节
+    `####` 规则未提取的散文提及选项：`opt=addredundant`（opt 页明文
+    「AddRedundant is synonymous with ModRedundant」）、`freq=nnroa`
+    （freq 页明文保留 G03 数值 ROA）、`units=bohr` 等，另批词典扩面
+    解决（§2.12 缩写限制同款处置）。
+  - 单文件同 kind ≤3 维度：6 文件超（最大 5 条 test0386），沿用 R6
+    裁决（行级粒度保留精确定位，不聚合）。
+- **出口闸门**：`uv run pytest` 835 passed 0 skipped、
+  `validate_progress.py`、`gen_changelog_md.py --check`、
+  `gen_models.py`/`npm run gen:types` 再生零 diff（契约批次）全部通过。
+  **B1–B5 五批全部收口**，按 §3.1 版本归属进入 3.4.0 发布流程（冻结
+  时点由用户在 B5 验收后确定）。
