@@ -744,7 +744,7 @@ class Warning(BaseModel):
     )
     kind: str = Field(
         ...,
-        description='警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated；后续批次按输入勘误 计划 §4 继续扩容）',
+        description='警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容）',
     )
     message: str = Field(..., description='可直接展示的中文说明')
     suggestion: str | None = Field(None, description='可选；仅拼写/选项近邻类警告提供')
@@ -765,7 +765,10 @@ class Blocks(BaseModel):
     link0: Link0
     route: str
     title: str
-    charge_mult: str
+    charge_mult: str = Field(
+        ...,
+        description='电荷/多重度行规范化形态（空格分隔整数）。单组为 "c x"；多组 电荷-多重度对（Counterpoise/ONIOM 等计算）按输入顺序保留 全部组，如 "1 2 1 2 0 1"。多组对在无 Counterpoise/ONIOM/ Fragment 佐证、或负多重度组无 Guess=Fragment 时出非阻断 molecule_multiple_charge_pairs 警告。',
+    )
     molecule: MoleculeSummary
     additional_sections: list[InputBlock]
 

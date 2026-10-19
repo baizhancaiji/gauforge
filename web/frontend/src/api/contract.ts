@@ -178,7 +178,7 @@ export interface paths {
         put?: never;
         /**
          * 导入（multipart，M1 实施；M0 mock）
-         * @description 支持 files[]（批量）/ 文件夹导入 mode=files|folder。M2 增补导入成队： queue_from_folder=true 且 mode=folder 时，导入后以候选转换并创建队列 （name=folder_name，受支持文件数 2–10 方可成队；越界拒绝成队、回落为 全部生成候选并在 queue_fallback_reason 明示原因）。mode=files 时显式 queue_from_folder=true → 422。成队事件序列：candidates.changed(created) ×N → candidates.changed(moved_out) ×N → queues.changed(created)。
+         * @description 支持 files[]（批量）/ 文件夹导入 mode=files|folder。M2 增补导入成队： queue_from_folder=true 且 mode=folder 时，导入后以候选转换并创建队列 （name=folder_name，受支持文件数 2–10 方可成队；越界拒绝成队、回落为 全部生成候选并在 queue_fallback_reason 明示原因）。mode=files 时显式 queue_from_folder=true → 422。成队事件序列：candidates.changed(created) ×N → candidates.changed(moved_out) ×N → queues.changed(created)。 UTF-8 BOM 处理：导入解码用 utf-8-sig，检测到 BOM 时落盘前剥离 BOM 字节（其余字节与 CRLF 原样保留；哈希与提交/派发均以剥离后副本为准， 静默行为、无专门响应字段）。
          */
         post: operations["importCandidates"];
         delete?: never;
@@ -1613,7 +1613,7 @@ export interface components {
             line: number;
             /** @description 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串 */
             keyword: string;
-            /** @description 警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated；后续批次按输入勘误 计划 §4 继续扩容） */
+            /** @description 警告类别（词表：keyword_spell、route_duplicate、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容） */
             kind: string;
             /** @description 可直接展示的中文说明 */
             message: string;
@@ -1635,6 +1635,7 @@ export interface components {
                 };
                 route: string;
                 title: string | null;
+                /** @description 电荷/多重度行规范化形态（空格分隔整数）。单组为 "c x"；多组 电荷-多重度对（Counterpoise/ONIOM 等计算）按输入顺序保留 全部组，如 "1 2 1 2 0 1"。多组对在无 Counterpoise/ONIOM/ Fragment 佐证、或负多重度组无 Guess=Fragment 时出非阻断 molecule_multiple_charge_pairs 警告。 */
                 charge_mult: string;
                 molecule: components["schemas"]["MoleculeSummary"];
                 additional_sections: components["schemas"]["InputBlock"][];
