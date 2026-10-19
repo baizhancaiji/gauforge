@@ -255,3 +255,19 @@ def test_import_duplicate_keyword_warning(ind):
     out = import_files([("dup.gjf", text.encode())], inputs_dir=ind)
     kinds = {w["kind"] for w in out[0]["warnings"]}
     assert "route_duplicate" in kinds
+
+
+# ---------------- G5：BOM 剥离（B4） ----------------
+
+def test_import_strips_bom_silently(ind):
+    """BOM 文件导入：解码 utf-8-sig、落盘前剥离 BOM 字节（其余字节原样），
+    静默行为；提交/哈希以剥离后副本为准。"""
+    body = "#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n\n".encode("utf-8")
+    data = b"\xef\xbb\xbf" + body
+    (out,) = import_files([("bom.gjf", data)], inputs_dir=ind)
+    stored = (ind / str(out["id"])).read_bytes()
+    assert not stored.startswith(b"\xef\xbb\xbf")
+    assert stored == body  # 其余字节原样（无 BOM 时逐字节一致）
+    # 剥离后可正常提交（无 BOM 时 # 识别正常）
+    from web.src.services.verify import verify_and_store
+    assert verify_and_store(out["id"])["normalized"] is False

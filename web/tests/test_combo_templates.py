@@ -464,3 +464,24 @@ def test_template_route_duplicate_exempt_shapes():
             3, {"route": route, "nproc": "4", "mem_gb": "8", "cpu": "0-3"},
             mode="enforce")
         assert not notice.get("route_duplicates"), route
+
+
+# ---------------- B4：模板 mem_gb>0 与 cpu /n ----------------
+
+def test_template_mem_gb_must_be_positive():
+    """%mem=0 拒绝（决策点 8：模板 mem_gb 阻断）。"""
+    from web.src.services import combo_templates as ct
+    with pytest.raises(ct.validation_failed):
+        ct.validate_and_normalize(
+            9, {"route": "#p opt", "nproc": "4", "mem_gb": "0"}, mode="enforce")
+    fields, _ = ct.validate_and_normalize(
+        9, {"route": "#p opt", "nproc": "4", "mem_gb": "8"}, mode="enforce")
+    assert fields["mem_gb"] == 8.0
+
+
+def test_template_cpu_slash_n_accepted():
+    """%cpu=0-5/2 步长区间模板放行（计数按步长）。"""
+    from web.src.services import combo_templates as ct
+    fields, _ = ct.validate_and_normalize(
+        10, {"route": "#p opt", "cpu": "0-5/2", "mem_gb": "8"}, mode="enforce")
+    assert fields["cpu"] == "0-5/2"

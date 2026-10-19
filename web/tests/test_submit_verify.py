@@ -449,3 +449,14 @@ def test_requeue_normalized_flag_from_dict_result(ind):
     out = history_svc.requeue(eid)
     assert out["normalized"] is True  # CRLF→LF 有变化
     assert b"\r" not in _file(ind, tid)
+
+
+def test_submit_carries_link0_value_warnings(ind):
+    """提交通道对历史文件（%mem=2W）出 link0_value_invalid 警告，不阻断。"""
+    legacy = ("%mem=2W\n%nprocshared=4\n#p hf/sto-3g\n\nt\n\n0 1\n"
+              "O 0.0 0.0 0.0\nH 0.0 0.0 0.96\nH 0.0 0.96 -0.24\n\n")
+    tid = tasks().create_candidate("w.gjf", "imported")
+    (ind / str(tid)).write_text(legacy, encoding="utf-8")  # 绕过导入（历史文件）
+    out = submit_candidate(tid, None)
+    assert out["seat_id"] >= 1
+    assert any(w["kind"] == "link0_value_invalid" for w in out["warnings"])

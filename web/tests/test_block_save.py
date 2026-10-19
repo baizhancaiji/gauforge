@@ -417,3 +417,43 @@ def test_save_route_reports_duplicate_warning(ind):
     tid = _mk(ind)
     out = save_block(tid, "route", ["#p mp2 mp2/6-31g(d)"], inputs_dir=ind)
     assert any(w["kind"] == "route_duplicate" for w in out["warnings"])
+
+
+# ---------------- B4：G5 保存通道值域阻断 ----------------
+
+def test_save_link0_rejects_w_unit_and_zero_mem(ind):
+    """%mem=2W（官方值域外单位）与 %mem=0 编辑保存阻断。"""
+    tid = _mk(ind)
+    for line in ("%mem=2W", "%mem=0"):
+        with pytest.raises(ApiError) as ei:
+            save_block(tid, "link0", ["%nprocshared=4", line], inputs_dir=ind)
+        reasons = {e["reason"] for e in
+                   ei.value.body()["error"]["details"]["errors"]}
+        assert "mem_value_invalid" in reasons, line
+
+
+def test_save_link0_rejects_overlong_line(ind):
+    """Link 0 单行 >500 字符保存阻断（reason=link0_line_too_long）。"""
+    tid = _mk(ind)
+    with pytest.raises(ApiError) as ei:
+        save_block(tid, "link0", ["%mem=" + "1" * 500 + "GB"], inputs_dir=ind)
+    reasons = {e["reason"] for e in
+               ei.value.body()["error"]["details"]["errors"]}
+    assert "link0_line_too_long" in reasons
+
+
+def test_save_link0_accepts_slash_n_cpu(ind):
+    """%cpu=0-5/2 合法形态保存通过。"""
+    tid = _mk(ind)
+    out = save_block(tid, "link0", ["%nprocshared=4", "%mem=2GB",
+                                    "%cpu=0-5/2"], inputs_dir=ind)
+    assert out["blocks"]["link0"]["lines"][-1] == "%cpu=0-5/2"
+
+
+def test_save_charge_mult_accepts_multiple_pairs(ind):
+    """多组电荷-多重度对保存合法（偶数个整数、后续组 mult≠0）。"""
+    tid = _mk(ind)
+    out = save_block(tid, "charge_mult", ["1 2 1 2 0 1"], inputs_dir=ind)
+    assert out["blocks"]["charge_mult"] == "1 2 1 2 0 1"
+    with pytest.raises(ApiError):
+        save_block(tid, "charge_mult", ["1 2 1 0"], inputs_dir=ind)  # 组内 mult=0

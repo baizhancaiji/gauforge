@@ -475,3 +475,152 @@ def test_g3_link0_in_molecule_spec_not_scanned():
     text = ("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n%foo=bar data\n\n")
     r = parse_input(text)
     assert not any("Link 0" in e["message"] for e in r["parse_errors"])
+
+
+# ---------------- G5：值域拉齐与多组电荷对（B4） ----------------
+
+def test_g5_negative_charge_and_zero_mult():
+    """负电荷合法（有符号整数）；首组多重度须 ≥1（0 拒）。"""
+    ok = parse_input("#p hf/sto-3g\n\nt\n\n-1 2\nO 0 0 0\nH 0 0 0.96\n\n")
+    assert ok["blocks"]["charge_mult"] == "-1 2"
+    assert ok["parse_errors"] == []
+    bad = parse_input("#p hf/sto-3g\n\nt\n\n0 0\nO 0 0 0\n\n")
+    assert any(e["section"] == "charge_mult" for e in bad["parse_errors"])
+
+
+def test_g5_multiple_charge_pairs_kept_and_warned_without_evidence():
+    """多组电荷-多重度对同解析：charge_mult 保留全部组；无 Counterpoise/
+    ONIOM/Fragment 佐证 → molecule_multiple_charge_pairs 信息警告。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\n1 2 1 2 0 1\nO 0 0 0\n\n")
+    assert r["blocks"]["charge_mult"] == "1 2 1 2 0 1"
+    kinds = [w["kind"] for w in r["warnings"]]
+    assert "molecule_multiple_charge_pairs" in kinds
+    # 有佐证（Counterpoise）零警告
+    cp = parse_input("#p hf/sto-3g counterpoise=2\n\nt\n\n1 2 1 2 0 1\n"
+                     "O(Fragment=1) 0 0 0\nO(Fragment=2) 0 0 1.1\n\n")
+    assert cp["blocks"]["charge_mult"] == "1 2 1 2 0 1"
+    assert not any(w["kind"] == "molecule_multiple_charge_pairs"
+                   for w in cp["warnings"])
+
+
+def test_g5_negative_mult_fragment_gate():
+    """负多重度组仅 Guess=Fragment 有官方语义：无则警告、有则零警告。"""
+    no_gate = parse_input("#p hf/sto-3g\n\nt\n\n0 1 0 -2\nO 0 0 0\n\n")
+    assert any(w["kind"] == "molecule_multiple_charge_pairs"
+               and "Guess=Fragment" in w["message"] for w in no_gate["warnings"])
+    gated = parse_input("#p hf/sto-3g guess=fragment\n\nt\n\n0 1 0 -2\n"
+                        "O 0 0 0\n\n")
+    assert not any(w["kind"] == "molecule_multiple_charge_pairs"
+                   for w in gated["warnings"])
+
+
+def test_g5_charge_mult_free_format_separators():
+    """电荷行自由格式分隔（逗号/斜杠任意组合，官方 Counterpoise 示例）。"""
+    r = parse_input("#p hf/sto-3g counterpoise=2\n\nt\n\n1,2 1,2 0,1\n"
+                    "O 0 0 0\n\n")
+    assert r["blocks"]["charge_mult"] == "1 2 1 2 0 1"
+    r2 = parse_input("#p hf/sto-3g\n\nt\n\n0/1\nO 0 0 0\n\n")
+    assert r2["blocks"]["charge_mult"] == "0 1"
+
+
+def test_g5_link0_value_domain_and_positive_mem():
+    """%mem 值域收紧（W|B 删除）且须 >0：%mem=2W / %mem=0 → 警告
+    （kind=link0_value_invalid），KB..TW 与无单位合法。"""
+    for line in ("%mem=2W", "%mem=0", "%mem=2B", "%mem=-1GB"):
+        r = parse_input(f"{line}\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+        assert any(w["kind"] == "link0_value_invalid" for w in r["warnings"]), line
+    for line in ("%mem=2GB", "%mem=800MB", "%mem=500KB", "%mem=1TW",
+                 "%mem=100", "%mem=2.5GW"):
+        r = parse_input(f"{line}\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+        assert not any(w["kind"] == "link0_value_invalid"
+                       for w in r["warnings"]), line
+
+
+def test_g5_link0_line_length_cap():
+    """Link 0 单行 ≤500 字符：超限记 link0_line_too_long 警告（导入/提交
+    通道），不阻断。"""
+    long_line = "%mem=" + "1" * 500 + "GB"
+    r = parse_input(f"{long_line}\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+    kinds = [w["kind"] for w in r["warnings"]]
+    assert "link0_line_too_long" in kinds
+
+
+def test_g5_link0_directive_grammar_and_duplicates():
+    """官方无等号指令合法零警告；未知指令/同名重复记警告（不阻断）。"""
+    good = parse_input("%save\n%kjob l502 2\n%subst l913 /tmp\n\n"
+                       "#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+    assert not any(w["kind"].startswith("link0_directive")
+                   for w in good["warnings"])
+    unknown = parse_input("%foobar=1\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+    kinds = [w["kind"] for w in unknown["warnings"]]
+    assert "link0_directive_unknown" in kinds
+    dup = parse_input("%mem=1GB\n%mem=2GB\n\n#p hf/sto-3g\n\nt\n\n0 1\n"
+                      "O 0 0 0\n\n")
+    kinds2 = [w["kind"] for w in dup["warnings"]]
+    assert "link0_directive_duplicate" in kinds2
+    # 含多个 = 的取值形不按普通 key=value 二次切分
+    multi = parse_input("%gpucpu=0-3=0-1,16-17\n\n#p hf/sto-3g\n\nt\n\n"
+                        "0 1\nO 0 0 0\n\n")
+    assert not any(w["kind"] == "link0_directive_unknown"
+                   for w in multi["warnings"])
+
+
+def test_g5_cpu_slash_n_suffix():
+    """%cpu 区间 /n 步长后缀（官方 0-5/2 形）全通道放行。"""
+    r = parse_input("%cpu=0-5/2\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+    assert not any(w["kind"] == "link0_value_invalid" for w in r["warnings"])
+    from web.src.parse.link0_rules import cpu_list_count
+    assert cpu_list_count("0-5/2") == 3
+    assert cpu_list_count("0-5") == 6
+    assert cpu_list_count("0,2,4") == 3
+
+
+def test_g5_title_forbidden_char_warning():
+    """title 禁用字符：parse_input 记警告（编辑保存保持阻断）。"""
+    r = parse_input("#p hf/sto-3g\n\nt@itle\n\n0 1\nO 0 0 0\n\n")
+    assert any(w["kind"] == "title_forbidden_char" for w in r["warnings"])
+
+
+# ---------------- G6：原子行文法（B4） ----------------
+
+def test_g6_ghost_atom_excluded_from_formula():
+    """鬼原子 O-Bq：计入 atom_count（占一行）、不计入分子式。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\nO-Bq 0 0 3.0\n\n")
+    m = r["blocks"]["molecule"]
+    assert m["atom_count"] == 2
+    assert m["formula"] == "O1"
+    assert not any(w["kind"] == "atom_label_unknown" for w in r["warnings"])
+
+
+def test_g6_dummy_atom_x():
+    """哑原子 X / X<数字>：计数入原子行数、不计入分子式、不告警。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nX 0 0 0\nO 1 1.0\n"
+                    "X3 1 1.2 2 90.0\n\n")
+    m = r["blocks"]["molecule"]
+    assert m["atom_count"] == 3
+    assert m["formula"] == "O1"
+    assert not any(w["kind"] == "atom_label_unknown" for w in r["warnings"])
+
+
+def test_g6_unknown_label_warned_known_prefix_not():
+    """找不到元素符号前缀（Zz）→ atom_label_unknown 警告；字母标签
+    Foo（F+oo）不告警。"""
+    bad = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nZz 0 0 0\nO 0 0 1.0\n\n")
+    assert any(w["kind"] == "atom_label_unknown" and w["keyword"] == "Zz"
+               for w in bad["warnings"])
+    assert bad["blocks"]["molecule"]["formula"] == "O1"  # Zz 不入式
+    good = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nFoo 0 0 0\nO 0 0 1.0\n\n")
+    assert good["blocks"]["molecule"]["formula"] == "F1O1"
+    assert not any(w["kind"] == "atom_label_unknown" for w in good["warnings"])
+
+
+def test_g6_mm_and_free_format_atom_lines():
+    """MM/ONIOM 形（C-CT--0.06）、参数表（C(Iso=13,Fragment=2)）与自由
+    格式分隔（C,0,0,0 / C/0/0/0）均解析为首元素。"""
+    for line in ("C-CT--0.06    0.0 0.0 0.0", "C(Iso=13,Fragment=2) 0 0 0",
+                 "C,0,0,0", "C/0/0/0", "Cl1 0 0 0"):
+        r = parse_input(f"#p hf/sto-3g\n\nt\n\n0 1\n{line}\n\n")
+        f = r["blocks"]["molecule"]["formula"]
+        assert f.startswith("C") or f.startswith("Cl"), (line, f)
+        assert not any(w["kind"] == "atom_label_unknown"
+                       for w in r["warnings"]), line

@@ -517,3 +517,18 @@ def test_fake_g16_first_pipeline(tmp_path, monkeypatch):
         assert (rd / "input.log").is_file()  # input.gjf → 同名 .log
     finally:
         mgr.stop()
+
+
+# ---------------- B4：记账换算与值域同源 ----------------
+
+def test_mem_to_gb_official_units_only():
+    """记账换算单位集与值域同源（官方 KB..TW/KW/MW/GW）：QW 删除、GW/TW
+    补齐——%mem=2GW 不再回落缺省注入误记 defaulted。"""
+    from web.src.engine.workspace import _mem_to_gb
+    assert _mem_to_gb("2GW") == 2048.0
+    assert _mem_to_gb("1TW") == 1024.0 * 1024.0
+    assert _mem_to_gb("800MB") == 800 / 1024
+    assert _mem_to_gb("500KB") == 500 / 1024 / 1024
+    assert _mem_to_gb("100") == 100 * 8 / 1024**3
+    assert _mem_to_gb("2W") == 16 / 1024**3
+    assert _mem_to_gb("2QW") is None  # 官方值域外
