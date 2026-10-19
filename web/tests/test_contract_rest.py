@@ -157,6 +157,16 @@ def _seed_candidate(tmp_path, monkeypatch) -> int:
                         inputs_dir=tmp_path / "inputs")[0]["id"]
 
 
+def test_preview_response_carries_warnings(tmp_path, monkeypatch):
+    """G0：预览响应携带 warnings 通道（B1 阶段 parse_input 恒空列表）。"""
+    cid = _seed_candidate(tmp_path, monkeypatch)
+    r = client.get(f"/api/v1/candidates/{cid}/preview")
+    assert r.status_code == 200
+    body = r.json()
+    assert_contract_schema(spec, "GET", "/candidates/{id}/preview", 200, body)
+    assert body["warnings"] == []
+
+
 def test_put_blocks_response_against_schema(tmp_path, monkeypatch):
     cid = _seed_candidate(tmp_path, monkeypatch)
     r = client.put(f"/api/v1/candidates/{cid}/blocks/route",

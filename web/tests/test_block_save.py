@@ -300,12 +300,49 @@ def test_spell_warning_near_neighbor_only(ind):
     tid = _mk(ind)
     r = save_block(tid, "route", ["#p opt freq oppt"], inputs_dir=ind)
     assert r["blocks"]["route"] == "#p opt freq oppt"  # 非阻断照常保存
-    assert r["warnings"] == [{"line": 1, "keyword": "oppt",
-                              "kind": "keyword_spell", "suggestion": "opt"}]
+    w = r["warnings"][0]
+    assert w["line"] == 1 and w["keyword"] == "oppt"
+    assert w["kind"] == "keyword_spell" and w["suggestion"] == "opt"
+    assert isinstance(w["message"], str) and w["message"]  # G0：message 必填
     r2 = save_block(tid, "route", ["#p opt freq mycustomkw"], inputs_dir=ind)
     assert r2["warnings"] == []  # 纯新词不警告
     r3 = save_block(tid, "route", ["#p OPT FREQ"], inputs_dir=ind)
     assert r3["warnings"] == []  # 大小写不敏感命中
+
+
+def test_spell_official_forms_not_flagged(ind):
+    """C3：官方合法词形不再产生拼写警告（warn 通道零误报）。
+
+    覆盖：逗号分隔 / 基组括号整词（回归）/ ! 行内注释 / 无等号括号形 /
+    @file 包含 / 等号两侧空格 / 键名与括号间空格 / 括号选项形键名命中 /
+    IOp 括号内斜杠 / 引号值。"""
+    tid = _mk(ind)
+    cases = [
+        "#p opt,freq",
+        "#p b3lyp/6-31g(d,p) opt freq",
+        "#p opt ! 行内注释 note",
+        "#p opt(modredundant)",
+        "#p @mols.dat",
+        "#p opt = (calcfc, ts)",
+        "#p opt (calcfc, ts)",
+        "#p opt=(calcfc,ts)",
+        "#p IOp(6/50=1)",
+        '#p External="RunTink Amber"',
+    ]
+    for route in cases:
+        r = save_block(tid, "route", [route], inputs_dir=ind)
+        assert r["warnings"] == [], (route, r["warnings"])
+        assert r["blocks"]["route"] == route  # 非阻断照常保存
+
+
+def test_spell_warning_absolute_line_offset(ind):
+    """G0：route 不在文件首行时，拼写警告行号为全文件绝对行号（1 起）。"""
+    tid = _mk(ind, "%mem=1GB\n\n#p opt freq oppt\n\nt\n\n0 1\nO\n")
+    assert parse_input(_file_text(ind, tid))["blocks"]["route"] \
+        .splitlines()[0] == "#p opt freq oppt"  # route 首行 = 全文件第 3 行
+    r = save_block(tid, "route", ["#p opt freq oppt"], inputs_dir=ind)
+    assert len(r["warnings"]) == 1
+    assert r["warnings"][0]["line"] == 3
 
 
 # ---------------- 金标准输入编辑回写 ----------------

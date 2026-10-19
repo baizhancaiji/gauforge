@@ -231,6 +231,35 @@ def test_validate_warn_mode_passes_with_warnings():
     assert notice["temp_applied"] is True  # freq 联动补温度照常
 
 
+def test_enforce_official_forms_pass():
+    """C3：官方合法词形在 enforce 不再误拒（输入勘误计划 §2.3 五类误拒
+    + 无等号空格形 + 引号值 + 括号选项键名命中 + IOp 括号内斜杠）。"""
+    for route in (
+        "#p opt,freq",                       # 逗号作项目分隔符
+        "#p b3lyp/6-31g(d,p) opt freq",      # 基组括号整词（回归基线）
+        "#p opt ! note",                     # ! 行内注释
+        "#p opt(modredundant)",              # 无等号括号形
+        "#p @mols.dat",                      # @file 整文件包含
+        "#p opt = (calcfc, ts)",             # = 两侧任意空格
+        "#p opt (calcfc, ts)",               # 键名与括号间空格
+        "#p opt=(calcfc,ts)",                # 括号选项形键名命中
+        "#p IOp(6/50=1)",                    # IOp 括号内斜杠不切分
+        '#p External="RunTink Amber"',       # 引号值内空格不切分
+    ):
+        r = _put(1, route=route)
+        assert r.status_code == 200, (route, _reasons(r) if r.status_code
+                                      == 422 else None)
+
+
+def test_warn_mode_official_forms_no_spurious_warnings():
+    """C3：warn 通道对官方合法词形不再给出错误近邻建议。"""
+    for route in ("#p opt(modredundant)", "#p opt=(calcfc,ts)",
+                  '#p External="RunTink Amber"'):
+        fields, notice = svc.validate_and_normalize(
+            1, {"route": route}, mode="warn")
+        assert notice.get("spelling_warnings") in (None, []), route
+
+
 def test_reason_temp_value_invalid():
     for val in ("abc", "-1", "300,310", "0"):
         route = f"#p b3lyp/6-31g(d) opt freq temperature={val}"

@@ -128,10 +128,69 @@ def test_atomic_number_atom_specs():
     assert bad["blocks"]["molecule"]["formula"] == ""
 
 
+def test_parse_input_warnings_channel_default_empty():
+    """G0：parse_input 返回值含 warnings 通道，默认空列表（非阻断）。"""
+    r = parse_input(WATER)
+    assert r["warnings"] == []
+    assert set(r) == {"blocks", "parse_errors", "multistep", "warnings"}
+
+
 def test_geometric_allcheck_missing_sections_allowed():
     r = parse_input("#p hf/sto-3g geom=allcheck\n\n")
     assert r["blocks"]["title"] is None
     assert r["parse_errors"] == []
+
+
+def test_geometric_checkpoint_requires_title_and_charge():
+    """C1：Geom=Checkpoint 仅豁免原子坐标，title 与电荷/多重度行仍必须存在
+    （官方 geom 页：Only the charge and multiplicity are read from the input
+    stream；title 按 Section Ordering 表除 AllCheck 外全部要求）。"""
+    base = "#p b3lyp/6-31g(d) geom=checkpoint\n\n"
+    r = parse_input(base)  # 缺 title、缺电荷/多重度 → 双报
+    sections = {e["section"] for e in r["parse_errors"]}
+    assert {"title", "charge_mult"} <= sections
+    # title 与电荷行齐备、仅省原子坐标 → 合法
+    r2 = parse_input(base + "水分子\n\n0 1\n")
+    assert r2["parse_errors"] == []
+    assert r2["blocks"]["title"] == "水分子"
+    assert r2["blocks"]["charge_mult"] == "0 1"
+
+
+def test_geometric_check_synonym_same_tier():
+    """C1：Geom=Check 为 Checkpoint 同义词，豁免档位一致。"""
+    r = parse_input("#p hf/sto-3g geom=check\n\n")
+    sections = {e["section"] for e in r["parse_errors"]}
+    assert {"title", "charge_mult"} <= sections
+
+
+def test_geometric_bracket_and_space_forms_match_bare():
+    """C2：括号/空格形态与裸形态判定一致（官方选项四种合法形态与
+    「= 两侧允许任意空格」规则）。"""
+    # AllCheck 括号形：title/电荷整体省略，不报错
+    r = parse_input("#p b3lyp/6-31g(d) geom=(allcheck,modredundant)\n\n")
+    assert r["parse_errors"] == []
+    # 逗号后空格
+    r2 = parse_input("#p hf/sto-3g geom=(allcheck, modredundant)\n\n")
+    assert r2["parse_errors"] == []
+    # 等号两侧空格
+    r3 = parse_input("#p hf/sto-3g geom = allcheck\n\n")
+    assert r3["parse_errors"] == []
+    # 无等号括号形
+    r4 = parse_input("#p hf/sto-3g geom (allcheck)\n\n")
+    assert r4["parse_errors"] == []
+    # checkpoint 括号形：仅坐标可省，title/电荷必须存在
+    r5 = parse_input("#p hf/sto-3g geom=(checkpoint, modredundant)\n\n")
+    sections = {e["section"] for e in r5["parse_errors"]}
+    assert {"title", "charge_mult"} <= sections
+
+
+def test_title_missing_message_names_allcheck_only():
+    """C1 文案精确化：title 缺失提示仅 AllCheck 豁免（Checkpoint 不再列）。"""
+    r = parse_input("#p hf/sto-3g\n\n")
+    msg = next(e["message"] for e in r["parse_errors"]
+               if e["section"] == "title")
+    assert "AllCheck" in msg
+    assert "Checkpoint" not in msg
 
 
 def test_bad_files_tolerated_no_exception():
