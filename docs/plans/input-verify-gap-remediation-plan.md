@@ -1118,3 +1118,29 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   规则，不在本检测面（与官方 Link0 位置语义一致）。
 - B3 出口闸门：validate_progress / gen_changelog_md --check 通过；
   B4 入口条件满足。
+
+### 8.4 B4 批次（2026-10-19 实施收口）
+
+- 实施序列：契约文档先行（kind 词表七项 + charge_mult/BOM description +
+  生成物零 diff）→ 测试先行（22 用例先红）→ 实现 → 进度同步，共 5 提交。
+- 验收：全量 **815 passed 0 skipped**（B3 收口 793 + B4 新增 22）；语料
+  警告基线 **17 文件/1.5%**（阈值 5%=58；复审过程：初版 113 文件超阈，
+  定位为官方语料形态误报并校准——Variables:/Variable: 无空行直接跟原子
+  行时以区头为边界、pbc Tv 平移向量行非原子、哑原子 XX 与同前位 `-` 标记、
+  小写 x——校准后 atom_label_unknown 语料内零误报）。
+- **既有缺陷随批修正**：engine 记账换算 `_mem_to_gb` mw 单位差 1024 倍
+  （2MW 原记 16KB，实为 16MB）、kw 键缺失（%mem=1KW 原 KeyError）、
+  `%mem=2GW` 原解析失败回落缺省注入误记 defaulted——统一下沉
+  `parse/link0_rules.py` 与值域同源后一并修正。
+- **G16 Rev. C.01 冒烟**（多组电荷对 / %cpu=0-5/2 / 自由格式分隔符，
+  语料 sha256 前缀随批）：
+
+  | 语料 | G16 实测 | B4 判定 | 结论 |
+  |---|---|---|---|
+  | test0559（counterpoise=2，841a646c） | Normal ×4 | 零警告零错误 | ✓ 零误报 |
+  | g5cpu（%cpu=0-5/2，47b23a33） | Normal | /n 放行零警告 | ✓ |
+  | g6ff（自由格式分隔 + O-Bq + 多组对 `0,1 0,1 0,1`，3c623fa1） | Normal | cm 全组 `0 1 0 1 0 1`、formula=H2O1（Bq 不计式）、atom_count=4、无佐证多组对信息警告（warn 级不阻断） | ✓ |
+
+- B4 出口闸门：validate_progress / gen_changelog_md --check 通过。
+  **B2–B4 三批全部收口**；下一批 B5（G7 字典扩面 + G8 子选项校验）入口
+  条件满足，待用户启动。
