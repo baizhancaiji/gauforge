@@ -4,7 +4,9 @@ r"""组合流精修模板校验与归一化（插波 3.2.0，m4-combo-template-d
 （422 VALIDATION_FAILED，details.errors[] 形态沿 {"field","line","reason",
 "message"}；name/route 清空属「恢复初始值」语义，不报错）。
 
-- 拼写校验：token 按 [/\s#]+ 切分、casefold **精确匹配** keywords.txt
+- 拼写校验：token 经括号/引号感知管道切分（B1 C3，与 check_route_spelling
+  同管道——逗号/`!` 行内注释/`kw(opt)` 括号形/`@file`/`=` 两侧空格/引号值
+  均为官方合法形态）、casefold **精确匹配** keywords.txt
   白名单（不采用近似命中判错），mode 参数 enforce/warn——enforce → 词典外
   error（请求 ignore_spelling=true 时该批降级放行）；warn → 放行 +
   notice.spelling_warnings（对齐既有 save_block 非阻断语义）。当前词典已
@@ -24,7 +26,7 @@ import re
 from .. import config
 from ..engine.workspace import _cpu_list_count
 from ..errors import validation_failed
-from ..parse.keywords import _TOKEN_SPLIT, load_keywords
+from ..parse.keywords import load_keywords, token_in_dict, tokenize_route
 from .dependencies import parse_link0_refs
 
 # 每核内存下限 GB（§0.4 口径 3）
@@ -48,16 +50,6 @@ def _text(value: object) -> str | None:
     if isinstance(value, str) and value.strip():
         return value.strip()
     return None
-
-
-def _token_in_dict(tok: str, words: frozenset[str]) -> bool:
-    """token 精确匹配；键值形（key=value）以键名精确匹配白名单且值非空
-    （temp=310 等任意数值形不可能逐值入词典——键值合法性归温度/值校验，
-    §3.2 拼写行 2026-10-14 补录口径）。"""
-    if tok in words:
-        return True
-    key, sep, val = tok.partition("=")
-    return bool(sep) and bool(val) and key in words
 
 
 def validate_and_normalize(template_id: int, data: dict, *,
@@ -92,11 +84,13 @@ def validate_and_normalize(template_id: int, data: dict, *,
                             "route 须以 # 开头"))
 
     route_cf = route.casefold()
-    tokens = [t for t in _TOKEN_SPLIT.split(route_cf) if t]
+    # C3 token 化：括号/引号感知（与 check_route_spelling 同管道），模板
+    # route 为单行，token 行号恒 1
+    tokens = [t for _, t in tokenize_route(route_cf)]
 
     # ---- 拼写（精确白名单；enforce/warn 双 mode） ----
     words = load_keywords()
-    oov = [t for t in tokens if not _token_in_dict(t, words)]
+    oov = [t for t in tokens if not token_in_dict(t, words)]
     if mode == "enforce" and oov and not bool(data.get("ignore_spelling")):
         errors.extend(_verr("route", "keyword_not_in_dict",
                             f"词典外关键词：{t}") for t in oov)

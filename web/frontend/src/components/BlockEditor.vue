@@ -20,7 +20,13 @@ import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 
 type InputPreview = components["schemas"]["InputPreview"];
-type SaveWarning = { line: number; keyword: string; kind: string; suggestion: string };
+type SaveWarning = {
+  line: number;
+  keyword: string;
+  kind: string;
+  message?: string;
+  suggestion?: string;
+};
 
 const props = defineProps<{
   taskId: number;
@@ -282,9 +288,10 @@ async function saveSectionDelayed(section: string) {
           @blur="onBlur('route')"
         ></textarea>
         <div v-else class="val mono">{{ preview.blocks.route || "—" }}</div>
-        <!-- 拼写警告（琥珀纪律允许清单：近邻命中才警告，非阻断不阻止自动保存） -->
+        <!-- 拼写警告（琥珀纪律允许清单：近邻命中才警告，非阻断不阻止自动保存；
+             message 为后端统一文案（G0），缺省回落 keyword/suggestion 拼接） -->
         <div v-for="(w, i) in warnings" :key="i" class="be-warn mono">
-          ⚠ 第 {{ w.line }} 行「{{ w.keyword }}」是否意为「{{ w.suggestion }}」？
+          ⚠ 第 {{ w.line }} 行 {{ w.message ?? `「${w.keyword}」${w.suggestion ? `是否意为「${w.suggestion}」？` : ""}` }}
         </div>
         <div v-if="editOf('route')?.error" class="be-error mono" role="alert">
           {{ editOf('route')?.error }}

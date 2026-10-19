@@ -301,7 +301,8 @@ def test_spell_warning_near_neighbor_only(ind):
     r = save_block(tid, "route", ["#p opt freq oppt"], inputs_dir=ind)
     assert r["blocks"]["route"] == "#p opt freq oppt"  # 非阻断照常保存
     w = r["warnings"][0]
-    assert w["line"] == 1 and w["keyword"] == "oppt"
+    # SAMPLE 的 route 首行 = 全文件第 5 行（3 行 link0 + 空行），G0 绝对行号
+    assert w["line"] == 5 and w["keyword"] == "oppt"
     assert w["kind"] == "keyword_spell" and w["suggestion"] == "opt"
     assert isinstance(w["message"], str) and w["message"]  # G0：message 必填
     r2 = save_block(tid, "route", ["#p opt freq mycustomkw"], inputs_dir=ind)

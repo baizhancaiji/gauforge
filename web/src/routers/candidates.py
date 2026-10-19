@@ -159,7 +159,8 @@ def preview_candidate(id: int) -> dict:
     row = _readable_row(id)
     r = parse_input(_load_input(id))
     return {"candidate_id": row["id"], "filename": row["filename"],
-            "blocks": r["blocks"], "parse_errors": r["parse_errors"]}
+            "blocks": r["blocks"], "parse_errors": r["parse_errors"],
+            "warnings": r["warnings"]}
 
 
 @router.get("/candidates/{id}/input")

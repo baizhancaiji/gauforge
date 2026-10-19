@@ -261,11 +261,16 @@ def test_warn_mode_official_forms_no_spurious_warnings():
 
 
 def test_reason_temp_value_invalid():
-    for val in ("abc", "-1", "300,310", "0"):
+    # 300,310：B1 C3 起逗号为官方分隔符，切出孤立 token 310 走词典外拦截
+    # （temperature=300 本身合法单值）；单值形态仍走温度值校验
+    for val, reason in (("abc", "temp_value_invalid"),
+                        ("-1", "temp_value_invalid"),
+                        ("300,310", "keyword_not_in_dict"),
+                        ("0", "temp_value_invalid")):
         route = f"#p b3lyp/6-31g(d) opt freq temperature={val}"
         r = _put(1, route=route)
         assert r.status_code == 422, val
-        assert "temp_value_invalid" in _reasons(r), val
+        assert reason in _reasons(r), val
 
 
 def test_temp_auto_apply_and_no_duplicate():

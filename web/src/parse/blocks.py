@@ -1,12 +1,15 @@
 """Gaussian 输入分块解析（roadmap §2.7 节结构与空行规则）。
 
 产出与契约 InputPreview.blocks 逐字段一致的分块结构 + parse_errors（逐节容错）
-+ multistep 标记；预览（尽力而为）与导入校验（严格，B3）共用。
-解析器自身绝不抛异常：坏文件回落默认分块并以 parse_errors 标注。
++ warnings（非阻断，输入勘误计划 G0）+ multistep 标记；预览（尽力而为）
+与导入校验（严格，B3）共用。解析器自身绝不抛异常：坏文件回落默认分块并以
+parse_errors 标注。
 """
 from __future__ import annotations
 
 import re
+
+from .keywords import tokenize_route
 
 # 附加输入节触发的 route 关键词（小写子串匹配，覆盖常见读取类节）
 _EXTRA_KEYWORDS = ("gen", "modredundant", "guess=alter", "scrf=read",
@@ -86,8 +89,41 @@ def _looks_like_variables(region: list[str]) -> bool:
     return True
 
 
+def _geom_exemption_tier(route_text: str) -> str | None:
+    """Geom 检查点豁免档位（C1/C2，B1）：'allcheck' | 'checkpoint' | None。
+
+    官方 geom 页：Geom=AllCheck 时 title/电荷/坐标皆可整体省略；
+    Geom=Checkpoint（同义 Check）仅原子坐标取自检查点、title 与电荷/多重度
+    行仍必须存在。识别走 tokenize_route 括号/引号感知管道，覆盖裸形、
+    括号形（geom=(allcheck,modredundant)）、= 两侧空格（geom = allcheck）、
+    键名与括号间空格（geom (allcheck)）及大小写变体；allcheck 与
+    checkpoint 并出时 allcheck 优先。本判定仅在 parse_input 消费——
+    _scan_spans/verify_and_normalize 无 geom 语义，勿在此同步。
+    """
+    tier: str | None = None
+    for _, tok in tokenize_route(route_text):
+        t = tok.casefold()
+        p = t.find("(")
+        if p > 0:
+            head = t[:p].rstrip("=")
+            opts = [o.strip() for o in t[p:].lstrip("(").rstrip(")").split(",")]
+        else:
+            head, sep, val = t.partition("=")
+            if not sep:
+                continue
+            opts = [val.strip()]
+        if head != "geom":
+            continue
+        if "allcheck" in opts:
+            return "allcheck"
+        if "checkpoint" in opts or "check" in opts:
+            tier = "checkpoint"
+    return tier
+
+
 def parse_input(text: str) -> dict:
-    """解析输入文本 → {"blocks": …, "parse_errors": […], "multistep": bool}。"""
+    """解析输入文本 → {"blocks": …, "parse_errors": […], "warnings": […],
+    "multistep": bool}；warnings 为非阻断提示通道（G0，B1 起常备、默认空）。"""
     lines = _split_lines(text)
     errors: list[dict] = []
 
@@ -148,8 +184,9 @@ def parse_input(text: str) -> dict:
                        "message": "缺少 route 节（# 开头）"})
     blocks["route"] = "\n".join(route_lines)
     route_cf = blocks["route"].casefold()
-    geom_checkpoint = ("geom=allcheck" in route_cf
-                       or "geom=checkpoint" in route_cf)
+    # Geom 豁免档位（C1/C2）：allcheck=仅该档豁免 title/电荷；checkpoint
+    # 仅坐标可省——title 与电荷/多重度缺失照常记 parse_errors
+    geom_tier = _geom_exemption_tier(blocks["route"])
 
     # Title：终止空行后连续非空行，至多 5 行（§2.7）
     while i < n and (blank(i) or comment(i)):
@@ -163,9 +200,9 @@ def parse_input(text: str) -> dict:
             errors.append({"section": "title", "line": i - len(title_lines) + 1,
                            "message": "title 节超过 5 行"})
         blocks["title"] = "\n".join(title_lines)
-    elif not geom_checkpoint:
+    elif geom_tier != "allcheck":
         errors.append({"section": "title", "line": min(i + 1, n),
-                       "message": "缺少 title 节（仅 Geom=AllCheck/Checkpoint 合法）"})
+                       "message": "缺少 title 节（仅 Geom=AllCheck 可省略）"})
 
     # 电荷/多重度：title 终止空行后首个内容行
     while i < n and (blank(i) or comment(i)):
@@ -180,7 +217,7 @@ def parse_input(text: str) -> dict:
             blocks["charge_mult"] = cm
             errors.append({"section": "charge_mult", "line": i,
                            "message": "电荷/多重度行无法解析（应为两个整数）"})
-    elif not geom_checkpoint:
+    elif geom_tier != "allcheck":
         errors.append({"section": "charge_mult", "line": n,
                        "message": "缺少电荷/多重度行"})
 
@@ -224,7 +261,8 @@ def parse_input(text: str) -> dict:
             blocks["additional_sections"].append(
                 {"lines": region, "terminator_blank": not ran_to_eof})
 
-    return {"blocks": blocks, "parse_errors": errors, "multistep": multistep}
+    return {"blocks": blocks, "parse_errors": errors, "warnings": [],
+            "multistep": multistep}
 
 
 # ---------------- 节定位与重组（M2 B2/B6 共用） ----------------
