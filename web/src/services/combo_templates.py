@@ -95,8 +95,10 @@ def validate_and_normalize(template_id: int, data: dict, *,
         errors.extend(_verr("route", "keyword_not_in_dict",
                             f"词典外关键词：{t}") for t in oov)
 
-    # ---- 温度（freq 联动） ----
-    has_freq = any(t == "freq" or t.startswith("freq=") for t in tokens)
+    # ---- 温度（freq 联动；token 头部判定覆盖 freq / freq=x / freq(…) /
+    # freq (…) 全形态——R2 审查整改，不漏 C3 放行的无等号括号形） ----
+    has_freq = any(
+        t.partition("=")[0].split("(", 1)[0] == "freq" for t in tokens)
     has_temp = "temp=" in route_cf or "temperature=" in route_cf
     temp_applied = False
     if has_freq and not has_temp:

@@ -7,14 +7,17 @@ gaussian-kb 结构化知识库生成（纳入版本管理、可重生成）；�
 token 化管道（输入勘误计划 §2.3 C3，官方 input 页 Syntax Rules）：
 括号/引号感知切分——括号深度为 0 处空白/逗号/斜杠/# 为分隔符，深度 >0
 保留（6-31g(d,p)、IOp(6/50=1) 整词）；双引号内不切分
-（External="RunTink Amber"）；行内首个引号外 ! 起截断注释；@ 开头 token
-豁免（@file 整文件包含）；裸 = 与相邻 token 粘合（= 两侧允许任意空格），
+（External="RunTink Amber"）；行内首个引号外且括号外的 ! 起截断注释
+（括号/引号内的 ! 属值的一部分，与官方「注释任意处」的取舍登记于
+input-verify-gap-b1-review R3）；@ 开头 token 豁免（@file 整文件包含，
+含 /N 抑制回显后缀）；裸 = 与相邻 token 粘合（= 两侧允许任意空格），
 键名与 ( 之间有空格的 key (…) 形同样合并。该管道是 C3/G4/G8 共用基座。
 """
 from __future__ import annotations
 
 import difflib
 import logging
+import re
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -47,9 +50,15 @@ def load_keywords(path: Path | None = None, *,
 # 深度为 0 时的行内分隔符：空白、逗号、斜杠、#（官方任意组合）
 _SEP_CHARS = ",/#"
 
+# @file 的 /N 抑制回显后缀：/ 后紧跟数字、数字后为行尾或分隔符
+_AT_SUFFIX_N = re.compile(r"\d+(?=$|[\s,/#])")
+
 
 def _tokenize_line(line: str) -> list[str]:
-    """单物理行 → token 序列（括号/引号感知；首个引号外 ! 起截断）。"""
+    """单物理行 → token 序列（括号/引号感知；首个引号外 ! 起截断）。
+
+    引号内与括号深度 >0 处的空白/逗号/斜杠/#/! 均不切分（值为整体，
+    如 External="RunTink Amber"、6-31g(d,p)、IOp(6/50=1)、opt(ca!lcfc)）。"""
     depth = 0
     in_quote = False
     cut = len(line)
@@ -67,11 +76,12 @@ def _tokenize_line(line: str) -> list[str]:
             depth += 1
         elif ch == ")":
             depth = max(0, depth - 1)
+    head = line[:cut]
     toks: list[str] = []
     cur: list[str] = []
     depth = 0
     in_quote = False
-    for ch in line[:cut]:
+    for j, ch in enumerate(head):
         if in_quote:
             cur.append(ch)
             if ch == '"':
@@ -82,6 +92,10 @@ def _tokenize_line(line: str) -> list[str]:
             in_quote = True
             continue
         if depth == 0 and (ch.isspace() or ch in _SEP_CHARS):
+            if (ch == "/" and cur and cur[0] == "@"
+                    and _AT_SUFFIX_N.match(head, j + 1)):
+                cur.append(ch)  # @file/N 抑制回显后缀并入 @ token
+                continue
             if cur:
                 toks.append("".join(cur))
                 cur = []
