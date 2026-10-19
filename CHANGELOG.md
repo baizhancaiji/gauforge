@@ -9,6 +9,8 @@
 - 【web】非阻断 warnings 统一通道（G0）：parse_input 返回值增 warnings（默认空列表），预览与分块保存响应统一消费；拼写警告行号改为全文件绝对行号，条目 message 必填、suggestion 可选；契约抽共享 Warning schema、InputPreview 增可选 warnings 并移除分块保存响应外层包装
 - 【parse】Section Ordering 官方表固化（G4）：input 页 59 行全表落码为 parse/section_ordering.py（4 core + 54 additional + 1 automatic），附加节触发识别改按头部/选项集精确等值判定（Pseudo=Cards、GenECP、ReadIsotopes、Guess=Cards 等此前未收录触发词生效，隐式变量区启发式仅在无触发词时兜底），prop=wrf 保留一版兼容触发；末附加节以 EOF 收尾时按官方表终止空行列校验（命中行全 yes 记 parse_errors，混合 yes/no 保守不报）
 - 【parse】核心节必需空行显式检测（G9）：route/title 未以空行终止记 parse_errors（title 落空时附根因提示；Geom=AllCheck 豁免集内 title 不报、route 终止不豁免）、电荷行后缺少分子说明节记 parse_errors（Geom 检查点豁免档不报）、分子说明/变量常数区 EOF 收尾记非阻断警告（kind=molecule_unterminated/variables_unterminated）、电荷行解析失败文案附误并根因、--Link1-- 前缺空行附官方要求注记
+- 【web】route 拼写与重复关键字检测接入导入/提交通道（G1/G2）：导入成功条目与提交/续跑响应携带非阻断 warnings（keyword_spell/route_duplicate，全文件绝对行号），不改变任何阻断语义；队列提交逐成员收集并在条目 task_id 填成员任务 id；verify_and_store 返回值改为 {normalized, warnings}，六个调用点同步（真值判断取 normalized）；分块保存 warnings 扩为拼写+重复
+- 【parse】Link 0 错位检测（G3）：% 行落入 route 节（吞并误读，官方 Multistep/Link0 位置约束）或 title 节记 parse_errors 并在导入/提交拒绝；分块保存同步阻断（reason=route_line_link0_forbidden / link0_misplaced）；检测范围限定 route 起点至 title 结束，分子说明/附加节内 % 行不误报
 
 ### 修复
 

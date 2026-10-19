@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-19T11:40+0800",
+ "updated": "2026-10-19T13:10+0800",
  "latest_released_version": "3.3.0",
  "unreleased": [
   {
@@ -43,11 +43,25 @@
    "summary": "核心节必需空行显式检测（G9）：route/title 未以空行终止记 parse_errors（title 落空时附根因提示；Geom=AllCheck 豁免集内 title 不报、route 终止不豁免）、电荷行后缺少分子说明节记 parse_errors（Geom 检查点豁免档不报）、分子说明/变量常数区 EOF 收尾记非阻断警告（kind=molecule_unterminated/variables_unterminated）、电荷行解析失败文案附误并根因、--Link1-- 前缺空行附官方要求注记",
    "breaking": false,
    "migration": "route/title 未终止与空分子说明文件在导入/预览开始被拒；提交通道先行空行规范化，纯 EOF 形态被消除后不再报、节内容被吞并或缺节仍拒（契约 parse_errors description 已登记两通道差异）"
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "route 拼写与重复关键字检测接入导入/提交通道（G1/G2）：导入成功条目与提交/续跑响应携带非阻断 warnings（keyword_spell/route_duplicate，全文件绝对行号），不改变任何阻断语义；队列提交逐成员收集并在条目 task_id 填成员任务 id；verify_and_store 返回值改为 {normalized, warnings}，六个调用点同步（真值判断取 normalized）；分块保存 warnings 扩为拼写+重复",
+   "breaking": false,
+   "migration": "verify_and_store 返回值由 bool 改 dict——程序化调用方真值判断须取 [\"normalized\"]（dict 恒真）"
+  },
+  {
+   "type": "added",
+   "scope": "parse",
+   "summary": "Link 0 错位检测（G3）：% 行落入 route 节（吞并误读，官方 Multistep/Link0 位置约束）或 title 节记 parse_errors 并在导入/提交拒绝；分块保存同步阻断（reason=route_line_link0_forbidden / link0_misplaced）；检测范围限定 route 起点至 title 结束，分子说明/附加节内 % 行不误报",
+   "breaking": false,
+   "migration": "Link 0 命令错置于 route 之后的文件（此前静默吞并或误作 title）开始被导入/提交拒绝，需把 % 行移至 route 节之前"
   }
  ],
  "in_progress": {
-  "task": "input-verify-gap-remediation-plan B2（G4 Section Ordering 固化 + G9 核心节空行检测）",
-  "note": "文档先行（roadmap §2.7 例外回补 + openapi warnings kind 词表）→ 测试先行 → 实现（section_ordering.py + parse_input/_scan_spans 接入 + scan_spans 公共化——B1 审查 R5 随批整改）→ 进度同步；验收与契约动作见 docs/plans/input-verify-gap-remediation-plan.md §3 B2"
+  "task": "input-verify-gap-remediation-plan B3（G1 拼写接入 + G2 重复关键字 + G3 Link0 错位）",
+  "note": "实现已提交（cc0b6559），进度同步后 B3 收口，随批进入 B4（G5+G6 值域与原子行）"
  },
  "next_steps": [
   "B2 已实施收口（2026-10-19，冒烟待跑）：input-verify-gap-remediation-plan 下一批为 B3（G1 拼写接入导入/提交 + G2 重复关键字 + G3 Link0 错位），入口条件待 B2 验收（G16 冒烟 Gen/Pseudo=Cards 附加节）确认后启动",
