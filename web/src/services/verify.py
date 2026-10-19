@@ -11,7 +11,7 @@ import os
 
 from ..errors import ApiError, err, not_found
 from ..parse.blocks import parse_input, split_lines, verify_and_normalize
-from .candidates import _file_warnings, default_inputs_dir
+from .candidates import default_inputs_dir, file_warnings
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +36,9 @@ def verify_and_store(task_id: int) -> dict:
     """
     path = default_inputs_dir() / str(task_id)
     try:
-        text = path.read_bytes().decode("utf-8")
+        # utf-8-sig 统一读取口径（§2.7 项 6，审查整改 R2）：磁盘副本带 BOM
+        # 时解析与规范化写回均不含 BOM
+        text = path.read_bytes().decode("utf-8-sig")
     except (OSError, UnicodeDecodeError):
         raise not_found("input", task_id)
     result = verify_and_normalize(text)
@@ -59,5 +61,5 @@ def verify_and_store(task_id: int) -> dict:
         tmp.write_text(result["text"], encoding="utf-8")
         os.replace(tmp, path)
     return {"normalized": result["changed"],
-            "warnings": _file_warnings(parsed, parsed["blocks"]["route"],
-                                       split_lines(result["text"]))}
+            "warnings": file_warnings(parsed, parsed["blocks"]["route"],
+                                      split_lines(result["text"]))}

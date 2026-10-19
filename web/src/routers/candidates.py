@@ -10,7 +10,7 @@ from starlette import status
 
 from ..errors import err, not_found
 from ..mock import get_state
-from ..parse.blocks import parse_input
+from ..parse.blocks import parse_input, split_lines
 from ..services import candidates as candidates_svc
 from ..services import dependencies as dependencies_svc
 from ..services import pending as pending_svc
@@ -157,10 +157,15 @@ def delete_candidate(id: int) -> Response:
 @router.get("/candidates/{id}/preview")
 def preview_candidate(id: int) -> dict:
     row = _readable_row(id)
-    r = parse_input(_load_input(id))
+    text = _load_input(id)
+    r = parse_input(text)
+    # 审查整改 R5：预览列对齐 §2.11 矩阵——route 拼写/重复警告随预览返回
+    # （与导入/提交/分块保存四通道同走 file_warnings 全集单点）
+    warnings = candidates_svc.file_warnings(r, r["blocks"]["route"],
+                                            split_lines(text))
     return {"candidate_id": row["id"], "filename": row["filename"],
             "blocks": r["blocks"], "parse_errors": r["parse_errors"],
-            "warnings": r["warnings"]}
+            "warnings": warnings}
 
 
 @router.get("/candidates/{id}/input")

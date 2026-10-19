@@ -28,8 +28,8 @@ from pathlib import Path
 from .. import config
 from ..engine.workspace import _cpu_list_count
 from ..errors import ApiError, err, not_found, validation_failed
-from ..parse.blocks import (is_editable_section, parse_input, reassemble,
-                            scan_spans, split_lines)
+from ..parse.blocks import (is_editable_section, parse_charge_tokens,
+                            parse_input, reassemble, scan_spans, split_lines)
 from ..parse.keywords import check_route_duplicates, check_route_spelling
 from ..parse.link0_rules import (LINE_LENGTH_CAP, MEM_VALUE_RE,
                                  _NO_EQ_DIRECTIVES, directive_head)
@@ -58,10 +58,11 @@ def _route_warnings(route_text: str, lines: list[str]) -> list[dict]:
             + check_route_duplicates(route_text, line_offset=offset))
 
 
-def _file_warnings(parsed: dict, route_text: str, lines: list[str]) -> list[dict]:
+def file_warnings(parsed: dict, route_text: str, lines: list[str]) -> list[dict]:
     """全文件非阻断警告全集（G0/G1/G2/G5 统一口径）：parse_input 产出
     （分子说明/变量区 EOF、Link 0 值域与指令、title 禁用字符、原子标签、
-    多组电荷对）+ route 拼写/重复（parse_input 不产拼写通道）。"""
+    多组电荷对）+ route 拼写/重复（parse_input 不产拼写通道）。公共 API
+    （审查整改 R5：预览路由跨模块消费，去私有名）。"""
     return parsed["warnings"] + _route_warnings(route_text, lines)
 
 
@@ -69,7 +70,7 @@ def _validate_one(filename: str, data: bytes) -> dict:
     """单文件校验（G1 改造）：始终返回 {"error": dict|None, "warnings": list}。
 
     error 为 None 表示校验通过；warnings 为非阻断提示（全文件警告，
-    _file_warnings 统一口径），仅在通过时非空可携带（失败条目不带
+    file_warnings 统一口径），仅在通过时非空可携带（失败条目不带
     warnings——422 details.errors[] 无该字段）。解码用 utf-8-sig：检测到
     UTF-8 BOM 时剥离 BOM 字节后落盘（G5 项 6，静默行为）。"""
     name = _basename(filename)
@@ -102,7 +103,7 @@ def _validate_one(filename: str, data: bytes) -> dict:
                 "warnings": []}
     return {"error": None, "bom_stripped": stripped is not data,
             "data": stripped,
-            "warnings": _file_warnings(r, r["blocks"]["route"],
+            "warnings": file_warnings(r, r["blocks"]["route"],
                                        split_lines(text))}
 
 
@@ -213,10 +214,13 @@ def delete_candidate(task_id: int, inputs_dir: Path | None = None) -> None:
 
 
 def resolve_title(task_id: int, inputs_dir: Path | None = None) -> str | None:
-    """实时解析 title（不落库）：文件缺失/解码失败/缺节 → None。"""
+    """实时解析 title（不落库）：文件缺失/解码失败/缺节 → None。
+
+    读取统一 utf-8-sig（§2.7 项 6，审查整改 R2）：磁盘副本带 BOM 时解析
+    口径与导入/提交一致。"""
     ind = inputs_dir if inputs_dir is not None else default_inputs_dir()
     try:
-        text = (ind / str(task_id)).read_text(encoding="utf-8")
+        text = (ind / str(task_id)).read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError):
         return None
     return parse_input(text)["blocks"]["title"]
@@ -321,8 +325,10 @@ def _validate_section(section: str, content: list[str]) -> None:
                                 "电荷/多重度恰为一行"))
         else:
             # G5 项 1：多组电荷-多重度对同口径（偶数个整数；首组 mult ≥1、
-            # 后续组 mult≠0；负多重度官方仅 Guess=Fragment，宽容放行）
-            toks = content[0].replace(",", " ").split()
+            # 后续组 mult≠0；负多重度官方仅 Guess=Fragment，宽容放行）。
+            # 分词单点 parse_charge_tokens（审查整改 R3：斜杠/en-dash 分隔
+            # 与 parse_input 同口径，自由格式分隔符无法解析才阻断）
+            toks = parse_charge_tokens(content[0])
             nums: list[int] = []
             ok = bool(toks) and len(toks) % 2 == 0
             if ok:
@@ -399,8 +405,9 @@ def _expected_blocks(blocks: dict, section: str,
         expected["title"] = "\n".join(ln.strip() for ln in content)
     elif section == "charge_mult":
         cm = content[0].strip()
-        # G5 多组对同口径：偶数个整数全组规范化（空格分隔），否则原样
-        parts = cm.replace(",", " ").split()
+        # G5 多组对同口径：偶数个整数全组规范化（空格分隔），否则原样；
+        # 分词单点 parse_charge_tokens（审查整改 R3，与 parse_input 一致）
+        parts = parse_charge_tokens(cm)
         try:
             nums = [int(t) for t in parts]
             if len(nums) % 2 == 0 and nums:
@@ -441,8 +448,10 @@ def save_block(task_id: int, section: str, lines: list[str], *,
         _guard_editable(row, task_id, section)
         path = ind / str(task_id)
         try:
-            # 字节读入后解码（read_text 通用换行模式会吞 CRLF——编辑不转换行尾）
-            text = path.read_bytes().decode("utf-8")
+            # 字节读入后解码（read_text 通用换行模式会吞 CRLF——编辑不转换行尾）；
+            # utf-8-sig 统一读取口径（§2.7 项 6，审查整改 R2：带 BOM 磁盘
+            # 副本 scan_spans 的 %/# 判定不被 \ufeff 前缀破坏）
+            text = path.read_bytes().decode("utf-8-sig")
         except (OSError, UnicodeDecodeError):
             raise not_found("input", task_id)
 
@@ -474,8 +483,8 @@ def save_block(task_id: int, section: str, lines: list[str], *,
         after = parse_input(new_text)
         filename = row["filename"]
     # ⑤ 非阻断警告全集（G0/G1/G2/G5 五通道统一口径）：parse_input 产出 +
-    # route 拼写/重复，行号全文件绝对（_file_warnings 单点）
-    warnings = _file_warnings(after, after["blocks"]["route"],
+    # route 拼写/重复，行号全文件绝对（file_warnings 单点）
+    warnings = file_warnings(after, after["blocks"]["route"],
                               split_lines(new_text))
     return {"candidate_id": task_id, "filename": filename,
             "blocks": after["blocks"], "parse_errors": after["parse_errors"],
