@@ -75,7 +75,7 @@
     {
       "type": "added",
       "scope": "parse",
-      "summary": "route 子选项归属校验（G8）：kw(...)、kw=(...) 与 key=value 形 token 逐选项对照该键官方选项集（词典 键=* 组合词）查典，未知 选项记非阻断警告 kind=route_option_unknown 并近邻附 suggestion（部分命中只报未命中项）；官方最短唯一缩写判活（input 页 Syntax Rules 明文 keywords 与 options 均可缩写至最短唯一前缀，歧义前缀如 scf=conv 仍报——G16 拒绝该形态）、值形白名单 iop/oniom/external、纯数字取值与单字母括号形（ccsd(t)）豁免、基组/方法括号形（无组合词条目）整体豁免；拼写通道选项型 token 职责移交消除 opt=(calcfc,ts) 类双重报告面；分块保存/导入/提交/预览经 file_warnings 单点生效，模板保存随 notice.route_option_warnings 携带",
+      "summary": "route 子选项归属校验（G8）：kw(...)、kw=(...) 与 key=value 形 token 逐选项对照该键官方选项集（词典 键=* 组合词）查典，未知 选项记非阻断警告 kind=route_option_unknown 并近邻附 suggestion（部分命中只报未命中项）；官方最短唯一缩写判活（input 页 Syntax Rules 明文 keywords 与 options 均可缩写至最短唯一前缀，歧义前缀如 scf=conv 仍报——G16 拒绝该形态）、值形白名单 iop/oniom/external、纯数字取值与单字母括号形（ccsd(t)）豁免、基组/方法括号形（无组合词条目）整体豁免；拼写通道选项型 token 职责移交消除 opt=(calcfc,ts) 类双重报告面；分块保存/导入/提交/预览经 file_warnings 单点生效，模板保存随 notice.route_option_warnings 携带——B5 独立审查整改：check_route_options 不可达死代码清理、值形白名单/参数剥离注释据实修正（iop 靠键名不在典兜底；td=window 官方选项登记另批词典扩面），报告 docs/plans/input-verify-gap-b5-review.md",
       "breaking": false,
       "migration": "route 中官方选项集外的选项（含 G03 时代旧形态如 geom=modela）开始出现非阻断警告，不改变任何阻断语义"
     }
