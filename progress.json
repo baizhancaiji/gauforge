@@ -1,80 +1,80 @@
 {
- "updated": "2026-10-19T15:20+0800",
- "latest_released_version": "3.3.0",
- "unreleased": [
-  {
-   "type": "fixed",
-   "scope": "parse",
-   "summary": "Geom 检查点豁免档位拆分（C1）：Geom=Checkpoint 仅豁免原子坐标，title 与电荷/多重度行缺失照常记 parse_errors 并在导入/提交通道拒绝，接受集收窄（G16 Rev.C.01 实测该形态 l101 报 Charge and Multiplicity card seems defective）；Geom=Check 同义同档",
-   "breaking": false,
-   "migration": "此前可通过导入/提交的 Geom=Checkpoint 缺 title 或缺电荷/多重度行文件开始被拒，需补齐 title 与电荷/多重度行（原子坐标仍可省）"
-  },
-  {
-   "type": "fixed",
-   "scope": "parse",
-   "summary": "Geom 括号/空格形态识别（C2）：geom=(allcheck,…)、geom = allcheck、geom (allcheck) 及大小写变体与裸形态豁免判定一致，消除 AllCheck 括号形合法文件的缺节误报",
-   "breaking": false,
-   "migration": null
-  },
-  {
-   "type": "fixed",
-   "scope": "parse",
-   "summary": "route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）",
-   "breaking": false,
-   "migration": "模板 route 含 temperature=300,310 类逗号列表值时，拒绝理由由 temp_value_invalid 迁移为词典外关键词（逗号为官方分隔符，孤立 token 走拼写通道），422 拒绝语义不变"
-  },
-  {
-   "type": "added",
-   "scope": "web",
-   "summary": "非阻断 warnings 统一通道（G0）：parse_input 返回值增 warnings（默认空列表），预览与分块保存响应统一消费；拼写警告行号改为全文件绝对行号，条目 message 必填、suggestion 可选；契约抽共享 Warning schema、InputPreview 增可选 warnings 并移除分块保存响应外层包装",
-   "breaking": false,
-   "migration": null
-  },
-  {
-   "type": "added",
-   "scope": "parse",
-   "summary": "Section Ordering 官方表固化（G4）：input 页 59 行全表落码为 parse/section_ordering.py（4 core + 54 additional + 1 automatic），附加节触发识别改按头部/选项集精确等值判定（Pseudo=Cards、GenECP、ReadIsotopes、Guess=Cards 等此前未收录触发词生效，隐式变量区启发式仅在无触发词时兜底），prop=wrf 保留一版兼容触发；末附加节以 EOF 收尾时按官方表终止空行列校验（命中行全 yes 记 parse_errors，混合 yes/no 保守不报）",
-   "breaking": false,
-   "migration": "附加输入节未以空行终止且 route 触发词均为官方 yes 行的文件开始被导入/提交拒绝，需补终止空行（金标准语料 1161 文件中命中 1 例：test0162 Guess=Cards 轨道节）；附加节出现顺序与 PDB 自动触发不校验（已知限制）"
-  },
-  {
-   "type": "added",
-   "scope": "parse",
-   "summary": "核心节必需空行显式检测（G9）：route/title 未以空行终止记 parse_errors（title 落空时附根因提示；Geom=AllCheck 豁免集内 title 不报、route 终止不豁免）、电荷行后缺少分子说明节记 parse_errors（Geom 检查点豁免档不报）、分子说明/变量常数区 EOF 收尾记非阻断警告（kind=molecule_unterminated/variables_unterminated）、电荷行解析失败文案附误并根因、--Link1-- 前缺空行附官方要求注记",
-   "breaking": false,
-   "migration": "route/title 未终止与空分子说明文件在导入/预览开始被拒；提交通道先行空行规范化，纯 EOF 形态被消除后不再报、节内容被吞并或缺节仍拒（契约 parse_errors description 已登记两通道差异）"
-  },
-  {
-   "type": "added",
-   "scope": "web",
-   "summary": "route 拼写与重复关键字检测接入导入/提交通道（G1/G2）：导入成功条目与提交/续跑响应携带非阻断 warnings（keyword_spell/route_duplicate，全文件绝对行号），不改变任何阻断语义；队列提交逐成员收集并在条目 task_id 填成员任务 id；verify_and_store 返回值改为 {normalized, warnings}，六个调用点同步（真值判断取 normalized）；分块保存 warnings 扩为拼写+重复",
-   "breaking": false,
-   "migration": "verify_and_store 返回值由 bool 改 dict——程序化调用方真值判断须取 [\"normalized\"]（dict 恒真）"
-  },
-  {
-   "type": "added",
-   "scope": "parse",
-   "summary": "Link 0 错位检测（G3）：% 行落入 route 节（吞并误读，官方 Multistep/Link0 位置约束）或 title 节记 parse_errors 并在导入/提交拒绝；分块保存同步阻断（reason=route_line_link0_forbidden / link0_misplaced）；检测范围限定 route 起点至 title 结束，分子说明/附加节内 % 行不误报",
-   "breaking": false,
-   "migration": "Link 0 命令错置于 route 之后的文件（此前静默吞并或误作 title）开始被导入/提交拒绝，需把 % 行移至 route 节之前"
-  },
-  {
-   "type": "added",
-   "scope": "parse",
-   "summary": "值域与原子行校验拉齐（G5/G6）：%mem 官方值域（W/B 删除）与 >0、Link 0 单行 ≤500、官方指令集文法（无等号指令合法、未知/重复警告）、%cpu 区间步长 /n、多组电荷-多重度对全组解析（Counterpoise/ONIOM/Guess=Fragment/Fragment 佐证豁免，否则信息警告）、title 禁用字符警告、原子行文法（鬼原子 O-Bq/哑原子 X/XX/-/pbc TV 不计分子式、最长元素符号前缀识别、未知标签警告）、导入 BOM 静默剥离；记账换算同源下沉 parse/link0_rules（修正 mw 换算差 1024 倍与 %mem=1KW KeyError，%mem=2GW 不再误记 defaulted）",
-   "breaking": false,
-   "migration": "%mem=2W/0 等值域外形态开始被编辑保存拒绝（导入/提交为非阻断警告）；charge_mult 字段多组对形态为空格分隔全组整数"
-  }
- ],
- "in_progress": null,
- "next_steps": [
-  "B2–B4 已全部实施收口（2026-10-19，各批 G16 冒烟通过、留痕见 input-verify-gap-remediation-plan §8.2–§8.4）：下一批 B5（G7 字典扩面 n/t + G8 括号子选项校验，依赖 B1 管道）入口条件满足，待用户启动",
-  "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
-  "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
- ],
- "known_issues": [
-  "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
-  "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
- ],
- "context": "v3.3.0 已冻结（词典面⑤选项面）：extract_keywords.py 增 Options 章节 #### 选项规则提取与章节外核实白名单，词典 387→1164 词，scf=xqc/yqc 等 777 个 KW=OPT 选项写法不再误报拼写警告；mini-KB 选项提取断言与 14 项回归清单入库，tag v3.3.0 已推送远端，Release 已由用户手动发布（本机 GitHub 直连不可用，未做远端附件复核）。v3.2.0 已冻结（m4-combo 插波收口）：组合流精修模板配置（契约+存储+校验服务+前端弹窗与方案选择，enforce 拼写拦截）、crest/xtb 部署链（setup_deps.sh/打包接线/deployment.md §6）、Link0/route 全小写收口（后端注入行+前端文案）、契约模型再生字节幂等与拼写豁免按 token 粒度等审查整改随版发布；附录 A1–A24/D1–D5/E1–E5 走查留痕与四轮独立审查整改闭环（RG1–RG6）；tag v3.2.0 已推送远端、部署包附件已手动上传。v3.1.0 已冻结（M4 收口，37 条变更随版发布，tag 已推送远端、部署包附件已手动上传）；v3.0.2 已发布（更新域事故链四项修复与发布流程收口，附件已手动上传）；M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）。"
+  "updated": "2026-10-19T15:20+0800",
+  "latest_released_version": "3.3.0",
+  "unreleased": [
+    {
+      "type": "fixed",
+      "scope": "parse",
+      "summary": "Geom 检查点豁免档位拆分（C1）：Geom=Checkpoint 仅豁免原子坐标，title 与电荷/多重度行缺失照常记 parse_errors 并在导入/提交通道拒绝，接受集收窄（G16 Rev.C.01 实测该形态 l101 报 Charge and Multiplicity card seems defective）；Geom=Check 同义同档",
+      "breaking": false,
+      "migration": "此前可通过导入/提交的 Geom=Checkpoint 缺 title 或缺电荷/多重度行文件开始被拒，需补齐 title 与电荷/多重度行（原子坐标仍可省）"
+    },
+    {
+      "type": "fixed",
+      "scope": "parse",
+      "summary": "Geom 括号/空格形态识别（C2）：geom=(allcheck,…)、geom = allcheck、geom (allcheck) 及大小写变体与裸形态豁免判定一致，消除 AllCheck 括号形合法文件的缺节误报",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "parse",
+      "summary": "route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）",
+      "breaking": false,
+      "migration": "模板 route 含 temperature=300,310 类逗号列表值时，拒绝理由由 temp_value_invalid 迁移为词典外关键词（逗号为官方分隔符，孤立 token 走拼写通道），422 拒绝语义不变"
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "非阻断 warnings 统一通道（G0）：parse_input 返回值增 warnings（默认空列表），预览与分块保存响应统一消费；拼写警告行号改为全文件绝对行号，条目 message 必填、suggestion 可选；契约抽共享 Warning schema、InputPreview 增可选 warnings 并移除分块保存响应外层包装",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "parse",
+      "summary": "Section Ordering 官方表固化（G4）：input 页 59 行全表落码为 parse/section_ordering.py（4 core + 54 additional + 1 automatic），附加节触发识别改按头部/选项集精确等值判定（Pseudo=Cards、GenECP、ReadIsotopes、Guess=Cards 等此前未收录触发词生效，隐式变量区启发式仅在无触发词时兜底），prop=wrf 保留一版兼容触发；末附加节以 EOF 收尾时按官方表终止空行列校验（命中行全 yes 记 parse_errors，混合 yes/no 保守不报）",
+      "breaking": false,
+      "migration": "附加输入节未以空行终止且 route 触发词均为官方 yes 行的文件开始被导入/提交拒绝，需补终止空行（金标准语料 1161 文件中命中 1 例：test0162 Guess=Cards 轨道节）；附加节出现顺序与 PDB 自动触发不校验（已知限制）"
+    },
+    {
+      "type": "added",
+      "scope": "parse",
+      "summary": "核心节必需空行显式检测（G9）：route/title 未以空行终止记 parse_errors（title 落空时附根因提示；Geom=AllCheck 豁免集内 title 不报、route 终止不豁免）、电荷行后缺少分子说明节记 parse_errors（Geom 检查点豁免档不报）、分子说明/变量常数区 EOF 收尾记非阻断警告（kind=molecule_unterminated/variables_unterminated）、电荷行解析失败文案附误并根因、--Link1-- 前缺空行附官方要求注记",
+      "breaking": false,
+      "migration": "route/title 未终止与空分子说明文件在导入/预览开始被拒；提交通道先行空行规范化，纯 EOF 形态被消除后不再报、节内容被吞并或缺节仍拒（契约 parse_errors description 已登记两通道差异）"
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "route 拼写与重复关键字检测接入导入/提交通道（G1/G2）：导入成功条目与提交/续跑响应携带非阻断 warnings（keyword_spell/route_duplicate，全文件绝对行号），不改变任何阻断语义；队列提交逐成员收集并在条目 task_id 填成员任务 id；verify_and_store 返回值改为 {normalized, warnings}，六个调用点同步（真值判断取 normalized）；分块保存 warnings 扩为拼写+重复；预览通道同步携带 route 拼写/重复警告（审查整改 R5）、模板保存 notice 增 route_duplicates 契约登记（R4）、G2 组合场景口径 docstring 登记（R7）——B2–B4 独立审查整改，报告 docs/plans/input-verify-gap-b234-review.md",
+      "breaking": false,
+      "migration": "verify_and_store 返回值由 bool 改 dict——程序化调用方真值判断须取 [\"normalized\"]（dict 恒真）"
+    },
+    {
+      "type": "added",
+      "scope": "parse",
+      "summary": "Link 0 错位检测（G3）：% 行落入 route 节（吞并误读，官方 Multistep/Link0 位置约束）或 title 节记 parse_errors 并在导入/提交拒绝；分块保存同步阻断（reason=route_line_link0_forbidden / link0_misplaced）；检测范围限定 route 起点至 title 结束，分子说明/附加节内 % 行不误报",
+      "breaking": false,
+      "migration": "Link 0 命令错置于 route 之后的文件（此前静默吞并或误作 title）开始被导入/提交拒绝，需把 % 行移至 route 节之前"
+    },
+    {
+      "type": "added",
+      "scope": "parse",
+      "summary": "值域与原子行校验拉齐（G5/G6）：%mem 官方值域（W/B 删除）与 >0、Link 0 单行 ≤500、官方指令集文法（无等号指令合法、未知/重复警告）、%cpu 区间步长 /n、多组电荷-多重度对全组解析（Counterpoise/ONIOM/Guess=Fragment/Fragment 佐证豁免，否则信息警告）、title 禁用字符警告、原子行文法（鬼原子 O-Bq/哑原子 X/XX/-/pbc TV 不计分子式、最长元素符号前缀识别、未知标签警告）、导入 BOM 静默剥离；记账换算同源下沉 parse/link0_rules（修正 mw 换算差 1024 倍与 %mem=1KW KeyError，%mem=2GW 不再误记 defaulted）；Link0 警告行号改全文件绝对口径、提交核验/分块保存/title 解析读取路径统一 utf-8-sig（带 BOM 磁盘副本写回剥离）、电荷行分词单点 parse_charge_tokens（斜杠/en-dash 各通道一致）——B2–B4 独立审查整改 R1/R2/R3，报告 docs/plans/input-verify-gap-b234-review.md",
+      "breaking": false,
+      "migration": "%mem=2W/0 等值域外形态开始被编辑保存拒绝（导入/提交为非阻断警告）；charge_mult 字段多组对形态为空格分隔全组整数"
+    }
+  ],
+  "in_progress": null,
+  "next_steps": [
+    "B2–B4 已全部实施收口（2026-10-19，各批 G16 冒烟通过、留痕见 input-verify-gap-remediation-plan §8.2–§8.4）：下一批 B5（G7 字典扩面 n/t + G8 括号子选项校验，依赖 B1 管道）入口条件满足，待用户启动",
+    "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
+    "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
+  ],
+  "known_issues": [
+    "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
+    "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
+  ],
+  "context": "v3.3.0 已冻结（词典面⑤选项面）：extract_keywords.py 增 Options 章节 #### 选项规则提取与章节外核实白名单，词典 387→1164 词，scf=xqc/yqc 等 777 个 KW=OPT 选项写法不再误报拼写警告；mini-KB 选项提取断言与 14 项回归清单入库，tag v3.3.0 已推送远端，Release 已由用户手动发布（本机 GitHub 直连不可用，未做远端附件复核）。v3.2.0 已冻结（m4-combo 插波收口）：组合流精修模板配置（契约+存储+校验服务+前端弹窗与方案选择，enforce 拼写拦截）、crest/xtb 部署链（setup_deps.sh/打包接线/deployment.md §6）、Link0/route 全小写收口（后端注入行+前端文案）、契约模型再生字节幂等与拼写豁免按 token 粒度等审查整改随版发布；附录 A1–A24/D1–D5/E1–E5 走查留痕与四轮独立审查整改闭环（RG1–RG6）；tag v3.2.0 已推送远端、部署包附件已手动上传。v3.1.0 已冻结（M4 收口，37 条变更随版发布，tag 已推送远端、部署包附件已手动上传）；v3.0.2 已发布（更新域事故链四项修复与发布流程收口，附件已手动上传）；M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）。"
 }
