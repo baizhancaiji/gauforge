@@ -245,6 +245,7 @@ def test_enforce_official_forms_pass():
         "#p opt=(calcfc,ts)",                # 括号选项形键名命中
         "#p IOp(6/50=1)",                    # IOp 括号内斜杠不切分
         '#p External="RunTink Amber"',       # 引号值内空格不切分
+        "#p opt freq @mols.dat/3",           # @file/N 抑制回显后缀整词豁免（R1）
     ):
         r = _put(1, route=route)
         assert r.status_code == 200, (route, _reasons(r) if r.status_code
@@ -258,6 +259,17 @@ def test_warn_mode_official_forms_no_spurious_warnings():
         fields, notice = svc.validate_and_normalize(
             1, {"route": route}, mode="warn")
         assert notice.get("spelling_warnings") in (None, []), route
+
+
+def test_temp_auto_apply_bracket_form_freq():
+    """R2（审查整改）：freq 括号形（无等号/空格/大小写）同样触发温度联动
+    自动补——has_freq 按 token 头部判定，不漏 C3 刚放行的括号形态。"""
+    for route in ("#p b3lyp/6-31g(d) freq(readanharmonic)",
+                  "#p b3lyp/6-31g(d) freq (readanharmonic)",
+                  "#p B3LYP/6-31G(D) FREQ(ReadFC)"):
+        fields, notice = svc.validate_and_normalize(1, {"route": route})
+        assert notice["temp_applied"] is True, route
+        assert fields["route"].endswith("temperature=298.15"), route
 
 
 def test_reason_temp_value_invalid():

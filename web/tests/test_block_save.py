@@ -329,6 +329,7 @@ def test_spell_official_forms_not_flagged(ind):
         "#p opt=(calcfc,ts)",
         "#p IOp(6/50=1)",
         '#p External="RunTink Amber"',
+        "#p opt freq @mols.dat/3",           # @file/N 后缀整词豁免（R1）
     ]
     for route in cases:
         r = save_block(tid, "route", [route], inputs_dir=ind)
