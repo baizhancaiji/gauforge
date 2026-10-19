@@ -1095,3 +1095,26 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
     计划未覆盖，语料 6 文件，留痕待议（如需支持另批立项）。
 - B2 出口闸门：validate_progress / gen_changelog_md --check 通过；
   B3 入口条件满足。
+
+### 8.3 B3 批次（2026-10-19 实施收口）
+
+- 实施序列：契约文档先行（三响应 warnings + route_duplicate 词表 + 生成物
+  零 diff）→ 测试先行（21 用例先红）→ 实现 → 进度同步，共 4 提交。
+- 验收：全量 **793 passed 0 skipped**（B2 收口 772 + B3 新增 21）。
+- 测试基建随批整改两处（既有缺陷）：
+  - `dependencies.py` 顶层循环导入（candidates ↔ engine.materialize）：
+    单跑 test_candidates_import 收集失败（全量跑被加载顺序掩盖），
+    inputs_path 改延迟导入；
+  - `test_extract_keywords` 词典降级用例把空集写入模块级缓存且不清回：
+    全量跑时其后拼写通道用例零警告，finally 内 monkeypatch.undo 后
+    refresh 恢复。
+- **G2 豁免口径 G16 Rev. C.01 冒烟确认**（§2.6 待裁决项，语料 sha256
+  前缀随批）：`freq freq=readfcht`（b00df0bc）与
+  `iop(5/17=1) iop(6/50=1)`（357d4fe7）两例均 Normal termination、
+  无 duplicate/repeated 类报错——裸形+选项形追加取值与 IOp 并写豁免
+  **维持豁免**，不回退为警告。
+- G3 检测范围实现口径：% 行落 title 的检测覆盖 title 节内任意位置
+  （route 缺失时标题行后错置同判）；文件开头前导 % 行归 Link0 收集
+  规则，不在本检测面（与官方 Link0 位置语义一致）。
+- B3 出口闸门：validate_progress / gen_changelog_md --check 通过；
+  B4 入口条件满足。
