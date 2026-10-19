@@ -65,18 +65,23 @@ def directive_head(body: str) -> tuple[str, str]:
     return parts[0].casefold(), (parts[1].strip() if len(parts) > 1 else "")
 
 
-def check_link0_lines(lines: list[str]) -> list[dict]:
+def check_link0_lines(lines: list[str], *,
+                      line_offset: int = 0) -> list[dict]:
     """Link 0 行集 → 非阻断警告（G5：值域/行长/指令文法/重复）。
 
-    编辑保存通道的阻断校验（candidates._validate_section）不在本函数——
-    保存按节阻断并使用端点 reason 词表；本函数产出供 parse_input 统一
-    消费（预览/导入/提交/分块保存响应的 warnings 通道）。"""
+    line_offset：link0 块首行之前的全文件行数（blocks.parse_input 传块首
+    0 起行号）——警告 line = line_offset + 块内 1 起序号 = 全文件绝对行号
+    （审查整改 R1，G0 口径；重复指令取该指令首次出现的行）。编辑保存
+    通道的阻断校验（candidates._validate_section）
+    不在本函数——保存按节阻断并使用端点 reason 词表；本函数产出供
+    parse_input 统一消费（预览/导入/提交/分块保存响应的 warnings 通道）。"""
     warnings: list[dict] = []
-    seen: dict[str, int] = {}
+    seen: dict[str, tuple[int, int]] = {}  # head -> (出现次数, 首次块内行号)
     for idx, raw in enumerate(lines, 1):
         body = raw.strip()
+        line = idx + line_offset
         if len(body) > LINE_LENGTH_CAP:
-            warnings.append({"line": idx, "keyword": "",
+            warnings.append({"line": line, "keyword": "",
                              "kind": "link0_line_too_long",
                              "message": f"Link 0 命令超长（{len(body)} 字符，"
                                         f"官方上限 {LINE_LENGTH_CAP}）"})
@@ -84,19 +89,19 @@ def check_link0_lines(lines: list[str]) -> list[dict]:
         if not head:
             continue
         if head not in KNOWN_DIRECTIVES:
-            warnings.append({"line": idx, "keyword": head,
+            warnings.append({"line": line, "keyword": head,
                              "kind": "link0_directive_unknown",
                              "message": f"未知 Link 0 指令「%{head}」"
                                         "（官方指令集外，请确认拼写）"})
             continue
-        seen[head] = seen.get(head, 0) + 1
+        seen[head] = (seen.get(head, (0, idx))[0] + 1, seen.get(head, (0, idx))[1])
         if head == "mem":
             num = val.split(",")[0] if val else ""
             m = MEM_VALUE_RE.match(num)
             # 值域内且数值 >0（%mem=0 拒绝——决策点 8；官方值域外 W/B 等
             # 单位由正则拒绝）
             if not m or float(re.match(r"^\d+(?:\.\d+)?", num).group()) <= 0:
-                warnings.append({"line": idx, "keyword": "%mem",
+                warnings.append({"line": line, "keyword": "%mem",
                                  "kind": "link0_value_invalid",
                                  "message": "%mem 值须为正数（可选单位 "
                                             "KB/MB/GB/TB/KW/MW/GW/TW）"})
@@ -107,18 +112,19 @@ def check_link0_lines(lines: list[str]) -> list[dict]:
                 except ValueError:
                     ok = False
                 if not ok:
-                    warnings.append({"line": idx, "keyword": f"%{head}",
+                    warnings.append({"line": line, "keyword": f"%{head}",
                                      "kind": "link0_value_invalid",
                                      "message": "%nproc 系值须为正整数"})
         elif head == "cpu":
             if val and cpu_list_count(val) is None:
-                warnings.append({"line": idx, "keyword": "%cpu",
+                warnings.append({"line": line, "keyword": "%cpu",
                                  "kind": "link0_value_invalid",
                                  "message": "%cpu 值须为处理器列表"
                                             "（如 0,1,2 / 0-5 / 0-5/2）"})
-    for head, count in seen.items():
+    for head, (count, first_idx) in seen.items():
         if count > 1:
-            warnings.append({"line": 1, "keyword": f"%{head}",
+            warnings.append({"line": first_idx + line_offset,
+                             "keyword": f"%{head}",
                              "kind": "link0_directive_duplicate",
                              "message": f"Link 0 指令「%{head}」重复出现 "
                                         f"{count} 次（后值覆盖前值，请确认)"})

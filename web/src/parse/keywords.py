@@ -202,6 +202,11 @@ def check_route_duplicates(route_text: str, *,
     - 同头部两个非空选项集 → 警告；
     - iop 两个取值 token 并写 → 豁免（多条目取值列表）。
     白名单外头部只要重复即警告。line 为 route 节内行号 + line_offset。
+
+    组合场景口径（审查整改 R7 登记）：判定表只定义「全裸 / 裸+选项混合 /
+    全选项」三态，「1 裸形 + 多个选项形」（freq freq=readfcht
+    freq=readanharmonic）按混合公式整体豁免（bare≥1 ∧ valued≥1）——追加
+    取值语义对选项形个数不设限；仅「0 裸形 + ≥2 选项形」仍按判定表警告。
     """
     if not route_text.strip():
         return []
@@ -231,7 +236,7 @@ def check_route_duplicates(route_text: str, *,
             "kind": "route_duplicate",
             "message": f"route 中关键字「{head}」出现 {len(hits)} 次"
                        f"（{names}），官方 testrt 不检测重复（重复 MP2 会跑成"
-                       "MP4 类意外结果），请确认是否 intended"})
+                       "MP4 类意外结果），请确认是否有意为之"})
     return out
 
 

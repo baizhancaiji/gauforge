@@ -140,6 +140,15 @@ def split_lines(text: str) -> list[str]:
     return lines
 
 
+def parse_charge_tokens(line: str) -> list[str]:
+    """电荷/多重度行 → 整数 token 串（G5 自由格式分隔单点）。
+
+    en-dash 宽容换负号、逗号/斜杠与空白等价——parse_input 与编辑保存
+    （services.candidates）共用同一分词口径，各通道「无法解析才阻断」
+    （§2.11 矩阵；审查整改 R3：斜杠/en-dash 编辑保存原误拒）。"""
+    return line.replace("–", "-").replace(",", " ").replace("/", " ").split()
+
+
 def _looks_like_variables(region: list[str]) -> bool:
     """无 Variables: 头的隐式变量区：每行「名 数值 [格式]」且名以字母开头。"""
     if not region:
@@ -236,6 +245,7 @@ def parse_input(text: str) -> dict:
     # Link 0：前导空行/注释后连续 % 行，其后不要求终止空行
     while i < n and (blank(i) or comment(i)):
         i += 1
+    link0_start = i  # 块首 % 行的全文件 1 起行号 = link0_start + 1（R1）
     while i < n and lines[i].lstrip().startswith("%"):
         blocks["link0"]["lines"].append(lines[i].strip())
         i += 1
@@ -250,8 +260,10 @@ def parse_input(text: str) -> dict:
                             ("Mem", ("%mem",)))
         if not any(p in ln for ln in low for p in pats)]
     # G5 项 2/3/4：Link 0 值域（%mem 值域与 >0、%nproc 正整数、%cpu proc-list
-    # 含 /n）、单行 ≤500、指令文法与重复——非阻断警告（link0_rules 单点）
-    for w in check_link0_lines(blocks["link0"]["lines"]):
+    # 含 /n）、单行 ≤500、指令文法与重复——非阻断警告（link0_rules 单点；
+    # line_offset 传块首 0 起行号，警告行号 G0 全文件绝对口径）
+    for w in check_link0_lines(blocks["link0"]["lines"],
+                               line_offset=link0_start):
         warnings.append(w)
 
     # Route：# 行起连续非空行，终止空行必需
@@ -334,8 +346,7 @@ def parse_input(text: str) -> dict:
         # G5 项 1：自由格式分词（空白/逗号/斜杠任意组合）得偶数个整数——
         # 首组 charge 有符号整数、mult ≥1；后续组为 fragment 层（mult≠0，
         # 负值官方仅 Guess=Fragment 合法，宽容放行 + 佐证警告）
-        toks = [t for t in cm.replace("–", "-").replace(",", " ")
-                .replace("/", " ").split()]
+        toks = parse_charge_tokens(cm)
         nums: list[int] = []
         parse_ok = bool(toks) and len(toks) % 2 == 0
         if parse_ok:
@@ -348,21 +359,18 @@ def parse_input(text: str) -> dict:
         if parse_ok:
             blocks["charge_mult"] = " ".join(str(v) for v in nums)
             charge_line_no = i  # 1 起行号（i 已自增到下一行）
-            neg_or_frag = False
             for g in range(0, len(nums), 2):
-                chg, mult = nums[g], nums[g + 1]
-                if g == 0:
-                    if mult < 1:
-                        parse_ok = False
-                        break
-                elif mult == 0:
+                mult = nums[g + 1]
+                if (g == 0 and mult < 1) or (g > 0 and mult == 0):
                     parse_ok = False
                     break
-                if mult < 0 or (g > 0 and chg != 0):
-                    neg_or_frag = True
-            if parse_ok and (len(nums) > 2 or neg_or_frag):
+            if parse_ok and len(nums) > 2:
                 # G6 多组电荷对佐证判定：route 含 Counterpoise/ONIOM 或分子
-                # 说明含 Fragment 参数则视为 intended，否则信息级警告
+                # 说明含 Fragment 参数则视为有意为之，否则信息级警告。
+                # 佐证按裸子串判（注释行也计入——宽松方向、无阻断风险；属
+                # 佐证判定而非 route 触发词识别，不受 §7 裸子串禁令约束）。
+                # len(nums) > 2 即「存在后续组」：parse_ok=True 时首组负
+                # 多重度已被拒，负号佐证不再单独判定（审查整改 R11）。
                 route_l = blocks["route"].casefold()
                 has_evidence = ("counterpoise" in route_l
                                 or "oniom" in route_l
