@@ -1144,3 +1144,49 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 - B4 出口闸门：validate_progress / gen_changelog_md --check 通过。
   **B2–B4 三批全部收口**；下一批 B5（G7 字典扩面 + G8 子选项校验）入口
   条件满足，待用户启动。
+- **语料条数阈值复审补登（B2–B4 审查 R6）**：§5 双阈值中的「同文件同
+  kind ≤3」维度在上述留痕中失登。审查独立复算证实 test0380.com 的
+  title_forbidden_char 共 4 条 > 3（title 3 行含 `_`、1 行含 `#`——官方
+  语料 title 误并 route 续行带来的真实禁字，行级检测粒度所致，非误报）。
+  复审结论：接受超阈（行级粒度保留精确定位，不改为每文件每 kind 聚合）；
+  后续批次语料留痕按文件、条数两个维度分别登记。
+
+### 8.5 B2–B4 批次审查与整改（2026-10-19）
+
+- **独立审查**：code-reviewer 子代理按 AGENTS §6.2 四查执行（不采信实施者
+  自述，全部结论独立实测复跑），报告落盘
+  `docs/plans/input-verify-gap-b234-review.md`。范围
+  `c6b0d6ef..0c60733a`（16 提交）。结论：**有条件通过，无 P1，6 项 P2
+  （R1–R6），5 项 P3（R7–R11）**；815 passed 0 skipped、五项闸门、生成物
+  零 diff、先行红 worktree 实跑、语料 17 文件/1.47% 全部独立复现吻合。
+- **整改处置**（P2 全修，P3 随批；先行红 5 失败后全绿）：
+  - R1（Link0 警告行号块内序号）：`check_link0_lines` 增 `line_offset`
+    （块首 0 起行号），行号 = 全文件绝对（G0 口径）；duplicate 取首次
+    出现行；补前导空行行号断言。
+  - R2（读取路径未统一 utf-8-sig）：`verify_and_store`/`save_block`/
+    `resolve_title` 三处改 utf-8-sig；补带 BOM 磁盘副本的提交/保存用例
+    （写回副本无 BOM）。
+  - R3（电荷行斜杠/en-dash 编辑保存误拒）：抽 `blocks.parse_charge_tokens`
+    分词单点，`_validate_section`/`_expected_blocks` 对齐 parse_input；
+    补 `0/3`、`0,1/0,1`、`–1 2` 编辑保存放行用例。
+  - R4（模板 notice.route_duplicates 契约缺口）：openapi
+    ComboTemplateMutationResult.notice 增可选 `route_duplicates`
+    （Warning 数组）；顺带把分块保存端点 422 reason 词表（含 B3/B4 新增
+    route_line_link0_forbidden/link0_misplaced/link0_line_too_long/
+    must_be_integer_pairs）按 §4「按分块保存端点自行登记」补入
+    saveBlock description；gen_models + gen:types 再生。
+  - R5（预览通道缺 route 拼写/重复警告）：preview 端点改走
+    `file_warnings` 全集单点（取「对齐矩阵」侧；_file_warnings 随之去
+    私有名公共化，沿 B1 R5 先例）；InputPreview.warnings description 同步
+    改为引用 Warning.kind 权威词表 + 通道差异（并 P3 R10 一并处置）。
+  - R6：见 §8.4 末条补登。
+  - P3：R7 组合场景口径在 `check_route_duplicates` docstring 登记 + 用例
+    固化（1 裸形+多选项形整体豁免）；R8 属过程教训——后续批次先行测试
+    提交前对不可达场景/近邻比值离线预验，实现期测试修订在 commit message
+    逐条列明；R9 仓库根 fort.7 冒烟残留已删除（G16 冒烟此后统一临时
+    目录运行）；R11 佐证裸子串口径注释、neg_or_frag 冗余条件删除
+    （parse_ok=True 时恒可由 len>2 推出，警告发射集不变）、duplicate
+    message 措辞改「请确认是否有意为之」。
+- 整改出口：全量 **820 passed 0 skipped**（815 + R1/R2×2/R3/R5 新增 5；
+  R7 登记口径用例随批固化现有自洽行为）；警告发射集经逻辑等价证明不变
+  （R1 只改行号、R11 ②条件化简等价），语料基线无需重算。
