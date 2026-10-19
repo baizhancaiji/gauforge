@@ -129,8 +129,11 @@ def test_atomic_number_atom_specs():
 
 
 def test_parse_input_warnings_channel_default_empty():
-    """G0：parse_input 返回值含 warnings 通道，默认空列表（非阻断）。"""
-    r = parse_input(WATER)
+    """G0：parse_input 返回值含 warnings 通道；规范输入（各节空行终止）
+    默认空列表（非阻断）。WATER 样例 Variables/Constants 区以终止空行收尾。"""
+    assert parse_input(WATER + "\n")["warnings"] == []
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO\nH 1 0.96\n"
+                    "H 1 0.96 2 1.0\n\n")
     assert r["warnings"] == []
     assert set(r) == {"blocks", "parse_errors", "multistep", "warnings"}
 
@@ -220,9 +223,12 @@ def test_additional_section_with_gen_and_terminator():
     assert len(secs) == 2
     assert secs[0]["lines"][0] == "H 0"
     assert secs[0]["terminator_blank"] is True
-    # 末节直达 EOF，无终止空行
+    # 末节直达 EOF，无终止空行；Gen 命中的官方行全为 terminator=yes
+    # → G4 记 parse_errors（附加输入节未以空行终止）
     assert secs[1]["lines"] == ["eps=4.0"]
     assert secs[1]["terminator_blank"] is False
+    assert any(e["section"] == "additional" and "未以空行终止" in e["message"]
+               for e in r["parse_errors"])
     assert r["blocks"]["molecule"]["variables_present"] is False
 
 
@@ -254,3 +260,140 @@ def test_golden_curated_samples():
     assert b1["molecule"]["formula"] == "O2"
     assert b1["molecule"]["variables_present"] is True
     assert b1["charge_mult"] == "0 1"
+
+
+# ---------------- G4：Section Ordering 官方口径（B2） ----------------
+
+def test_g4_official_table_drives_extra_section_detection():
+    """Pseudo=Cards 等此前未收录的触发词改由官方表驱动识别（官方口径，
+    不再依赖隐式变量区启发式的兜底路径）。"""
+    text = ("#p hf/sto-3g pseudo=cards\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n"
+            "H 0 0.96 -0.24\n\n****\nO 0\nS 6 1.0\n1.0 0.0 0.0\n\n")
+    r = parse_input(text)
+    secs = r["blocks"]["additional_sections"]
+    assert len(secs) == 1
+    assert secs[0]["lines"][0] == "****"
+    assert r["parse_errors"] == []
+
+
+def test_g4_terminator_no_exception_not_reported():
+    """Pop=NBORead 官方例外（terminator=no）：末节 EOF 收尾不报阻断。"""
+    text = ("#p b3lyp/6-31g(d) pop=nboread\n\nt\n\n0 1\nO 0 0 0\n"
+            "H 0 0 0.96\n\n$NBO NRTKEYWORD=nrtstep end\n")
+    r = parse_input(text)
+    assert r["blocks"]["additional_sections"][-1]["terminator_blank"] is False
+    assert r["parse_errors"] == []
+
+
+def test_g4_mixed_yes_no_conservative_not_reported():
+    """Gen + Pop=NBORead 混合命中（yes + no）→ 保守不报（§7 风险缓解）。"""
+    text = ("#p b3lyp/6-31g(d) gen pop=nboread\n\nt\n\n0 1\nO 0 0 0\n"
+            "H 0 0 0.96\n\nH 0\nS 3 1.0\n****\n\neps=4.0\n")
+    r = parse_input(text)
+    assert not any(e["section"] == "additional" for e in r["parse_errors"])
+
+
+def test_g4_compat_prop_wrf_still_triggers_wants_extra():
+    """兼容触发词 prop=wrf（官方表未列）保留一版：附加节识别不回退；
+    兼容项不参与官方表 terminator 判定（命中集合为空 → 不报）。"""
+    text = ("#p b3lyp/6-31g(d) prop=wrf\n\nt\n\n0 1\nO 0 0 0\n"
+            "H 0 0 0.96\n\nsome data line\n")
+    r = parse_input(text)
+    assert len(r["blocks"]["additional_sections"]) == 1
+    assert r["parse_errors"] == []
+
+
+def test_g4_implicit_variables_suppressed_by_trigger():
+    """触发词在场时「名 数值」形态 region 归附加节（官方口径），不再
+    走隐式变量区启发式。"""
+    with_gen = ("#p hf/sto-3g gen\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n"
+                "\nH 0\nS 3 1.0\n\nR1 0.96\n\n")
+    r = parse_input(with_gen)
+    assert r["blocks"]["molecule"]["variables_present"] is False
+    assert len(r["blocks"]["additional_sections"]) == 2
+    # 无触发词时同形态 region 仍按启发式识别为隐式变量区（既有行为）
+    plain = ("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n\nR1 0.96\n\n")
+    r2 = parse_input(plain)
+    assert r2["blocks"]["molecule"]["variables_present"] is True
+    assert r2["blocks"]["additional_sections"] == []
+
+
+# ---------------- G9：核心节必需空行缺失检测（B2） ----------------
+
+def test_g9_route_eof_unterminated_with_title_hint():
+    """route 未以空行终止（吞并到 EOF）：报 route 未终止，title 落空的
+    报错附根因提示（归因不再误导）。"""
+    r = parse_input("#p hf/sto-3g\n未命名\n")
+    assert any(e["section"] == "route" and "未以空行终止" in e["message"]
+               for e in r["parse_errors"])
+    t = next(e for e in r["parse_errors"] if e["section"] == "title")
+    assert "route" in t["message"]  # 根因：未终止时内容并入 route
+
+
+def test_g9_title_eof_unterminated():
+    """title 吞并电荷行至 EOF：报 title 未以空行终止。"""
+    r = parse_input("#p hf/sto-3g\n\ntitle\n0 1\nO 0 0 0\n")
+    assert any(e["section"] == "title" and "未以空行终止" in e["message"]
+               for e in r["parse_errors"])
+    assert r["blocks"]["title"] == "title\n0 1\nO 0 0 0"
+
+
+def test_g9_title_eof_allcheck_exempt_route_still_required():
+    """Geom=AllCheck 豁免集内 title 未终止不报；但 route 终止空行不豁免。"""
+    r = parse_input("#p hf/sto-3g geom=allcheck\n\ntitle\n0 1\nO 0 0 0\n")
+    assert not any("未以空行终止" in e["message"] for e in r["parse_errors"])
+    r2 = parse_input("#p hf/sto-3g geom=allcheck\n")
+    assert any(e["section"] == "route" and "未以空行终止" in e["message"]
+               for e in r2["parse_errors"])
+
+
+def test_g9_charge_mult_parse_failure_hint():
+    """电荷行解析失败文案附根因（上一节未以空行收尾时本行可能是误并内容）。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\nzero one\nO\n")
+    e = next(e for e in r["parse_errors"] if e["section"] == "charge_mult")
+    assert "空行" in e["message"]
+
+
+def test_g9_empty_molecule_rejected_geom_tiers_exempt():
+    """电荷行后无原子行 → 缺分子说明节；Geom 检查点豁免档（坐标可省）
+    不报。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 1\n")
+    assert any(e["section"] == "molecule" and "分子说明" in e["message"]
+               for e in r["parse_errors"])
+    assert parse_input("#p hf/sto-3g geom=allcheck\n\n")["parse_errors"] == []
+    assert parse_input("#p hf/sto-3g geom=checkpoint\n\nt\n\n0 1\n")[
+        "parse_errors"] == []
+
+
+def test_g9_molecule_eof_warning_and_geom_exemption():
+    """分子说明 EOF 未终止 → 非阻断 warning；有终止空行或 Geom 坐标豁免
+    档不产生。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n")
+    assert [w["kind"] for w in r["warnings"]] == ["molecule_unterminated"]
+    assert r["parse_errors"] == []
+    fine = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n\n")
+    assert fine["warnings"] == []
+    exempt = parse_input("#p hf/sto-3g geom=checkpoint\n\nt\n\n0 1\nO 0 0 0\n")
+    assert exempt["warnings"] == []
+
+
+def test_g9_variables_eof_warning():
+    """Variables/Constants/隐式变量区以 EOF 告终 → 非阻断 warning。"""
+    vs = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO\nH 1 0.96\n"
+                     "H 1 0.96 2 1.0\n\nVariables:\nR1 0.96\n")
+    assert [w["kind"] for w in vs["warnings"]] == ["variables_unterminated"]
+    cs = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO\nH 1 0.96\n\nConstants:\n"
+                     "R1 0.96\n")
+    assert [w["kind"] for w in cs["warnings"]] == ["variables_unterminated"]
+    impl = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO\nH 1 0.96\n\nR1 0.96\n")
+    assert [w["kind"] for w in impl["warnings"]] == ["variables_unterminated"]
+
+
+def test_g9_link1_without_preceding_blank_annotated():
+    """--Link1-- 前缺空行：既有 link1 错误附注官方要求（预览可见的提示性
+    补强）。"""
+    text = "#p hf/sto-3g\n--Link1--\n\n#p hf/sto-3g\n\nt\n\n0 1\nO\n"
+    r = parse_input(text)
+    e = r["parse_errors"][0]
+    assert e["section"] == "link1"
+    assert "缺少空行" in e["message"]

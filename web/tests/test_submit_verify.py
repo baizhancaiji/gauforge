@@ -242,6 +242,27 @@ def test_multistep_rejected(ind):
     assert _file(ind, tid) == before
 
 
+def test_pure_eof_unterminated_normalized_on_submit(ind):
+    """G9 提交通道口径：纯 EOF（route 后无其他内容、文件以 route 行收尾）
+    的未终止经空行规范化消除，不拒提交（预览/导入通道则记 parse_errors）；
+    route 已吞并 title 的文件规范化无法拆分，仍拒。"""
+    pure_eof = ("%mem=1GB\n#p hf/sto-3g\n")  # route 直达 EOF，无吞并
+    tid = _mk(ind, pure_eof)
+    out = submit_candidate(tid, None)
+    assert out["normalized"] is True
+    assert verify_and_store(tid) is False  # 规范化后已稳定
+    from web.src.parse.blocks import parse_input as _pi
+    assert _pi(_file(ind, tid).decode())["parse_errors"] == []
+    # route 吞并 title 至 EOF：规范化不可拆 → 仍缺节拒绝
+    swallowed = "%mem=1GB\n#p hf/sto-3g\n标题行\n"
+    tid2 = _mk(ind, swallowed)
+    before = _file(ind, tid2)
+    with pytest.raises(ApiError) as ei:
+        submit_candidate(tid2, None)
+    assert ei.value.body()["error"]["code"] == "INPUT_PARSE_FAILED"
+    assert _file(ind, tid2) == before
+
+
 # ---------------- 三条提交路径统一 ----------------
 
 def test_queue_submit_verifies_each_member(ind):
