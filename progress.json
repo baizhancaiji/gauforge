@@ -1,9 +1,39 @@
 {
- "updated": "2026-10-19T00:00+0800",
+ "updated": "2026-10-19T08:30+0800",
  "latest_released_version": "3.3.0",
- "unreleased": [],
- "in_progress": {"task": "input-verify-gap-remediation-plan B1（G0+C1+C2+C3 正确性修复与 warnings 前置通道）", "note": "文档先行（roadmap §2.7 C1/C2 回补 + openapi Warning schema）→ 测试先行 → 实现 → 进度同步；验收与契约动作见 docs/plans/input-verify-gap-remediation-plan.md §3 B1"},
+ "unreleased": [
+  {
+   "type": "fixed",
+   "scope": "parse",
+   "summary": "Geom 检查点豁免档位拆分（C1）：Geom=Checkpoint 仅豁免原子坐标，title 与电荷/多重度行缺失照常记 parse_errors 并在导入/提交通道拒绝，接受集收窄（G16 Rev.C.01 实测该形态 l101 报 Charge and Multiplicity card seems defective）；Geom=Check 同义同档",
+   "breaking": false,
+   "migration": "此前可通过导入/提交的 Geom=Checkpoint 缺 title 或缺电荷/多重度行文件开始被拒，需补齐 title 与电荷/多重度行（原子坐标仍可省）"
+  },
+  {
+   "type": "fixed",
+   "scope": "parse",
+   "summary": "Geom 括号/空格形态识别（C2）：geom=(allcheck,…)、geom = allcheck、geom (allcheck) 及大小写变体与裸形态豁免判定一致，消除 AllCheck 括号形合法文件的缺节误报",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "parse",
+   "summary": "route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道",
+   "breaking": false,
+   "migration": "模板 route 含 temperature=300,310 类逗号列表值时，拒绝理由由 temp_value_invalid 迁移为词典外关键词（逗号为官方分隔符，孤立 token 走拼写通道），422 拒绝语义不变"
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "非阻断 warnings 统一通道（G0）：parse_input 返回值增 warnings（默认空列表），预览与分块保存响应统一消费；拼写警告行号改为全文件绝对行号，条目 message 必填、suggestion 可选；契约抽共享 Warning schema、InputPreview 增可选 warnings 并移除分块保存响应外层包装",
+   "breaking": false,
+   "migration": null
+  }
+ ],
+ "in_progress": null,
  "next_steps": [
+  "B1 已验收收口（2026-10-19）：input-verify-gap-remediation-plan 下一批为 B2（G4 Section Ordering 固化 + G9 核心节空行检测），入口条件已满足，待用户启动",
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
   "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
  ],

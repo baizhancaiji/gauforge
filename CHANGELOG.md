@@ -4,7 +4,15 @@
 
 ## Unreleased（未发布）
 
-_暂无条目。_
+### 新增
+
+- 【web】非阻断 warnings 统一通道（G0）：parse_input 返回值增 warnings（默认空列表），预览与分块保存响应统一消费；拼写警告行号改为全文件绝对行号，条目 message 必填、suggestion 可选；契约抽共享 Warning schema、InputPreview 增可选 warnings 并移除分块保存响应外层包装
+
+### 修复
+
+- 【parse】Geom 检查点豁免档位拆分（C1）：Geom=Checkpoint 仅豁免原子坐标，title 与电荷/多重度行缺失照常记 parse_errors 并在导入/提交通道拒绝，接受集收窄（G16 Rev.C.01 实测该形态 l101 报 Charge and Multiplicity card seems defective）；Geom=Check 同义同档
+- 【parse】Geom 括号/空格形态识别（C2）：geom=(allcheck,…)、geom = allcheck、geom (allcheck) 及大小写变体与裸形态豁免判定一致，消除 AllCheck 括号形合法文件的缺节误报
+- 【parse】route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道
 
 ## v3.3.0（2026-10-15T22:51+0800 发布，minor）
 
