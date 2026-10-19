@@ -11,6 +11,7 @@
 - 【parse】核心节必需空行显式检测（G9）：route/title 未以空行终止记 parse_errors（title 落空时附根因提示；Geom=AllCheck 豁免集内 title 不报、route 终止不豁免）、电荷行后缺少分子说明节记 parse_errors（Geom 检查点豁免档不报）、分子说明/变量常数区 EOF 收尾记非阻断警告（kind=molecule_unterminated/variables_unterminated）、电荷行解析失败文案附误并根因、--Link1-- 前缺空行附官方要求注记
 - 【web】route 拼写与重复关键字检测接入导入/提交通道（G1/G2）：导入成功条目与提交/续跑响应携带非阻断 warnings（keyword_spell/route_duplicate，全文件绝对行号），不改变任何阻断语义；队列提交逐成员收集并在条目 task_id 填成员任务 id；verify_and_store 返回值改为 {normalized, warnings}，六个调用点同步（真值判断取 normalized）；分块保存 warnings 扩为拼写+重复
 - 【parse】Link 0 错位检测（G3）：% 行落入 route 节（吞并误读，官方 Multistep/Link0 位置约束）或 title 节记 parse_errors 并在导入/提交拒绝；分块保存同步阻断（reason=route_line_link0_forbidden / link0_misplaced）；检测范围限定 route 起点至 title 结束，分子说明/附加节内 % 行不误报
+- 【parse】值域与原子行校验拉齐（G5/G6）：%mem 官方值域（W/B 删除）与 >0、Link 0 单行 ≤500、官方指令集文法（无等号指令合法、未知/重复警告）、%cpu 区间步长 /n、多组电荷-多重度对全组解析（Counterpoise/ONIOM/Guess=Fragment/Fragment 佐证豁免，否则信息警告）、title 禁用字符警告、原子行文法（鬼原子 O-Bq/哑原子 X/XX/-/pbc TV 不计分子式、最长元素符号前缀识别、未知标签警告）、导入 BOM 静默剥离；记账换算同源下沉 parse/link0_rules（修正 mw 换算差 1024 倍与 %mem=1KW KeyError，%mem=2GW 不再误记 defaulted）
 
 ### 修复
 
