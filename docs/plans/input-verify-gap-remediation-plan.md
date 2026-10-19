@@ -1196,8 +1196,8 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 - 实施序列：progress 开工 → 契约文档先行（Warning.kind 词表增
   `route_option_unknown` + 模板 notice 增 `route_option_warnings` 载体 +
   gen_models/gen:types 再生零 diff）→ 测试先行（9 用例先红）→ 实现 →
-  进度同步，共 6 提交（bbbdc390 开工、0ec1e484 契约、af0cf810 测试、
-  57b34225 实现、5473f537 进度、本条留痕）。
+  进度同步，共 7 提交（bbbdc390 开工、0ec1e484 契约、af0cf810 测试、
+  57b34225 实现、5473f537 进度、本条留痕、374247a2 断言修正补登）。
 - 验收：全量 **835 passed 0 skipped**（入口基线 820 + B5 新增 15）。
   字典重生成幂等闸门通过（真实 gaussian-kb 在机，重生成逐字节一致实测
   通过、**无 skip**；1166 = 1164 + n + t）；`#t`/`#n` 模板 enforce 通过；
@@ -1208,7 +1208,9 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
      「**All keywords and options** may be shortened to their shortest
      unique abbreviation」——§1.1 摘录漏 "and options"，§2.9 据此推导的
      「缩写选项按未命中记 unknown」与官方原文不符；官方语料实测原口径
-     **45.7% 文件误报**（density=curr、freq=numer、guess=lowsym 等官方
+     **44.03% 文件误报**（509/1156，B5 审查独立复核口径：判定链同最终
+     实现、仅去掉唯一前缀判活分支，实施期初版统计 45.7% 复刻细节不可考
+     已废弃；density=curr、freq=numer、guess=lowsym 等官方
      合法缩写被报为非官方选项）。修正为：在该键官方选项集（词典 `键=*`
      组合词）内唯一前缀判活（`scrf=conven` 官方正面例合法、`scf=conv`
      歧义前缀 G16 拒绝仍报）；词级拼写通道（决策点 5）不变。
@@ -1233,8 +1235,9 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   - **B 类（少量）：面⑤覆盖缺口**——手册明文存在但面⑤按 Options 章节
     `####` 规则未提取的散文提及选项：`opt=addredundant`（opt 页明文
     「AddRedundant is synonymous with ModRedundant」）、`freq=nnroa`
-    （freq 页明文保留 G03 数值 ROA）、`units=bohr` 等，另批词典扩面
-    解决（§2.12 缩写限制同款处置）。
+    （freq 页明文保留 G03 数值 ROA）、`units=bohr`、`td=window`（TD 页
+    官方 TD=Window 选项，`td=*` 组合词条目缺，语料 7 文件命中）等，
+    另批词典扩面解决（§2.12 缩写限制同款处置）。
   - 单文件同 kind ≤3 维度：6 文件超（最大 5 条 test0386），沿用 R6
     裁决（行级粒度保留精确定位，不聚合）。
 - **出口闸门**：`uv run pytest` 835 passed 0 skipped、
@@ -1242,3 +1245,36 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   `gen_models.py`/`npm run gen:types` 再生零 diff（契约批次）全部通过。
   **B1–B5 五批全部收口**，按 §3.1 版本归属进入 3.4.0 发布流程（冻结
   时点由用户在 B5 验收后确定）。
+
+### 8.7 B5 批次审查与整改（2026-10-20）
+
+- 独立审查：code-reviewer 子代理按 AGENTS §6.2 四查执行，报告落盘
+  docs/plans/input-verify-gap-b5-review.md，结论**通过、无 P0/P1**（8 项
+  登记性发现 R1–R8）——835 passed 0 skipped 独立复现；语料基线 13 项
+  指标 12 项逐位吻合（45.7% 一项不可复现，见 R2）；端到端三通道
+  （导入/分块保存/模板 enforce）隔离实测通过、line 全文件绝对语义正确；
+  契约再生零 diff、先行红属实、G8 十条用例无恒真断言。验收 V1–V7 全过
+  （V5 为 §8.6 口径修正 2 已登记的有据偏离，裁决与实现、测试三方一致）。
+- 随批整改（单提交单类变更：fix → docs → progress）：
+  - **R1（P2 可维护性）**：check_route_options `return out` 之后 14 行
+    不可达死代码（旧 token 判定逻辑编辑残留）删除。
+  - **R3（P2 覆盖缺口样例）**：`td=window` 并入 §8.6 B 类另批扩面清单；
+    `_PAREN_TAIL` 注释去除「已覆盖」误导。
+  - **R6（P3 注释口径）**：`_VALUE_FORM_HEADS` 注释据实修正——iop 成员
+    实际靠键名不在典兜底（IOp(6/50=1) 按 = 拆键得 `iop(6/50` 含括号），
+    oniom/external 真正生效，iop 保留为防御。
+  - **R2（P2 留痕取数口径）**：§8.6 口径修正 1 的原口径误报修正为审查
+    可复现口径 **44.03%（509/1156）** 并注明判定链（实施期 45.7% 复刻
+    细节不可考，废弃）。
+  - **R4（P3 文档一致性）**：§8.6 提交列表补 374247a2（6→7 提交）。
+- 备案不整改（审查报告 §四已登记）：
+  - **R5**：§2.9「G4 触发词选项集匹配复用同一拆解辅助」未落实——G4
+    触发词为头部精确等值/选项集精确包含，与 G8 括号拆解语义不同源，
+    危害为零，留待下轮计划修订改写该句。
+  - **R7**：畸形 `opt==calcfc`（双等号）由改动前可能得近邻建议变为零
+    警告——极边缘畸形输入，warn 级宁漏勿误口径内。
+  - **R8**：模板通道 keyword 为 casefold 原文，与既有
+    route_duplicates/spelling_warnings 同源惯例一致，契约未约束大小写，
+    如需统一留待既有惯例一并处理。
+- 整改后回归：全量 pytest **835 passed 0 skipped**（与整改前一致，
+  R1 删除确认无行为影响，fix 提交仅涉 keywords.py 死代码与注释）。
