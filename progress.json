@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20T09:58+0800",
+  "updated": "2026-10-20T21:58+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -85,14 +85,25 @@
       "summary": "新增发布前计划文档状态校验闸门 scripts/check_plan_status.py：默认扫描 docs/plans/*-plan.md 头部状态行（支持定点路径），状态须为终态「已实施并验收」（修复清单类「已执行完毕」同认），未回填、缺状态行、文件缺失均非零退出；AGENTS.md §5.2 发布序列将其列为冻结前强制步骤",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "changed",
+      "scope": "web",
+      "summary": "组合流模板保存 enforce 口径暂时屏蔽（G10-a，决策点 12）：词典外 token 不再 422 拒绝，一律放行并随 notice.spelling_warnings 回传；ignore_spelling 字段保留但屏蔽期间不生效；前端「忽略拼写警告并保存」豁免按钮移除（playwright 浏览器实测验收）；契约 description 同步（词表三/ignore_spelling/notice/PUT 端点四处）+ 生成物再生",
+      "breaking": false,
+      "migration": "模板保存含词典外 token 的请求由 422 拒绝改为 200 放行 + notice 警告；此前依赖豁免按钮的两段式保存流程简化为单次保存"
+    },
+    {
+      "type": "added",
+      "scope": "parse",
+      "summary": "面⑤散文提及选项三路差集全量审计与词典扩面（G10-b）：extract_keywords 增面⑦ Options 条目正文官方句式直述（synonym/says-to/default 四句式 + 主语停用词）与 B6 手工补录常量清单，词典 1166→1345（幂等闸门通过），opt=addredundant/freq=nnroa 等 B 类误报形态零警告复测通过；field 键入 G8 值形白名单（场向量取值）；prop=wrf 兼容触发词经 G16 实测拒绝删除（决策点 9）；语料基线 route_option_unknown 417→394 文件、498→469 条，新增 readanh 形态经 G16 实测拒绝证实为歧义前缀正确警告；scf=conv 歧义前缀 G16 实测接受（B5 拒绝推断随批修正登记），审计留痕 docs/plans/input-verify-gap-b6-prose-audit.md",
+      "breaking": false,
+      "migration": "prop=wrf 文件不再触发附加节识别（G16 必然拒绝该形态）；freq=readanh 类键内歧义缩写开始出现 route_option_unknown 警告（G16 实测拒绝该形态）"
     }
   ],
-  "in_progress": {
-    "task": "输入勘误缺口补齐计划 B6 批次（G10-a enforce 口径暂时屏蔽 + G10-b B 类词典扩面与面⑤散文提及选项三路差集全量审计）",
-    "note": "入口条件满足（B1–B5 已收口 835 passed 0 skipped，入口基线实测复核）；序列：G10-a 契约先行 → 测试先行 → 实现（含前端豁免按钮隐藏 + 浏览器实测）→ G10-b 审计扩面 → 语料基线复跑 → G16 冒烟 → 进度同步"
-  },
+  "in_progress": null,
   "next_steps": [
-    "计划已再修并完成审查修正（2026-10-20，立项 G11/B7 与 B6 验收口径补全，见 input-verify-gap-remediation-plan §2.13/§2.14/§8.8）：B6 待启动——G10-a enforce 口径暂时屏蔽（仅启用 warning，先行独立提交）→ G10-b B 类词典扩面与面⑤散文提及选项三路差集全量审计；B7 待启动——G11 电荷/多重度行行内 ! 注释误拒补齐（与 B6 无先后约束）；B1–B5 已收口（835 passed 0 skipped）；3.4.0 发布冻结顺延至 B6、B7 验收全绿后",
+    "B6 已实施收口（2026-10-20，G10-a enforce 屏蔽 + G10-b 词典扩面审计，全量 838 passed 0 skipped，G16 冒烟 6 例通过，留痕见 input-verify-gap-b6-prose-audit.md）：B7 待启动——G11 电荷/多重度行行内 ! 注释误拒补齐（依赖 B4 已收口，与 B6 无先后约束）；3.4.0 发布冻结顺延至 B7 验收全绿后",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],

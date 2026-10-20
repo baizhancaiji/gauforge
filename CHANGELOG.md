@@ -15,6 +15,11 @@
 - 【parse】route 关键词字典扩面（G7）：extract_keywords 增面⑥ route 页 Alternate Forms 替代表单（#N/#P/#T），词典 1164→1166，#T/#N 模板不再被 enforce 误拒；缩写维持词典精确匹配不识别（决策点 5），scf=conven 类组合词缩写经键名命中放行、fre/geo 类裸词缩写 enforce 拒绝且 warn 通道近邻提示 freq/geom
 - 【parse】route 子选项归属校验（G8）：kw(...)、kw=(...) 与 key=value 形 token 逐选项对照该键官方选项集（词典 键=* 组合词）查典，未知 选项记非阻断警告 kind=route_option_unknown 并近邻附 suggestion（部分命中只报未命中项）；官方最短唯一缩写判活（input 页 Syntax Rules 明文 keywords 与 options 均可缩写至最短唯一前缀，歧义前缀如 scf=conv 仍报——G16 拒绝该形态）、值形白名单 iop/oniom/external、纯数字取值与单字母括号形（ccsd(t)）豁免、基组/方法括号形（无组合词条目）整体豁免；拼写通道选项型 token 职责移交消除 opt=(calcfc,ts) 类双重报告面；分块保存/导入/提交/预览经 file_warnings 单点生效，模板保存随 notice.route_option_warnings 携带——B5 独立审查整改：check_route_options 不可达死代码清理、值形白名单/参数剥离注释据实修正（iop 靠键名不在典兜底；td=window 官方选项登记另批词典扩面），报告 docs/plans/input-verify-gap-b5-review.md
 - 【scripts】新增发布前计划文档状态校验闸门 scripts/check_plan_status.py：默认扫描 docs/plans/*-plan.md 头部状态行（支持定点路径），状态须为终态「已实施并验收」（修复清单类「已执行完毕」同认），未回填、缺状态行、文件缺失均非零退出；AGENTS.md §5.2 发布序列将其列为冻结前强制步骤
+- 【parse】面⑤散文提及选项三路差集全量审计与词典扩面（G10-b）：extract_keywords 增面⑦ Options 条目正文官方句式直述（synonym/says-to/default 四句式 + 主语停用词）与 B6 手工补录常量清单，词典 1166→1345（幂等闸门通过），opt=addredundant/freq=nnroa 等 B 类误报形态零警告复测通过；field 键入 G8 值形白名单（场向量取值）；prop=wrf 兼容触发词经 G16 实测拒绝删除（决策点 9）；语料基线 route_option_unknown 417→394 文件、498→469 条，新增 readanh 形态经 G16 实测拒绝证实为歧义前缀正确警告；scf=conv 歧义前缀 G16 实测接受（B5 拒绝推断随批修正登记），审计留痕 docs/plans/input-verify-gap-b6-prose-audit.md
+
+### 变更
+
+- 【web】组合流模板保存 enforce 口径暂时屏蔽（G10-a，决策点 12）：词典外 token 不再 422 拒绝，一律放行并随 notice.spelling_warnings 回传；ignore_spelling 字段保留但屏蔽期间不生效；前端「忽略拼写警告并保存」豁免按钮移除（playwright 浏览器实测验收）；契约 description 同步（词表三/ignore_spelling/notice/PUT 端点四处）+ 生成物再生
 
 ### 修复
 
