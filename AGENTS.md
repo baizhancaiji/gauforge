@@ -72,10 +72,13 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 按 [changelog-spec.md](docs/references/changelog-spec.md) §1.6 执行，顺序固定：
 
 1. 确认当前 unreleased 行的 `changes` 已完整（无遗漏、无未批准条目）。
-2. **冻结**：`status` 改为 `released`，补齐 `version`、`date`（ISO 8601 精确到分钟并带时区偏移）、`semver`。
-3. 在文件末尾**追加新的空 unreleased 行**。
-4. 更新 `progress.json`：清空 `unreleased`，更新 `latest_released_version`。
-5. 本地打 tag：`git tag v<version>`，并提示协作者。
+2. **计划状态校验（强制）**：核对本次发布内容涉及的实施计划文档（`docs/plans/`），
+   其状态行均已回填为「已实施并验收」；发现「待执行」「待实施」「执行计划」等
+   未回填状态时，先完成回填再继续发布，不得带病冻结。
+3. **冻结**：`status` 改为 `released`，补齐 `version`、`date`（ISO 8601 精确到分钟并带时区偏移）、`semver`。
+4. 在文件末尾**追加新的空 unreleased 行**。
+5. 更新 `progress.json`：清空 `unreleased`，更新 `latest_released_version`。
+6. 本地打 tag：`git tag v<version>`，并提示协作者。
 
 版本号判定见 [changelog-spec.md](docs/references/changelog-spec.md) §1.7（breaking → major；含 added → minor；仅修复 → patch）。
 
@@ -183,6 +186,7 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 | 开发前 | 读 `progress.json`，把当前任务写入 `in_progress` |
 | 提交前 | 按 `conventional_commits.md` 组织提交（单次提交只做一类变更），并跑 `scripts/validate_progress.py` |
 | 完成一次变更 | 向 `CHANGELOG.jsonl` 的 unreleased 行与 `progress.json` 的 `unreleased` 同步追加摘要 |
+| 计划实施完毕 | 回填对应实施计划文档（docs/plans/）的状态行为「已实施并验收」，注明验收留痕位置与发布版本 |
 | 发布时 | 冻结 CHANGELOG 行 → 追加新的空 unreleased 行 → 清空 `progress.json` 的 `unreleased` → 本地打 tag |
 | 排查回归 | 按需读 `CHANGELOG.jsonl`，不要每次全量读取 |
 
