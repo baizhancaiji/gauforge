@@ -1,0 +1,903 @@
+[
+ {
+  "source": "path1_literal",
+  "key": "am1",
+  "option": "mopacexternal",
+  "pages": [
+   "keyword/semiempirical.md"
+  ],
+  "snippets": {
+   "keyword/semiempirical.md": "72,6.0000000000 DCore=26,3,1.4397774115,1.8468900000\n\n ****\n```\n\nAtomic units"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "amber",
+  "option": "hardfirst",
+  "pages": [
+   "keyword/mm.md"
+  ],
+  "snippets": {
+   "keyword/mm.md": "r function describes the complete set of interactions between all pairs of "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "amber",
+  "option": "print",
+  "pages": [
+   "keyword/mm.md"
+  ],
+  "snippets": {
+   "keyword/mm.md": "s reasonable and the bond orders (single, double, etc.) are all well de"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "amber",
+  "option": "softfirst",
+  "pages": [
+   "keyword/mm.md"
+  ],
+  "snippets": {
+   "keyword/mm.md": "120.0\n\nHrmBnd1 HA CM HA 40.0 120.0\n```\n\nBy default, the program uses the mo"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "casscf",
+  "option": "slaterdet",
+  "pages": [
+   "keyword/opt.md"
+  ],
+  "snippets": {
+   "keyword/opt.md": "input, specified in two consecutive groups of title and molecule specificati"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "casscf",
+  "option": "spinorbit",
+  "pages": [
+   "keyword/cas.md",
+   "structure/input.md",
+   "structure/molspec.md"
+  ],
+  "snippets": {
+   "keyword/cas.md": "tion involving relativistic terms, and then it uses effective charges that s",
+   "structure/input.md": "l guess | Guess=Input | yes |\n| Symmetry types to combine | Guess=LowSymm | ",
+   "structure/molspec.md": "`\nC(Iso=13,Spin=3) 0.0 0.0 0.0\n```\n\nThe line specifies a ^{13}C atom with a "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "ccsd",
+  "option": "maxcyc",
+  "pages": [
+   "keyword/cbs.md",
+   "keyword/gn.md"
+  ],
+  "snippets": {
+   "keyword/cbs.md": "aussian.com/glossary/montgomery00/)] and CBS-APNO [[Ochterski96](https:",
+   "keyword/gn.md": "eps are performed automatically when one of these keywords is specified"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "dreiding",
+  "option": "qeq",
+  "pages": [
+   "keyword/mm.md"
+  ],
+  "snippets": {
+   "keyword/mm.md": "to compute the electrostatic interactions. Gaussian can assign these cha"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "ept",
+  "option": "d2",
+  "pages": [
+   "keyword/ept.md"
+  ],
+  "snippets": {
+   "keyword/ept.md": "ng labeled as orbital 6 in the output.\n\n#### ForceSort\n\nForces sor"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "external",
+  "option": "myscript",
+  "pages": [
+   "keyword/external.md"
+  ],
+  "snippets": {
+   "keyword/external.md": "rd: e.g., External=MyScript.\n\n## Script Invocation\n\nScript Invocation\n\nBy def"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "field",
+  "option": "f",
+  "pages": [
+   "keyword/field.md"
+  ],
+  "snippets": {
+   "keyword/field.md": "Field=F(3)27 applies a perturbation of 0.0027 times the spin densit"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "field",
+  "option": "x",
+  "pages": [
+   "keyword/field.md"
+  ],
+  "snippets": {
+   "keyword/field.md": "Field=X+10 applies an electric dipole field in the X direction of 0"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "field",
+  "option": "xxyz-20",
+  "pages": [
+   "keyword/field.md"
+  ],
+  "snippets": {
+   "keyword/field.md": "Field=XXYZ-20 applies the indicated hexadecapole field with magnitude 0.0"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "anharm",
+  "pages": [
+   "keyword/freq.md"
+  ],
+  "snippets": {
+   "keyword/freq.md": " involving metals require additional input via the ReadHinderedRotor op"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "enonly",
+  "pages": [
+   "keyword/freq.md"
+  ],
+  "snippets": {
+   "keyword/freq.md": "he periodicity, symmetry and spin multiplicity for all rotatable bonds "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "fc",
+  "pages": [
+   "keyword/freq.md"
+  ],
+  "snippets": {
+   "keyword/freq.md": "rces*: Read the electric dipole from the specified specified source"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "input",
+  "pages": [
+   "keyword/freq.md"
+  ],
+  "snippets": {
+   "keyword/freq.md": "molecule specification\n\nTolerances=Coriolis=0.25                Freq=R"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "nnroa",
+  "pages": [
+   "keyword/cphf.md",
+   "keyword/integral.md"
+  ],
+  "snippets": {
+   "keyword/cphf.md": "says not to perform static perturbations in combination with dynamic v",
+   "keyword/integral.md": "matically select the grid that will be used in the CPHF procedure. The"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "numer",
+  "pages": [
+   "keyword/cas.md",
+   "keyword/dftb.md",
+   "keyword/freq.md",
+   "keyword/scrf.md"
+  ],
+  "snippets": {
+   "keyword/cas.md": "the CAS. This option should be used with caution; it works well only w",
+   "keyword/dftb.md": "e when the tabulated parameters from [dftb.org](http://dftb.org) are u",
+   "keyword/freq.md": "(or requested with Freq=Numer), polarizabilities must be explicitly re",
+   "keyword/scrf.md": "\n#### [G03](https://gaussian.com/glossary/g03/)Defaults\n\nModify the PC"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "readanharmonic",
+  "pages": [
+   "structure/input.md"
+  ],
+  "snippets": {
+   "structure/input.md": "dRadii or ReadAtRadii | yes |\n| Antechamber output file | Pop=MK IOp(6/50=1) | "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "readhindered",
+  "pages": [
+   "structure/input.md"
+  ],
+  "snippets": {
+   "structure/input.md": "adOrbitals | yes |\n| Atoms list for spin-spin coupling constants | NMR=ReadAt"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "freq",
+  "option": "savenm",
+  "pages": [
+   "keyword/oniom.md"
+  ],
+  "snippets": {
+   "keyword/oniom.md": "](/opt/?tabid=2#Opt_keyword__CalcFC_option) or [Opt=(QuadMac,CalcAll)]("
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "connect",
+  "pages": [
+   "keyword/oniom.md",
+   "structure/input.md",
+   "utility/mm_util.md"
+  ],
+  "snippets": {
+   "keyword/oniom.md": "pair(s) may be specified for the additional calculations (see below).\n\n#",
+   "structure/input.md": "1– line.\n\n## Section Ordering\n\nSection Ordering\n\n|  |  |  |\n| --- | --- ",
+   "utility/mm_util.md": "Geom=Connect).\n\n#### -Test *N*\n\nSet the debugging flag to *N* (higher nu"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "coord",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "ility only.\n\n#### CBS-4O\n\nRequests the original parametrization [[Ocht"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "modela",
+  "pages": [
+   "keyword/vib.md"
+  ],
+  "snippets": {
+   "keyword/vib.md": " transformed to, and ultimately the resulting force constant.\n\nThe coor"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "modlargeredundant",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": ". Cartesian coordinates can be included in molecule specifications without any spe"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "ngeom",
+  "pages": [
+   "keyword/geom.md"
+  ],
+  "snippets": {
+   "keyword/geom.md": "n. Geom=Step=M is automatically converted to Geom=NGeom=*M*+1 if the p"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "notest",
+  "pages": [
+   "keyword/geom.md"
+  ],
+  "snippets": {
+   "keyword/geom.md": " section is described in *GIC Info*.\n\n### Geometry Checking Options\n\n##"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "oldredundant",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "#### Geom=Coord\n\nIndicates that the geometry specification is in Cartesian co"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "geom",
+  "option": "readopt",
+  "pages": [
+   "structure/input.md"
+  ],
+  "snippets": {
+   "structure/input.md": " --- | --- |\n| ****Section**** | ****Keywords**** | ****Final blank line"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "guess",
+  "option": "lowsym",
+  "pages": [
+   "keyword/gvb.md",
+   "keyword/symmetry.md"
+  ],
+  "snippets": {
+   "keyword/gvb.md": "S.\n\n#### Freeze\n\nFreeze closed-shell and open-shell orbitals and first n",
+   "keyword/symmetry.md": "[Guess=LowSym](/guess/?tabid=1#Guess_keyword__LowSymm_option) and combin"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "guess",
+  "option": "notranslate",
+  "pages": [
+   "keyword/guess.md"
+  ],
+  "snippets": {
+   "keyword/guess.md": "uess, which is read in, be translated to the current atomic coordinates. This"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "integral",
+  "option": "superfine",
+  "pages": [
+   "structure/defroute.md"
+  ],
+  "snippets": {
+   "structure/defroute.md": "ot all route section keywords are honored in the Default.Route file. In genera"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "integral",
+  "option": "ultrafine",
+  "pages": [
+   "keyword/dft.md"
+  ],
+  "snippets": {
+   "keyword/dft.md": "=2) for details.\n\nThe same optimum memory sizes given by [freqmem](/freqmem) a"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "mp2",
+  "option": "direct",
+  "pages": [
+   "structure/defroute.md"
+  ],
+  "snippets": {
+   "structure/defroute.md": "be used. However, if the route section contains the MP2=Direct keyword"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "mp2",
+  "option": "stingy",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "MP2=Stingy and VeryStingy |  | *none (options are a no-op)* |\n| NoDIIS"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "name",
+  "option": "olp",
+  "pages": [
+   "keyword/pseudo.md"
+  ],
+  "snippets": {
+   "keyword/pseudo.md": " set input |  |\n| \\*\\*\\*\\* |  |\n|  |  |\n| O 0 | ECPs for the oxygen "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "name",
+  "option": "rchavez",
+  "pages": [
+   "keyword/name.md"
+  ],
+  "snippets": {
+   "keyword/name.md": "Name=RChavez). On UNIX systems, the default for the username is the oper"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "nmr",
+  "option": "cgst",
+  "pages": [
+   "structure/input.md"
+  ],
+  "snippets": {
+   "structure/input.md": "t | Pop=NBORead or Pop=NBO6Read | no |\n| Harmonic Normal Mode select"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "oniom",
+  "option": "onlyinput",
+  "pages": [
+   "keyword/guess.md"
+  ],
+  "snippets": {
+   "keyword/guess.md": "hat were interchanged as a result of the Alter option:\n\n```\n Harris functio"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "oniom",
+  "option": "onlyinputfiles",
+  "pages": [
+   "utility/gdiffs.md"
+  ],
+  "snippets": {
+   "utility/gdiffs.md": "\n- The initial guesses for individual steps within an ONIOM calculation can be t"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "addredundant",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "Opt=AddRedundant |  | Opt=ModRedundant |\n| OptCyc=*n* |  | Opt(MaxCyc=*n*) |"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "big",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": " specifications without any special options being necessary.\n\n#### "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "enonly",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "transition state*. The LST method has been superseded by Opt=QST2.\n\n##"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "fp",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "d with a fixed Hessian and numerical differentiation of energies t"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "gdiis",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "tps://gaussian.com/glossary/murtaugh70/)]. The Murtaugh-Sargent optim"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "grad",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "pecified as a Z-matrix. The default for energy-only methods is Opt=("
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "maxcyc",
+  "pages": [
+   "keyword/cbs.md",
+   "keyword/gn.md"
+  ],
+  "snippets": {
+   "keyword/cbs.md": "gomery99/), [Montgomery00](https://gaussian.com/glossary/montgomery00/",
+   "keyword/gn.md": "ecular system. All of the distinct steps are performed automatically w"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "mndofc",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "3/)], which does not require analytic gradients. The maximum number of"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "modredun",
+  "pages": [
+   "keyword/opt.md",
+   "structure/input.md"
+  ],
+  "snippets": {
+   "keyword/opt.md": "aFine).\n\n## Related Keywords\n\nRelated Keywords\n\n[IRC](/irc/), [IRCMax](/",
+   "structure/input.md": " |\n| --- | --- |\n| %Chk=heavy | Link 0 section |\n| # HF/6-31G(d) Opt=Mod"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "ms",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "ault method unless another option is specified. This is the defaul"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "readopt",
+  "pages": [
+   "keyword/oniom.md",
+   "keyword/opt.md"
+  ],
+  "snippets": {
+   "keyword/oniom.md": "ired Input\n\nThe two or three desired model chemistries are specified as",
+   "keyword/opt.md": "ant internal coordinate definitions are given in the second column of t"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "simult",
+  "pages": [
+   "structure/interfacing.md"
+  ],
+  "snippets": {
+   "structure/interfacing.md": " SCF energy |\n| 33 |  | UMP2 energy |\n| 34 |  | UMP3 energy |\n| 35 |  "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "opt",
+  "option": "unitfc",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": " Opt=RCFC instead of this option.\n\n#### Opt=MS\n\nSpecifies the Murtaugh"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "output",
+  "option": "polyatom",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "/gaussian.com/glossary/csaszar84/), [Farkas95](https://gaussian.com/glossar"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "output",
+  "option": "raw",
+  "pages": [
+   "structure/input.md"
+  ],
+  "snippets": {
+   "structure/input.md": "| Freq=ReadHindered | yes |\n| Anharmonic Normal Mode selection | Freq="
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "output",
+  "option": "rawmatrixelement",
+  "pages": [
+   "structure/interfacing.md"
+  ],
+  "snippets": {
+   "structure/interfacing.md": "part of the calculation in Gaussian via the [External](/external) keyword.\n- Using "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "output",
+  "option": "trans",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "ssian.com/glossary/farkas98/)] for the coordinate transformations and th"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "pm6",
+  "option": "mopacexternal",
+  "pages": [
+   "keyword/semiempirical.md"
+  ],
+  "snippets": {
+   "keyword/semiempirical.md": "DCore=19,3,1.0583544172,6.0000000000 DCore=26,3,1.4397774115,1.8468900000\n\n *"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "polar",
+  "option": "numer",
+  "pages": [
+   "keyword/cas.md",
+   "keyword/freq.md",
+   "keyword/polar.md"
+  ],
+  "snippets": {
+   "keyword/cas.md": "ities\n\nSaves ground- and excited-state alpha and beta total and transit",
+   "keyword/freq.md": "recognized, the set of redundant internal coordinates may need to be al",
+   "keyword/polar.md": "doing twice as many calculations.\n\n#### DoubleNumer\n\nComputes hyperpola"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "pseudo",
+  "option": "cards",
+  "pages": [
+   "structure/input.md"
+  ],
+  "snippets": {
+   "structure/input.md": "rt=Read) | yes |\n| Harmonic constraints | Geom=ReadHarmonic | yes |\n| Se"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scf",
+  "option": "camp-king",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "SCF=Camp-King |\n| CCSD-T |  | CCSD(T) |\n| CubeDensity |  | cubegen *utili"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scf",
+  "option": "conven",
+  "pages": [
+   "keyword/stable.md"
+  ],
+  "snippets": {
+   "keyword/stable.md": "itten to disk), avoiding an integral transformation. The AO basis is s"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scf",
+  "option": "nodiis",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "SCF=NoDIIS |\n| NoExtrap |  | SCF=NoExtrap |\n| NoRaff |  | Int=NoRaff |"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scf",
+  "option": "noextrap",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "SCF=NoExtrap |\n| NoRaff |  | Int=NoRaff |\n| OldConstants |  | Constants="
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scf",
+  "option": "sleazy",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "nalizations. Consequently, the eigenvector following methods (Opt=TS) "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scf",
+  "option": "verysleazy",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "rmat originated for the PolyAtom integrals program. The format produced by"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scrf",
+  "option": "aiefpcm",
+  "pages": [
+   "keyword/scrf.md"
+  ],
+  "snippets": {
+   "keyword/scrf.md": "vation model [[Marenich09](https://gaussian.com/glossary/marenich09/)]. "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scrf",
+  "option": "cards",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": ".com/glossary/miertus82/), [Cossi96](https://gaussian.com/glossary/cos"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scrf",
+  "option": "dpcm",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "ent file in Caltech (Tran2P5) format. This is only of interest to use"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scrf",
+  "option": "numer",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": " never recommended for production quality calculations.\n\n#### SCF=Very"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "scrf",
+  "option": "sas",
+  "pages": [
+   "keyword/scrf.md"
+  ],
+  "snippets": {
+   "keyword/scrf.md": "lculation uses a cavity determined self-consistently from an isodens"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "solvent",
+  "option": "ethanol",
+  "pages": [
+   "keyword/scrf.md"
+  ],
+  "snippets": {
+   "keyword/scrf.md": " to first excited state absorption is at 284.35 nm (4.36 eV) computed via t"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "solvent",
+  "option": "generic",
+  "pages": [
+   "keyword/scrf.md"
+  ],
+  "snippets": {
+   "keyword/scrf.md": "cal of such cases, the molecule has a plane of symmetry in the ground state"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "stable",
+  "option": "symm",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "efault SCRF method is IEFPCM.\n\n#### SCRF=Numer\n\nForce numerical SCRF ra"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "transformation",
+  "option": "conventional",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "=Cards\n\nBegin the SCRF=Numer calculation with a previously computed reaction field read"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "transformation",
+  "option": "new2pdm",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": "rder of multipole to use in the SCRF calculation. All but Dipole require that the "
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "transformation",
+  "option": "old2pdm",
+  "pages": [
+   "structure/obsolete.md"
+  ],
+  "snippets": {
+   "structure/obsolete.md": " required for multipole orders beyond Dipole. This option implies the use of spher"
+  }
+ },
+ {
+  "source": "path1_literal",
+  "key": "units",
+  "option": "bohr",
+  "pages": [
+   "keyword/force.md",
+   "keyword/freq.md"
+  ],
+  "snippets": {
+   "keyword/force.md": "used in numerical differentiation to 0.0001\\**N*. The units are Angstr",
+   "keyword/freq.md": "icity, symmetry number and multiplicity for rotational modes. Rotation"
+  }
+ }
+]

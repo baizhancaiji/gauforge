@@ -1,0 +1,10093 @@
+[
+ {
+  "key": "admp",
+  "option": "admp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "cartesian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "cholesky",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "densitykineticenergy",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "emass",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "emass=-1000",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "maxpoint=3",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "nobandgap",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "nuclearkineticenergy",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "admp",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "am1",
+  "option": "mopacexternal",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "amber",
+  "option": "hardfirst",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "amber",
+  "option": "hardfirst)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "amber",
+  "option": "hardfirst)=embed",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "amber",
+  "option": "print",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "amber",
+  "option": "qeq",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "amber",
+  "option": "softfirst",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "brueckner",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "doubles",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "noincore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "notwincore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bd",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "additional",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "bomd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "cartesian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "defines",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "fixed",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "gradientonly",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "gradonly",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "hessian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "local",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "microcanonical",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "randomly",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "recalcfc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "bomd",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "alter",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "cas",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "casscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "consequently",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "davidson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "f10",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "guess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "gvb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "hamiltonian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "however",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "implies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "ind",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "jacobi",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "lanczos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "nocpmcscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "nofulldiag",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "normally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "number",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "often",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "ras1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "ras2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "ras3",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "rasscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "rhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "slater",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "thus",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cas",
+  "option": "uhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "casscf",
+  "option": "slaterdet",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "casscf",
+  "option": "spinorbit",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "cbs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "startfreq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbs-q",
+  "option": "sp",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "boys",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "cbs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "newton",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "raphson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "save",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cbsextrapolate",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "ccsd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "computes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "lee",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "mp4",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "notwincore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cc",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ccd",
+  "option": "full",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "ccsd",
+  "option": "fc1",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "ccsd",
+  "option": "maxcyc",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "charge",
+  "option": "indicates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "charge",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cid",
+  "option": "cisd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cid",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cid",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cid",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cid",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "abelian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "computes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "converge",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "current",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "davidson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "eet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "hartrees",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "instead",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "ivoguess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "limits",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "max",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "maxdavidson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "nac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "noincore/3-21g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "nonac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "noneqsolv",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "nononadiabaticcoupling",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "nstate=6/d95",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "pcm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "reduce",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "root=2/3-21g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "singles",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "solve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "specify",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "useful",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cis",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cisd",
+  "option": "full",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "constants",
+  "option": "constants",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "counterpoise",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "counterpoise",
+  "option": "newbq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "counterpoise",
+  "option": "oldbq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "counterpoise",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "automatically",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "conver=10",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "cpcis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "cphf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "cpks",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "cptd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "diis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "finally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "fine",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "finegrid",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "ggas",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "hartrees",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "larger",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "norecursivediis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "nostatic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "otherwise",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "sac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "sg1",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "solve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "specify",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "superfine",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "tddft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "cphf",
+  "option": "ultrafine",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "chapter",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "chemistry",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "curr",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "density",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "electronic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "exploring",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "implies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "methods",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "plesset",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "recover",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "root",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "singles",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "structure",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "density",
+  "option": "transition=4",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "densityfit",
+  "option": "controls",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "densityfit",
+  "option": "implies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "densityfit",
+  "option": "noniterative",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "densityfit",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "densityfit",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "dreiding",
+  "option": "qeq",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "dreiding",
+  "option": "qeq)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "dreiding",
+  "option": "softfirst)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "dreiding",
+  "option": "softonly",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "eet",
+  "option": "eet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eet",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eet",
+  "option": "l913",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eet",
+  "option": "l914",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eet",
+  "option": "pcm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eet",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "applies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "ccsd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "ccsdconvergence",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "eom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "irr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "notwincore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "number",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "readgsamplitudes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "reps",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "save",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "solve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "total",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eom",
+  "option": "try",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "eomccsd",
+  "option": "lrtrans/6-31g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "eomccsd",
+  "option": "ncis=10/6-311++g(d,p)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "d2",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "ed2ia",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "ep2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "ep2ia",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "ept",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "function",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "green",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "homo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "often",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "orbital",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "outer",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "readorbitals/6-31g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "specify",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ept",
+  "option": "valence",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "elintegrals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "external",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "extuffex",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "file",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "hamiltonian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "implies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "infchk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "myscript",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "noguess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "outputfchk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "outunf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "refer",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "request",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "retain",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "run",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "save",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "external",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "allcheck",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "chk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "d20",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "extracts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "f",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "takes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "x",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "xxyz-20",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "y-50",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "z+100",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "field",
+  "option": "z-100",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "fmm",
+  "option": "levels=2",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "force",
+  "option": "angstroms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "force",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "force",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "force",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "accordingly",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "allmodes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "anal",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "analyze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "angstoms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "anharm",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "applicable",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "atom1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "atom2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "available",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "because",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "casscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "causes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "condon",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "cpu",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "davidson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "diagonalize",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "display",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "during",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "enonly",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "fc",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "four",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "franck",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "freq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "giaos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "gvb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "herzberg",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "hindered",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "hindrot",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "indicates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "input",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "intmodes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "irc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "linda",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "mp2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "nnroa",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "noreadnm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "noreadnormalmodes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "noselectnm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "noselectnormalmodes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "noworkerperturbations",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "numer",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "print",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "readanharmon",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "readanharmonic",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "readhindered",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "readnm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "repeated",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "rhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "rms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "rotations",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "save",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "savenm",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "selanharmonicmodes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "selectnm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "since",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "skips",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "sort",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "teller",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "transitions",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "uhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "under",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "vmax",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "freq",
+  "option": "you",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "equivalent",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "fc1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "freeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "freezes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "frzingc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "frzngc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "here",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "readwindow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "retains",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "frozencore",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gen",
+  "option": "gen",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gen",
+  "option": "similarly",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gen",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "activate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "add",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "addredundant",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "adds",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "angle",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "atom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "atoms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "bare",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "berny",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "bond",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "build",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "calculate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "cartesian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "change",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "changes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "charmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "connect",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "coord",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "currently",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "dihedral",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "except",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "freeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "gaussview",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "generates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "gicnew",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "gics",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "here",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "hessian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "increment",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "info",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "initialharmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "instead",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "linear",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "lines",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "make",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "matrix",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "modela",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "modification",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "modlargeredundant",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "modred",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "ngeom",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "noangle",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "nocrowd",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "nodihedral",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "nodistance",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "nogic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "noindependent",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "nokeepconstants",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "notest",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "oldredundant",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "opt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "optionally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "order",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "original",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "peng",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "rdfreeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "rdopt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "readfreeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "readopt",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "rebuilds",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "recompute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "remove",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "removes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "rharmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "skips",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "specify",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "suppresses",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "take",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "thus",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "type",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "valence",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "geom",
+  "option": "you",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gfinput",
+  "option": "coulomb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gfinput",
+  "option": "print",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "readiso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "resume",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "startfreq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gn",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "abelian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "assignment",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "biorth",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "boys",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "checkpoint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "chk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "cndo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "copy",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "designed",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "diagonalize",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "done",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "e20",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "fortran",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "fragment=2",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "gaussview",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "guess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "gvb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "hamiltonian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "homo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "ilsw",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "indicates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "instead",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "ivec",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "localized",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "lowsym",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "lumo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "mindo3",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "mixing",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "mndo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "mopac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "mos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "noextra",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "nofock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "noforceabeliansymmetry",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "nomix",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "normally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "notranslate",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "occupied",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "oldchk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "orbital",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "pbc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "pddg",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "pm3",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "pm3mm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "pm6",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "pre",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "prop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "qeq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "ranges",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "reuse",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "rohf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "rwf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "separate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "since",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "start",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "synonymous",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "they",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "thus",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "uhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "useful",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "guess",
+  "option": "zdo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "bobrowicz",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "combining",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "d15",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "gives",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "goddard",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "gvb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "hamiltonian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "hamiltonians",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "harding",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "nham",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "occup",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "openshellsinglet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "gvb",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "huckel",
+  "option": "edgar",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "huckel",
+  "option": "extended",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "huckel",
+  "option": "huckel",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "huckel",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "cartesian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "coarsegrid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "ecp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "finegrid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "fmm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "int",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "integral",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "large",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "linda",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "molecules",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "nofofcou",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "nosplitdbfsp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "nosymmetry",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "pass0grid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "primarily",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "pruned",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "pure",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "scuseria",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "sg1grid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "skip",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "split",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "stratmann",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "superfine",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "superfinegrid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "synonymous",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "trace",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "transform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "ultrafine",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "uncontract",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "uncontractaobasis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "integral",
+  "option": "uncontractdensitybasis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "always",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "analytic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "angles",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "bonds",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "bulrisch",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "cartesians",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "controls",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "corrector",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "defines",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "dihedrals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "extremely",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "follow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "hessian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "hessians",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "irc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "ircs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "modredundant",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "never",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "number",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "predictor",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "proceed",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "readcartesianfc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "recalcfc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "reports",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "requires",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "step",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "stoer",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "test",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "update",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "vtight",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "yes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "irc",
+  "option": "you",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "f10",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "fff",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "follow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "ircmax",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "number",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "nvar",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "step",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "ircmax",
+  "option": "tightens",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "assign",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "charmm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "charmmsq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "coulomb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "hence",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "ignore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "karplus",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "negative",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "oldqeq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "printing",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "roff",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "ron",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "thus",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "waals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mm",
+  "option": "york",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "noincore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "notwincore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "ovn",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "requires",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "mp2",
+  "option": "direct",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "mp2",
+  "option": "listwindow/6-31g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "mp2",
+  "option": "semidirect/gen",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "mp2",
+  "option": "stingy",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "name",
+  "option": "frisch",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "name",
+  "option": "intqn",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "name",
+  "option": "olp",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "name",
+  "option": "rchavez",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "acid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "adds",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "bare",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "calculate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "cgst",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "contact",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "display",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "fermi",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "here",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "iop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "nmr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "print",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "removes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "spin",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "nmr",
+  "option": "suscep",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "additional",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "atoms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "blank",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "fullmatrix",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "hessian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "hly",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "however",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "kollman",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "merz",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "nocompress",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "noembedcharge",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "onlyinput",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "onlyinputfiles",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "prints",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "singh",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "thus",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "uff",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "oniom",
+  "option": "yang",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "activate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "activates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "add",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "addredundant",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "adds",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "allow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "am1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "assume",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "atom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "atoms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "available",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "backqx",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "bare",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "berny",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "bfgs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "big",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "bofill",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "bond",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "build",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "calculate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "casscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "change",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "charmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "checkpoint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "controls",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "coord",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "d24",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "d2cmix",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "d2corrbfgs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "derivatives",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "dihedral",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "eigenvaluefollow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "energy",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "enonly",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "estimate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "except",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "extract",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "extremely",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "f12",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "fine",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "fopt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "format",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "fp",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "freeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "function",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "gdiis",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "gics",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "grad",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "grid",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "here",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "hessian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "however",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "iharmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "increment",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "info",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "instead",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "int",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "l103",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "l120",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "lines",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "matrix",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "maxcyc",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "maxmicro",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "mic103",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "mic120",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "mndofc",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "modred",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "modredun",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "mp2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "ms",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nd2corr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nodownhill",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "noeigentest",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "noexpert",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nolinear",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nomicro",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "none",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nonrscale",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nooptproduct",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "nooptreactant",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "noquadmacro",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "normally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "notrustupdate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "occasionally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "od2corr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "opt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "optimization",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "optionally",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "pdbfgs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "pddg",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "pm3",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "pm3mm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "pm6",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "popt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "powell",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "punch",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "raman",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "raphson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "rational",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "rdfreeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "rdopt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "readcartesianfc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "readfreeze",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "readopt",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "recalc=3",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "relaxes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "remove",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "removes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "rharmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "rms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "scaling",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "separate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "sg1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "simult",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "take",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "type",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "ultrafine",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "unfreezeall",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "unitfc",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "valence",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "vtight",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "opt",
+  "option": "you",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "aimpac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "anharmonic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "atoms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "conventional",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "core",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "cphf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "csgt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "dipolar",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "electronic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "fermi",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "file",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "freq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "giao",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "hamiltonian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "includes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "integer",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "matrix",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "mos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "nmr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "nuclear",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "polyatom",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "proaims",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "psi",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "quartic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "raw",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "rawmatrixelement",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "rotatationalconstants",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "rotational",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "store",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "synonym",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "trans",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "vibrot",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "wfnx",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "output",
+  "option": "write",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "bohr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "cellrange=80",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "ncellxc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "nkpoint=-20",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "nrecip=-100",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "pbc",
+  "option": "nrecip=-24",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "pm6",
+  "option": "mopacexternal",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "analytically",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "applicable",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "available",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "calculate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "casscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "computes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "cphf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "during",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "enonly",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "equivalent",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "giaos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "iop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "linda",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "mp2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "noworkerperturbations",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "numer",
+  "sources": [
+   "path1_literal",
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "numerically",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "optical",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "polar",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "rdfreq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "rhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "rotation",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "shg",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "polar",
+  "option": "uhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "after",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "allcheck",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "allorbitals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "amber",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "analysis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "angstroms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "antechamber",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "bohmann",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "bond",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "check",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "checkpoint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "chemical",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "chk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "chkbas",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "chkbasis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "ciofini",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "cm5",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "computed",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "density",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "end",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "esp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "espdipole",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "giaos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "guess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "hirshfeldee",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "implies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "iop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "kollman",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "link1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "merz",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "merzkollman",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "mos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "mulliken",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "natural",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "naturalspinorbitals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "nbos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "nlmos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "nmr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "noa",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "nob",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "nombs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "noncs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "nto",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "oldchk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "orbital",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "orbitals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "pop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "population",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "produce",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "refer",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "repeat",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "resp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "run",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "save",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "savecm5",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "saveesp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "savemulliken",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "savenpa",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "savento",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "shielding",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "since",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "singh",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "singles",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "suppress",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "total",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "transition",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "uff",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "uncharged",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "unix",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "uses",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "work",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "population",
+  "option": "yang",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pressure",
+  "option": "allcheck",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pressure",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pressure",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pressure",
+  "option": "restores",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "angstroms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "cartesian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "causes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "compute",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "constrain",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "f20",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "fit",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "fortran",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "ktape",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "ltape",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "nefg",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "nopotential",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "prop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "prop",
+  "option": "waals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "cards",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "coreless",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "crenbl",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "dolg",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "mmread",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "pseudo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "pseudo",
+  "option": "stuttgart",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "browse",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "cartesian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "chemistry",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "database",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "f12",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "gamess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "hondo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "outputs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "quantum",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "punch",
+  "option": "system",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "ccsd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "cluster",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "computes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "coupled",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "lee",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "mp4",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "qcisd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "quadratic",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "qci",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "activates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "aniondoublet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "b01",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "boys",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "cationdoublet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "cisd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "collect",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "disables",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "doublet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "electron",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "full",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "fullactive",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "general",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "gsum",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "ignore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "include",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "incorediag",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "initialize",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "item",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "levelthree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "leveltwo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "maxr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "means",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "mezey",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "perturbation",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "pipek",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "quartet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "quintet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "r2s2",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "readwindow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "resonance",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "sac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "sdinitial",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "septet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "sextet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "sinitial",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "solve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "spin",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "therefore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "triplet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sacci",
+  "option": "variational",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scale",
+  "option": "allcheck",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scale",
+  "option": "geom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scale",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scale",
+  "option": "restores",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scan",
+  "option": "pes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scan",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scan",
+  "option": "scan",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "above",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "add",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "allow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "allows",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "angstrom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "available",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "below",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "calls",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "camp-king",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "casscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "changes",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "conven",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "conver=10",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "conver=11",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "conver=12",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "cphf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "does",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "ediis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "fdiag",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "fsymm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "gvb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "however",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "insists",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "inversion",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "iterative",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "l502",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "l508",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "maxconventional",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "mcscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "newton",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nodamp",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nodiis",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nodirect",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nodsymm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "noextrap",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nofermi",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nofinaliteration",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "noidsymm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "noincfock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "noincore",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nopass",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nosave",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "nosavekpoint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "novaracc",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "novarint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "novshift",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "pdiag",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "provides",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "pulay",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "pulay82",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "qcscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "raphson",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "retain",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "rhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "rms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "rohf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "shift",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "sleazy",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "subspace",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "symmetrize",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "synonymous",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "tightintegrals",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "turn",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "turns",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "uhf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "useoao",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "varint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "verysleazy",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "scf",
+  "option": "vtl",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "action",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "additional",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "aiefpcm",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "cards",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "ccload",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "ccread",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "ccsave",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "ccsd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "ccwrite",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "cis",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "correctedlr",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "cosmo",
+  "sources": [
+   "path2_prose",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "does",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "dovacuum",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "dpcm",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "eom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "indicates",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "iop",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "isodensity",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "item",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "load",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "mos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "novacuum",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "numer",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "oldpcm",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "onsager",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "performs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "produces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "readq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "retrieve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "retrieves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "rpa",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "sas",
+  "sources": [
+   "path1_literal",
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "save",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "scrf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "selects",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "selfconsistent",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "skipvacuum",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "solvent=acetonitrile",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "truhlar",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "vne",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "write",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "writeq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "scrf",
+  "option": "you",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "am1",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "applies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "cards",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "chk",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "mopac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "nogenerate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "nonzero",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "noprint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "pm3",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "semiempirical",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "ch3cn)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "chloroform)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "ethanol",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "generic",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "methanol)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "water)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "solvent",
+  "option": "water,dipole,a0=4.00)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "sparse",
+  "option": "daniels97",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sparse",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sparse",
+  "option": "oniom",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sparse",
+  "option": "overrides",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sparse",
+  "option": "set",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "sparse",
+  "option": "sparse",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "allow",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "constrain",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "icdiag/3-21g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "noopt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "redo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "repopt",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "restarts",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "singlet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "stable",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "suppresses",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "symm",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "synonymous",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "test",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "triplet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "stable",
+  "option": "try",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "coc",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "com",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "gvb",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "mark",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "nograd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "noint",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "noscf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "print",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "specify",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "symm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "synonymous",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "tells",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "tight",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "try",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "symmetry",
+  "option": "turn",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "abelian",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "add=4/6-31+g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "converge",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "dft",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "eet",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "fock",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "force",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "generate",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "hartree",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "hartrees",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "hfivoguess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "ivo",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "ivos",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "larger",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "max",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "nac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "noivoguess",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "nonac",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "noneqsolv",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "nononadiabaticcoupling",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "nstates=12/6-31+g",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "pcm",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "reduce",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "sets",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "singlet",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "solve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "specify",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "tda",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "whether",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "td",
+  "option": "zero",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "temp",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "temp",
+  "option": "restore",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "abcd",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "conventional",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "equivalent",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "forces",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "january",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "l804",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "link",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "new2pdm",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "old2pdm",
+  "sources": [
+   "path1_literal"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "produce",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "transformation",
+  "option": "scf",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "uff",
+  "option": "qeq",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "uff",
+  "option": "qeq)",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "uff",
+  "option": "softonly",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "units",
+  "option": "angles",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "units",
+  "option": "angstroms",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "units",
+  "option": "bohr",
+  "sources": [
+   "path1_literal",
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "units",
+  "option": "bohrs",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "units",
+  "option": "distances",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "volume",
+  "option": "requests",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "iso",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "jobtype",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "method",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "perform",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "reads",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "saves",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "startfreq",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "temperature",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1",
+  "option": "w1u",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "w1bd",
+  "option": "nosaveamp",
+  "sources": [
+   "path3_corpus"
+  ]
+ },
+ {
+  "key": "zindo",
+  "option": "read",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "zindo",
+  "option": "solve",
+  "sources": [
+   "path2_prose"
+  ]
+ },
+ {
+  "key": "zindo",
+  "option": "specifies",
+  "sources": [
+   "path2_prose"
+  ]
+ }
+]
