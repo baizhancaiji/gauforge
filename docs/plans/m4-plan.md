@@ -1,6 +1,7 @@
 # M4 · 工作流 — 执行计划
 
-> 状态：执行计划（依据 [roadmap.md](../specs/roadmap.md) §3 M4 制定）。
+> 状态：**已实施并验收**（依据 [roadmap.md](../specs/roadmap.md) §3 M4 制定；
+> 验收留痕见 [m4-acceptance.md](m4-acceptance.md)（2026-10-12 走查），随 3.1.0 发布）。
 > 已经基线刷新与八轮独立审查修订定稿（2026-10-12）。
 > 目标版本 3.1.0。
 > **开工闸门 = M3 收口**（m3-plan D2：tag v2.2.0 已落位；unreleased

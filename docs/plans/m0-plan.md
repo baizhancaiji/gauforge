@@ -1,6 +1,7 @@
 # M0 · 契约与骨架 — 详细执行计划
 
-> 状态：执行计划（依据 [roadmap.md](../specs/roadmap.md) §3 M0 制定）。
+> 状态：**已实施并验收**（依据 [roadmap.md](../specs/roadmap.md) §3 M0 制定；
+> 契约走查记录见 [walkthrough.md](../api/walkthrough.md)，随 0.1.0 发布）。
 > 本文是 M0 的任务分解与设计基线：§2/§3 为 API 与 SSE 两份契约的**设计规范**
 > （M0 阶段 A 的直接输入，落盘为 `docs/api/openapi.yaml` 与 `docs/api/sse.md`），
 > §4–§8 为实施、走查、提交与验收方案。
