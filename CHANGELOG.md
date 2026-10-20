@@ -14,6 +14,7 @@
 - 【parse】值域与原子行校验拉齐（G5/G6）：%mem 官方值域（W/B 删除）与 >0、Link 0 单行 ≤500、官方指令集文法（无等号指令合法、未知/重复警告）、%cpu 区间步长 /n、多组电荷-多重度对全组解析（Counterpoise/ONIOM/Guess=Fragment/Fragment 佐证豁免，否则信息警告）、title 禁用字符警告、原子行文法（鬼原子 O-Bq/哑原子 X/XX/-/pbc TV 不计分子式、最长元素符号前缀识别、未知标签警告）、导入 BOM 静默剥离；记账换算同源下沉 parse/link0_rules（修正 mw 换算差 1024 倍与 %mem=1KW KeyError，%mem=2GW 不再误记 defaulted）；Link0 警告行号改全文件绝对口径、提交核验/分块保存/title 解析读取路径统一 utf-8-sig（带 BOM 磁盘副本写回剥离）、电荷行分词单点 parse_charge_tokens（斜杠/en-dash 各通道一致）——B2–B4 独立审查整改 R1/R2/R3，报告 docs/plans/input-verify-gap-b234-review.md
 - 【parse】route 关键词字典扩面（G7）：extract_keywords 增面⑥ route 页 Alternate Forms 替代表单（#N/#P/#T），词典 1164→1166，#T/#N 模板不再被 enforce 误拒；缩写维持词典精确匹配不识别（决策点 5），scf=conven 类组合词缩写经键名命中放行、fre/geo 类裸词缩写 enforce 拒绝且 warn 通道近邻提示 freq/geom
 - 【parse】route 子选项归属校验（G8）：kw(...)、kw=(...) 与 key=value 形 token 逐选项对照该键官方选项集（词典 键=* 组合词）查典，未知 选项记非阻断警告 kind=route_option_unknown 并近邻附 suggestion（部分命中只报未命中项）；官方最短唯一缩写判活（input 页 Syntax Rules 明文 keywords 与 options 均可缩写至最短唯一前缀，歧义前缀如 scf=conv 仍报——G16 拒绝该形态）、值形白名单 iop/oniom/external、纯数字取值与单字母括号形（ccsd(t)）豁免、基组/方法括号形（无组合词条目）整体豁免；拼写通道选项型 token 职责移交消除 opt=(calcfc,ts) 类双重报告面；分块保存/导入/提交/预览经 file_warnings 单点生效，模板保存随 notice.route_option_warnings 携带——B5 独立审查整改：check_route_options 不可达死代码清理、值形白名单/参数剥离注释据实修正（iop 靠键名不在典兜底；td=window 官方选项登记另批词典扩面），报告 docs/plans/input-verify-gap-b5-review.md
+- 【scripts】新增发布前计划文档状态校验闸门 scripts/check_plan_status.py：默认扫描 docs/plans/*-plan.md 头部状态行（支持定点路径），状态须为终态「已实施并验收」（修复清单类「已执行完毕」同认），未回填、缺状态行、文件缺失均非零退出；AGENTS.md §5.2 发布序列将其列为冻结前强制步骤
 
 ### 修复
 
