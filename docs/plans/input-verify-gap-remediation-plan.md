@@ -1,7 +1,9 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**部分实施，待修订**（2026-10-18 立题，决策点已全部裁决；B1–B5 批次已实施
-> 完毕并逐批独立审查留痕（§8），经复盘仍存在较大缺口，拟修订本计划后继续补齐）。
+> 状态：**再修订**（2026-10-20 再修：原位勘误 §1.1/§2.8/§2.9/§3 B5 验收行的
+> 错误表述；新增 §2.13 G10 与 B6 批次——enforce 口径暂时屏蔽、B 类词典
+> 扩面、支持版本口径与语料判据修订；新增决策点 11–13。B1–B5 批次已实施
+> 完毕并逐批独立审查留痕（§8），B5 复盘确认的实现缺口以 §2.13 承接补齐）。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
@@ -65,8 +67,10 @@
   （要求）→ 附加输入节（**通常**要求）。
 - 语法规则：自由格式、大小写不敏感；行内项目分隔符=空白/制表符/逗号/斜杠
   **任意组合**；选项四种合法形态 `kw=opt`、`kw(opt)`、`kw=(o1,o2)`、
-  `kw(o1,o2)`，且 `=` 两侧**允许任意空格**，`=` 可省略；关键字可缩写至
-  **全系统最短唯一前缀**（如 `Conven` 合法而 `Conv` 非法）；`@filename`
+  `kw(o1,o2)`，且 `=` 两侧**允许任意空格**，`=` 可省略；关键字**与选项**
+  均可缩写至**全系统最短唯一前缀**（官方原文：「All keywords **and
+  options** may be shortened to their shortest unique abbreviation」；
+  如 `Conven` 合法而 `Conv` 非法）；`@filename`
   整文件包含（可加 `/N` 抑制回显）；`!` 注释可出现在任意行任意位置。
   引号值（如 `External="RunTink Amber"`）中的空格不属于行内分隔符。
 - 多步任务：`--Link1--` 行分隔各步，**其前必须有一个空行**。
@@ -222,6 +226,7 @@
 | G7 | 字典词条缺口（t/n）；缩写维持精确匹配 | 增强 | B5 |
 | G8 | 括号内子选项不校验（未对照 `kw=opt` 组合词验证归属） | 增强 | B5 |
 | G9 | 核心节必需空行与分子说明缺失无显式检测（route/title EOF 吞并、归因误导、空分子说明放行；含分子说明/Variables EOF 登记） | 增强 | B2 |
+| G10 | enforce/warn 分工未明且 enforce 存在组合词值侧把关空洞（屏蔽）；面⑤散文提及选项缺口误报官方合法写法（`td=window` 等，全量审计 + 扩面）；语料判据失真（G03 旧形态误作判据） | 修订 | B6 |
 
 ### 2.0.1 G0 · 统一非阻断 warnings 通道（B1 前置）
 
@@ -658,13 +663,20 @@ formula=`H1Foo1`）。官方文法：
 1. `scripts/extract_keywords.py` 增「面⑥ route 替代表单」：从知识库
    `route` 页 Alternate Forms 提取 `n/p/t`（p 已由面② 覆盖，去重）；
    重生成字典并经 `test_extract_keywords.py` 一致性闸门（逐字节幂等；
-   两处 1164 断言同步 1164→1166：条件真实 KB 测试与非条件 loader 测试）。
+   三处 1164 断言同步 1164→1166：条件真实 KB 测试、非条件 loader 测试与
+   `test_combo_templates.py::test_spelling_words_loaded_and_gate_ready`；
+   2026-10-20 勘误：原句「两处」漏计第三处，先行提交因此漏改，实现提交
+   补齐——§8.6 口径修正 3）。
    真实 KB 缺失时该测试 skip，批次记录必须注明 skip 状态，不得把 skip
    当作通过。
-2. **缩写维持精确匹配（决策点 5）**：`_token_in_dict` 保持整词与键名精确
-   命中，不引入最短唯一前缀近似；`scf=conven`、`fre`、`geo` 类官方合法
-   缩写在 enforce 下被拒、warn 下按拼写近邻提示，误拒缩写登记为已知
-   限制（§2.12），如需支持随词典扩面另批立项。
+2. **缩写维持精确匹配（决策点 5，词级）**：`_token_in_dict` 保持整词与
+   键名精确命中，不引入词级最短唯一前缀近似；组合词缩写（`scf=conven`）
+   经键名命中放行，裸词缩写（`fre`、`geo`）词典层面不识别——enforce 拒绝
+   裸词缩写、warn 按拼写近邻提示；缩写误拒登记为已知限制（§2.12），
+   如需支持随词典扩面另批立项。（2026-10-20 勘误：原句「`scf=conven`…在
+   enforce 下被拒」与键名命中语义不符，§8.6 口径修正 2 已裁决为放行；
+   enforce 口径另按决策点 12 于 B6 暂时屏蔽；G8 选项级缩写按官方原文
+   唯一前缀判活，见 §2.9。）
 
 **涉及文件**：`scripts/extract_keywords.py`、`web/src/parse/keywords.txt`
 （重生成）、`web/src/parse/keywords.py`、`web/tests/test_extract_keywords.py`；
@@ -712,11 +724,20 @@ CCSD**」佐证「选项-关键字归属」是官方自身的校验维度。
   `check_route_spelling` 同 cutoff），命中唯一近邻则随条目附 `suggestion`
   （`opt=(calfcf)` 的 `calfcf` 附建议 `calcfc`）；无近邻仅 unknown 警告、
   无 `suggestion`；
-- **缩写选项**：精确匹配口径同样适用于选项（决策点 5），缩写选项按未
-  命中记 `route_option_unknown`，不引入选项级前缀近似；
+- **缩写选项**：官方原文 keywords **and options** 均可缩写（§1.1）——
+  选项在其键的官方选项集（词典 `键=*` 组合词条目）内按**最短唯一前缀**
+  判活（如 `density=curr`、`freq=numer`、`scrf=conven`），歧义前缀
+  （如 `scf=conv`，同时前缀于 conver/conventional）G16 拒绝、仍记
+  `route_option_unknown`，不引入选项级近邻近似；（2026-10-20 勘误：
+  原句「精确匹配口径同样适用于选项，缩写选项按未命中记
+  route_option_unknown」系据 §1.1 漏录 "and options" 的错误推导，与官方
+  原文相反——§8.6 口径修正 1 已裁决，原位改写）；
 - **分级（决策点 6：仅 warn）**：面⑤按「噪声可控」原则提取，选项覆盖
   非全量，enforce 化必误拒；如需 enforce，先做面⑤覆盖率评估另批立项。
-  G4 的触发词「选项集」匹配复用同一拆解辅助，不另写括号解析。
+  G4 的触发词匹配为头部精确等值/选项集精确包含，语义与 G8 括号拆解
+  不同源，**不复用**拆解辅助，各自独立实现（2026-10-20 勘误：原句
+  「复用同一拆解辅助，不另写括号解析」系立项时误设——实施未复用且无
+  危害，§8.7 R5，原位改写）。
 
 **触发条件**：分块保存 / 导入 / 提交 / 组合流模板保存，初始仅
 warnings。**预期效果**：跨关键字选项误置与子选项拼写错误在保存/导入时即
@@ -850,10 +871,61 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | Link 0 未知指令阻断 | 历史模板可能含自定义 `%` 指令 | 仅 warnings（决策点 7） |
 | `%rwf` 分段值域校验 | 分段含目录路径与 `-1`/`0` 特殊值语义，离线静态校验误报率高 | 不校验；G16 运行期报错 |
 | 关键字与计算类型组合合法性（如 NMR 仅限 HF/DFT/MP2） | 需完整语义模型，离线静态校验不可行；G8 仅覆盖选项-关键字归属 | 交 G16/testrt，登记为已知限制 |
+| `opt==calcfc` 类双等号畸形 token | 选项型键跳过词级近邻后零警告（B5 选项化前可得拼写近邻建议） | 宁漏勿误口径内；G10-b 实施时顺带评估拆解层可报性，不单独立项 |
 
 ---
 
-## 3. 实施批次与验收标准
+### 2.13 G10 · enforce 口径屏蔽与 B 类词典扩面（B6，2026-10-20 立项）
+
+**立项背景（B5 实施与独立审查后的复盘结论，§8.6–§8.8；缺口均为当前
+实现真实存在的缺陷，不以登记替代修复）**：
+
+- **enforce 与 warning 口径分工未明**：模板保存 enforce
+  （`keyword_not_in_dict` 422 拒绝）与各通道 warn 的分工无产品级裁决，
+  且 enforce 存在结构性把关空洞——= 形 token 键名在典即放行，值侧从不
+  阻断：同类拼写错误，裸词形态（`frqu`）被拒绝、组合词形态
+  （`freq=numar`）仅警告。**决策点 12：暂时屏蔽全部 enforce 口径，仅
+  启用 warning**。
+- **B 类词典覆盖缺口（确凿误报，当前持续发生）**：手册明文存在但面⑤未
+  提取的散文提及选项被报 `route_option_unknown`，已确认四形态：
+  `td=window`（TD 页官方 TD=Window 选项，语料 7 文件命中）、
+  `opt=addredundant`（6 条）、`freq=nnroa`、`units=bohr`。面⑤按
+  Options 章节 `####` 规则提取，散文提及的完整缺口**未做全量审计**，
+  除已确认形态外不排除更多——补审计前不存在「无误报」的证据。
+  **决策点 13：B 类词典扩面正式立项**。
+- **语料判据失真**：官方自带测试语料（`~/g16/tests/com`）陈旧，大量
+  G03 时代旧形态（`geom=modela` 265 条等）不能作为本项目的错误判据。
+  **决策点 11：G16 为最大支持对象、G09 次之，G03 及更早确认不支持；
+  官方测试语料降级为回归对照样本，不作为权威参考**——A 类旧形态命中
+  `route_option_unknown` 为预期行为（G03 不受支持），错误判据一律以
+  手册 SSOT（gaussian-kb）与 G16 实测为准。
+
+**方案**：
+
+1. **G10-a enforce 屏蔽（先行独立提交）**：模板保存词典校验降为仅警告
+   （`SPELLING_MODE` enforce → warn，单点消费以实际代码为准），
+   `keyword_not_in_dict` 不再 422 拒绝，拼写错误仅随 notice 携带；
+   enforce 相关用例改 warn 口径断言；契约 description 同步（模板保存
+   不再拒绝词典外词）。enforce/warn 分工重新裁决后另批恢复，恢复时须
+   先解决组合词值侧把关与缩写口径的一致性（§2.8/§2.9 勘误后的口径为
+   恢复基线）。
+2. **G10-b 词典扩面**：面⑤散文提及选项**全量审计**——逐 keyword 页
+   全文扫描散文提及的 `键=选项` 形态，与词典组合词条目做差集，产出缺口
+   清单随批留痕；缺口按清单补提取（提取规则不足处手工补录，仍经
+   `extract_keywords.py` 受控源入典）；重生成词典并过幂等闸门与规模
+   断言；已确认四形态零警告复测；A 类旧形态命中为预期行为，不因扩面
+   消除。
+3. **`opt==calcfc` 类畸形 token 静默**：已登记 §2.12，G10-b 实施时
+   顺带评估拆解层可报性，不单独立项。
+
+**预期效果**：官方合法写法不再产生内容为错的警告；模板保存零误拒；
+错误判据与语料口径对齐受支持版本。
+
+**涉及文件**：`web/src/services/combo_templates.py`（G10-a 单点）、
+`scripts/extract_keywords.py`、`web/src/parse/keywords.txt`（重生成）、
+`web/src/parse/keywords.py`（断言相关）、相关测试与契约 description。
+
+---
 
 | 批次 | 范围 | 验收标准 | 契约动作 |
 |---|---|---|---|
@@ -861,7 +933,8 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | B2 数据固化 | G4+G9 | `section_ordering.py` 表与 §1.2 逐行一致（59 = 4 core + 54 additional + 1 automatic）；`any_trigger` 只消费 additional 且普通 route 下为 False；G9 的 route/title EOF 阻断用例、分子说明/Variables EOF 警告用例与两种吞并归因用例转绿，空分子说明缺节阻断用例转绿；roadmap §2.7 回补（2 例外 + Title 行括注 + Checkpoint title 补全） | warnings kind 词表增 `molecule_unterminated`、`variables_unterminated`；附加节终止空行按决策点 3 记 parse_errors，parse_errors description 同步更新 |
 | B3 新检测 | G1+G2+G3 | 导入/提交响应携带 `warnings`（导入 422 响应的 `details.errors[]` 不携带）；三个响应返回点全部取 `res["normalized"]`（candidates/queues/history）；resume 响应透传 warnings；队列提交 warnings 带 `task_id`；重复/错位用例按 §2.6 判定表与 §2.11 矩阵在各通道行为一致 | warnings kind 词表增 `route_duplicate`（Link 0 错位按决策点 3 记 parse_errors）；CandidateCreate.files、SubmitResponse、ResumeConfirmResponse 增可选 warnings（**先改 openapi.yaml**） |
 | B4 值域与原子行 | G5+G6 | §2.7 用例全绿；§2.11 矩阵逐格符合；`%mem=2W` 编辑保存阻断、导入/提交警告（决策点 2 收紧；模板无单位输入，不适用）；`%mem=0` 编辑保存/模板 `mem_gb` 阻断、导入/提交警告（决策点 8）；`%cpu=0-5/2` 通过；多组电荷对、负多重度组与 `Fragment` 佐证用例、自由格式分隔符、`Foo` 不告警、`Zz` 告警、`X` 哑原子、BOM 落盘剥离全部通过 | warnings kind 词表增 `link0_value_invalid`、`link0_line_too_long`、`link0_directive_unknown`、`link0_directive_duplicate`、`title_forbidden_char`、`atom_label_unknown`、`molecule_multiple_charge_pairs` |
-| B5 字典扩面 | G7+G8 | 字典重生成幂等闸门通过（1166 词条；两处断言同步；KB skip 记录）；`#t`/`#n` 模板 enforce 通过；`scf=conven`/`scf=conv`/`fre`/`geo` 精确匹配拒绝（缩写不识别）；G8 用例（在典零警告/未知选项/嵌套取值/`opt=(readfcht)` 跨关键字/`opt=(readfc)` 零警告/`opt=(calcfc,xyzzy)` 仅报未命中选项/`opt=(calfcf)` 附 `suggestion=calcfc`/IOp 零警告/ONIOM 零警告/External 零警告）转绿 | warnings kind 词表增 `route_option_unknown` |
+| B5 字典扩面 | G7+G8 | 字典重生成幂等闸门通过（1166 词条；三处断言同步；KB skip 记录）；`#t`/`#n` 模板保存通过；`scf=conven`/`scf=conv` 组合词经键名命中放行、`fre`/`geo` 裸词 enforce 拒绝（缩写不识别限于词典层面，§8.6 口径修正 2）；G8 用例（在典零警告/未知选项/嵌套取值/`opt=(readfcht)` 跨关键字/`opt=(readfc)` 零警告/`opt=(calcfc,xyzzy)` 仅报未命中选项/`opt=(calfcf)` 附 `suggestion=calcfc`/IOp 零警告/ONIOM 零警告/External 零警告）转绿（2026-10-20 勘误：原验收「两处断言」「scf=conven/conv enforce 拒绝」与实施口径不符，原位改写） | warnings kind 词表增 `route_option_unknown` |
+| B6 口径修订与词典扩面 | G10-a+G10-b | 模板保存拼写错误仅警告、零 422（enforce 屏蔽，决策点 12）；面⑤散文提及选项审计差集清单落盘，清单内选项全部入典（幂等闸门 + 规模断言同步）；`td=window`/`opt=addredundant`/`freq=nnroa`/`units=bohr` 零警告复测通过；全量测试不回归；语料基线仅作回归对照记录（决策点 11，不作通过判据） | 模板保存端点 description 更新（enforce → 仅警告）+ 生成物再生零 diff；warnings 词表不变 |
 
 ### 3.1 批次依赖与节点
 
@@ -872,14 +945,19 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   先把 warnings 生成拆成独立模块并冻结接口，再按文件所有权拆分。
 - B5 依赖 B1（G8 复用 C3 管道、G7 依赖同一 `_token_in_dict`），与 B2–B4
   无强依赖，可最后执行。
+- **B6（2026-10-20 立项，§2.13）**：依赖 B5（已收口）；G10-a enforce
+  屏蔽先行独立提交，G10-b 词典扩面随后；出口另加 G16 冒烟（`td=window`
+  等已确认误报形态及其宿主关键字各一例，确认零误报）。
 - 每批入口 = 上一批验收全绿 + `validate_progress.py` 通过；每批出口 =
   §5 闸门全绿 + CHANGELOG/progress 当批登记（禁止集中回补）。
 - 真实 G16 冒烟节点：B1 后一次（Checkpoint/AllCheck 各一例）、B2 后一次
   （`Gen`/`Pseudo=Cards` 附加节）、B4 后一次（多组电荷对/`%cpu=0-5/2`/
-  自由格式分隔符各一例）；版本固定 G16 Rev. C.01，语料清单与哈希随批次记录。
+  自由格式分隔符各一例）、B6 后一次（G10-b 误报形态复测）；版本固定
+  G16 Rev. C.01，语料清单与哈希随批次记录。
 - **版本归属**：本计划按 **3.4.0（minor：新增 warnings 通道与检测项）**
   目标版本推进（3.3.0 已于 2026-10-15 冻结发布）。若仅交付 C1–C3
-  （不含 G0/warnings）才按 patch；B1 含 G0，按 minor。
+  （不含 G0/warnings）才按 patch；B1 含 G0，按 minor。B6（2026-10-20
+  立项）并入 3.4.0，发布冻结时点顺延至 B6 验收全绿后。
 
 每批次独立成提交序列（文档 → 测试 → 实现 → 进度同步），单次提交只做
 一类变更。开发前先把本任务写入 `progress.json.in_progress`。
@@ -948,10 +1026,15 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 - **通道矩阵测试**：§2.11 每一行至少一条用例，断言预览/导入/提交/分块保存/
   模板五通道的实际级别（阻断 vs 警告 vs 不校验）；模板「不适用」必须有
   对应断言，不能只写注释。
-- **警告噪声基线**：以 `~/g16/tests/com` 语料为样本，记录改动前后逐文件
-  warnings 数量；批次入口冻结阈值（新增警告涉及文件 ≤5%，同一文件
-  同一 kind ≤3 条），超过阈值需复审（AGENTS §6.1 可量化指标要求）。
-- **金标准语料回归**：`~/g16/tests/com` 现有语料 + 新增
+- **警告噪声基线**：以 `~/g16/tests/com` 官方测试语料为**回归对照样本**
+  （决策点 11：非权威参考），记录改动前后逐文件 warnings 数量；批次
+  入口冻结阈值（新增警告涉及文件 ≤5%，同一文件同一 kind ≤3 条）仅作
+  **复审触发器**——超阈逐条归因，归因以手册 SSOT（gaussian-kb）与
+  支持版本口径（G16/G09；G03 不支持）为准，语料命中本身不构成错误
+  判据（AGENTS §6.1 可量化指标要求）。
+- **官方语料回归（非权威）**：`~/g16/tests/com` 官方自带测试语料陈旧、
+  含大量 G03 时代旧形态，其命中不作为错误判据（决策点 11），仅作回归
+  对照与归因输入。回归样本集：现有语料 + 新增
   （Checkpoint 缺电荷行/缺 title、`Geom=Check`、括号 Geom、`#T`/`#N` 模板、
   `opt,freq` 逗号分隔、行内 `!` 注释、`opt = (calcfc, ts)`、
   `opt (calcfc, ts)`、`IOp(6/50=1)`、`External="RunTink Amber"`、`O-Bq`、
@@ -999,7 +1082,20 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
    行为回退；B2 后 G16 冒烟确认再决定删除。
 10. **发布窗口与批次工期**：3.4.0 为目标版本；不设日历承诺，排程由批次
     闸门驱动（每批入口 = 上一批验收全绿 + `validate_progress.py` 通过），
-    发布冻结时点在 B5 验收全绿后的发布流程中确定。
+    发布冻结时点在批次验收全绿后的发布流程中确定（B6 立项后顺延至 B6
+    验收全绿后，见 §3.1）。
+11. **支持版本口径与语料判据（2026-10-20）**：G16 为最大支持对象，G09
+    次之，G03 及更早版本确认不支持；官方自带测试语料
+    （`~/g16/tests/com`）陈旧，降级为回归对照样本，不作为权威参考与
+    错误判据——错误判据一律以手册 SSOT（gaussian-kb）与 G16 实测为准；
+    G03 旧形态（`geom=modela` 等）命中 `route_option_unknown` 为预期
+    行为，不作为误报归因。
+12. **enforce 口径暂时屏蔽（2026-10-20）**：enforce 与 warning 的分工
+    作用未明，且 enforce 存在组合词值侧把关空洞（键名在典即放行）——
+    暂时屏蔽全部 enforce 口径，仅启用 warning（G10-a/B6）；分工重新
+    裁决后另批恢复，恢复时须先解决值侧把关与缩写口径一致性。
+13. **B 类词典扩面正式立项（2026-10-20）**：面⑤散文提及选项全量审计 +
+    缺口清单补提取，B6 批次交付（§2.13 G10-b）。
 
 ## 7. 风险登记
 
@@ -1028,6 +1124,10 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | 字典重生成依赖 gaussian-kb 数据目录在机 | extract_keywords 已有缺失降级与 `--kb-dir` 参数；重生成后跑一致性闸门；skip 记录 |
 | 附加节顺序/PDB 自动触发无法校验 | 已在 §2.12 登记为已知限制，交 G16/testrt；不承诺顺序检测 |
 | MM/ONIOM、鬼原子、哑原子、多电荷对误报 | G6 文法边界用例先行；未知标签仅 warn；鬼原子/哑原子不入分子式；多电荷对按同一行解析 |
+| enforce/warn 分工未明，组合词值侧把关空洞（键名在典即放行，同类错误裸词被拒、组合词仅警告） | 决策点 12：暂时屏蔽全部 enforce 口径，仅 warning（G10-a/B6）；恢复另批裁决 |
+| 面⑤散文提及选项缺口未全量审计，官方合法选项误报 unknown（已确认 `td=window` 等 4 形态） | 决策点 13：B6 全量审计差集清单 + 补提取（G10-b）；warn 级不阻断 |
+| 官方测试语料陈旧（G03 旧形态），误作错误判据导致口径失真 | 决策点 11：语料降级为回归对照样本；错误判据以手册 SSOT + G16 实测为准 |
+| G03 旧形态大范围警告造成警告疲劳 | G03 不支持口径下为预期行为；B6 评估警告 message 附「受支持版本」提示 |
 
 ## 8. 实施与审查留痕
 
@@ -1279,3 +1379,24 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
     如需统一留待既有惯例一并处理。
 - 整改后回归：全量 pytest **835 passed 0 skipped**（与整改前一致，
   R1 删除确认无行为影响，fix 提交仅涉 keywords.py 死代码与注释）。
+
+### 8.8 计划再修（2026-10-20）
+
+- B5 复盘（§8.7 审查报告 + 用户裁决）确认**实现缺口与文档错误并存**，
+  且 §8.6/§8.7 的后置留痕不足以对冲正文错误——本轮原位勘误，计划进入
+  再修订状态（头部状态行同步）：
+  - §1.1 官方原文摘录补 "and options"（keywords 与 options 均可缩写）；
+  - §2.8 断言「两处→三处」、方案 2 缩写口径改写（组合词缩写键名命中
+    放行 + enforce 屏蔽括注）；
+  - §2.9 缩写选项改唯一前缀判活（原「按未命中记 unknown」系错误推导）、
+    G4「复用拆解辅助」句原位改写为不复用；
+  - §3 批次表 B5 验收行改写为实施口径（三处断言、组合词放行/裸词拒绝）；
+  - §2.12 补 `opt==calcfc` 静默已知限制；§5 语料判据降级（「金标准」→
+    回归对照样本，阈值仅作复审触发器）；§7 风险登记补 4 行。
+- **漏洞承接与 B6 立项**：新增 §2.13 G10 与 §3 B6 批次——G10-a enforce
+  口径暂时屏蔽（决策点 12，仅启用 warning）、G10-b B 类词典扩面与面⑤
+  全量审计（决策点 13）、支持版本口径 G16 主/G09 次/G03 不支持与官方
+  语料非权威（决策点 11）。错误判据自此一律以手册 SSOT 与 G16 实测为准。
+- 版本归属：B6 并入 3.4.0，发布冻结时点顺延至 B6 验收全绿后（§3.1）。
+- B6 实施序列待启动：G10-a enforce 屏蔽（先行独立提交）→ G10-b 词典
+  扩面与审计 → 契约 description 同步 → 进度同步。
