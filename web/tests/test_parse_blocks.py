@@ -214,6 +214,47 @@ def test_bad_charge_mult_recorded():
     assert any(e["section"] == "charge_mult" for e in r["parse_errors"])
 
 
+# ---------------- G11：电荷/多重度行行内 ! 注释（B7） ----------------
+
+def test_g11_charge_line_inline_comment():
+    """行内 `!` 注释官方合法（注释任意处）——预览/导入/提交零错误且
+    charge_mult 规范化输出不含注释文本（§2.14）。"""
+    r = parse_input('#p hf/sto-3g\n\nt\n\n0 1 ! neutral singlet\nO 0 0 0\n')
+    assert r["parse_errors"] == []
+    assert r["blocks"]["charge_mult"] == "0 1"
+    # 多组对行内注释零错误（全组规范化保留）
+    r2 = parse_input('#p hf/sto-3g\n\nt\n\n0,1 0,1 0,1 ! cp pairs\n'
+                     'O 0 0 0\nH 0 0 0.96\n')
+    assert r2["parse_errors"] == []
+    assert r2["blocks"]["charge_mult"] == "0 1 0 1 0 1"
+
+
+def test_g11_comment_cut_quote_aware():
+    """剥离引号外首个 `!`（与 C3 管道同规）：引号内 `!` 不截断——
+    引号 token 非整数，由既有「无法解析」判定照常报错。"""
+    from web.src.parse.blocks import parse_charge_tokens
+    assert parse_charge_tokens("0 1 ! neutral") == ["0", "1"]
+    assert parse_charge_tokens("0,1/0,1 ! cp") == ["0", "1", "0", "1"]
+    assert parse_charge_tokens("–1 2 ! anion") == ["-1", "2"]
+    # 引号内 ! 不截断：切分产物含引号 token（非整数，上层照常记 parse_errors）
+    toks = parse_charge_tokens('0 1 "a ! b"')
+    assert toks == ["0", "1", '"a', 'b"']
+    assert any(not t.lstrip("-").isdigit() for t in toks)
+
+
+def test_g11_comment_stripped_still_validates():
+    """剥离后 token 不足/非整数仍照常记 parse_errors（既有判定不变）。"""
+    # 不足：只剩电荷
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 ! only charge\nO 0 0 0\n")
+    assert any(e["section"] == "charge_mult" for e in r["parse_errors"])
+    # 非整数：注释前已有坏 token
+    r2 = parse_input("#p hf/sto-3g\n\nt\n\n0 x ! comment\nO 0 0 0\n")
+    assert any(e["section"] == "charge_mult" for e in r2["parse_errors"])
+    # 独立注释行（! 起始整行）在电荷行位置 → 剥离后为空 → 报错
+    r3 = parse_input("#p hf/sto-3g\n\nt\n\n! a comment line\nO 0 0 0\n")
+    assert any(e["section"] == "charge_mult" for e in r3["parse_errors"])
+
+
 def test_additional_section_with_gen_and_terminator():
     text = ("%mem=512MB\n\n#p hf/sto-3g gen\n\ntest\n\n0 1\nO 0 0 0\n"
             "H 0 0 0.96\nH 0 0.96 -0.24\n\nH 0\nS 3 1.0\n0.5 1.0\n****\n\n"
