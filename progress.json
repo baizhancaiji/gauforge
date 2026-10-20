@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20T23:47+0800",
+  "updated": "2026-10-21T00:22+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -101,9 +101,9 @@
       "migration": "prop=wrf 文件不再触发附加节识别（G16 必然拒绝该形态）；freq=readanh 类键内歧义缩写开始出现 route_option_unknown 警告（G16 实测拒绝该形态）"
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "B7 正确性补修（G11 电荷/多重度行行内 ! 注释误拒）", "note": "先行红两例已落（2ed38a76，回归守卫一例当前绿）；实现为 parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 C3 管道同规引号内不截断），剥离后 token 不足/非整数仍报错；无 schema 与 kind 词表变更；出口 G16 Rev. C.01 冒烟一例实测背书"},
   "next_steps": [
-    "B6 独立审查整改已收口（2026-10-20，R1 过滤层脚本化逐字节复现 + P3 留痕修正 + L1 视觉复测，见 input-verify-gap-b6-prose-audit.md §9）：B7 待启动——G11 电荷/多重度行行内 ! 注释误拒补齐（先行红实为 2 例，第三例为回归守卫，留痕 §9.2 R6）；3.4.0 发布冻结顺延至 B7 验收全绿后",
+    "B7 实施中（2026-10-21 开工）：先行红测试已落（2ed38a76，先行红 2 例 + 回归守卫 1 例，入口基线 2 failed / 845 passed）；入口闸门 validate_progress.py 通过；实现 parse_charge_tokens 引号外 ! 剥离进行中，出口 G16 Rev. C.01 冒烟一例待执行",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
