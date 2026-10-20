@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-20T21:58+0800",
+  "updated": "2026-10-20T23:38+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -101,7 +101,7 @@
       "migration": "prop=wrf 文件不再触发附加节识别（G16 必然拒绝该形态）；freq=readanh 类键内歧义缩写开始出现 route_option_unknown 警告（G16 实测拒绝该形态）"
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "B6 独立审查整改", "note": "R1 warn/review 过滤层脚本化入库（谓词复原，B5 worktree 复现六产物逐字节一致）+ R2/R3/R4/R7/R8 留痕口径修正 + R9 G16 补测（units=bohr/td=window）+ L1 playwright 视觉复测，报告 docs/plans/input-verify-gap-b6-code-review.md"},
   "next_steps": [
     "B6 已实施收口（2026-10-20，G10-a enforce 屏蔽 + G10-b 词典扩面审计，全量 838 passed 0 skipped，G16 冒烟 6 例通过，留痕见 input-verify-gap-b6-prose-audit.md）：B7 待启动——G11 电荷/多重度行行内 ! 注释误拒补齐（依赖 B4 已收口，与 B6 无先后约束）；3.4.0 发布冻结顺延至 B7 验收全绿后",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
