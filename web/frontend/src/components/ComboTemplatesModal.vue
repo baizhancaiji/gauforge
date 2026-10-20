@@ -10,10 +10,10 @@
  * 语义：默认不可取消、仅可改选）。三者均以文本形态提交，值级校验归后端单点；
  * 输入不做实时改写，保存由后端归一化回显（notice：temp_applied 已补齐 /
  * normalized 已归一化 / spelling_warnings 词典外 token 清单）。
- * 保存 422：errors 全量显著展示（字段级红描边 + 顶部错误清单）；
- * reason=keyword_not_in_dict 时出「忽略拼写警告并保存」豁免按钮——豁免记忆
- * 作用域 = 弹窗打开期间 × 全局 token 集（跨方案共享、关闭弹窗即清空、保存
- * 失败不清、成功后本会话保持、重开重新校验；§3.4）。
+ * 保存 422：errors 全量显著展示（字段级红描边 + 顶部错误清单）。
+ * 拼写口径：3.4.0 起 enforce 屏蔽（输入勘误计划决策点 12），词典外 token
+ * 后端一律放行并随 notice.spelling_warnings 回传展示，原「忽略拼写警告
+ * 并保存」豁免按钮随 warn 化移除（ignore_spelling 请求字段保留、恒 false）。
  * 未点保存：本地改动丢弃，切方案/关闭均回已保存值。
  */
 import { computed, ref, watch } from "vue";
@@ -48,24 +48,12 @@ const isDefault = ref(false); // 「设为默认」（radio 语义）
 const errors = ref<TemplateError[]>([]);
 const warnings = ref<string[]>([]); // notice.spelling_warnings（词典外 token 原文）
 const notice = ref<ComboNotice | null>(null); // 最近一次成功保存的 notice
-const exemptTokens = ref<Set<string>>(new Set()); // 豁免记忆（弹窗打开期间 × 全局）
 
 const selected = computed(
   () => templates.value.find((t) => t.template_id === selectedId.value) ?? null,
 );
 /** 字段级红描边映射（后端 errors[].field：route/nproc/mem_gb/cpu/link0）。 */
 const fieldErrors = computed(() => new Set(errors.value.map((e) => e.field)));
-const hasKeywordErrors = computed(() =>
-  errors.value.some((e) => e.reason === "keyword_not_in_dict"),
-);
-
-/** 422 errors 中 keyword_not_in_dict 条目的 token（message「词典外关键词：{t}」）。 */
-function oovTokensFromErrors(errs: TemplateError[]): string[] {
-  return errs
-    .filter((e) => e.reason === "keyword_not_in_dict")
-    .map((e) => e.message.replace(/^词典外关键词：/, ""))
-    .filter(Boolean);
-}
 
 function fillForm(t: ComboTemplate) {
   name.value = t.name;
@@ -96,7 +84,6 @@ watch(
     errors.value = [];
     warnings.value = [];
     notice.value = null;
-    exemptTokens.value = new Set(); // 关闭即清空豁免记忆（重开重新校验）
     const { data } = await client.GET("/combo-templates");
     loading.value = false;
     if (!data) {
@@ -129,7 +116,7 @@ function toggleUseCpu() {
   if (!useCpu.value) cpu.value = "";
 }
 
-async function save(ignoreSpelling: boolean) {
+async function save() {
   busy.value = true;
   errors.value = [];
   notice.value = null;
@@ -144,7 +131,7 @@ async function save(ignoreSpelling: boolean) {
       mem_gb: memGb.value.trim() || null,
       cpu: useCpu.value && cpu.value.trim() ? cpu.value.trim() : null,
       is_default: isDefault.value,
-      ignore_spelling: ignoreSpelling,
+      ignore_spelling: false, // enforce 屏蔽期间无拦截语义（决策点 12），恒 false
     },
   });
   busy.value = false;
@@ -167,28 +154,6 @@ async function save(ignoreSpelling: boolean) {
       if (t) fillForm(t);
     }
   }
-}
-
-/** 「保存」：两段式按 token 粒度豁免（§3.3 豁免集＝该批该 reason 的 token 集）——
- *  先不带豁免直存；422 的词典外 token 全部已在会话豁免集时才自动携
- *  ignore_spelling 重试（已豁免 token 跨方案共享免再拦），新 token 仍须
- *  显式点「忽略拼写警告并保存」。 */
-async function saveNormal() {
-  await save(false);
-  if (
-    errors.value.length &&
-    hasKeywordErrors.value &&
-    oovTokensFromErrors(errors.value).every((t) => exemptTokens.value.has(t))
-  ) {
-    await save(true);
-  }
-}
-
-/** 「忽略拼写警告并保存」：本批词典外 token 记入豁免集后重试（仅当次落库，
- *  豁免态不落库——重开弹窗重新校验）。 */
-function saveWithExemption() {
-  for (const t of oovTokensFromErrors(errors.value)) exemptTokens.value.add(t);
-  void save(true);
 }
 
 const routeInitialHint = computed(() => `清空恢复初始值：${initialRoute.value}`);
@@ -309,21 +274,11 @@ const routeInitialHint = computed(() => `清空恢复初始值：${initialRoute.
         关闭
       </button>
       <button
-        v-if="hasKeywordErrors"
-        class="btn btn--secondary"
-        type="button"
-        :disabled="busy"
-        title="豁免仅本次弹窗内生效：跨方案共享，关闭后重新校验"
-        @click="saveWithExemption"
-      >
-        忽略拼写警告并保存
-      </button>
-      <button
         class="btn btn--primary"
         type="button"
         :data-loading="busy || undefined"
         :disabled="busy || loading || loadError"
-        @click="saveNormal"
+        @click="save"
       >
         {{ busy ? "保存中 …" : "保存" }}
       </button>

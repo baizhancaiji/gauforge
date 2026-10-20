@@ -85,9 +85,9 @@
 #   unknown_setting / readonly / range / type
 # 词表三：组合流模板 reason 值域（PUT /combo-templates/{templateId} 的
 #   details.errors[].reason 值域，11 项全集；插波 3.2.0。
-#   keyword_not_in_dict 双信道——enforce 模式进 details.errors[]、warn 模式
-#   不进 errors[]，仅以 PUT 响应 notice.spelling_warnings 回传词典外 token
-#   原文（token 原文非 reason））
+#   keyword_not_in_dict 自 3.4.0 起 enforce 屏蔽（决策点 12）：不再进
+#   details.errors[]，词典外 token 仅以 PUT 响应 notice.spelling_warnings
+#   回传原文（token 原文非 reason）；reason 词条保留供恢复 enforce 时复用）
 #   route_must_start_with_hash / multi_line_route / blank_line_in_route /
 #   keyword_not_in_dict / temp_value_invalid / nproc_not_positive_int /
 #   mem_value_invalid / cpu_list_invalid / mem_below_per_core_floor /
@@ -1014,8 +1014,10 @@ components:
           type: boolean
           default: false
           description: >-
-            拼写豁免（仅当次请求生效、不落库）：enforce 模式下放行本批
-            keyword_not_in_dict 的词典外 token；warn 模式无拦截语义。
+            拼写豁免（仅当次请求生效、不落库）：enforce 屏蔽期间（3.4.0 起，
+            决策点 12）不生效——模板保存词典校验仅 warn，词典外 token 一律
+            放行并随 notice.spelling_warnings 回传；字段保留不删避免契约
+            破坏，enforce 恢复后重新生效。
 
     ComboTemplateMutationResult:
       allOf:
@@ -1025,8 +1027,8 @@ components:
             PUT /combo-templates/{templateId} 200 响应：更新后条目全字段 +
             notice。temp_applied=本次保存自动补齐 temperature=298.15（route 含
             freq 且未配置温度）；normalized=保存值经 casefold 归一化入库；
-            spelling_warnings=词典外 token 原文清单（warn 模式未豁免放行与
-            enforce 豁免放行两种情形均回传，供前端提示）；route_duplicates=
+            spelling_warnings=词典外 token 原文清单（3.4.0 起 enforce 屏蔽，
+            warn 放行一律回传，供前端提示）；route_duplicates=
             route 重复关键字非阻断警告（G2 判定表，Warning 结构数组）；
             route_option_warnings=route 子选项归属非阻断警告（G8 逐选项查典，
             Warning 结构数组）。
@@ -1046,7 +1048,7 @@ components:
                   type: array
                   items:
                     type: string
-                  description: 词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传）
+                  description: 词典外 token 原文清单（非 reason；3.4.0 起 enforce 屏蔽，warn 放行一律回传）
                 route_duplicates:
                   type: array
                   items:
@@ -3177,11 +3179,11 @@ paths:
         body.is_default=true（radio 语义：同事务迁移唯一默认，不可取消只能
         改选）。校验一次性全量执行、
         errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[]
-        reason 值域见文件头词表三；enforce 模式词典外 token 以
-        reason=keyword_not_in_dict 条目回传、message 含 token 原文，前端据该
-        reason 渲染「忽略拼写警告并保存」豁免按钮，ignore_spelling=true 时
-        该批 token 放行）。校验通过则 casefold 归一化（含 freq 自动补
-        temperature=298.15）落库，200 返回更新后条目 + notice。404=
+        reason 值域见文件头词表三）。词典外 token 不拒绝（3.4.0 起 enforce
+        屏蔽、决策点 12）：一律放行并随 notice.spelling_warnings 回传原文
+        供前端提示；ignore_spelling 字段保留但屏蔽期间不生效。校验通过则
+        casefold 归一化（含 freq 自动补 temperature=298.15）落库，200 返回
+        更新后条目 + notice。404=
         templateId ∉ {1..5}。并发取舍：单机单用户场景不设并发/乐观锁控制
         （updated_at 仅审计）；不发 SSE 事件（ui-preferences 同口径）。
       parameters:

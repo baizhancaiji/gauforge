@@ -905,7 +905,7 @@ export interface paths {
         get?: never;
         /**
          * 保存组合流精修模板（全量替换；校验→归一化→落库）
-         * @description 全量替换语义：未携带/空值字段按规则恢复（name/route 恢复初始值、 link0 三字段置 null=未配置），不做部分更新；「设为默认」经 body.is_default=true（radio 语义：同事务迁移唯一默认，不可取消只能 改选）。校验一次性全量执行、 errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[] reason 值域见文件头词表三；enforce 模式词典外 token 以 reason=keyword_not_in_dict 条目回传、message 含 token 原文，前端据该 reason 渲染「忽略拼写警告并保存」豁免按钮，ignore_spelling=true 时 该批 token 放行）。校验通过则 casefold 归一化（含 freq 自动补 temperature=298.15）落库，200 返回更新后条目 + notice。404= templateId ∉ {1..5}。并发取舍：单机单用户场景不设并发/乐观锁控制 （updated_at 仅审计）；不发 SSE 事件（ui-preferences 同口径）。
+         * @description 全量替换语义：未携带/空值字段按规则恢复（name/route 恢复初始值、 link0 三字段置 null=未配置），不做部分更新；「设为默认」经 body.is_default=true（radio 语义：同事务迁移唯一默认，不可取消只能 改选）。校验一次性全量执行、 errors 全量返回：任一失败 422 VALIDATION_FAILED（details.errors[] reason 值域见文件头词表三）。词典外 token 不拒绝（3.4.0 起 enforce 屏蔽、决策点 12）：一律放行并随 notice.spelling_warnings 回传原文 供前端提示；ignore_spelling 字段保留但屏蔽期间不生效。校验通过则 casefold 归一化（含 freq 自动补 temperature=298.15）落库，200 返回 更新后条目 + notice。404= templateId ∉ {1..5}。并发取舍：单机单用户场景不设并发/乐观锁控制 （updated_at 仅审计）；不发 SSE 事件（ui-preferences 同口径）。
          */
         put: operations["updateComboTemplate"];
         post?: never;
@@ -1407,7 +1407,7 @@ export interface components {
              */
             is_default: boolean;
             /**
-             * @description 拼写豁免（仅当次请求生效、不落库）：enforce 模式下放行本批 keyword_not_in_dict 的词典外 token；warn 模式无拦截语义。
+             * @description 拼写豁免（仅当次请求生效、不落库）：enforce 屏蔽期间（3.4.0 起， 决策点 12）不生效——模板保存词典校验仅 warn，词典外 token 一律 放行并随 notice.spelling_warnings 回传；字段保留不删避免契约 破坏，enforce 恢复后重新生效。
              * @default false
              */
             ignore_spelling: boolean;
@@ -1418,7 +1418,7 @@ export interface components {
                 temp_applied: boolean;
                 /** @description 本次保存是否发生大小写归一化（casefold 入库） */
                 normalized: boolean;
-                /** @description 词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传） */
+                /** @description 词典外 token 原文清单（非 reason；3.4.0 起 enforce 屏蔽，warn 放行一律回传） */
                 spelling_warnings?: string[];
                 /** @description route 重复关键字警告（kind=route_duplicate；模板保存通道触发，line 为模板 route 文本行号） */
                 route_duplicates?: components["schemas"]["Warning"][];

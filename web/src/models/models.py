@@ -536,7 +536,7 @@ class ComboTemplateUpdate(BaseModel):
     )
     ignore_spelling: bool | None = Field(
         False,
-        description='拼写豁免（仅当次请求生效、不落库）：enforce 模式下放行本批 keyword_not_in_dict 的词典外 token；warn 模式无拦截语义。',
+        description='拼写豁免（仅当次请求生效、不落库）：enforce 屏蔽期间（3.4.0 起， 决策点 12）不生效——模板保存词典校验仅 warn，词典外 token 一律 放行并随 notice.spelling_warnings 回传；字段保留不删避免契约 破坏，enforce 恢复后重新生效。',
     )
 
 
@@ -957,7 +957,7 @@ class Notice(BaseModel):
     )
     spelling_warnings: list[str] | None = Field(
         None,
-        description='词典外 token 原文清单（非 reason；enforce 豁免放行与 warn 放行均回传）',
+        description='词典外 token 原文清单（非 reason；3.4.0 起 enforce 屏蔽，warn 放行一律回传）',
     )
     route_duplicates: list[Warning] | None = Field(
         None,

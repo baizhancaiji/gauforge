@@ -2,7 +2,9 @@
 
 提交 #3（迁移+repo+config 常量）落种子幂等/重启 roundtrip/is_default
 事务性断言；#5（校验服务+端点）落 §3.2 校验矩阵逐 reason（11 项）、
-enforce/warn 双形态、端点 200/404/422 契约、序列化往返与提交链零改动回归。
+warn 口径（3.4.0 起 enforce 屏蔽，决策点 12：词典外 token 仅随
+notice.spelling_warnings 回传、不再 422）、端点 200/404/422 契约、
+序列化往返与提交链零改动回归。
 """
 from __future__ import annotations
 
@@ -204,22 +206,23 @@ def test_reason_multi_line_and_blank_line_api_direct():
     assert "multi_line_route" in reasons  # 多行与空行违规一次全报
 
 
-def test_reason_keyword_not_in_dict_enforce_and_ignore():
-    """enforce：词典外拦截 422；ignore_spelling=true 该批放行；
-    豁免仅当次生效（不落库，重开重新校验）。"""
+def test_oov_tokens_pass_with_warnings_after_enforce_off():
+    """G10-a 决策点 12：enforce 屏蔽后词典外 token 200 放行（不再 422），
+    notice.spelling_warnings 一律回传；ignore_spelling=true 与不传行为
+    一致（warn 等价，请求字段保留不删但无拦截语义差异）。"""
     route = "#p b3lyp/6-31g(d) opt freq zzzzzq"
     r = _put(1, route=route)
-    assert r.status_code == 422
-    reasons = _reasons(r)
-    assert reasons.count("keyword_not_in_dict") == 1
-    entry = r.json()["error"]["details"]["errors"][0]
-    assert "zzzzzq" in entry["message"]
-
-    r = _put(1, route=route, ignore_spelling=True)
     assert r.status_code == 200
     assert r.json()["notice"]["spelling_warnings"] == ["zzzzzq"]
-    # 豁免不落库：同 route 再次不带 ignore → 重新拦截
-    assert _put(1, route=route).status_code == 422
+
+    r2 = _put(1, route=route, ignore_spelling=True)
+    assert r2.status_code == 200
+    assert r2.json()["notice"]["spelling_warnings"] == ["zzzzzq"]
+
+    # 豁免语义不再存在：同 route 再次保存（不带 ignore）行为一致
+    r3 = _put(1, route=route)
+    assert r3.status_code == 200
+    assert r3.json()["notice"]["spelling_warnings"] == ["zzzzzq"]
 
 
 def test_validate_warn_mode_passes_with_warnings():
@@ -231,9 +234,10 @@ def test_validate_warn_mode_passes_with_warnings():
     assert notice["temp_applied"] is True  # freq 联动补温度照常
 
 
-def test_enforce_official_forms_pass():
-    """C3：官方合法词形在 enforce 不再误拒（输入勘误计划 §2.3 五类误拒
-    + 无等号空格形 + 引号值 + 括号选项键名命中 + IOp 括号内斜杠）。"""
+def test_official_forms_pass():
+    """C3：官方合法词形保存放行（输入勘误计划 §2.3 五类误拒 + 无等号
+    空格形 + 引号值 + 括号选项键名命中 + IOp 括号内斜杠；enforce 屏蔽后
+    口径由 warn 承接，断言语义不变）。"""
     for route in (
         "#p opt,freq",                       # 逗号作项目分隔符
         "#p b3lyp/6-31g(d,p) opt freq",      # 基组括号整词（回归基线）
@@ -273,16 +277,19 @@ def test_temp_auto_apply_bracket_form_freq():
 
 
 def test_reason_temp_value_invalid():
-    # 300,310：B1 C3 起逗号为官方分隔符，切出孤立 token 310 走词典外拦截
-    # （temperature=300 本身合法单值）；单值形态仍走温度值校验
+    # 单值非法形态仍走温度值校验阻断；temperature=300,310 类逗号列表中
+    # 310 为孤立 token（逗号官方分隔符）→ enforce 屏蔽后 warn 放行、仅
+    # spelling_warnings 提示（决策点 12）
     for val, reason in (("abc", "temp_value_invalid"),
                         ("-1", "temp_value_invalid"),
-                        ("300,310", "keyword_not_in_dict"),
                         ("0", "temp_value_invalid")):
         route = f"#p b3lyp/6-31g(d) opt freq temperature={val}"
         r = _put(1, route=route)
         assert r.status_code == 422, val
         assert reason in _reasons(r), val
+    r = _put(1, route="#p b3lyp/6-31g(d) opt freq temperature=300,310")
+    assert r.status_code == 200
+    assert r.json()["notice"]["spelling_warnings"] == ["310"]
 
 
 def test_temp_auto_apply_and_no_duplicate():
@@ -359,16 +366,18 @@ def test_reason_link0_symbol_ref_forbidden():
 
 
 def test_errors_all_at_once():
-    """errors 全量一次返回（一次全报，不逐个）。"""
+    """errors 全量一次返回（一次全报，不逐个）；词典外 token 不进 errors
+    （enforce 屏蔽后走 spelling_warnings 通道）。"""
     r = _put(1, route="opt freq\n\nzzzzzq", nproc="0", mem_gb="abc",
              cpu="a-b")
     assert r.status_code == 422
     reasons = _reasons(r)
     for expect in ("multi_line_route", "blank_line_in_route",
-                   "route_must_start_with_hash", "keyword_not_in_dict",
+                   "route_must_start_with_hash",
                    "nproc_not_positive_int", "mem_value_invalid",
                    "cpu_list_invalid"):
         assert expect in reasons, expect
+    assert "keyword_not_in_dict" not in reasons
 
 
 # ---------------- 清空恢复初始值 / 归一化 ----------------
@@ -430,29 +439,27 @@ def test_refine_input_accepts_serialized_template():
 
 
 def test_spelling_words_loaded_and_gate_ready():
-    """校验单点依赖的词典在位（1166 词=3.3 面⑤选项面 + B5 面⑥替代表单
-    扩容，判据①token 全命中）。"""
+    """校验单点依赖的词典在位（1345 词=3.3 面⑤选项面 + B5 面⑥替代表单
+    + B6 面⑦散文句式直述与手工补录，判据①token 全命中）。"""
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 1166
+    assert len(words) == 1345
     assert {"p", "b3lyp", "6-31g(d)", "opt", "freq"} <= words
-    assert svc.SPELLING_MODE == "enforce"
+    # 3.4.0 enforce 屏蔽（决策点 12）：模板保存词典校验仅 warn
+    assert svc.SPELLING_MODE == "warn"
 
 
 
 # ---------------- B3 G2：模板 route 重复关键字检测 ----------------
 
 def test_template_route_duplicate_warning():
-    """warn 模式下重复关键字出 route_duplicate（非阻断）；enforce 模式
-    重复不属词典外词、不新增阻断理由（重复按警告通道，§2.11 模板列）。"""
+    """重复关键字出 route_duplicate（非阻断，随 notice 携带；重复不属
+    词典外词、不新增阻断理由，§2.11 模板列）。"""
     from web.src.services import combo_templates as ct
     payload = {"route": "#p mp2 mp2/6-31g(d)", "nproc": "4",
                "mem_gb": "8", "cpu": "0-3"}
-    fields, notice = ct.validate_and_normalize(1, payload, mode="warn")
-    assert notice.get("route_duplicates"), "warn 模式应携带重复关键字清单"
+    fields, notice = ct.validate_and_normalize(1, payload)
+    assert notice.get("route_duplicates"), "notice 应携带重复关键字清单"
     assert notice["route_duplicates"][0]["keyword"] == "mp2"
-    # enforce 模式不因重复 422（mp2 在词典），响应 notice 同样携带
-    fields2, notice2 = ct.validate_and_normalize(2, payload, mode="enforce")
-    assert notice2.get("route_duplicates")
 
 
 def test_template_route_duplicate_exempt_shapes():
@@ -462,8 +469,7 @@ def test_template_route_duplicate_exempt_shapes():
                   "#p opt opt=(calcfc,ts)",
                   "#p b3lyp/6-31g(d) iop(5/17=1) iop(6/50=1)"):
         _, notice = ct.validate_and_normalize(
-            3, {"route": route, "nproc": "4", "mem_gb": "8", "cpu": "0-3"},
-            mode="enforce")
+            3, {"route": route, "nproc": "4", "mem_gb": "8", "cpu": "0-3"})
         assert not notice.get("route_duplicates"), route
 
 
@@ -475,9 +481,9 @@ def test_template_mem_gb_must_be_positive():
     from web.src.errors import ApiError
     with pytest.raises(ApiError):
         ct.validate_and_normalize(
-            9, {"route": "#p opt", "nproc": "4", "mem_gb": "0"}, mode="enforce")
+            9, {"route": "#p opt", "nproc": "4", "mem_gb": "0"})
     fields, _ = ct.validate_and_normalize(
-        9, {"route": "#p opt", "nproc": "4", "mem_gb": "8"}, mode="enforce")
+        9, {"route": "#p opt", "nproc": "4", "mem_gb": "8"})
     assert fields["mem_gb"] == 8.0
 
 
@@ -485,14 +491,14 @@ def test_template_cpu_slash_n_accepted():
     """%cpu=0-5/2 步长区间模板放行（计数按步长）。"""
     from web.src.services import combo_templates as ct
     fields, _ = ct.validate_and_normalize(
-        10, {"route": "#p opt", "cpu": "0-5/2", "mem_gb": "8"}, mode="enforce")
+        10, {"route": "#p opt", "cpu": "0-5/2", "mem_gb": "8"})
     assert fields["cpu"] == "0-5/2"
 
 
 # ---------------- B5：G7 面⑥替代表单 + G8 子选项归属警告 ----------------
 
-def test_enforce_route_alternate_forms_pass():
-    """G7：#N/#P/#T 官方替代表单（route 页 Alternate Forms）enforce 通过
+def test_route_alternate_forms_pass():
+    """G7：#N/#P/#T 官方替代表单（route 页 Alternate Forms）保存通过
     （B5 前缺 n/t 词条，#T/#N 模板被误拒）。"""
     for route in ("#t b3lyp/6-31g(d) opt", "#n b3lyp/6-31g(d) opt",
                   "#p b3lyp/6-31g(d) opt"):
@@ -500,17 +506,17 @@ def test_enforce_route_alternate_forms_pass():
         assert r.status_code == 200, (route, _reasons(r))
 
 
-def test_enforce_bare_abbreviation_rejected():
-    """G7 决策点 5：裸词缩写（fre/geo）词典精确匹配失败 → enforce 拒绝
-    （不做最短唯一前缀近似）。"""
+def test_bare_abbreviation_warn_not_reject():
+    """G7 决策点 5 + G10-a：裸词缩写（fre/geo）词典精确匹配失败、不做
+    最短唯一前缀近似；enforce 屏蔽后 warn 放行并随 spelling_warnings
+    回传原文（词级近邻提示由分块保存/导入提交通道 keyword_spell 承接）。"""
     r = _put(1, route="#p fre geo")
-    assert r.status_code == 422
-    reasons = _reasons(r)
-    assert reasons.count("keyword_not_in_dict") == 2
+    assert r.status_code == 200
+    assert r.json()["notice"]["spelling_warnings"] == ["fre", "geo"]
 
 
 def test_notice_route_option_warnings():
-    """G8：子选项归属警告不阻断（enforce 键名命中 token 照常放行），随
+    """G8：子选项归属警告不阻断（键名命中 token 照常放行），随
     notice.route_option_warnings 回传（契约 B5 新增可选字段）。"""
     r = _put(1, route="#p opt=(readfcht) freq")
     assert r.status_code == 200, _reasons(r)
@@ -522,8 +528,9 @@ def test_notice_route_option_warnings():
 
 
 def test_notice_route_option_warnings_ambiguous_prefix():
-    """G8 歧义缩写：scf=conv（Conver/Conventional 歧义，官方明文非法）
-    enforce 键名命中放行，随 notice 提示；唯一前缀缩写 scf=conven 判活
+    """G8 歧义缩写：scf=conv（Conver/Conventional 键内歧义；B6 G16 冒烟
+    实测 G16 接受该形态——B5「G16 拒绝」系推断错误，词典口径偏保守
+    仍随 notice 提示，§2.12 已知限制）；唯一前缀缩写 scf=conven 判活
     零警告（官方 Syntax Rules 正面例）。"""
     r = _put(1, route="#p scf=conv opt")
     assert r.status_code == 200

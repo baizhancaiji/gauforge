@@ -7,11 +7,13 @@ r"""组合流精修模板校验与归一化（插波 3.2.0，m4-combo-template-d
 - 拼写校验：token 经括号/引号感知管道切分（B1 C3，与 check_route_spelling
   同管道——逗号/`!` 行内注释/`kw(opt)` 括号形/`@file`/`=` 两侧空格/引号值
   均为官方合法形态）、casefold **精确匹配** keywords.txt
-  白名单（不采用近似命中判错），mode 参数 enforce/warn——enforce → 词典外
-  error（请求 ignore_spelling=true 时该批降级放行）；warn → 放行 +
-  notice.spelling_warnings（对齐既有 save_block 非阻断语义）。当前词典已
-  达 §8.1 达标判据（#4 扩面再生），默认 enforce；词典未达标时改 warn
-  上线须经 §5 #6 条件提交流程（本常量为单一切换点）。
+  白名单（不采用近似命中判错），mode 参数 enforce/warn——3.4.0 起
+  enforce 口径暂时屏蔽（输入勘误计划决策点 12：enforce/warn 分工未明且
+  enforce 存在组合词值侧把关空洞——键名在典即放行，同类拼写错误裸词被
+  拒、组合词仅警告），SPELLING_MODE 切为 warn：词典外 token 一律放行并
+  随 notice.spelling_warnings 回传，keyword_not_in_dict 不再 422 拒绝；
+  请求 ignore_spelling 字段保留但屏蔽期间不生效。恢复 enforce 须先解决
+  值侧把关与缩写口径一致性（§2.8/§2.9 为恢复基线），另批裁决。
 - 归一化（需求三）：route 保存时 casefold 落库、响应 notice 标注
   normalized；link0 三字段值域为数字与 proc-list（无字母词形），归一化
   仅 route 有实义。
@@ -33,8 +35,9 @@ from .dependencies import parse_link0_refs
 # 每核内存下限 GB（§0.4 口径 3）
 PER_CORE_MEM_GB_FLOOR = 1.0
 
-# 拼写校验 mode（enforce/warn；见模块 docstring 切换纪律）
-SPELLING_MODE = "enforce"
+# 拼写校验 mode（enforce/warn；见模块 docstring 切换纪律——3.4.0 起为
+# warn，enforce 恢复另批裁决，决策点 12）
+SPELLING_MODE = "warn"
 
 # 温度值：单值正数（开尔文）；官方无列表/负值语法（KB 核验 2026-10-13）
 _NUM_RE = re.compile(r"^\d+(?:\.\d+)?$")
@@ -61,8 +64,8 @@ def validate_and_normalize(template_id: int, data: dict, *,
     mem_gb(float|None), cpu(str|None), is_default(bool)}（存储层形态；
     is_default 仅表达「本请求置默认」，False 时 repo 保持现有归属——契约：
     缺省/false 不改变默认）；
-    notice = {temp_applied, normalized, spelling_warnings?}（enforce 豁免
-    放行与 warn 放行均携带词典外 token 清单）。任一校验失败 →
+    notice = {temp_applied, normalized, spelling_warnings?}（词典外 token
+    清单，warn 口径一律携带——3.4.0 起 enforce 屏蔽）。任一校验失败 →
     validation_failed(errors)（全量一次返回）。
     """
     errors: list[dict] = []
@@ -89,7 +92,8 @@ def validate_and_normalize(template_id: int, data: dict, *,
     # route 为单行，token 行号恒 1
     tokens = [t for _, t in tokenize_route(route_cf)]
 
-    # ---- 拼写（精确白名单；enforce/warn 双 mode） ----
+    # ---- 拼写（精确白名单；3.4.0 起 enforce 屏蔽仅 warn——SPELLING_MODE
+    # 为单一切换点，mode="enforce" 分支仅恢复后可达，决策点 12） ----
     words = load_keywords()
     oov = [t for t in tokens if not token_in_dict(t, words)]
     if mode == "enforce" and oov and not bool(data.get("ignore_spelling")):
