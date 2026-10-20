@@ -148,10 +148,14 @@ def parse_charge_tokens(line: str) -> list[str]:
     （services.candidates）共用同一分词口径，各通道「无法解析才阻断」
     （§2.11 矩阵；审查整改 R3：斜杠/en-dash 编辑保存原误拒）。
     行内首个引号外 `!` 起剥离注释及其后内容（B7 G11，官方「注释任意处」
-    §1.1；与 route 通道 C3 管道同规：引号内 `!` 不截断、留作分隔符处理
-    不入 token——电荷行为整数对自由格式、无括号取值语义，故不引入括号
-    跟踪，取舍对齐 B1 审查 R3 登记先例）；charge_mult 规范化输出不含
-    注释文本，剥离后 token 不足/非整数仍由既有判定照常记 parse_errors。"""
+    §1.1）。注释截断规则与 route 通道 C3 管道同规（引号外首个 `!` 起
+    截断、引号内不截断）；引号内 `!` 的后续处置两通道不同：C3 管道
+    （keywords._tokenize_line）引号内空白不切分、`!` 保留为 token 整体，
+    本单点因电荷行为整数对自由格式、引号无取值语义，将引号内 `!` 替换
+    为空格作分隔符不入 token（test_g11_comment_cut_quote_aware 固化）。
+    电荷行无括号取值语义，不引入括号跟踪（取舍对齐 B1 审查 R3 登记
+    先例）。charge_mult 规范化输出不含注释文本，剥离后 token 不足/
+    非整数仍由既有判定照常记 parse_errors。"""
     cut = len(line)
     in_quote = False
     for idx, ch in enumerate(line):
