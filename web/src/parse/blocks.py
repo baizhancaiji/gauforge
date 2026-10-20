@@ -6,7 +6,8 @@
 parse_errors 标注。
 
 B2（输入勘误计划 G4/G9）：附加节触发识别改由官方 Section Ordering 表驱动
-（section_ordering.any_trigger，含 prop=wrf 兼容触发）；核心节必需空行
+（section_ordering.any_trigger；prop=wrf 兼容触发项经 B6 G16 实测拒绝
+已删除，决策点 9）；核心节必需空行
 缺失显式检测（route/title EOF 阻断、空分子说明缺节阻断、分子说明与
 变量/常数区 EOF 非阻断警告、--Link1-- 前空行附注）。scan_spans/split_lines
 为公共 API（服务层节起始行取数，B1 审查 R5 整改——不再以下划线私有名
@@ -449,7 +450,8 @@ def parse_input(text: str) -> dict:
                          "message": "分子说明节未以空行终止（建议补终止空行）"})
 
     # 变量/常数区与附加节：其后以空行分隔的各区域
-    # G4：附加节识别改由官方 Section Ordering 表驱动（含 prop=wrf 兼容触发）
+    # G4：附加节识别改由官方 Section Ordering 表驱动（prop=wrf 兼容项
+    # B6 G16 实测拒绝后删除，决策点 9）
     wants_extra = section_ordering.any_trigger(blocks["route"])
     last_addl_start: int | None = None
     while i < n:

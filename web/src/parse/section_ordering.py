@@ -3,8 +3,8 @@
 官方 input 页 Section Ordering 全表 59 行（G16 Rev. C.01，2018-02-19 快照，
 与计划 §1.2 逐行一致）落码：4 core + 54 additional + 1 automatic。消费方：
 - any_trigger：parse_input / scan_spans 的 wants_extra 判定（附加节识别与
-  隐式变量区抑制）的官方口径，含 COMPAT_EXTRA_KEYWORDS 一版兼容触发
-  （官方表未列的 prop=wrf，§2.12；B2 后 G16 冒烟确认再裁）；
+  隐式变量区抑制）的官方口径（§2.12 的 prop=wrf 兼容触发项经 B6 G16
+  Rev. C.01 实测拒绝（QPErr syntax error）已删除，决策点 9 裁决）；
 - additional_hits / terminator_missing：最后一个附加节以 EOF 收尾时，
   route 命中的 additional 行全为 terminator=yes 才记 parse_errors，
   混合 yes/no 保守不报（§7 风险缓解）。
@@ -24,9 +24,6 @@ from typing import Callable
 from .keywords import token_head, token_options, tokenize_route
 
 log = logging.getLogger(__name__)
-
-# 官方表未列、现行实现已支持的兼容触发词（§2.12；B2 后冒烟确认再裁）
-COMPAT_EXTRA_KEYWORDS = ("prop=wrf",)
 
 
 class RouteFacts:
@@ -356,14 +353,14 @@ def additional_hits(route_text: str) -> tuple[SectionRule, ...]:
 
 
 def any_trigger(route_text: str) -> bool:
-    """附加节口径触发判定：官方 additional 行命中 ∨ 兼容项命中。
+    """附加节口径触发判定：官方 additional 行命中即触发。
 
     只消费 additional 行——core 行的 Route Section | all 恒真禁止导入；
-    automatic 行（PDB）无 route 谓词不参与（§2.12）。"""
+    automatic 行（PDB）无 route 谓词不参与（§2.12）。prop=wrf 兼容项经
+    B6 G16 实测拒绝已删除（决策点 9）：该形态 G16 自身报 QPErr，
+    无附加节识别价值，route_option_unknown 警告照发（A 类口径）。"""
     f = RouteFacts(route_text)
-    if any(r.kind == "additional" and r.predicate(f) for r in TABLE):
-        return True
-    return "wrf" in f.opts_of("prop")  # COMPAT_EXTRA_KEYWORDS
+    return any(r.kind == "additional" and r.predicate(f) for r in TABLE)
 
 
 def terminator_missing(route_text: str) -> bool:

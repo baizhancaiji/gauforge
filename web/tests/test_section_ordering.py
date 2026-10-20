@@ -189,11 +189,12 @@ def test_terminator_verdict_matrix():
     assert so.terminator_missing("#p b3lyp/6-31g(d) pop=nboread") is False
     assert so.terminator_missing("#p gen pop=nboread") is False  # 混合保守
     assert so.terminator_missing("#p b3lyp/6-31g(d) opt freq") is False
-    # 兼容触发词 prop=wrf 不参与官方表 terminator 判定
     assert so.terminator_missing("#p b3lyp/6-31g(d) prop=wrf") is False
 
 
-def test_compat_extra_keywords_kept():
-    """官方表未列的 prop=wrf 保留一版兼容触发（§2.12，B2 后 G16 冒烟再裁）。"""
-    assert so.any_trigger("#p b3lyp/6-31g(d) prop=wrf") is True
-    assert so.COMPAT_EXTRA_KEYWORDS == ("prop=wrf",)
+def test_compat_extra_keywords_removed_after_g16_smoke():
+    """prop=wrf 兼容触发项经 B6 G16 Rev. C.01 实测拒绝（QPErr syntax
+    error，A 类 G03 旧形态）后删除（决策点 9 裁决）：any_trigger 不再
+    因该形态触发，COMPAT_EXTRA_KEYWORDS 常量随之移除。"""
+    assert so.any_trigger("#p b3lyp/6-31g(d) prop=wrf") is False
+    assert not hasattr(so, "COMPAT_EXTRA_KEYWORDS")

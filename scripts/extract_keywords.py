@@ -33,6 +33,22 @@
   Forms 章节的 #### #X 条目——#N/#P/#T 官方替代表单字母入典（p 已由
   面②单字母白名单覆盖，去重）；仅在该章节内提取（后续 ## 章节截断），
   #T/#N 模板不再被 enforce 误拒。
+- 面⑦（散文提及选项，B6 G10-b 输入勘误计划 §2.13）：keyword 页 Options
+  章节 #### 选项条目正文中的官方句式直述——面⑤只提取条目标题名，正文
+  提及的选项别名与 No-对形态系统性缺失（B5 语料基线 B 类：opt 页
+  ModRedundant 条目正文「AddRedundant is synonymous with ModRedundant」、
+  freq 页 ROA 条目正文「NNROA says to use the numerical ROA method」）。
+  四句式（载体=页 slug，与面⑤同规）：
+  1. synonym 句：X is a/are synonym(s)（含 X and Y 枚举、are all、
+     deprecated、is synonymous with 变体）；
+  2. says-to 行为句：X says (not )to …（官方以该句式定义选项行为：
+     NoStatic/Mic103/AllModes/NNROA 等）；
+  3. default 句：the default is X / X is the default；
+  4. 主语侧停用词表过滤（代词/句首动词/方法名/单位/Link 词等散文噪声）。
+  句式覆盖不足的复核通过形态以 B6_MANUAL_OPTIONS 手工补录常量入典
+  （B6 三路差集全量审计逐条裁决，清单与依据见
+  docs/plans/input-verify-gap-b6-prose-audit.md 与
+  docs/plans/audit/review_decisions.txt）。
 
 词条小写化、按码点排序、去重——确定性输出，重跑幂等。
 
@@ -332,6 +348,180 @@ def _route_alt_words(text: str) -> set[str]:
     return {x.casefold() for x in _ALT_ITEM.findall(section)}
 
 
+# 面⑦手工补录常量（B6 G10-b，2026-10-20 三路差集全量审计逐条人工复核
+# 通过、面⑦句式覆盖不足的散文提及/官方枚举/字面实锤形态）。载体一律按
+# 语义确定（手册原文书写），逐条依据见 docs/plans/audit/review_decisions.txt
+# 与 input-verify-gap-b6-prose-audit.md；受幂等闸门与规模断言同规约束。
+B6_MANUAL_OPTIONS: dict[str, tuple[str, ...]] = {
+    # freq 页：input 页 Section Ordering 官方触发词字面 + No-对 default 句
+    "freq": ("ReadAnharmonic", "ReadHindered", "ReadNM", "NoReadNM",
+             "NoReadNormalModes", "NoSelectNM", "NoSelectNormalModes"),
+    # nmr：input 页 Section Ordering 字面（NMR=CGST IOp(10/93=1)）
+    "nmr": ("CGST",),
+    # casscf：opt 页官方链接字面（CASSCF=SlaterDet）+ input/molspec 页
+    # Section Ordering 字面（CASSCF=SpinOrbit）
+    "casscf": ("SlaterDet", "SpinOrbit"),
+    # ccsd：gn 页官方链接字面（CCSD=Maxcyc=*n*，锚点 CCSD_keyword）
+    "ccsd": ("MaxCyc",),
+    # integral：Grid 条目正文官方等价形 Integral(SuperFine) + opt/dft 页
+    # 字面（Int=UltraFine should be specified）
+    "integral": ("SuperFine", "UltraFine"),
+    # cis：行为句（IVOGuess/NonEqSolv is the default）与 No-对（NoNAC/
+    # NoNonAdiabaticCoupling suppress）
+    "cis": ("IVOGuess", "NonEqSolv", "NoNAC", "NoNonAdiabaticCoupling"),
+    # geom：geom.md HugeSystems 字面（Geom=NoTest）+ deprecated synonyms
+    "geom": ("NoTest", "ReadFreeze", "RdFreeze"),
+    # admp：No-对 default 句（The default is NoBandGap）与行为句
+    # （The alternative is Cholesky … is the default）
+    "admp": ("NoBandGap", "Cholesky"),
+    # bomd：Sample 条目参数枚举「one of these keywords: Microcanonical,
+    # Fixed, and Local」+ Update/StepSize 条目行为句（GradOnly/GradientOnly）
+    "bomd": ("Microcanonical", "Fixed", "Local", "GradOnly", "GradientOnly"),
+    # cas：FullDiag/OrbRot 条目 No-对行为句（NoFullDiag suppresses /
+    # NoCPMCSCF excludes）
+    "cas": ("NoFullDiag", "NoCPMCSCF"),
+    # stable：Opt 条目行为句（NoOpt prevents reoptimization and is the
+    # default；RepOpt 同句 synonym 由面⑦承接）
+    "stable": ("NoOpt",),
+    # symmetry：SCF 条目等价句（Symm=NoSCF is equivalent to …）
+    "symmetry": ("NoSCF",),
+    # guess：行为句（NoFock disables … is the default）+ No-对 default 句
+    # （NoForceAbelianSymmetry is the default）
+    "guess": ("NoFock", "NoForceAbelianSymmetry"),
+    # scf：No-对行为句群（is the default / suppresses / prohibits）
+    "scf": ("NoDIIS", "NoDamp", "NoDSymm", "NoIDSymm", "NoFermi",
+            "NoFinalIteration", "NoIncFock", "NoSave", "NoSaveKPoint"),
+    # cphf：RecursiveDIIS/Static 条目 No-对（the default is NoRecursiveDIIS /
+    # NoStatic says not to——says-to 句由面⑦承接，此处保底）
+    "cphf": ("NoRecursiveDIIS", "NoStatic"),
+    # opt：No-对/行为句（NoExpert enforces … is the default、NoOptProduct/
+    # NoOptReactant retains、NoQuadMacro is the default、Mic103/Mic120 says
+    # to、Scaling is the default for）
+    "opt": ("NoExpert", "NoOptProduct", "NoOptReactant", "NoQuadMacro",
+            "Mic103", "Mic120", "Scaling"),
+    # sacci：官方枚举句「spin state selection options are CationDoublet
+    # (Doublet is a synonym), AnionDoublet, Triplet, …」+ 行为句（Full is
+    # the default）+ LevelTwo/LevelThree 句面 + Window synonym
+    "sacci": ("CationDoublet", "AnionDoublet", "Doublet", "Triplet",
+              "Quartet", "Quintet", "Sextet", "Septet", "Full",
+              "LevelTwo", "LevelThree", "ReadWindow"),
+    # population：官方字面 Pop=SaveXXX 枚举句 + AllOrbitals/HirshfeldEE 行为句
+    "population": ("SaveESP", "SaveMulliken", "SaveCM5", "SaveNPA",
+                   "AllOrbitals", "HirshfeldEE"),
+    # output：官方字面 Output=(RotatationalConstants, SpinRotation)
+    # （Rotatational 为官方原文拼写）
+    "output": ("RotatationalConstants", "SpinRotation"),
+    # mm：OldQEq 行为句（requests an older version）+ ROff 行为指称
+    "mm": ("OldQEq", "ROff"),
+    # pseudo：行为句（Requests the Coreless Hartree-Fock potentials）
+    "pseudo": ("Coreless",),
+    # densityfit：行为句（NonIterative is the default except for …）
+    "densityfit": ("NonIterative",),
+    # gfinput：行为句（Coulomb normalization. This is the default）
+    "gfinput": ("Coulomb",),
+}
+
+
+# 面⑦四句式（Options 章节 #### 条目正文；主语捕获组）
+_SYN_MAIN = re.compile(
+    r"\b([A-Z][A-Za-z0-9]+)(?:\s+and\s+([A-Z][A-Za-z0-9]+))?"
+    r"(?:\s+are\s+all)?\s+(?:is\s+(?:a\s+)?|are\s+)synonym")
+_SYN_WITH = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+is\s+synonymous\s+with\b")
+_SAYS_TO = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+says\s+(?:not\s+)?to\b")
+_DEFAULT_IS = re.compile(r"\b[Tt]he\s+default\s+is\s+([A-Z][A-Za-z0-9]+)\b")
+_IS_DEFAULT = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+is\s+the\s+default\b")
+# 主语停用词（散文噪声：代词/句首动词/方法名/单位/Link 词/键名等——
+# B6 复核否决集高频形态提炼；大小写不敏感全词比对）
+_RULE_STOP = frozenset("""
+it this that these those they there then than and but for not are was were
+has have had can may will would should could must with without from into
+only also all any when where which while both each more most other some
+such same its one two three first second third last next new old see use
+used using via note notes example examples option options keyword keywords
+default defaults value values input output gaussian g16 g09 g03 rev c01
+specifies requests available instead however therefore thus here lines bare
+sets set solve compute compute includes include perform indicates implies
+requires force forces turns restores overrides prevents suppresses disables
+retains enforces excludes scf dft mp2 mp4 hf uhf rhf cis casscf gvb oniom
+pbc linda berny qcscf rohf bohr hartree hartrees angstrom angstroms amu
+cphf cpks grid pruned molecules nmr freq opt gen guess read restart none
+spin singlets triplets calcgsum gsum window window hdf5
+# 特例停用（B6 复核甄别）：RdFreq 载体属 CPHF（polar 页 default 句
+# 「CPHF=RdFreq is the default」跨键载体错位）；yes/never 为 ReCorrect 等
+# 条目的参数取值（值形，irc 页「The default is Yes」）
+rdfreq yes never
+""".split())
+
+
+def _prose_candidates(head: str, body: str) -> set[str]:
+    """面⑦：单条目正文 → 官方句式直述的选项名集合（casefold）。
+
+    head 为条目名（归一前），与主语相同的词不重复提取（条目名已由面⑤
+    收录）；markdown 链接整体剥离（链接文本键归属属链接载体，跨页引用
+    由审计路①字面扫描承接）。"""
+    text = re.sub(r"\[[^\]]*\]\([^)]*\)", " ",
+                  re.sub(r"`[^`]*`", " ", body))
+    found: set[str] = set()
+    head_cf = _norm_option(head)
+    for pat in (_SYN_MAIN, _SYN_WITH, _SAYS_TO, _DEFAULT_IS, _IS_DEFAULT):
+        for m in pat.finditer(text):
+            for g in m.groups():
+                if not g:
+                    continue
+                cf = g.casefold()
+                if cf in _RULE_STOP or len(cf) < 2:
+                    continue
+                if head_cf and cf == head_cf:
+                    continue
+                found.add(cf)
+    return found
+
+
+def _prose_option_words(markdown_dir: Path) -> set[str]:
+    """面⑦keyword 页：Options 章节 #### 条目正文句式直述 + 手工补录。"""
+    words: set[str] = set()
+    kdir = markdown_dir / "keyword"
+    if not kdir.is_dir():
+        return words
+    for page in sorted(kdir.glob("*.md")):
+        slug = page.stem
+        if slug in EXCLUDED_SLUGS:
+            continue
+        lv2 = lv3 = None
+        cur_opt: str | None = None
+        body: list[str] = []
+        for line in page.read_text(encoding="utf-8").splitlines() + [""]:
+            m = _CHAPTER_HEADING.match(line)
+            if m or line.startswith("####"):
+                in_options = (
+                    (cur_opt is not None and lv2
+                     and "option" in lv2.casefold())
+                    or (cur_opt is not None and lv3
+                        and "option" in lv3.casefold()))
+                if in_options:
+                    for opt in _prose_candidates(cur_opt, "\n".join(body)):
+                        words.add(f"{slug}={opt}")
+                if m:
+                    if m.group(1) == "##":
+                        lv2, lv3 = m.group(2).strip(), None
+                    else:
+                        lv3 = m.group(2).strip()
+                    cur_opt = None
+                else:
+                    cur_opt = _norm_option(line.lstrip("#").strip())
+                    if cur_opt is None:
+                        cur_opt = line.lstrip("#").strip().replace("*", "") \
+                            .replace("_", "") or None
+                body = []
+                continue
+            if cur_opt is not None:
+                body.append(line)
+    for carrier, opts in B6_MANUAL_OPTIONS.items():
+        for opt in opts:
+            words.add(f"{carrier}={opt}".casefold())
+    return words
+
+
 def _basis_words(text: str) -> set[str]:
     """面③basissets 页：族正则全页扫描 + 极化/弥散形态规则生成。"""
     folded = text.casefold()
@@ -349,7 +539,7 @@ def _basis_words(text: str) -> set[str]:
 
 
 def extract(manifest_path: Path, markdown_dir: Path | None) -> list[str]:
-    """产出排序去重的词条全集（六条提取面并集）。"""
+    """产出排序去重的词条全集（七条提取面并集）。"""
     words = extract_manifest(manifest_path)
     if markdown_dir is not None and markdown_dir.is_dir():
         gv6 = markdown_dir / "gv6" / \
@@ -366,6 +556,7 @@ def extract(manifest_path: Path, markdown_dir: Path | None) -> list[str]:
         if route.is_file():
             words |= _route_alt_words(route.read_text(encoding="utf-8"))
         words |= _option_words(markdown_dir)
+        words |= _prose_option_words(markdown_dir)
     return sorted(words)
 
 

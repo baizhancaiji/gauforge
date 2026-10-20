@@ -131,7 +131,10 @@ def test_real_kb_inrepo_dictionary_matches_regeneration(tmp_path):
     # 白名单，含 scf=xqc/yqc 等全部 KW=OPT 组合词）
     # → 1166（B5 面⑥：route 页 Alternate Forms 替代表单 n/t；p 已由
     # 面②覆盖去重——#T/#N 模板不再被 enforce 误拒）
-    assert len(inrepo.decode("utf-8").splitlines()) == 1166
+    # → 1345（B6 面⑦：Options 条目正文官方句式直述（synonym/says-to/
+    # default 四句式）+ B6 手工补录常量——散文提及选项 B 类缺口补齐，
+    # opt=addredundant/freq=nnroa 等不再误报 route_option_unknown）
+    assert len(inrepo.decode("utf-8").splitlines()) == 1345
 
 
 def test_inrepo_dictionary_lowercase_unique_sorted():
@@ -206,7 +209,7 @@ def test_gate_route_alt_forms_in_dictionary():
 
 def test_loader_reads_inrepo_dictionary():
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 1166
+    assert len(words) == 1345
     assert "opt" in words and "casscf" in words and "scrf" in words
     assert all(w == w.casefold() for w in words)
 

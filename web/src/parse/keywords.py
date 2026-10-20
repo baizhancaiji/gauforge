@@ -266,14 +266,17 @@ def token_in_dict(tok: str, words: frozenset[str]) -> bool:
 
 # 值形关键字白名单：括号内容为数值/模型化学组合/命令串，不做选项查典
 # （IOp(6/50=1) 取值列表、ONIOM(B3LYP/6-31G(d):AM1:UFF) 模型化学、
-# External="RunTink Amber" 命令名——warn 级宁漏勿误，§2.9）。
+# External="RunTink Amber" 命令名、Field=Z-100/XXYZ-20 场向量取值——
+# field.md「Field=XXYZ-20 applies the indicated hexadecapole field」，
+# B6 三路差集审计新发现，warn 级宁漏勿误，§2.9）。
 # iop 成员实际不判活：IOp(6/50=1) 按 = 拆键得 iop(6/50（含括号），键名
 # 不在典即零警告；成员保留为键名恰为裸 iop 时的防御。
-_VALUE_FORM_HEADS = frozenset(("iop", "oniom", "external"))
+_VALUE_FORM_HEADS = frozenset(("iop", "oniom", "external", "field"))
 
 # 选项基名的尾部参数括号剥离（如 window(13,-12) → window）；仅剥参数，
-# 不回查括号内。td=window 为官方 TD=Window 选项但词典暂缺 td=* 组合词
-# 条目，该形态仍会报 unknown（B 类面⑤覆盖缺口，登记另批扩面）。
+# 不回查括号内。td=window(…) 系 G03 时代 TD/CIS 选项，G16 手册 TD/CIS 页
+# 均无 Window——A 类旧形态（决策点 11：预期警告，语料 7 条），不入典
+# （B6 G10-b 词典扩面口径：A 类判归形态不因扩面消除）。
 _PAREN_TAIL = re.compile(r"\([^)]*\)")
 
 
@@ -336,8 +339,11 @@ def _option_unknowns(tok: str, line: int, words: frozenset[str],
     剥值归一）∨ 纯数字取值（temp=300 类值形）∨ 单字母基名（官方选项名
     ≥2 字符——面⑤提取同规；ccsd(t) 微扰阶标记）∨ 该键选项集内唯一前缀
     （官方最短唯一缩写，Syntax Rules「All keywords and options may be
-    shortened to their shortest unique abbreviation」；歧义前缀 G16 拒绝
-    ——Conv 非法例——不判活）。未命中者近邻于该键选项集附 suggestion。"""
+    shortened to their shortest unique abbreviation」；键内歧义前缀不判活
+    ——B6 G16 冒烟实测：freq=readanh 因 readanharm/readanharmonic 歧义被
+    G16 拒绝（警告正确），scf=conv 歧义却被 G16 接受（B5「拒绝」系推断
+    错误）——词典口径对后者偏保守，登记 §2.12 已知限制）。
+    未命中者近邻于该键选项集附 suggestion。"""
     key, inner = _split_key_options(tok)
     if key is None or not key or key not in words \
             or key in _VALUE_FORM_HEADS:

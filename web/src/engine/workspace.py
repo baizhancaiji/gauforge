@@ -2,8 +2,9 @@
 
 - 物化：输入副本（含补齐行）写入 run/<执行id>/input.gjf，哈希对拷贝内容计算；
 - Link0：解析 %nprocshared/%mem，缺失项按运行级设置缺省注入（value+defaulted
-  记入执行记录，roadmap §2.6）；%mem 已声明时按 G16 单位（KB/MB/GB/TB、
-  W/MW/QW，1024 进制、word=8B）换算为 GB 供资源记账；
+  记入执行记录，roadmap §2.6）；%mem 已声明时按 G16 官方单位集（KB/MB/GB/
+  TB/KW/MW/GW/TW，1024 进制、word=8B，B4 与值域同源下沉 parse/link0_rules）
+  换算为 GB 供资源记账；
 - g16 环境：按 roadmap §2.5 实测结论等价构造（GAUSS_EXEDIR/GAUSS_BSDDIR/
   G16BASIS/GAUSS_ARCHDIR/GAUSS_LEXEDIR + 库与可执行搜索路径），不 source
   profile 文件；每次执行强制 GAUSS_SCRDIR=run/<执行id>/。

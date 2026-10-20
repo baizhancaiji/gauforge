@@ -293,13 +293,21 @@ def test_g4_mixed_yes_no_conservative_not_reported():
     assert not any(e["section"] == "additional" for e in r["parse_errors"])
 
 
-def test_g4_compat_prop_wrf_still_triggers_wants_extra():
-    """兼容触发词 prop=wrf（官方表未列）保留一版：附加节识别不回退；
-    兼容项不参与官方表 terminator 判定（命中集合为空 → 不报）。"""
+def test_g4_compat_prop_wrf_removed_after_g16_smoke():
+    """prop=wrf 兼容触发项经 B6 G16 Rev. C.01 实测拒绝（QPErr syntax
+    error，A 类 G03 旧形态）后删除（决策点 9 裁决）：不再触发附加节
+    识别，route_option_unknown 警告照发（prop 官方选项集无 wrf）。"""
+    from web.src.parse import section_ordering as so
     text = ("#p b3lyp/6-31g(d) prop=wrf\n\nt\n\n0 1\nO 0 0 0\n"
             "H 0 0 0.96\n\nsome data line\n")
+    assert so.any_trigger("#p b3lyp/6-31g(d) prop=wrf") is False
+    assert not hasattr(so, "COMPAT_EXTRA_KEYWORDS")
+    from web.src.parse.keywords import check_route_options
+    kinds = [w["kind"] for w in check_route_options("#p prop=wrf")]
+    assert kinds == ["route_option_unknown"]
     r = parse_input(text)
-    assert len(r["blocks"]["additional_sections"]) == 1
+    # 附加节「some data line」回落隐式变量区启发式（无触发词兜底路径，
+    # 非「名 数值」形态不误判变量区）；prop=wrf 不再触发官方附加节识别
     assert r["parse_errors"] == []
 
 
@@ -502,8 +510,9 @@ def test_g8_unique_prefix_and_non_option_heads():
     assert check_route_options("#p density=curr") == []
     assert check_route_options("#p freq=numer") == []
     assert check_route_options("#p guess=(cards,lowsym)") == []
-    # 歧义前缀：conv 同前缀于 conver/conventional——官方明文非法
-    # （「may be abbreviated to Conven, but not to Conv」），报未知
+    # 歧义前缀：conv 同前缀于 conver/conventional——词典歧义口径报未知
+    # （B6 G16 冒烟实测 scf=conv 被 G16 接受——B5「G16 拒绝」系推断错误，
+    # 警告为词典口径保守残余，随批登记 §2.12 已知限制）
     ws = check_route_options("#p scf=conv")
     assert [(w["kind"], w["keyword"]) for w in ws] \
         == [("route_option_unknown", "conv")]
@@ -521,6 +530,50 @@ def test_g8_line_offset_absolute():
     ws = check_route_options("#p opt freq\ngeom=(allcheck,xyzzy)",
                              line_offset=4)
     assert ws[0]["line"] == 6  # geom= 位于 route 第 2 行(1 起)+ 偏移 4
+
+
+def test_g10b_prose_option_shapes_zero_warnings():
+    """B6 G10-b：面⑤散文提及选项 B 类缺口补齐后零警告复测（词典面⑦
+    Options 条目正文句式直述 + B6 手工补录常量；§2.13 立项背景两确认
+    形态与审计逐条复核入典集代表项，裁决明细见
+    docs/plans/audit/review_decisions.txt）。"""
+    from web.src.parse.keywords import check_route_options
+    # 立项背景两确认形态（opt 页「AddRedundant is synonymous with
+    # ModRedundant」、freq 页 ROA 条目「NNROA says to use the numerical
+    # ROA method from Gaussian 03」）
+    assert check_route_options("#p opt=addredundant") == []
+    assert check_route_options("#p freq=nnroa") == []
+    # 面⑦句式提取代表（synonym：admp=emass/population=cm5/scrf=aiefpcm/
+    # td=nac/freq=savenm；says-to：guess=nomix；default：sacci=full）
+    assert check_route_options(
+        "#p geom=addredundant admp=emass population=cm5 scrf=aiefpcm "
+        "td=nac freq=savenm guess=nomix sacci=full") == []
+    # B6 手工补录代表（input 页 Section Ordering 字面 freq=readanharmonic/
+    # nmr=cgst/casscf=spinorbit、gn 页字面 ccsd=maxcyc、integral.md 等价形
+    # SuperFine、geom.md HugeSystems 字面 NoTest、sacci 官方枚举 Triplet）
+    assert check_route_options(
+        "#p freq=readanharmonic nmr=cgst casscf=spinorbit ccsd=maxcyc=3 "
+        "integral=superfine geom=notest sacci=triplet") == []
+
+
+def test_g10b_field_value_form_whitelist():
+    """field 键入值形白名单（B6 审计新发现：Field=Z-100/XXYZ-20 等向量
+    取值形态，field.md「Field=XXYZ-20 applies the indicated hexadecapole
+    field with magnitude …」——取值面非选项面，与 iop/oniom/external 同构；
+    warn 级宁漏勿误；field=read 官方选项词条照常入典不受影响）。"""
+    from web.src.parse.keywords import check_route_options
+    assert check_route_options("#p field=z-100") == []
+    assert check_route_options("#p field=y-50 field=read") == []
+    assert check_route_options("#p field=xxyz-20") == []
+
+
+def test_g10b_a_class_shapes_still_warn():
+    """A 类判归形态维持预期警告（决策点 11：G03 旧形态不入典；td=window
+    官方 TD/CIS 页均无 Window，_PAREN_TAIL 注释已按 A 类口径修正）。"""
+    from web.src.parse.keywords import check_route_options
+    for route in ("#p geom=modela", "#p units=bohr", "#p td=window"):
+        ws = check_route_options(route)
+        assert [w["kind"] for w in ws] == ["route_option_unknown"], route
 
 
 def test_spell_option_tokens_no_spurious_neighbor():
