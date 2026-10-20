@@ -74,7 +74,8 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 1. 确认当前 unreleased 行的 `changes` 已完整（无遗漏、无未批准条目）。
 2. **计划状态校验（强制）**：核对本次发布内容涉及的实施计划文档（`docs/plans/`），
    其状态行均已回填为「已实施并验收」；发现「待执行」「待实施」「执行计划」等
-   未回填状态时，先完成回填再继续发布，不得带病冻结。
+   未回填状态时，先完成回填再继续发布，不得带病冻结（校验脚本
+   `uv run python scripts/check_plan_status.py`，发布前必跑）。
 3. **冻结**：`status` 改为 `released`，补齐 `version`、`date`（ISO 8601 精确到分钟并带时区偏移）、`semver`。
 4. 在文件末尾**追加新的空 unreleased 行**。
 5. 更新 `progress.json`：清空 `unreleased`，更新 `latest_released_version`。
@@ -136,7 +137,8 @@ g16web 服务的拉起/关闭、前端开发链路与隔离冒烟见
 `scripts/validate_progress.py`、`uv run pytest`、`scripts/check_tokens.py`——
 设计令牌逐变量一致性、`scripts/check_contrast.py`——WCAG 对比度全组合
 ≥ 4.5:1、`scripts/gen_changelog_md.py --check`——CHANGELOG.md 与 jsonl
-一致性、`scripts/audit_frontend_offline.sh`——前端构建产物零外链资源引用
+一致性、`scripts/check_plan_status.py`——计划文档状态终态校验（发布前必跑，
+见 §5.2 第 2 步）、`scripts/audit_frontend_offline.sh`——前端构建产物零外链资源引用
 （M3 C1 起，前端改动批次与 D1 收口必跑，白名单仅非资源引用）；涉及前端视觉或
 派发链路的改动另见 §6.1 第 4 条 hq 产物检查。）
 
