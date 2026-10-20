@@ -146,8 +146,26 @@ def parse_charge_tokens(line: str) -> list[str]:
 
     en-dash 宽容换负号、逗号/斜杠与空白等价——parse_input 与编辑保存
     （services.candidates）共用同一分词口径，各通道「无法解析才阻断」
-    （§2.11 矩阵；审查整改 R3：斜杠/en-dash 编辑保存原误拒）。"""
-    return line.replace("–", "-").replace(",", " ").replace("/", " ").split()
+    （§2.11 矩阵；审查整改 R3：斜杠/en-dash 编辑保存原误拒）。
+    行内首个引号外 `!` 起剥离注释及其后内容（B7 G11，官方「注释任意处」
+    §1.1；与 route 通道 C3 管道同规：引号内 `!` 不截断、留作分隔符处理
+    不入 token——电荷行为整数对自由格式、无括号取值语义，故不引入括号
+    跟踪，取舍对齐 B1 审查 R3 登记先例）；charge_mult 规范化输出不含
+    注释文本，剥离后 token 不足/非整数仍由既有判定照常记 parse_errors。"""
+    cut = len(line)
+    in_quote = False
+    for idx, ch in enumerate(line):
+        if in_quote:
+            if ch == '"':
+                in_quote = False
+            continue
+        if ch == '"':
+            in_quote = True
+        elif ch == "!":
+            cut = idx
+            break
+    head = line[:cut].replace("!", " ")
+    return head.replace("–", "-").replace(",", " ").replace("/", " ").split()
 
 
 def _looks_like_variables(region: list[str]) -> bool:
