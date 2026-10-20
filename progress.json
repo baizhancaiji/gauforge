@@ -89,7 +89,7 @@
   ],
   "in_progress": null,
   "next_steps": [
-    "B1–B5 已全部实施收口（2026-10-19，各批留痕见 input-verify-gap-remediation-plan §8.1–§8.6；B5 无强制 G16 冒烟节点，入口基线 820、收口 835 passed 0 skipped）：按 §3.1 版本归属走 3.4.0 发布流程（冻结时点由用户在 B5 验收后确定）",
+    "计划已再修（2026-10-20，原位勘误 + B6 立项，见 input-verify-gap-remediation-plan §2.13/§8.8）：B6 待启动——G10-a enforce 口径暂时屏蔽（仅启用 warning，先行独立提交）→ G10-b B 类词典扩面与面⑤散文提及选项全量审计；B1–B5 已收口（835 passed 0 skipped）；3.4.0 发布冻结顺延至 B6 验收全绿后",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
