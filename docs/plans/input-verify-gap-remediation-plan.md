@@ -2,13 +2,17 @@
 
 > 状态：**再修订**（2026-10-20 再修：原位勘误 §1.1/§2.8/§2.9/§3 B5 验收行的
 > 错误表述；新增 §2.13 G10 与 B6 批次——enforce 口径暂时屏蔽、B 类词典
-> 扩面、支持版本口径与语料判据修订；新增决策点 11–13。B1–B5 批次已实施
-> 完毕并逐批独立审查留痕（§8），B5 复盘确认的实现缺口以 §2.13 承接补齐）。
+> 扩面、支持版本口径与语料判据修订，并补全 B6 验收口径（审计清单人工
+> 复核、ignore_spelling warn 等价断言与前端实测等）；新增 §2.14 G11 与
+> B7 批次——电荷/多重度行行内 `!` 注释误拒补齐；新增决策点 11–13。
+> B1–B5 批次已实施完毕并逐批独立审查留痕（§8），B5 复盘确认的实现缺口
+> 以 §2.13 承接补齐，电荷行注释缺口以 §2.14 承接补齐）。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
 > 与 roadmap 冲突时以 roadmap 为准；契约（openapi.yaml / sse.md）变更须文档先行
-> （roadmap §1 设计原则「契约先行」）。文中行号以 2026-10-18 HEAD（g16-webui 分支）为准，实施时以实际代码为准。
+> （roadmap §1 设计原则「契约先行」）。文中行号与各节「现状」描述以
+2026-10-18 HEAD（g16-webui 分支）为基线，实施时以实际代码与 §8 留痕为准。
 
 ## 0. 背景、依据与方法
 
@@ -50,8 +54,11 @@
   细节触发表落位于代码静态数据（§2.4 方案）。
 - `scripts/extract_keywords.py` 的数据源（gaussian-kb 知识库数据目录）与
   §1 规则核对同源同数；字典再生成的幂等性已有闸门（`test_extract_keywords.py`
-  逐字节一致 + 1164 规模断言），但**真实知识库缺失时该测试会 skip**，
-  本计划 G7 同时保留非条件的规模断言，并要求批次记录 skip 状态。
+  逐字节一致 + 1166 规模断言，B5 面⑥ 扩面后为三处：条件真实 KB 测试、
+  非条件 loader 测试与
+  `test_combo_templates.py::test_spelling_words_loaded_and_gate_ready`），
+  **真实知识库缺失时条件测试会 skip**，批次记录必须注明 skip 状态，
+  不得当作通过。
 - 本计划同时登记一项兼容项：现有 `_EXTRA_KEYWORDS` 含官方表未列出的
   `prop=wrf`；G4 替换触发词集时保留一版兼容触发并在 §2.12 登记，
   待 G16 冒烟确认后再决定删除。
@@ -226,7 +233,8 @@
 | G7 | 字典词条缺口（t/n）；缩写维持精确匹配 | 增强 | B5 |
 | G8 | 括号内子选项不校验（未对照 `kw=opt` 组合词验证归属） | 增强 | B5 |
 | G9 | 核心节必需空行与分子说明缺失无显式检测（route/title EOF 吞并、归因误导、空分子说明放行；含分子说明/Variables EOF 登记） | 增强 | B2 |
-| G10 | enforce/warn 分工未明且 enforce 存在组合词值侧把关空洞（屏蔽）；面⑤散文提及选项缺口误报官方合法写法（`td=window` 等，全量审计 + 扩面）；语料判据失真（G03 旧形态误作判据） | 修订 | B6 |
+| G10 | enforce/warn 分工未明且 enforce 存在组合词值侧把关空洞（屏蔽）；面⑤散文提及选项缺口误报官方合法写法（`opt=addredundant` 等，三路差集全量审计 + 扩面）；语料判据失真（G03 旧形态误作判据） | 修订 | B6 |
+| G11 | 电荷/多重度行行内 `!` 注释误拒（分词不剥离注释，官方允许 `!` 任意行任意位置，实测预览/导入/提交记 parse_errors、编辑保存 422） | 正确性 | B7 |
 
 ### 2.0.1 G0 · 统一非阻断 warnings 通道（B1 前置）
 
@@ -574,12 +582,13 @@ ept/output/charge/iop`；白名单外的头部只要重复即警告。裸形+选
    正则与语义记 `warnings`（`kind=link0_value_invalid`），编辑保存保持
    阻断；组合流模板 `mem_gb` 同步要求 >0（模板无单位输入）。为避免
    `parse` 层反向依赖 `services`/`engine`（会形成循环导入），把
-   `_MEM_VALUE_RE` 与 `%cpu` 解析核心下沉到 `web/src/parse/link0_rules.py`，
-   `services/candidates.py` 与 `engine/workspace.py` 复用；`parse_input`
-   只依赖该低层模块。engine 记账换算同步对齐统一单位集：`_mem_to_gb`
-   现含官方值域外的 `QW` 且缺 `GW/TW`（`%mem=2GW` 现解析失败回落缺省
-   注入并误记 defaulted），下沉时删除 `QW`、补 `GW/TW` 换算，记账与
-   值域共用同一单位集。`%rwf` 分段值域不纳入校验（目录路径与 `-1`/`0`
+   `%mem` 值域正则与 `%cpu` 列表解析核心下沉到 `web/src/parse/link0_rules.py`
+   （公共名 `MEM_VALUE_RE`/`cpu_list_count`），`services/candidates.py` 与
+   `engine/workspace.py` 复用；`parse_input` 只依赖该低层模块。engine
+   记账换算同步对齐统一单位集：workspace 侧 `_mem_to_gb` 原含官方值域外
+   的 `QW` 且缺 `GW/TW`（`%mem=2GW` 原解析失败回落缺省注入并误记
+   defaulted），下沉为 `link0_rules.mem_to_gb` 薄封装后删除 `QW`、
+   补 `GW/TW` 换算，记账与值域共用同一单位集。`%rwf` 分段值域不纳入校验（目录路径与 `-1`/`0`
    特殊值语义复杂，离线静态校验误报率高），登记 §2.12。
 3. **Link 0 行长上限**：`parse_input` 与 `_validate_section` 均补单行
    ≤500 字符；编辑保存阻断（reason=`link0_line_too_long`），
@@ -727,8 +736,11 @@ CCSD**」佐证「选项-关键字归属」是官方自身的校验维度。
 - **缩写选项**：官方原文 keywords **and options** 均可缩写（§1.1）——
   选项在其键的官方选项集（词典 `键=*` 组合词条目）内按**最短唯一前缀**
   判活（如 `density=curr`、`freq=numer`、`scrf=conven`），歧义前缀
-  （如 `scf=conv`，同时前缀于 conver/conventional）G16 拒绝、仍记
-  `route_option_unknown`，不引入选项级近邻近似；（2026-10-20 勘误：
+  （如 `scf=conv`，同时前缀于 conver/convergence/conventional，官方原文
+  以 Convergence 选项的存在为归因）G16 拒绝、仍记
+  `route_option_unknown`，不引入选项级近邻近似；唯一性空间按键内选项集
+  近似——官方口径为「全系统」最短唯一缩写（§1.1），全系统选项全集非
+  现行词典可表达，登记为 §2.12 已知限制；（2026-10-20 勘误：
   原句「精确匹配口径同样适用于选项，缩写选项按未命中记
   route_option_unknown」系据 §1.1 漏录 "and options" 的错误推导，与官方
   原文相反——§8.6 口径修正 1 已裁决，原位改写）；
@@ -820,7 +832,10 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 
 ### 2.11 规则 × 通道覆盖矩阵
 
-> 新增/变更规则必须在此矩阵登记「阻断 / 警告 / 不校验」，作为通道一致性判据。`模板` 指组合流模板保存。**预览列的「阻断」
+> 新增/变更规则必须在此矩阵登记「阻断 / 警告 / 不校验」，作为通道一致性判据。矩阵登记本计划全部批次（含 B6/B7）实施完毕后的
+> 目标口径：`模板` 列的 route 拼写警告以 G10-a（决策点 12，enforce
+> 屏蔽）为依据，G10-a 落地前模板保存维持现行 enforce 行为。`模板`
+> 指组合流模板保存。**预览列的「阻断」
 > 指产生 `parse_errors` 并在预览中标记错误，不阻断预览接口返回**（预览
 > 本身保持尽力而为）；其余列的「阻断」指该操作 422 拒绝。模板无对应字段
 > 的规则登记为「不适用」，不得虚报「阻断」。
@@ -843,7 +858,7 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | Link 0 单行 ≤500 | 警告 | 警告 | 警告 | 阻断 | 不适用（生成行远短于上限） |
 | Link 0 位于 route 前（G3） | 阻断 | 阻断 | 阻断 | 阻断 | 不适用 |
 | Link 0 指令文法/指令名/重复 | 警告 | 警告 | 警告 | 阻断（文法非法）/警告（未知/重复） | 不适用 |
-| route 拼写 | 警告 | 警告 | 警告 | 警告 | 阻断（enforce） |
+| route 拼写 | 警告 | 警告 | 警告 | 警告 | 警告 |
 | route 重复关键字（G2） | 警告 | 警告 | 警告 | 警告 | 警告 |
 | route 子选项归属（G8） | 警告 | 警告 | 警告 | 警告 | 警告 |
 | 原子标签文法/哑原子/鬼原子（G6） | 警告 | 警告 | 警告 | 警告 | 不适用 |
@@ -865,13 +880,17 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | `@file` 是否存在、`/N` 语义 | 文件可能位于集群侧或 G16 运行目录，WebUI 无访问权 | 不校验；预览可显示「包含文件未校验」提示（可选，非本计划） |
 | `Geom=Modify` 两节输入 | 官方已弃用（推荐 ModRedundant），实际使用极少 | 不覆盖；解析保持现状 |
 | 全局关键字空间的最短唯一性 | 词典不是全系统关键字空间 | 维持精确匹配（决策点 5），缩写误拒为已知限制；warn 通道保留近邻提示 |
-| `prop=wrf` 非官方触发词 | 官方 Section Ordering 未列，但现行实现已支持 | 保留一版 `COMPAT_EXTRA_KEYWORDS`，B2 后 G16 冒烟确认再决定删除 |
+| `prop=wrf` 非官方触发词 | 官方 Section Ordering 未列，但现行实现已支持 | 保留一版 `COMPAT_EXTRA_KEYWORDS`，冒烟确认节点排入 B6 出口（§3.1），随 G16 冒烟一例确认后裁决去留 |
 | 分子说明/Variables EOF 阻断 | 历史文件常以 EOF 收尾；G16 是否一律拒绝未做全量实测 | G9 仅给非阻断 warnings；若实测 G16 拒绝，再另批升级为阻断 |
 | title 语义/内容质量 | 程序不解释 title | 仅校验字符与行数 |
 | Link 0 未知指令阻断 | 历史模板可能含自定义 `%` 指令 | 仅 warnings（决策点 7） |
 | `%rwf` 分段值域校验 | 分段含目录路径与 `-1`/`0` 特殊值语义，离线静态校验误报率高 | 不校验；G16 运行期报错 |
 | 关键字与计算类型组合合法性（如 NMR 仅限 HF/DFT/MP2） | 需完整语义模型，离线静态校验不可行；G8 仅覆盖选项-关键字归属 | 交 G16/testrt，登记为已知限制 |
 | `opt==calcfc` 类双等号畸形 token | 选项型键跳过词级近邻后零警告（B5 选项化前可得拼写近邻建议） | 宁漏勿误口径内；G10-b 实施时顺带评估拆解层可报性，不单独立项 |
+| 选项缩写唯一前缀的判定空间 | 官方唯一性空间为「全系统」（§1.1），全系统选项全集非现行词典可表达，离线不可精确判定 | §2.9 按键内官方选项集唯一前缀判活，较官方口径宽、仅漏报方向（warn 级宁漏勿误）；登记为已知限制 |
+| `#p restart` 豁免档 | 官方 Restart 语义「No other input is required」，title/电荷/分子说明均可省，强于 Geom=AllCheck；现行实现按缺节拒绝（B2 语料 6 文件，§8.2） | 接受集窄于官方的已知限制；如需支持另批立项 |
+| `@file` 含路径的多级 `/N` 后缀 | §2.3 词法仅要求尾部 `/N` 吸附；`@file/2/3` 类纯数字多级后缀宽容整词（放行方向无害），`@dir/sub/file.dat/7` 含路径斜杠仍拆散（§8.1 观察项） | 计划外形态，相关语料出现再议 |
+| Guess=Cards EOF 手册与实测分歧 | 官方表 terminator=yes，G16 Rev. C.01 实测 EOF 收尾容忍（语料 1/1156，§8.2） | G4 维持 parse_errors 级；同类语料增多再议降级 warnings，需用户裁决（同决策点 3 变更） |
 
 ---
 
@@ -887,11 +906,16 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   （`freq=numar`）仅警告。**决策点 12：暂时屏蔽全部 enforce 口径，仅
   启用 warning**。
 - **B 类词典覆盖缺口（确凿误报，当前持续发生）**：手册明文存在但面⑤未
-  提取的散文提及选项被报 `route_option_unknown`，已确认四形态：
-  `td=window`（TD 页官方 TD=Window 选项，语料 7 文件命中）、
-  `opt=addredundant`（6 条）、`freq=nnroa`、`units=bohr`。面⑤按
-  Options 章节 `####` 规则提取，散文提及的完整缺口**未做全量审计**，
-  除已确认形态外不排除更多——补审计前不存在「无误报」的证据。
+  提取的散文提及选项被报 `route_option_unknown`，已确认两形态：
+  `opt=addredundant`（6 条，opt 页明文「AddRedundant is synonymous with
+  ModRedundant」）、`freq=nnroa`（4 条，freq 页 ROA 条目明文保留 G03
+  数值 ROA）。面⑤按 Options 章节 `####` 规则提取，散文提及的完整缺口
+  **未做全量审计**，除已确认形态外不排除更多——补审计前不存在
+  「无误报」的证据。语料另有两形态经官方原文复核判归 A 类（预期警告，
+  不入典）：`td=(window(13,-12)…)`/`cis=(window=(13,-12)…)` 共 7 条
+  （td 宿主 4、cis 宿主 3，G03 时代 TD/CIS 选项，G16 手册 TD/CIS 页
+  均无 Window）、`units=bohr` 14 条（units 页官方选项为
+  Ang/AU/Deg/Rad，`bohr` 非官方选项名，仅系 AU 的散文释义）。
   **决策点 13：B 类词典扩面正式立项**。
 - **语料判据失真**：官方自带测试语料（`~/g16/tests/com`）陈旧，大量
   G03 时代旧形态（`geom=modela` 265 条等）不能作为本项目的错误判据。
@@ -905,16 +929,34 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 1. **G10-a enforce 屏蔽（先行独立提交）**：模板保存词典校验降为仅警告
    （`SPELLING_MODE` enforce → warn，单点消费以实际代码为准），
    `keyword_not_in_dict` 不再 422 拒绝，拼写错误仅随 notice 携带；
-   enforce 相关用例改 warn 口径断言；契约 description 同步（模板保存
-   不再拒绝词典外词）。enforce/warn 分工重新裁决后另批恢复，恢复时须
-   先解决组合词值侧把关与缩写口径的一致性（§2.8/§2.9 勘误后的口径为
-   恢复基线）。
-2. **G10-b 词典扩面**：面⑤散文提及选项**全量审计**——逐 keyword 页
-   全文扫描散文提及的 `键=选项` 形态，与词典组合词条目做差集，产出缺口
-   清单随批留痕；缺口按清单补提取（提取规则不足处手工补录，仍经
-   `extract_keywords.py` 受控源入典）；重生成词典并过幂等闸门与规模
-   断言；已确认四形态零警告复测；A 类旧形态命中为预期行为，不因扩面
-   消除。
+   enforce 相关用例改 warn 口径断言（含 `ignore_spelling=true` 与不传
+   行为一致的 warn 等价断言）；契约 description 同步（模板保存
+   不再拒绝词典外词）；`ignore_spelling` 请求字段保留不删（避免契约
+   破坏），description 注明 enforce 屏蔽期间不生效，前端
+   `ComboTemplatesModal.vue` 的「忽略拼写警告并保存」豁免按钮随 warn
+   化隐藏（隐藏后按 AGENTS §6.2 以浏览器实测验收）；
+   `combo_templates.py` 模块头切换纪律 docstring 同步改写
+   （warn 为现行口径，恢复条件见决策点 12）。enforce/warn 分工重新裁决
+   后另批恢复，恢复时须先解决组合词值侧把关与缩写口径的一致性
+   （§2.8/§2.9 现行口径为恢复基线）。
+2. **G10-b 词典扩面**：面⑤散文提及选项**全量审计**，三路差集互补
+   （散文裸选项名不含键前缀、跨页引用不落在宿主页，单一路径不构成
+   全量）——①全分类页面（不限 keyword 页）字面扫描 `键=选项` 形态；
+   ②keyword 页按页 slug 所属关键字对散文裸选项名做归属推断（首字母
+   大写、非既有 Options 条目、与页主题近邻，如 opt 页「AddRedundant is
+   synonymous with ModRedundant」；同一散文提及归属多载体（该句并见
+   opt/geom 两页）时逐条标注载体裁决）；③语料命中形态反查手册 SSOT
+   （§8.6 B 类两形态即由此证实）。三路与词典组合词条目做差集，产出缺口
+   清单随批留痕，清单逐条人工复核留痕后方可入典；缺口按清单补提取：
+   提取规则可覆盖的走提取规则，规则
+   覆盖不足处（散文提及、跨页引用等）在 `extract_keywords.py` 内以受
+   版本管理的手工补录常量清单入典，与提取产物同受幂等闸门与规模断言
+   约束；载体关键字一律按语义确定而非页 slug；
+   重生成词典并过幂等闸门与规模断言；已确认 B 类形态零警告复测；A 类
+   旧形态命中为预期行为，不因扩面消除（`td=(window(13,-12)…)` 与
+   `units=bohr` 等 A 类判归形态不入典，见立项背景）；`keywords.py` 中
+   涉及 window 形态判定的注释（`_PAREN_TAIL` 条）同步按 A 类口径修正
+   （G16 手册 TD/CIS 页无 Window，警告为预期行为）。
 3. **`opt==calcfc` 类畸形 token 静默**：已登记 §2.12，G10-b 实施时
    顺带评估拆解层可报性，不单独立项。
 
@@ -923,9 +965,51 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 
 **涉及文件**：`web/src/services/combo_templates.py`（G10-a 单点）、
 `scripts/extract_keywords.py`、`web/src/parse/keywords.txt`（重生成）、
-`web/src/parse/keywords.py`（断言相关）、相关测试与契约 description。
+`web/src/parse/keywords.py`（断言相关）、前端
+`ComboTemplatesModal.vue`（豁免按钮）、
+`web/src/engine/workspace.py`（模块头 docstring 旧单位口径残留顺带修正）、
+相关测试与契约 description。
+
+### 2.14 G11 · 电荷/多重度行行内 `!` 注释误拒（正确性修复，B7，2026-10-20 立项）
+
+**现状**：`parse_charge_tokens`（`web/src/parse/blocks.py:143-149`）对
+电荷/多重度行仅做 en-dash/逗号/斜杠归一后按空白切分，不剥离行内 `!`
+注释；官方允许 `!` 出现在任意行任意位置（§0.2/§1.1）。实测
+`0 1 ! neutral singlet` 与 `0,1 0,1 0,1 ! cp pairs` 在预览/导入/提交均记
+parse_errors「电荷/多重度行无法解析」（阻断），编辑保存
+`_validate_section` 经同一单点同样 422——官方合法文件被误拒，且解析
+失败时 `charge_mult` 规范化输出保留含注释原文。route 通道的行内注释
+已由 C3 管道处理；原子行取首字段与位置参数，行内注释不影响解析
+（实测零错误）；仅电荷/多重度行受累。§2.11 矩阵「电荷/多重度格式」行
+的阻断语义在该形态上与官方规则矛盾。
+
+**官方依据**：§1.1 语法规则——注释以 `!` 起始，可出现在任意行任意
+位置；独立注释行可出现在文件任意处。
+
+**方案**：`parse_charge_tokens` 在归一化前剥离**引号外**首个 `!` 及其后
+内容（与 C3 管道同规：引号内不截断），剥离后再走既有 en-dash/分隔符
+归一与整数对校验；`parse_input` 与 `_validate_section` 经同一单点自动
+拉齐，`charge_mult` 规范化输出不含注释文本。剥离后 token 不足或非整数
+的行仍照常记 `parse_errors`（编辑保存阻断），既有判定不变。
+
+**行为变更登记**：接受集扩大（此前被误拒的合法文件恢复放行），预览/
+导入/提交/编辑保存四通道同步，CHANGELOG 登记；无 schema 与 warnings
+kind 词表变更。
+
+**涉及文件**：`web/src/parse/blocks.py`（`parse_charge_tokens` 单点）；
+测试 `web/tests/test_parse_blocks.py`、`web/tests/test_block_save.py` 补
+用例：单组对行内注释零错误且 `charge_mult` 无注释、多组对行内注释零
+错误、引号内 `!` 不截断、剥离后 token 不足/非整数仍报错、编辑保存通道
+放行。
+
+**G16 背书**：B7 出口以真实 G16 Rev. C.01 冒烟一例（电荷行行内注释）
+确认正常结束；若实测与手册分歧（G16 拒绝该形态），按 §2.12
+Guess=Cards 先例登记分歧并回评处置（需用户裁决），不在分歧未决时维持
+放行口径。
 
 ---
+
+## 3. 实施批次
 
 | 批次 | 范围 | 验收标准 | 契约动作 |
 |---|---|---|---|
@@ -934,7 +1018,8 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | B3 新检测 | G1+G2+G3 | 导入/提交响应携带 `warnings`（导入 422 响应的 `details.errors[]` 不携带）；三个响应返回点全部取 `res["normalized"]`（candidates/queues/history）；resume 响应透传 warnings；队列提交 warnings 带 `task_id`；重复/错位用例按 §2.6 判定表与 §2.11 矩阵在各通道行为一致 | warnings kind 词表增 `route_duplicate`（Link 0 错位按决策点 3 记 parse_errors）；CandidateCreate.files、SubmitResponse、ResumeConfirmResponse 增可选 warnings（**先改 openapi.yaml**） |
 | B4 值域与原子行 | G5+G6 | §2.7 用例全绿；§2.11 矩阵逐格符合；`%mem=2W` 编辑保存阻断、导入/提交警告（决策点 2 收紧；模板无单位输入，不适用）；`%mem=0` 编辑保存/模板 `mem_gb` 阻断、导入/提交警告（决策点 8）；`%cpu=0-5/2` 通过；多组电荷对、负多重度组与 `Fragment` 佐证用例、自由格式分隔符、`Foo` 不告警、`Zz` 告警、`X` 哑原子、BOM 落盘剥离全部通过 | warnings kind 词表增 `link0_value_invalid`、`link0_line_too_long`、`link0_directive_unknown`、`link0_directive_duplicate`、`title_forbidden_char`、`atom_label_unknown`、`molecule_multiple_charge_pairs` |
 | B5 字典扩面 | G7+G8 | 字典重生成幂等闸门通过（1166 词条；三处断言同步；KB skip 记录）；`#t`/`#n` 模板保存通过；`scf=conven`/`scf=conv` 组合词经键名命中放行、`fre`/`geo` 裸词 enforce 拒绝（缩写不识别限于词典层面，§8.6 口径修正 2）；G8 用例（在典零警告/未知选项/嵌套取值/`opt=(readfcht)` 跨关键字/`opt=(readfc)` 零警告/`opt=(calcfc,xyzzy)` 仅报未命中选项/`opt=(calfcf)` 附 `suggestion=calcfc`/IOp 零警告/ONIOM 零警告/External 零警告）转绿（2026-10-20 勘误：原验收「两处断言」「scf=conven/conv enforce 拒绝」与实施口径不符，原位改写） | warnings kind 词表增 `route_option_unknown` |
-| B6 口径修订与词典扩面 | G10-a+G10-b | 模板保存拼写错误仅警告、零 422（enforce 屏蔽，决策点 12）；面⑤散文提及选项审计差集清单落盘，清单内选项全部入典（幂等闸门 + 规模断言同步）；`td=window`/`opt=addredundant`/`freq=nnroa`/`units=bohr` 零警告复测通过；全量测试不回归；语料基线仅作回归对照记录（决策点 11，不作通过判据） | 模板保存端点 description 更新（enforce → 仅警告）+ 生成物再生零 diff；warnings 词表不变 |
+| B6 口径修订与词典扩面 | G10-a+G10-b | 模板保存拼写错误仅警告、零 422（enforce 屏蔽，决策点 12）；warn 口径断言含 `ignore_spelling=true` 与不传行为一致；前端豁免按钮隐藏以浏览器实测验收（AGENTS §6.2）；面⑤散文提及选项审计三路差集清单落盘并逐条人工复核留痕，复核通过的缺口选项全部入典（幂等闸门 + 规模断言同步）；`opt=addredundant`/`freq=nnroa` 零警告复测通过，`td=window`/`units=bohr` 等 A 类判归形态维持预期警告不复测（决策点 11）；全量测试不回归；语料基线仅作回归对照记录（不作通过判据），扩面后复跑并逐条归因 `route_option_unknown` 增量、不得含唯一前缀歧义翻转型新增误报，A 类判归形态顺带记录 G16 实测对照（不作判据）；G16 冒烟按 §3.1 B6 清单执行（B 类复测、`prop=wrf` 一例、缩写判活正反例各一）；`keywords.py` 中 window 相关注释按 A 类口径修正；`web/src/engine/workspace.py` 模块头 docstring 旧单位口径残留顺带修正 | 模板保存端点 description 更新（enforce → 仅警告；ignore_spelling 注明不生效）+ 生成物再生零 diff；warnings 词表不变 |
+| B7 正确性补修 | G11 | `parse_charge_tokens` 剥离引号外 `!` 行内注释后，`0 1 ! …` 与 `0,1 0,1 0,1 ! …` 在预览/导入/提交零错误、编辑保存放行，`charge_mult` 规范化输出不含注释文本；剥离后 token 不足/非整数仍报错；既有电荷行用例（斜杠/en-dash/多组对）不回归；全量测试不回归；G16 冒烟一例（电荷行行内注释）实测背书，实测与手册分歧按 §2.14 登记 | 无 schema 与 kind 词表变更；CHANGELOG 登记接受集扩大 |
 
 ### 3.1 批次依赖与节点
 
@@ -946,18 +1031,26 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 - B5 依赖 B1（G8 复用 C3 管道、G7 依赖同一 `_token_in_dict`），与 B2–B4
   无强依赖，可最后执行。
 - **B6（2026-10-20 立项，§2.13）**：依赖 B5（已收口）；G10-a enforce
-  屏蔽先行独立提交，G10-b 词典扩面随后；出口另加 G16 冒烟（`td=window`
-  等已确认误报形态及其宿主关键字各一例，确认零误报）。
+  屏蔽先行独立提交，G10-b 词典扩面随后；出口另加 G16 冒烟
+  （`opt=addredundant`/`freq=nnroa` 及其宿主关键字各一例，确认零误报；
+  `prop=wrf` 兼容触发词随同批冒烟一例确认，作 `COMPAT_EXTRA_KEYWORDS`
+  去留裁决输入——决策点 9）；缩写判活正反各一例（`freq=numer` 判活零
+  警告、`scf=conv` 歧义前缀报 `route_option_unknown` 且 G16 实测拒绝——
+  补足 B5 未设冒烟节点的 G8 唯一前缀口径实测背书）。
+- **B7（2026-10-20 立项，§2.14）**：依赖 B4 的电荷行分词单点（已收口），
+  与 B6 无文件交集、无先后约束；出口 G16 冒烟一例（电荷行行内注释）
+  实测背书，实测与手册分歧时按 §2.12 Guess=Cards 先例登记并回评。
 - 每批入口 = 上一批验收全绿 + `validate_progress.py` 通过；每批出口 =
   §5 闸门全绿 + CHANGELOG/progress 当批登记（禁止集中回补）。
 - 真实 G16 冒烟节点：B1 后一次（Checkpoint/AllCheck 各一例）、B2 后一次
   （`Gen`/`Pseudo=Cards` 附加节）、B4 后一次（多组电荷对/`%cpu=0-5/2`/
-  自由格式分隔符各一例）、B6 后一次（G10-b 误报形态复测）；版本固定
+  自由格式分隔符各一例）、B6 后一次（G10-b 误报形态复测）、B7 后一次
+  （电荷行行内注释一例）；版本固定
   G16 Rev. C.01，语料清单与哈希随批次记录。
 - **版本归属**：本计划按 **3.4.0（minor：新增 warnings 通道与检测项）**
   目标版本推进（3.3.0 已于 2026-10-15 冻结发布）。若仅交付 C1–C3
-  （不含 G0/warnings）才按 patch；B1 含 G0，按 minor。B6（2026-10-20
-  立项）并入 3.4.0，发布冻结时点顺延至 B6 验收全绿后。
+  （不含 G0/warnings）才按 patch；B1 含 G0，按 minor。B6、B7（均 2026-10-20
+  立项）并入 3.4.0，发布冻结时点顺延至 B6、B7 验收全绿后。
 
 每批次独立成提交序列（文档 → 测试 → 实现 → 进度同步），单次提交只做
 一类变更。开发前先把本任务写入 `progress.json.in_progress`。
@@ -1004,6 +1097,9 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   `npm run gen:types`，`git diff` 零残留方可提交（与 3.2.0 契约闸门同规）。
 - **命名**：导入/提交/预览/分块保存统一 `warnings`；组合流模板
   `notice.spelling_warnings` 保持不变（不破坏 3.2.0 契约）。
+- **`ignore_spelling` 屏蔽期口径**：B6 G10-a 起 enforce 屏蔽，该请求
+  字段保留不删、description 注明不生效；模板保存响应
+  `notice.spelling_warnings` 仍随 warn 放行携带词典外 token 清单。
 - **roadmap §2.7**：例外全集回补（2 项）、Title 行 `Geom=AllCheck` 括注、
   Checkpoint 行补「title 仍必须存在」，随 B1/B2 批次文档先行提交。
 
@@ -1027,7 +1123,11 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   模板五通道的实际级别（阻断 vs 警告 vs 不校验）；模板「不适用」必须有
   对应断言，不能只写注释。
 - **警告噪声基线**：以 `~/g16/tests/com` 官方测试语料为**回归对照样本**
-  （决策点 11：非权威参考），记录改动前后逐文件 warnings 数量；批次
+  （决策点 11：非权威参考），记录改动前后逐文件 warnings 数量；基线
+  harness 口径固定为「不拒文件」——语料逐文件解码后 `parse_input`，对
+  route 全集运行 `file_warnings`，统计各 kind 条数与命中文件数（含将被
+  导入拒绝的文件；与导入/提交「先拒后警告」的闸门口径不同，两者不得
+  混用）；批次
   入口冻结阈值（新增警告涉及文件 ≤5%，同一文件同一 kind ≤3 条）仅作
   **复审触发器**——超阈逐条归因，归因以手册 SSOT（gaussian-kb）与
   支持版本口径（G16/G09；G03 不支持）为准，语料命中本身不构成错误
@@ -1039,15 +1139,15 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   `opt,freq` 逗号分隔、行内 `!` 注释、`opt = (calcfc, ts)`、
   `opt (calcfc, ts)`、`IOp(6/50=1)`、`External="RunTink Amber"`、`O-Bq`、
 `X` 哑原子、`C-CT--0.06`、`C,0,0,0`、`C/0/0/0`、多组电荷对、负多重度组、
-空分子说明、BOM、
+电荷行行内 `!` 注释（单组/多组对）、空分子说明、BOM、
 `%cpu=0-5/2`、`%mem=0`、`%save`/`%kjob l502 2`）。语料版本与
   文件清单/哈希随批次记录，避免「本机可复现、他机不可复现」；语料缺失时
   记录 skip，不得默认通过。
-- **端到端**：B1/B2/B4 后各以真实 G16（Rev. C.01）冒烟一次
+- **端到端**：B1/B2/B4/B7 后各以真实 G16（Rev. C.01）冒烟一次
   （`Geom=(Checkpoint,ModRedundant)`、`Gen`/`Pseudo=Cards` 附加节、
-  多组电荷对/`%cpu=0-5/2`/自由格式分隔符各一例），确认零误报/零漏报后再
-  进下一批；`%mem=2W`、`%mem=0`、`Zz` 原子行等为离线校验用例，不作为
-  G16 冒烟输入。
+  多组电荷对/`%cpu=0-5/2`/自由格式分隔符、电荷行行内注释各一例），确认
+  零误报/零漏报后再进下一批；`%mem=2W`、`%mem=0`、`Zz` 原子行等为离线
+  校验用例，不作为 G16 冒烟输入。
 - **返回形态改造回归**：`verify_and_store` 6 处调用点逐一断言；重点覆盖
   `routers/candidates.py`、`routers/queues.py`、`services/history.py` 的
   `normalized` 真值语义，以及 `test_submit_verify.py` 两处 `is True` 改造。
@@ -1079,7 +1179,7 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 8. **`%mem=0`**：拒绝——编辑保存阻断、模板 `mem_gb` 阻断、导入/提交
    警告。
 9. **`prop=wrf` 兼容触发词**：保留一版 `COMPAT_EXTRA_KEYWORDS`，避免既有
-   行为回退；B2 后 G16 冒烟确认再决定删除。
+   行为回退；G16 冒烟确认后裁决去留，冒烟节点在 B6 出口（§3.1）。
 10. **发布窗口与批次工期**：3.4.0 为目标版本；不设日历承诺，排程由批次
     闸门驱动（每批入口 = 上一批验收全绿 + `validate_progress.py` 通过），
     发布冻结时点在批次验收全绿后的发布流程中确定（B6 立项后顺延至 B6
@@ -1125,9 +1225,10 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | 附加节顺序/PDB 自动触发无法校验 | 已在 §2.12 登记为已知限制，交 G16/testrt；不承诺顺序检测 |
 | MM/ONIOM、鬼原子、哑原子、多电荷对误报 | G6 文法边界用例先行；未知标签仅 warn；鬼原子/哑原子不入分子式；多电荷对按同一行解析 |
 | enforce/warn 分工未明，组合词值侧把关空洞（键名在典即放行，同类错误裸词被拒、组合词仅警告） | 决策点 12：暂时屏蔽全部 enforce 口径，仅 warning（G10-a/B6）；恢复另批裁决 |
-| 面⑤散文提及选项缺口未全量审计，官方合法选项误报 unknown（已确认 `td=window` 等 4 形态） | 决策点 13：B6 全量审计差集清单 + 补提取（G10-b）；warn 级不阻断 |
+| 面⑤散文提及选项缺口未全量审计，官方合法选项误报 unknown（已确认 `opt=addredundant`/`freq=nnroa` 两形态） | 决策点 13：B6 三路差集全量审计 + 补提取（G10-b）；warn 级不阻断 |
 | 官方测试语料陈旧（G03 旧形态），误作错误判据导致口径失真 | 决策点 11：语料降级为回归对照样本；错误判据以手册 SSOT + G16 实测为准 |
-| G03 旧形态大范围警告造成警告疲劳 | G03 不支持口径下为预期行为；B6 评估警告 message 附「受支持版本」提示 |
+| G03 旧形态大范围警告造成警告疲劳 | G03 不支持口径下为预期行为；B6 评估警告 message 是否附「受支持版本」提示，评估结论（采纳与否及归因）随批留痕登记 |
+| 电荷行注释剥离回归（多组对误判、剥后 token 不足漏报） | 与 C3 管道同规仅剥引号外注释；单组/多组对/剥后不足仍报错用例先行（测试先行批次）；B7 出口 G16 实测背书 |
 
 ## 8. 实施与审查留痕
 
@@ -1165,7 +1266,8 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   词表/description + 生成物零 diff）→ 测试先行（G4 表驱动 + G9 用例先红）
   → 实现 → 进度同步，共 5 提交。
 - 验收：全量 **772 passed 0 skipped**（入口基线 751，新增 21）；语料基线
-  对照（1161 文件）：新增警告 0 文件（阈值 ≤58）；「附加节未以空行终止」
+  对照（目录 1161 条目，.com 语料 1156 文件）：新增警告 0 文件（阈值 ≤58）；
+  「附加节未以空行终止」
   命中 1 文件（test0162）；「缺分子说明」6 文件全为 `#p restart`——
   B2 前已被既有缺 title/电荷检查拒绝，非本批新增收窄。
 - **G16 Rev. C.01 冒烟**（Gen/Pseudo=Cards 附加节，语料 sha256 前缀随批）：
@@ -1330,14 +1432,16 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
   超文件数阈值（5%=58）**接受**，归因两类——
   - **A 类（主体）：G03 时代官方测试语料旧形态选项**（G16 手册已删、
     引擎向后兼容）：`geom=modela` 265 条居首（占过半），`scf=novaracc`
-    43、`scf=noincore` 20、`units=bohr` 14、`cphf=ultrafine` 14 等；
+    43、`scf=noincore` 20、`units=bohr` 14（units 页官方选项为
+    Ang/AU/Deg/Rad，`bohr` 非官方选项名，仅系 AU 的散文释义）、
+    `cphf=ultrafine` 14、`td=(window(13,-12)…)`/`cis=(window=(13,-12)…)`
+    共 7 条（G03 时代 TD/CIS 选项，G16 手册 TD/CIS 页均无 Window）等；
     手册 SSOT 无据，报「官方选项集中无此项」与 G8 立题（对照官方手册）
     一致，属词典口径固有边界而非误报；warn 级不改变任何阻断语义。
   - **B 类（少量）：面⑤覆盖缺口**——手册明文存在但面⑤按 Options 章节
-    `####` 规则未提取的散文提及选项：`opt=addredundant`（opt 页明文
-    「AddRedundant is synonymous with ModRedundant」）、`freq=nnroa`
-    （freq 页明文保留 G03 数值 ROA）、`units=bohr`、`td=window`（TD 页
-    官方 TD=Window 选项，`td=*` 组合词条目缺，语料 7 文件命中）等，
+    `####` 规则未提取的散文提及选项：`opt=addredundant` 6 条（opt 页
+    明文「AddRedundant is synonymous with ModRedundant」）、`freq=nnroa`
+    4 条（freq 页 ROA 条目明文保留 G03 数值 ROA）等，
     另批词典扩面解决（§2.12 缩写限制同款处置）。
   - 单文件同 kind ≤3 维度：6 文件超（最大 5 条 test0386），沿用 R6
     裁决（行级粒度保留精确定位，不聚合）。
@@ -1359,8 +1463,8 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 - 随批整改（单提交单类变更：fix → docs → progress）：
   - **R1（P2 可维护性）**：check_route_options `return out` 之后 14 行
     不可达死代码（旧 token 判定逻辑编辑残留）删除。
-  - **R3（P2 覆盖缺口样例）**：`td=window` 并入 §8.6 B 类另批扩面清单；
-    `_PAREN_TAIL` 注释去除「已覆盖」误导。
+  - **R3（P2 覆盖缺口样例）**：语料 window 形态列为覆盖缺口待复核样例
+    （§2.13 判归 A 类）；`_PAREN_TAIL` 注释去除「已覆盖」误导。
   - **R6（P3 注释口径）**：`_VALUE_FORM_HEADS` 注释据实修正——iop 成员
     实际靠键名不在典兜底（IOp(6/50=1) 按 = 拆键得 `iop(6/50` 含括号），
     oniom/external 真正生效，iop 保留为防御。
