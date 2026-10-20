@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21T01:01+0800",
+  "updated": "2026-10-21T01:32+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -106,11 +106,18 @@
       "summary": "电荷/多重度行剥离引号外行内 ! 注释（G11）：parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 route 通道 C3 管道同规，引号内 ! 不截断、留作分隔符不入 token；电荷行为整数对自由格式不引入括号跟踪），官方「注释任意处」形态 0 1 ! … 与 0,1 0,1 0,1 ! … 在预览/导入/提交零错误、编辑保存放行，charge_mult 规范化输出不含注释文本；剥离后 token 不足/非整数仍照常记 parse_errors；无 schema 与 warnings kind 词表变更",
       "breaking": false,
       "migration": "接受集扩大（此前被误拒的合法行内注释文件恢复放行）；G16 Rev. C.01 冒烟单组对/多组对（counterpoise=2）各一例 Normal termination，实测与手册一致"
+    },
+    {
+      "type": "changed",
+      "scope": "plans",
+      "summary": "计划状态回填为「部分实施，待再修」并落盘全面终审报告（第 1 轮）：实现层通过——13 项缺口（C1–C3/G0–G11）与 B1–B7 验收标准逐条独立证实，848 测试与 9 闸门全绿、四通道 API 与前端视觉实测；同时登记 2 条 P3 观察项（title 禁字同行只报首个、B6 留痕条数维度缺登）与 4 处计划文档勘误建议（D-1 scf=conv 已被实测推翻的断言优先勘误）；3.4.0 冻结顺延至计划文档再修订完成，报告 docs/plans/input-verify-gap-remediation-plan-final-review-r1.md",
+      "breaking": false,
+      "migration": null
     }
   ],
   "in_progress": null,
   "next_steps": [
-    "B7 审查整改已收口（2026-10-21，P1-1 补 test_block_save.py 编辑保存通道 G11 放行用例 + P3-1 updated 时区偏移格式回填 + P3-2 docstring 同规表述限定，全量 848 passed 0 skipped、四闸门复跑全绿，留痕 §8.10）：B1–B7 全部收口且审查整改闭环，3.4.0 发布冻结待用户启动（§3.1）",
+    "全面终审 R1 已完成（2026-10-21，报告 docs/plans/input-verify-gap-remediation-plan-final-review-r1.md）：实现层通过——848 测试与 9 闸门全绿、四通道 API 与前端视觉实测；计划状态已回填「部分实施，待再修」，待再修订处置 4 处文档勘误（D-1 scf=conv 断言与实测矛盾优先）与 2 条 P3 观察项（I-1/I-2），3.4.0 冻结顺延至计划文档再修订完成",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],

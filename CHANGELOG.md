@@ -20,6 +20,7 @@
 ### 变更
 
 - 【web】组合流模板保存 enforce 口径暂时屏蔽（G10-a，决策点 12）：词典外 token 不再 422 拒绝，一律放行并随 notice.spelling_warnings 回传；ignore_spelling 字段保留但屏蔽期间不生效；前端「忽略拼写警告并保存」豁免按钮移除（playwright 浏览器实测验收）；契约 description 同步（词表三/ignore_spelling/notice/PUT 端点四处）+ 生成物再生
+- 【plans】计划状态回填为「部分实施，待再修」并落盘全面终审报告（第 1 轮）：实现层通过——13 项缺口（C1–C3/G0–G11）与 B1–B7 验收标准逐条独立证实，848 测试与 9 闸门全绿、四通道 API 与前端视觉实测；同时登记 2 条 P3 观察项（title 禁字同行只报首个、B6 留痕条数维度缺登）与 4 处计划文档勘误建议（D-1 scf=conv 已被实测推翻的断言优先勘误）；3.4.0 冻结顺延至计划文档再修订完成，报告 docs/plans/input-verify-gap-remediation-plan-final-review-r1.md
 
 ### 修复
 
