@@ -231,6 +231,24 @@ def test_charge_mult_validation(ind):
     save_block(tid, "charge_mult", ["–1 2"], inputs_dir=ind)
 
 
+def test_charge_mult_inline_comment_allowed(ind):
+    """B7 G11（审查整改 P1-1）：电荷/多重度行行内 `!` 注释官方合法
+    （「注释任意处」，input 页 Syntax Rules）——编辑保存通道放行（G11
+    原 422 误拒主战场，§2.14），规范化输出不含注释文本，与预览/导入/
+    提交经 parse_charge_tokens 单点拉齐。"""
+    tid = _mk(ind)
+    r = save_block(tid, "charge_mult", ["0 1 ! neutral singlet"],
+                   inputs_dir=ind)
+    assert r["blocks"]["charge_mult"] == "0 1"
+    # 多组对行内注释同样放行，全组规范化保留
+    r2 = save_block(tid, "charge_mult", ["0,1 0,1 0,1 ! cp pairs"],
+                    inputs_dir=ind)
+    assert r2["blocks"]["charge_mult"] == "0 1 0 1 0 1"
+    # 剥离后 token 不足/非整数仍照常 422（既有判定不变）
+    with pytest.raises(ApiError):
+        save_block(tid, "charge_mult", ["0 ! only charge"], inputs_dir=ind)
+
+
 def test_section_name_guards_400(ind):
     """molecule 与未知节名（含 M1 占位名 additional_sections）一律 400。"""
     tid = _mk(ind)
