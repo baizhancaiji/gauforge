@@ -1540,3 +1540,34 @@ Guess=Cards 先例登记分歧并回评处置（需用户裁决），不在分�
   `gen_changelog_md.py --check` 全部通过；`check_plan_status.py` 随本节
   状态行回填转绿。**B1–B7 全部收口**，按 §3.1 版本归属进入 3.4.0 发布
   流程（冻结时点由用户确定）。
+
+### 8.10 B7 批次审查与整改（2026-10-21）
+
+- **独立审查**：报告落盘
+  [input-verify-gap-remediation-plan-B7-review.md](input-verify-gap-remediation-plan-B7-review.md)
+  （AGENTS §6.2 四查 + 隔离实例端到端 + G16 Rev. C.01 直跑复现），范围
+  `7b5c06aa..890bb553`（5 提交）。结论：**有条件通过**——B7 核心交付全部
+  独立复现成立（847 passed、语料基线逐位吻合、先行红 worktree 实证、
+  G16 直跑两例 Normal termination），1 项 P1（R11 测试有效性）+ 2 项 P3。
+- **整改处置**（三提交单类变更，全数修复）：
+  - **P1-1（P1 测试有效性）已修**：`test_block_save.py` 补
+    `test_charge_mult_inline_comment_allowed`——编辑保存通道
+    `save_block(charge_mult)` 行内注释单组/多组对放行 + 规范化输出无
+    注释断言 + 剥离后 token 不足仍 422 回归断言，编辑保存通道（G11 原
+    422 误拒主战场）G11 行为自此有持久化回归保护。
+    **偏离原因补记**：§2.14 用例清单中「编辑保存通道放行」在先行红批次
+    （2ed38a76）漏列 `test_block_save.py` 文件面（仅落
+    `test_parse_blocks.py` 3 例），实施期以不入库临时脚本背书该通道、
+    §8.9 留痕未登记该覆盖缺口——教训：§2.14 类「测试文件 + 用例方向」
+    清单在先行红提交前应逐一核对文件面齐全性（R8 教训同款，后续批次执行）。
+  - **P3-1（P3 约定违例）已修**：`progress.json` `updated` 由无偏移
+    `2026-10-21T00:33` 回填为带 `+0800` 偏移的 ISO 8601，与历史惯例拉齐；
+    根因为进度同步脚本 `datetime.now()`（naive）的 `strftime %z` 输出
+    空串，改用 `astimezone()`。
+  - **P3-2（P3 可维护性）已修**：`parse_charge_tokens` docstring
+    「与 C3 管道同规」限定为「注释**截断规则**同规」，注明引号内 `!`
+    后续处置两通道差异（C3 引号内空白不切分、`!` 保留为 token 整体；
+    本单点引号内 `!` 替换为空格作分隔符不入 token）及缘由。
+- **整改出口**：全量 `uv run pytest` **848 passed 0 skipped**（847 +
+  P1-1 新增 1）；`validate_progress.py`、`gen_changelog_md.py --check`、
+  `check_plan_status.py` 复跑全绿。审查报告通过条件 1/2 全部满足。
