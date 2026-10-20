@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21T00:33",
+  "updated": "2026-10-21T00:58+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -108,9 +108,12 @@
       "migration": "接受集扩大（此前被误拒的合法行内注释文件恢复放行）；G16 Rev. C.01 冒烟单组对/多组对（counterpoise=2）各一例 Normal termination，实测与手册一致"
     }
   ],
-  "in_progress": null,
+  "in_progress": {
+    "task": "B7 审查整改（P1-1 编辑保存通道 G11 用例缺失 + P3-1/P3-2）",
+    "note": "审查报告 docs/plans/input-verify-gap-remediation-plan-B7-review.md 结论有条件通过；P1-1 补 test_block_save.py 编辑保存放行用例并在留痕补记偏离原因，P3-1 updated 时区偏移格式回填（本次提交一并修复），P3-2 parse_charge_tokens docstring「同规」表述限定"
+  },
   "next_steps": [
-    "B7 已实施收口（2026-10-21，G11 电荷/多重度行行内 ! 注释剥离，全量 847 passed 0 skipped，语料基线 parse_errors/warnings 零变化，G16 Rev. C.01 冒烟单组对/多组对各一例 Normal termination，实测与手册一致；实现 parse_charge_tokens 引号外 ! 剥离与 C3 管道同规）：计划 B1–B7 全部收口，3.4.0 发布冻结待用户启动（§3.1）",
+    "B7 审查整改进行中（2026-10-21 开工）：P1-1 补编辑保存通道用例 + P3-1 updated 格式回填（随开工提交修复）+ P3-2 docstring 表述限定待落，整改出口复跑全量测试与四闸门",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
