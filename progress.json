@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21T00:22+0800",
+  "updated": "2026-10-21T00:33",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -99,11 +99,18 @@
       "summary": "面⑤散文提及选项三路差集全量审计与词典扩面（G10-b）：extract_keywords 增面⑦ Options 条目正文官方句式直述（synonym/says-to/default 四句式 + 主语停用词）与 B6 手工补录常量清单，词典 1166→1345（幂等闸门通过），opt=addredundant/freq=nnroa 等 B 类误报形态零警告复测通过；field 键入 G8 值形白名单（场向量取值）；prop=wrf 兼容触发词经 G16 实测拒绝删除（决策点 9）；语料基线 route_option_unknown 417→394 文件、498→469 条，新增 readanh 形态经 G16 实测拒绝证实为歧义前缀正确警告；scf=conv 歧义前缀 G16 实测接受（B5 拒绝推断随批修正登记），审计留痕 docs/plans/input-verify-gap-b6-prose-audit.md；warn/review 过滤层脚本化入库使审计漏斗逐字节可复现，787 条排除形态机械归因落盘（B6 独立审查整改，报告 docs/plans/input-verify-gap-b6-code-review.md、留痕 §9）",
       "breaking": false,
       "migration": "prop=wrf 文件不再触发附加节识别（G16 必然拒绝该形态）；freq=readanh 类键内歧义缩写开始出现 route_option_unknown 警告（G16 实测拒绝该形态）"
+    },
+    {
+      "type": "fixed",
+      "scope": "parse",
+      "summary": "电荷/多重度行剥离引号外行内 ! 注释（G11）：parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 route 通道 C3 管道同规，引号内 ! 不截断、留作分隔符不入 token；电荷行为整数对自由格式不引入括号跟踪），官方「注释任意处」形态 0 1 ! … 与 0,1 0,1 0,1 ! … 在预览/导入/提交零错误、编辑保存放行，charge_mult 规范化输出不含注释文本；剥离后 token 不足/非整数仍照常记 parse_errors；无 schema 与 warnings kind 词表变更",
+      "breaking": false,
+      "migration": "接受集扩大（此前被误拒的合法行内注释文件恢复放行）；G16 Rev. C.01 冒烟单组对/多组对（counterpoise=2）各一例 Normal termination，实测与手册一致"
     }
   ],
-  "in_progress": {"task": "B7 正确性补修（G11 电荷/多重度行行内 ! 注释误拒）", "note": "先行红两例已落（2ed38a76，回归守卫一例当前绿）；实现为 parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 C3 管道同规引号内不截断），剥离后 token 不足/非整数仍报错；无 schema 与 kind 词表变更；出口 G16 Rev. C.01 冒烟一例实测背书"},
+  "in_progress": null,
   "next_steps": [
-    "B7 实施中（2026-10-21 开工）：先行红测试已落（2ed38a76，先行红 2 例 + 回归守卫 1 例，入口基线 2 failed / 845 passed）；入口闸门 validate_progress.py 通过；实现 parse_charge_tokens 引号外 ! 剥离进行中，出口 G16 Rev. C.01 冒烟一例待执行",
+    "B7 已实施收口（2026-10-21，G11 电荷/多重度行行内 ! 注释剥离，全量 847 passed 0 skipped，语料基线 parse_errors/warnings 零变化，G16 Rev. C.01 冒烟单组对/多组对各一例 Normal termination，实测与手册一致；实现 parse_charge_tokens 引号外 ! 剥离与 C3 管道同规）：计划 B1–B7 全部收口，3.4.0 发布冻结待用户启动（§3.1）",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
