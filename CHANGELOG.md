@@ -27,6 +27,7 @@
 - 【plans】B8 批次独立审查闭环并回填计划滞后口径：审查报告落盘（docs/plans/input-verify-gap-remediation-plan-B8-review.md，AGENTS §6.2 四查独立复核 + 主会话 playwright 六场景视觉复测，结论通过），三条 P3 文档层偏差同日整改——§2.15 警告条目文案原位勘误为实际交付口径（导入「文件名 ⚠ 第 N 行 message」、提交/队列条目「—」分隔）并补「再次保存即清空」B9 承接登记、§8.12 与 B14 报告三处「31 提交」勘误为 38（git rev-list --count 实测）；正文顺带回填 B6 收口后滞后口径（prop=wrf 兼容触发词经 G16 Rev. C.01 冒烟实测拒绝后删除、scf=conv 歧义前缀经 B6 冒烟 t5 实测接受系键内歧义保守残余、§3 批次表 B8 行补全面复审 R2–R5/F-2 随批整改）；前端导入/提交/队列三处警告条目分隔符「·」改「—」与交付口径对齐
 - 【plans】立项 B9/G13「提交前核验预显、警告文案、条目堆叠与持久化复验」并落盘计划审查报告（docs/plans/input-verify-gap-remediation-plan-B9-review.md，有条件通过；P2 等价性断言口径改内容多重集+行号平移、删除「新增成员即预显」等不存在交互的指认与 P3×6 项已在计划同批整改）：§2.16 登记六条用户裁决与方案四要点（提交确认框与队列弹窗动作前即预显各成员核验警告、条目文案改「L行号」冒号形并逐 kind 中文警告语测试固化、全部警告展示区限高滚动、警告一律现算不落库并随分块编辑即时复验，仅分块修复与删除候选两条路径可消除）；契约动作 Candidate 增现算字段 warning_count（openapi 先行、生成物零 diff）；计划状态改「部分实施（B1–B8 已收口并验收；B9 待执行）」，§3/§3.1 补 B9 行与节点、并入 3.4.0（冻结顺延至 B9 验收）
 - 【web】收窄 Link0 缺省补全为仅指令行缺失时注入（B9 后用户裁决）：指令存在但值非法（值域外/空值/非数值）不再注入缺省行静默遮蔽用户错误，由核验警告 link0_value_invalid 承载、运行结果交 G16 裁决；defaulted 语义改写为「是否注入缺省行」，值非法未注入时记账值回落缺省；缺省补全前后 file_warnings 内容集等价性自构造恢复（duplicate 补全伪影消除）
+- 【plans】登记 B9 批次实现审查闭环（结论通过、无 P0/P1/P2、4 项 P3，报告 docs/plans/input-verify-gap-remediation-plan-B9-impl-review.md 落盘）：计划头部留痕区间扩为 §8.1–§8.15、文末追加 §8.15 审查与整改留痕，「列宽固定」两处勘误为「列宽有界（下限）」对齐 I-1 实现口径，I-4 备案观察不改
 
 ### 修复
 
@@ -35,6 +36,8 @@
 - 【parse】route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）
 - 【parse】电荷/多重度行剥离引号外行内 ! 注释（G11）：parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 route 通道 C3 管道同规，引号内 ! 不截断、留作分隔符不入 token；电荷行为整数对自由格式不引入括号跟踪），官方「注释任意处」形态 0 1 ! … 与 0,1 0,1 0,1 ! … 在预览/导入/提交零错误、编辑保存放行，charge_mult 规范化输出不含注释文本；剥离后 token 不足/非整数仍照常记 parse_errors；无 schema 与 warnings kind 词表变更
 - 【parse】Link 0 空值形态补 link0_value_invalid 警告（B14 复审 R3）：%nproc=/%nprocshared=/%nprocshare= 空值与无值裸形、%cpu= 空值（同根因 if val 短路顺带拉齐）在预览/导入/提交通道与编辑保存 empty_value 阻断、%mem= 空值既有告警同源一致；顺带清理 _validate_one 无消费的 bom_stripped 死键（R4）并对齐 docstring 引用与审计措辞口径（R5/F-2）
+- 【web】令牌化候选列表警告徽标占位列宽（B9 实现审查 I-1，用户裁决组件禁硬编码度量）：新令牌 --warn-col-width: 56px 登记设计令牌库并同步 m0-ui-preview 样板（check_tokens 逐变量闸门覆盖），.warn-col 改引令牌消除硬编码，纯令牌化不改布局行为（auto 布局下该值为列宽下限、行级徽标显隐无列移），计划「列宽固定」口径随批勘误为「列宽有界」
+- 【api】消除契约 warning_count description 的 YAML 折行伪影（B9 实现审查 I-3）：openapi 源由 >- 折叠标量改单行双引号长句，折行词间空格伪影（「响应中 现算」等）消除，gen_models 与 gen:types 生成物再生入库，字段语义与校验零变更
 
 ## v3.3.0（2026-10-15T22:51+0800 发布，minor）
 
