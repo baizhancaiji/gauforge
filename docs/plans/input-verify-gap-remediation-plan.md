@@ -1,6 +1,6 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**已实施并验收**（2026-10-21 再修收口；验收留痕
+> 状态：**实施中**（2026-10-21 立项 B8 前端渲染收口，随批回填；B1–B7 验收留痕
 > docs/plans/input-verify-gap-remediation-plan-final-review-r1.md，目标版本 3.4.0）。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
@@ -1014,6 +1014,41 @@ kind 词表变更。
 Guess=Cards 先例登记分歧并回评处置（需用户裁决），不在分歧未决时维持
 放行口径。
 
+### 2.15 G12 · 导入/提交 warnings 前端渲染落地（B8，2026-10-21 立项）
+
+**立项背景**：B1–B7 全面复审（2026-10-21，报告
+docs/plans/input-verify-gap-remediation-plan-B14-review.md）登记 P2 R1：
+§2.0.1/§2.5/§5 明列「CandidatesView.vue 渲染导入/提交 warnings」，
+后端数据面（B1 warnings 通道、B3 导入/提交接入）已交付，前端渲染跨
+B1 与 B2–B4 两轮审查遗留未落地且无取舍留痕——导入（`files[].warnings`）、
+单任务提交（`SubmitResponse.warnings`）、队列提交（逐条附 `task_id`）
+三条链路的响应 warnings 在候选页无任何渲染点。
+
+**方案**：
+- CandidatesView.vue 导入：导入成功响应按文件聚合非空 warnings，
+  工具条下方琥珀清单区（与既有 422 逐文件失败清单同构、warn 色档），
+  条目形态「文件名 · 第 N 行 message」；再次发起导入即清空；
+- CandidatesView.vue 单任务提交：提交成功响应 warnings 于工具条
+  琥珀注记展示（与既有 submitNote 中性规范化注记同级邻位），条目
+  「⚠ 第 N 行 message」（BlockEditor 保存警告同款文案纪律）；重新
+  打开提交确认框即清空；
+- QueueEditorModal.vue「直接提交」：done 注记下方逐条渲染
+  「⚠ 任务 #task_id · 第 N 行 message」；弹窗重开/再次保存即清空；
+- 历史重新排队与续跑响应（HistoryView/ResumeDialog）的 warnings
+  渲染不在本项（候选页之外），登记为后续按需项。
+
+**视觉实测（AGENTS §6.2）**：playwright 浏览器实测四场景——导入拼错
+关键字文件见琥珀清单；单任务提交后见工具条琥珀注记；队列直接提交见
+task_id 归属警告；B6 视觉补测三场景（组合流模板弹窗无豁免按钮、
+词典外词保存 200 琥珀警告、%mem=0 红描边 422）随同批执行并留痕 §8。
+
+**涉及文件**：web/frontend/src/views/CandidatesView.vue、
+web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
+（warnings 契约形态 B3 已定，纯前端消费）。
+
+**验收标准**：四场景浏览器实测通过；全量测试不回归；前端闸门
+（audit_frontend_offline.sh、check_tokens.py、check_contrast.py）全绿。
+
 ---
 
 ## 3. 实施批次
@@ -1027,6 +1062,7 @@ Guess=Cards 先例登记分歧并回评处置（需用户裁决），不在分�
 | B5 字典扩面 | G7+G8 | 字典重生成幂等闸门通过（1166 词条；三处断言同步；KB skip 记录）；`#t`/`#n` 模板保存通过；`scf=conven`/`scf=conv` 组合词经键名命中放行、`fre`/`geo` 裸词 enforce 拒绝（缩写不识别限于词典层面，§8.6 口径修正 2）；G8 用例（在典零警告/未知选项/嵌套取值/`opt=(readfcht)` 跨关键字/`opt=(readfc)` 零警告/`opt=(calcfc,xyzzy)` 仅报未命中选项/`opt=(calfcf)` 附 `suggestion=calcfc`/IOp 零警告/ONIOM 零警告/External 零警告）转绿（2026-10-20 勘误：原验收「两处断言」「scf=conven/conv enforce 拒绝」与实施口径不符，原位改写） | warnings kind 词表增 `route_option_unknown` |
 | B6 口径修订与词典扩面 | G10-a+G10-b | 模板保存拼写错误仅警告、零 422（enforce 屏蔽，决策点 12）；warn 口径断言含 `ignore_spelling=true` 与不传行为一致；前端豁免按钮隐藏以浏览器实测验收（AGENTS §6.2）；面⑤散文提及选项审计三路差集清单落盘并逐条人工复核留痕，复核通过的缺口选项全部入典（幂等闸门 + 规模断言同步）；`opt=addredundant`/`freq=nnroa` 零警告复测通过，`td=window`/`units=bohr` 等 A 类判归形态维持预期警告不复测（决策点 11）；全量测试不回归；语料基线仅作回归对照记录（不作通过判据），扩面后复跑并逐条归因 `route_option_unknown` 增量、不得含唯一前缀歧义翻转型新增误报，A 类判归形态顺带记录 G16 实测对照（不作判据）；G16 冒烟按 §3.1 B6 清单执行（B 类复测、`prop=wrf` 一例、缩写判活正反例各一）；`keywords.py` 中 window 相关注释按 A 类口径修正；`web/src/engine/workspace.py` 模块头 docstring 旧单位口径残留顺带修正 | 模板保存端点 description 更新（enforce → 仅警告；ignore_spelling 注明不生效）+ 生成物再生零 diff；warnings 词表不变 |
 | B7 正确性补修 | G11 | `parse_charge_tokens` 剥离引号外 `!` 行内注释后，`0 1 ! …` 与 `0,1 0,1 0,1 ! …` 在预览/导入/提交零错误、编辑保存放行，`charge_mult` 规范化输出不含注释文本；剥离后 token 不足/非整数仍报错；既有电荷行用例（斜杠/en-dash/多组对）不回归；全量测试不回归；G16 冒烟一例（电荷行行内注释）实测背书，实测与手册分歧按 §2.14 登记 | 无 schema 与 kind 词表变更；CHANGELOG 登记接受集扩大 |
+| B8 前端渲染收口 | G12 | 四场景浏览器实测通过（导入琥珀清单/提交工具条注记/队列 task_id 警告 + B6 补测三场景）；全量测试不回归；前端三闸门全绿 | 无契约变更（纯前端消费既有 warnings 形态） |
 
 ### 3.1 批次依赖与节点
 
@@ -1049,6 +1085,9 @@ Guess=Cards 先例登记分歧并回评处置（需用户裁决），不在分�
 - **B7（2026-10-20 立项，§2.14）**：依赖 B4 的电荷行分词单点（已收口），
   与 B6 无文件交集、无先后约束；出口 G16 冒烟一例（电荷行行内注释）
   实测背书，实测与手册分歧时按 §2.12 Guess=Cards 先例登记并回评。
+- **B8（2026-10-21 立项，§2.15）**：依赖 B3 的 warnings 数据面（已收口），
+  与 B7 无文件交集；出口含 B6 视觉补测三场景（B57 审查待办承接）；
+  全面复审 P3（R2–R5、F-2）同轮随批处置，留痕 §8.12。
 - 每批入口 = 上一批验收全绿 + `validate_progress.py` 通过；每批出口 =
   §5 闸门全绿 + CHANGELOG/progress 当批登记（禁止集中回补）。
 - 真实 G16 冒烟节点：B1 后一次（Checkpoint/AllCheck 各一例）、B2 后一次
