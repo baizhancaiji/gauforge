@@ -1,6 +1,6 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**已实施并验收**（B1–B9 全部收口，验收留痕 §8.1–§8.13）目标版本 3.4.0。
+> 状态：**已实施并验收**（B1–B9 全部收口，验收留痕 §8.1–§8.15）目标版本 3.4.0。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
@@ -1152,9 +1152,11 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
    （`file_warnings` 全集单点，页大小内解析成本与预览通道同量级；
    不进入切片前的全量视图构建，避免成本随全量候选数增长）；候选行
    「文件名」与「标题」列之间新增无表头占位列承载琥珀「⚠ N」徽标
-   （N>0 时显示并附 title/aria 语义标注，N=0 时空置占位；列宽固定，
-   显隐不引起列移。无表头系对既有表格「列均有列名」规范的显式授权
-   偏离）；选中候选的预览区各分块下方渲染该候选当前对应区块的 warnings
+   （N>0 时显示并附 title/aria 语义标注，N=0 时空置占位；列宽令牌
+   `--warn-col-width` 定值、行级显隐不引起列移，auto 布局下该值为
+   下限口径（B9 实现审查 I-1 勘误）。无表头系对既有表格「列均有列
+   名」规范的显式授权偏离）；选中候选的预览区各分块下方渲染该候选
+   当前对应区块的 warnings
    详情（取预览 `warnings`，条目「⚠ L行号 message」，限高滚动）；分块
    保存响应即新 InputPreview + warnings，保存成功后详情即复验结果并
    刷新列表徽标（BlockEditor 现无对外事件，本批新增保存完成事件供
@@ -1909,7 +1911,8 @@ check_tokens.py、check_contrast.py）全绿。
   CandidatesView 提交确认框预显区（裁决⑤，消费 openSubmit 已取 preview
   warnings）、导入清单自含条目「⚠文件名: L行号 message」与汇总行「导入警告
   N 条」、提交回执「⚠ L行号 message」、徽标占位列（文件名与标题之间，无表头
-  系对「列均有列名」规范的计划授权偏离，列宽固定显隐无列移，N=0 空置）；
+  系对「列均有列名」规范的计划授权偏离，列宽有界显隐无列移（I-1 勘误），
+  N=0 空置）；
   QueueEditorModal 成员行下任务级预显（复用 loadLinkStates 并行取数路径扩展
   消费 warnings，不新增请求路径；创建态与编辑态均取数，只读/完成态不取数）
   + 直接提交回执「⚠ 任务 #task_id: L行号 message」+ 保存成功路径清空
@@ -1922,7 +1925,7 @@ check_tokens.py、check_contrast.py）全绿。
   ①导入四文件：琥珀清单汇总行「导入警告 14 条」、自含条目「⚠multi.gjf: L1 …」
   逐条渲染，限高滚动（scrollHeight 416 / clientHeight 198，滚动可达末条无
   吞没）；②徽标列：multi ⚠13、spell ⚠1、clean/broken 空置占位，aria 语义
-  到位，列宽固定显隐无列移；③单任务确认框预显（裁决⑤）：spell 打开即见
+  到位，列宽有界显隐无列移（I-1 勘误）；③单任务确认框预显（裁决⑤）：spell 打开即见
   「⚠ L1 「optt」疑似拼写错误…」（动作发生前），clean 零警告零渲染；④队列
   创建态与编辑态弹窗：multi 13 条 / spell 1 条各归其位（任务级归属），broken
   预览 404 仅该成员占位「成员输入预览不可用 — 无法核验」、其余成员不阻断
@@ -1968,3 +1971,30 @@ check_tokens.py、check_contrast.py）全绿。
   fallback 条款对未来补全规则变化继续有效。
 - 出口：全量 uv run pytest **872 passed 0 skipped**（871 + 收窄断言 1）；
   闸门 validate_progress / gen_changelog_md --check 通过。
+
+### 8.15 B9 实现审查与整改（2026-10-21）
+
+- **实现审查**：code-reviewer 子代理按 AGENTS §6.2 四查独立复核 B9 批次
+  （区间 78bef9fa..334ea301，13 提交；报告
+  [input-verify-gap-remediation-plan-B9-impl-review.md](input-verify-gap-remediation-plan-B9-impl-review.md)）。
+  结论：**通过，无 P0/P1/P2**——872 passed 0 skipped 与 §8.14 逐位复现、
+  先行红 4 failed/基线 851 归一复现、七闸门全绿、生成物再生零 diff、
+  warning_count 三路径 API 冒烟与 playwright 九场景浏览器实测通过；
+  4 项 P3（I-1..I-4）。
+- **整改（I-1 遵用户裁决：组件禁硬编码度量，一律令牌库注册并引用）**：
+  - I-1：候选列表徽标占位列宽硬编码消除——新令牌 `--warn-col-width: 56px`
+    （tokens.css 页面度量段与 m0-ui-preview.html 样板同步登记，
+    check_tokens 逐变量闸门覆盖），`.warn-col` 改引令牌；纯令牌化不改
+    布局行为，auto 布局下限与整表末徽标消失再分布维持审查实测口径，
+    §2.16 与 §8.13「列宽固定」措辞随本节勘误为「列宽有界（下限）」。
+  - I-2：头部状态行留痕区间「§8.1–§8.13」→「§8.1–§8.15」（补 §8.14
+    Link0 收窄与本节）。
+  - I-3：openapi `warning_count` description `>-` 折叠标量改单行双引号
+    长句，消除 YAML 折行词间空格伪影（「响应中 现算」「现算
+    （file_warnings」），gen_models + gen:types 再生入库。
+  - I-4：submitted 态逐成员「无法核验」占位维持备案观察不改（§8.13 ⑨
+    预期行为；memberOnly 汇总句式留待后续需要时立项）。
+- 出口：全量 uv run pytest **872 passed 0 skipped**（令牌化与 description
+  源修正零行为变更）；闸门 check_tokens（94+31 逐变量含新令牌）/
+  check_contrast / audit_frontend_offline（重建 dist 后零外链）/
+  validate_progress / gen_changelog_md --check / check_plan_status 全绿。
