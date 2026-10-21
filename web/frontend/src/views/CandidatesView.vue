@@ -1006,9 +1006,17 @@ tbody tr.row--checked:hover {
   white-space: nowrap;
 }
 /* 警告徽标占位列（B9 G13）：列宽走令牌（实现审查 I-1），行级徽标显隐不引起列移 */
+/* 钉宽三件套（I-1 续整改，用户裁决：N 至多两位数，数字变化与末徽标消失不得
+   改变列宽、不得引起右列位移）：auto 表格布局下 td/th 的 max-width 仅在
+   overflow 非 visible 时生效，故 max-width 与 width/min 同值 + hidden 后列宽
+   与内容彻底解耦；水平内边距收窄至 --space-2 保证最坏「⚠ 99」不裁切 */
 .warn-col {
   width: var(--warn-col-width);
   min-width: var(--warn-col-width);
+  max-width: var(--warn-col-width);
+  overflow: hidden;
+  padding-left: var(--space-2);
+  padding-right: var(--space-2);
 }
 .warn-badge {
   display: inline-block;
