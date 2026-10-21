@@ -128,6 +128,10 @@ class Candidate(BaseModel):
         None,
         description='—；响应中实时解析注入（解析失败为 null），不落库（roadmap §2.6 ①）',
     )
+    warning_count: conint(ge=0) = Field(
+        ...,
+        description='—；当前存储文本的非阻断警告条数（B9 G13），沿 title 先例为响应中 现算、不落库字段：列表端点对分页切片后的当前页条目逐条现算 （file_warnings 全集单点，与预览/导入/提交/分块保存同管道）， 单条 GET 同口径现算；输入副本不可读时为 0。随分块编辑保存即时 复验变化，仅分块修复与删除候选可归零/消除',
+    )
 
 
 class Task(BaseModel):

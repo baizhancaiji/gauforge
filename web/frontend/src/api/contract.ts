@@ -1032,6 +1032,8 @@ export interface components {
             created_at: string;
             /** @description —；响应中实时解析注入（解析失败为 null），不落库（roadmap §2.6 ①） */
             title?: string | null;
+            /** @description —；当前存储文本的非阻断警告条数（B9 G13），沿 title 先例为响应中 现算、不落库字段：列表端点对分页切片后的当前页条目逐条现算 （file_warnings 全集单点，与预览/导入/提交/分块保存同管道）， 单条 GET 同口径现算；输入副本不可读时为 0。随分块编辑保存即时 复验变化，仅分块修复与删除候选可归零/消除 */
+            warning_count: number;
         };
         /** @description 任务（零自有属性，纯关系；无独立端点，作为嵌套表示）。 依赖语义（M4 A4 定稿，单一真相）：成员的依赖关系由其 Link0 符号引用 **自动推导**（引用即依赖），无独立 depends_on 字段。文法：Link0 的 `%chk=`/`%oldchk=` 取值支持两形态——`@task:<id>`（id=同队列成员任务 id， 队列成员间专用，单任务席位载体与历史重新排队禁止）、`@exec:<执行id>` （resume 专用，指向单条终态执行的历史 chk 资产、不受同队列限制）。 `%chk=@task:X`（续用）与 `%oldchk=@task:X`（只读接续）均产生对 X 的 依赖边。方向约束（M4）：X 须位于本成员队列序**之前**——派发保序不越位 （依赖未满足者停等且后继不越过），前向引用（引用目标在本成员之后） 永不满足，静态校验即拒（DEPENDENCY_UNREACHABLE）。 运行时派发前由物化器重写为实际路径（复制上游 chk 至本执行目录 `dep-<taskid>.chk`，物化后输入零符号残留；输入哈希按物化前符号形式计算）。 */
         Task: {
