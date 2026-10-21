@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21T21:22+0800",
+  "updated": "2026-10-21T21:43+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -166,7 +166,7 @@
     {
       "type": "fixed",
       "scope": "web",
-      "summary": "令牌化候选列表警告徽标占位列宽（B9 实现审查 I-1，用户裁决组件禁硬编码度量）：新令牌 --warn-col-width: 56px 登记设计令牌库并同步 m0-ui-preview 样板（check_tokens 逐变量闸门覆盖），.warn-col 改引令牌消除硬编码，纯令牌化不改布局行为（auto 布局下该值为列宽下限、行级徽标显隐无列移），计划「列宽固定」口径随批勘误为「列宽有界」",
+      "summary": "令牌化并钉死候选列表警告徽标占位列宽（B9 实现审查 I-1 两步整改，用户裁决：组件禁硬编码度量；N 至多两位数，数字变化不得影响列宽、不得引起右列抖动）：新令牌 --warn-col-width: 64px 登记设计令牌库并同步 m0-ui-preview 样板（check_tokens 逐变量闸门覆盖），.warn-col 改引令牌消除硬编码，max-width 同值 + overflow hidden 与内容解耦（auto 表格布局下 td 的 max-width 仅在 overflow 非 visible 时生效），两位数最坏徽标隔离实测 42.02px+内边距 16px ≤ 64 不裁切，末徽标消失经真实数据路径浏览器实测全 8 列零位移，计划「列宽固定」口径随批勘误（§8.15/§8.16）",
       "breaking": false,
       "migration": null
     },

@@ -36,7 +36,7 @@
 - 【parse】route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）
 - 【parse】电荷/多重度行剥离引号外行内 ! 注释（G11）：parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 route 通道 C3 管道同规，引号内 ! 不截断、留作分隔符不入 token；电荷行为整数对自由格式不引入括号跟踪），官方「注释任意处」形态 0 1 ! … 与 0,1 0,1 0,1 ! … 在预览/导入/提交零错误、编辑保存放行，charge_mult 规范化输出不含注释文本；剥离后 token 不足/非整数仍照常记 parse_errors；无 schema 与 warnings kind 词表变更
 - 【parse】Link 0 空值形态补 link0_value_invalid 警告（B14 复审 R3）：%nproc=/%nprocshared=/%nprocshare= 空值与无值裸形、%cpu= 空值（同根因 if val 短路顺带拉齐）在预览/导入/提交通道与编辑保存 empty_value 阻断、%mem= 空值既有告警同源一致；顺带清理 _validate_one 无消费的 bom_stripped 死键（R4）并对齐 docstring 引用与审计措辞口径（R5/F-2）
-- 【web】令牌化候选列表警告徽标占位列宽（B9 实现审查 I-1，用户裁决组件禁硬编码度量）：新令牌 --warn-col-width: 56px 登记设计令牌库并同步 m0-ui-preview 样板（check_tokens 逐变量闸门覆盖），.warn-col 改引令牌消除硬编码，纯令牌化不改布局行为（auto 布局下该值为列宽下限、行级徽标显隐无列移），计划「列宽固定」口径随批勘误为「列宽有界」
+- 【web】令牌化并钉死候选列表警告徽标占位列宽（B9 实现审查 I-1 两步整改，用户裁决：组件禁硬编码度量；N 至多两位数，数字变化不得影响列宽、不得引起右列抖动）：新令牌 --warn-col-width: 64px 登记设计令牌库并同步 m0-ui-preview 样板（check_tokens 逐变量闸门覆盖），.warn-col 改引令牌消除硬编码，max-width 同值 + overflow hidden 与内容解耦（auto 表格布局下 td 的 max-width 仅在 overflow 非 visible 时生效），两位数最坏徽标隔离实测 42.02px+内边距 16px ≤ 64 不裁切，末徽标消失经真实数据路径浏览器实测全 8 列零位移，计划「列宽固定」口径随批勘误（§8.15/§8.16）
 - 【api】消除契约 warning_count description 的 YAML 折行伪影（B9 实现审查 I-3）：openapi 源由 >- 折叠标量改单行双引号长句，折行词间空格伪影（「响应中 现算」等）消除，gen_models 与 gen:types 生成物再生入库，字段语义与校验零变更
 
 ## v3.3.0（2026-10-15T22:51+0800 发布，minor）
