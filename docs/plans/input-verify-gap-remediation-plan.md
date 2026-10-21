@@ -1,6 +1,6 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**已实施并验收**（B1–B9 全部收口，验收留痕 §8.1–§8.15）目标版本 3.4.0。
+> 状态：**已实施并验收**（B1–B9 全部收口，验收留痕 §8.1–§8.16）目标版本 3.4.0。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
@@ -1153,10 +1153,10 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
    不进入切片前的全量视图构建，避免成本随全量候选数增长）；候选行
    「文件名」与「标题」列之间新增无表头占位列承载琥珀「⚠ N」徽标
    （N>0 时显示并附 title/aria 语义标注，N=0 时空置占位；列宽令牌
-   `--warn-col-width` 定值、行级显隐不引起列移，auto 布局下该值为
-   下限口径（B9 实现审查 I-1 勘误）。无表头系对既有表格「列均有列
-   名」规范的显式授权偏离）；选中候选的预览区各分块下方渲染该候选
-   当前对应区块的 warnings
+   `--warn-col-width` 钉宽定值（max-width+overflow hidden 与内容
+   解耦，I-1 续整改 §8.16），行级显隐与末徽标消失均不引起列移。
+   无表头系对既有表格「列均有列名」规范的显式授权偏离）；选中候选
+   的预览区各分块下方渲染该候选当前对应区块的 warnings
    详情（取预览 `warnings`，条目「⚠ L行号 message」，限高滚动）；分块
    保存响应即新 InputPreview + warnings，保存成功后详情即复验结果并
    刷新列表徽标（BlockEditor 现无对外事件，本批新增保存完成事件供
@@ -1998,3 +1998,28 @@ check_tokens.py、check_contrast.py）全绿。
   源修正零行为变更）；闸门 check_tokens（94+31 逐变量含新令牌）/
   check_contrast / audit_frontend_offline（重建 dist 后零外链）/
   validate_progress / gen_changelog_md --check / check_plan_status 全绿。
+
+### 8.16 B9 审查 I-1 续整改：徽标占位列钉宽（2026-10-21，用户裁决）
+
+- **裁决**：N 至多两位数，数字变化不得影响该列宽度，不得因列宽变化
+  引起右列抖动偏移——§8.15 的纯令牌化未改变 auto 表格布局「内容参与
+  列宽」行为（实现审查实测：徽标在场 60–67px、末徽标消失 −4~−11px
+  再分布），本节钉死。
+- **实现**（`.warn-col`，CandidatesView.vue）：
+  - 钉宽三件套：`max-width` 与 `width`/`min-width` 同取令牌值 +
+    `overflow: hidden`——auto 表格布局下 td/th 的 max-width 仅在
+    overflow 非 visible 时生效，列宽自此与内容解耦（数字变化、徽标
+    显隐均不参与列宽计算）；
+  - `--warn-col-width` 56→64px，`.warn-col` 水平内边距 `--space-3`
+    收窄至 `--space-2`：两位数最坏徽标「⚠ 99」隔离实测 42.02px +
+    内边距 16px = 58.02 ≤ 64（原 56px 预算下连一位数 33.02+24=57.02
+    都容不下，钉宽即裁切）；~6px 余量覆盖 Windows 回退字体 ⚠ 字形
+    差异；样板 m0-ui-preview.html 同步。
+- **浏览器实测**（playwright，隔离实例 :8399）：
+  - 钉宽：徽标 ⚠1/⚠2 在场与注入「⚠ 99」列宽均恰 64.00px，⚠99 零裁切；
+  - 末徽标消失：真实数据路径（分块修复 route 拼写警告 ⚠1→0，经列表
+    刷新徽标移除）前后全 8 列 x/width 零差；DOM 级移除同验全列零位移。
+- **出口**：全量 uv run pytest **872 passed 0 skipped**；闸门
+  check_tokens（94+31 逐变量）/ check_contrast / audit_frontend_offline
+  （重建 dist）/ validate_progress 全绿；§2.16 徽标列口径随本节更新为
+  钉宽定值。
