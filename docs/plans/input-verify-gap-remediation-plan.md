@@ -732,7 +732,7 @@ CCSD**」佐证「选项-关键字归属」是官方自身的校验维度。
   无 `suggestion`；
 - **缩写选项**：官方原文 keywords **and options** 均可缩写（§1.1）——
   选项在其键的官方选项集（词典 `键=*` 组合词条目）内按**最短唯一前缀**
-  判活（如 `density=curr`、`freq=numer`、`scrf=conven`）；键内歧义前缀
+  判活（如 `density=curr`、`freq=numer`、`scf=conven`）；键内歧义前缀
   （如 `scf=conv`，同时前缀于 conver/convergence/conventional）不判活、
   仍记 `route_option_unknown`，不引入选项级近邻近似——该警告系键内
   歧义判活的保守残余，不是对 G16 行为的断言：G16 Rev. C.01 实测对
@@ -1424,7 +1424,7 @@ Guess=Cards 先例登记分歧并回评处置（需用户裁决），不在分�
      实现、仅去掉唯一前缀判活分支，实施期初版统计 45.7% 复刻细节不可考
      已废弃；density=curr、freq=numer、guess=lowsym 等官方
      合法缩写被报为非官方选项）。修正为：在该键官方选项集（词典 `键=*`
-     组合词）内唯一前缀判活（`scrf=conven` 官方正面例合法、`scf=conv`
+     组合词）内唯一前缀判活（`scf=conven` 官方正面例合法、`scf=conv`
      歧义前缀 G16 拒绝仍报）；词级拼写通道（决策点 5）不变。
   2. **`scf=conven` enforce 口径（G7）**：§2.8「scf=conven/conv enforce
      拒绝」与 §2.3/决策点 5「保持整词与键名精确命中」冲突（= 形 token
