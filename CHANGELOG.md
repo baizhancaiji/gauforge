@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.4.0（2026-10-21T21:54+0800 发布，minor）
+
 ### 新增
 
 - 【web】非阻断 warnings 统一通道（G0）：parse_input 返回值增 warnings（默认空列表），预览与分块保存响应统一消费；拼写警告行号改为全文件绝对行号，条目 message 必填、suggestion 可选；契约抽共享 Warning schema、InputPreview 增可选 warnings 并移除分块保存响应外层包装
