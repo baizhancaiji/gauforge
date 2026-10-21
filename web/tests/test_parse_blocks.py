@@ -807,6 +807,16 @@ def test_g5_cpu_slash_n_suffix():
     assert cpu_list_count("0,2,4") == 3
 
 
+def test_g5_link0_empty_value_warns():
+    """B14 复审 R3：空值形态 %nproc=/%nprocshared=/%cpu= 在导入/提交/
+    预览通道记 link0_value_invalid（与编辑保存 empty_value 阻断、%mem=
+    空值既有告警同源拉齐——矩阵「%nproc 正整数 / %cpu 列表：警告」在
+    空值形态同样成立）。"""
+    for line in ("%nproc=", "%nprocshared=", "%nprocshare=", "%cpu="):
+        r = parse_input(f"{line}\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+        assert any(w["kind"] == "link0_value_invalid" for w in r["warnings"]), line
+
+
 def test_g5_title_forbidden_char_warning():
     """title 禁用字符：parse_input 记警告（编辑保存保持阻断）。"""
     r = parse_input("#p hf/sto-3g\n\nt@itle\n\n0 1\nO 0 0 0\n\n")

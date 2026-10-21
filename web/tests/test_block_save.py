@@ -517,3 +517,24 @@ def test_save_charge_mult_accepts_multiple_pairs(ind):
     assert out["blocks"]["charge_mult"] == "1 2 1 2 0 1"
     with pytest.raises(ApiError):
         save_block(tid, "charge_mult", ["1 2 1 0"], inputs_dir=ind)  # 组内 mult=0
+
+
+def test_matrix_not_applicable_block_save(ind):
+    """§2.11 矩阵分块保存列「不适用」格行为断言（B14 复审 R2）：G9
+    route/title 终止空行、G4 附加节 terminator、G9 空分子说明与 Geom
+    豁免边界（C1/C2）在分块保存通道无校验面——缺节/终止阻断仅
+    parse_input 通道（预览/导入/提交），保存按节阻断面不含这些规则。"""
+    tid = _mk(ind)
+    # G9：route 块保存不做「未以空行终止」校验（节内空行仍按既有规则拒，
+    # 见 test_route_validation）
+    r = save_block(tid, "route", ["#p opt freq"], inputs_dir=ind)
+    assert r["blocks"]["route"] == "#p opt freq"
+    # G4：附加节保存不校验 terminator（末节统一补终止空行，既有语义）
+    r2 = save_block(tid, "additional-0", ["eps=8.0"], inputs_dir=ind)
+    assert r2["blocks"]["additional_sections"][0]["terminator_blank"] is True
+    # C1/C2 + G9 空分子说明：route 改 geom=checkpoint 保存不受豁免档判定
+    # 影响，charge_mult 块保存亦无「缺少分子说明」类缺节校验
+    save_block(tid, "route", ["#p b3lyp/6-31g(d) geom=checkpoint"],
+               inputs_dir=ind)
+    r3 = save_block(tid, "charge_mult", ["0 1"], inputs_dir=ind)
+    assert r3["blocks"]["charge_mult"] == "0 1"

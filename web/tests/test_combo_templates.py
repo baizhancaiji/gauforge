@@ -539,3 +539,14 @@ def test_notice_route_option_warnings_ambiguous_prefix():
     r = _put(1, route="#p scf=conven opt")
     assert r.status_code == 200
     assert r.json()["notice"].get("route_option_warnings") in (None, [])
+
+
+def test_matrix_not_applicable_template_save():
+    """§2.11 矩阵模板列「不适用」格行为断言（B14 复审 R2）：G9/G4
+    （模板 route 单行、无节结构）、title ≤5 行与禁字（无 title 字段）、
+    Link 0 行长/位置（生成行由后端注入）、G6 原子标签与多组电荷对
+    （无分子说明字段）在模板保存通道无校验面——以附加节触发词 route
+    保存 200 放行为代表断言（G4 触发识别与 terminator 校验均不适用）。"""
+    r = _put(1, route="#p b3lyp/6-31g(d) opt gen")
+    assert r.status_code == 200, _reasons(r) if r.status_code == 422 else None
+    assert r.json()["notice"].get("route_duplicates") in (None, [])
