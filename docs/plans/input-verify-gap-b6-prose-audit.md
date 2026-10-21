@@ -156,6 +156,11 @@ file_warnings）。B6 词典（1345）与 B5 词典（HEAD 1166）同 harness �
 - 残余警告主体仍为 A 类（`geom=modela` 265、`scf=novaracc` 43、
   `scf=noincore` 20、`units=bohr` 14、`cphf=ultrafine` 14 等，决策点 11
   预期行为）。语料 sha256 清单随 git 提交（corpus_baseline_b6.json）。
+- 单文件同 kind ≤3 维度（B2–B4 审查 R6 两维度要求）：按 §5 harness 口径
+  复算，`route_option_unknown` 超阈（>3 条）6 文件——test0386 5 条
+  （单文件最大）、test0385/test0431/test0442/test0985/test1187 各 4 条；
+  超阈文件数与单文件最大条数均与 B5 基线持平（§8.6：6 文件、最大 5 条
+  test0386），沿用 R6 行级粒度裁决（保留精确定位，不聚合），接受超阈。
 
 ## 8. G16 Rev. C.01 冒烟（B6 出口，临时目录 /tmp/g16-smoke-b6）
 
