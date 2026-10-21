@@ -1,14 +1,11 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**已实施并验收**（2026-10-21 B8 收口与全面复审整改完成；验收留痕
-> docs/plans/input-verify-gap-remediation-plan-final-review-r1.md 与本文 §8.12，
-> 目标版本 3.4.0）。
+> 状态：**部分实施**（B1–B8 已收口并验收；B9为后期立项，待执行)目标版本 3.4.0。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
-> 与 roadmap 冲突时以 roadmap 为准；契约（openapi.yaml / sse.md）变更须文档先行
-> （roadmap §1 设计原则「契约先行」）。文中行号与各节「现状」描述以
-> 2026-10-18 HEAD（g16-webui 分支）为基线，实施时以实际代码与 §8 留痕为准。
+> 契约（openapi.yaml / sse.md）变更须文档先行
+> （roadmap §1 设计原则「契约先行」）。文中行号与各节「现状」描述以2026-10-18 HEAD（g16-webui 分支）为基线，实施时以实际代码与 §8 留痕为准。
 
 ## 0. 背景、依据与方法
 
@@ -56,8 +53,9 @@
   **真实知识库缺失时条件测试会 skip**，批次记录必须注明 skip 状态，
   不得当作通过。
 - 本计划同时登记一项兼容项：现有 `_EXTRA_KEYWORDS` 含官方表未列出的
-  `prop=wrf`；G4 替换触发词集时保留一版兼容触发并在 §2.12 登记，
-  待 G16 冒烟确认后再决定删除。
+  `prop=wrf`；G4 替换触发词集时先以 `COMPAT_EXTRA_KEYWORDS` 保留一版
+  兼容触发（§2.12 登记），B6 经 G16 Rev. C.01 冒烟实测拒绝后删除，
+  `prop=wrf` 不再触发附加节识别。
 
 ---
 
@@ -410,9 +408,11 @@ G16 Rev. C.01 快照）。
    - **不按附加节首行猜节名**——附加节在解析器里没有名称，只有首行数据，
      无法用 `section_head` 反查概念节。
 2. **`_EXTRA_KEYWORDS` 替换**：改为由该表 `kind=additional` 导出的
-   **人工审核触发词全集**（54 行去重后的 key/option 谓词），并保留
-   `COMPAT_EXTRA_KEYWORDS = ("prop=wrf",)` 一版兼容项（官方表未列出，
-   见 §2.12）。`parse_input`/`_scan_spans` 的 `wants_extra` 判定改查
+   **人工审核触发词全集**（54 行去重后的 key/option 谓词）；官方表未列出
+   的 `prop=wrf` 先以 `COMPAT_EXTRA_KEYWORDS = ("prop=wrf",)` 保留一版
+   兼容项（见 §2.12），B6 经 G16 Rev. C.01 冒烟实测拒绝后删除，
+   触发词集最终即 54 行全集。`parse_input`/`_scan_spans` 的 `wants_extra`
+   判定改查
    `section_ordering.any_trigger(route_tokens)`——附加节识别与隐式变量区
    抑制同步获得官方口径。**禁止把 `core` 行的 `Route Section | all` 导入
    `any_trigger`**，否则恒为真。
@@ -882,7 +882,7 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | `@file` 是否存在、`/N` 语义 | 文件可能位于集群侧或 G16 运行目录，WebUI 无访问权 | 不校验；预览可显示「包含文件未校验」提示（可选，非本计划） |
 | `Geom=Modify` 两节输入 | 官方已弃用（推荐 ModRedundant），实际使用极少 | 不覆盖；解析保持现状 |
 | 全局关键字空间的最短唯一性 | 词典不是全系统关键字空间 | 维持精确匹配（决策点 5），缩写误拒为已知限制；warn 通道保留近邻提示 |
-| `prop=wrf` 非官方触发词 | 官方 Section Ordering 未列，但现行实现已支持 | 保留一版 `COMPAT_EXTRA_KEYWORDS`，冒烟确认节点排入 B6 出口（§3.1），随 G16 冒烟一例确认后裁决去留 |
+| `prop=wrf` 非官方触发词 | 官方 Section Ordering 未列，原实现已支持 | 经 `COMPAT_EXTRA_KEYWORDS` 保留一版（冒烟节点 B6 出口，§3.1）；B6 G16 Rev. C.01 冒烟实测拒绝（QPErr syntax error），常量删除、`prop=wrf` 不触发附加节识别（`any_trigger` 判 False，测试固化） |
 | 分子说明/Variables EOF 阻断 | 历史文件常以 EOF 收尾；G16 是否一律拒绝未做全量实测 | G9 仅给非阻断 warnings；若实测 G16 拒绝，再另批升级为阻断 |
 | title 语义/内容质量 | 程序不解释 title | 仅校验字符与行数 |
 | Link 0 未知指令阻断 | 历史模板可能含自定义 `%` 指令 | 仅 warnings（决策点 7） |
@@ -1028,15 +1028,19 @@ B1 与 B2–B4 两轮审查遗留未落地且无取舍留痕——导入（`file
 **方案**：
 - CandidatesView.vue 导入：导入成功响应按文件聚合非空 warnings，
   工具条下方琥珀清单区（与既有 422 逐文件失败清单同构、warn 色档），
-  条目形态「文件名 · 第 N 行 message」；再次发起导入即清空；
+  条目形态「文件名 ⚠ 第 N 行 message」；再次发起导入即清空；
 - CandidatesView.vue 单任务提交：提交成功响应 warnings 于工具条
   琥珀注记展示（与既有 submitNote 中性规范化注记同级邻位），条目
-  「⚠ 第 N 行 message」（BlockEditor 保存警告同款文案纪律）；重新
+  「⚠ 提交警告 — 第 N 行 message」（BlockEditor 保存警告同款文案纪律）；重新
   打开提交确认框即清空；
 - QueueEditorModal.vue「直接提交」：done 注记下方逐条渲染
-  「⚠ 任务 #task_id · 第 N 行 message」；弹窗重开/再次保存即清空；
+  「⚠ 任务 #task_id — 第 N 行 message」；弹窗重开/再次保存即清空；
 - 历史重新排队与续跑响应（HistoryView/ResumeDialog）的 warnings
   渲染不在本项（候选页之外），登记为后续按需项。
+- QueueEditorModal「再次保存即清空」为必做实现动作：B8 落地为弹窗重开
+  清空（`watch(open)` 重置），保存成功路径清空 `submitWarnings` 尚待
+  实现，随下个前端批次承接；验收=浏览器实测「直接提交见警告→再次保存
+  后警告消失」。
 
 **视觉实测（AGENTS §6.2）**：playwright 浏览器实测四场景——导入拼错
 关键字文件见琥珀清单；单任务提交后见工具条琥珀注记；队列直接提交见
@@ -1049,6 +1053,142 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
 
 **验收标准**：四场景浏览器实测通过；全量测试不回归；前端闸门
 （audit_frontend_offline.sh、check_tokens.py、check_contrast.py）全绿。
+
+### 2.16 G13 · 提交前核验预显、警告文案、条目堆叠与持久化复验（B9，2026-10-21 立项）
+
+**立项背景**：B8 收口后用户裁决（2026-10-21）——①警告条目文案再修订：
+行号改「L行号」紧凑形、上下文与行号以冒号相接，相关表述随同改动，
+不得以「—」作统一分隔；②警告 `message` 不得为内部英文式警告，须为
+中文警告语；③警告随候选持久化并在编辑后复验，仅「分块编辑修复」与
+「删除候选」两条路径可消除；④警告条目大量堆叠时不得溢出、被吞、
+被遮挡；⑤（同日补充裁决，B9 本意核心）核验警告必须前置到提交确认
+之前——单任务提交确认框与队列编辑弹窗在动作发生前即完成全面核验并
+如实警告，粒度为任务级（每个输入文件各自呈现自己的核验结果）；
+提交后才首次告知核验结果不可接受；⑥（同日补充裁决）核验信息必须
+永远取最新结果——Link0 缺省补全后核验（判定以补全后文本为事实
+基础），用户分块编辑修正后即时复验，任何展示点不得出现「用户已
+修正、警告仍滞后保留」。
+
+**现状**（B8 交付形态）：
+- 条目口径：导入琥珀清单按文件聚合、条目「文件名 ⚠ 第 N 行 message」；
+  单任务提交工具条注记「⚠ 提交警告 — 第 N 行 message」；队列直接提交
+  「⚠ 任务 #task_id — 第 N 行 message」；导入清单汇总行「导入警告
+  N 条 — 非阻断，已入库」；
+- 警告均为动作当时的一次性提示：导入/提交响应的 warnings 仅在当时的
+  琥珀区渲染，再次发起动作即清空；候选列表行无警告状态，分块保存的
+  warnings 仅随保存响应出现——带警告候选在动作过后无处可见，也无从
+  得知是否已修复；
+- `message` 产出点已以中文为主（§2.0.1 口径），但「一律中文警告语」
+  未作为逐 kind 硬口径固化（无 message 模板清单与断言；kind 字样系
+  机器通道标识，不得进入 message 文案）；
+- 提交确认框与队列编辑弹窗在动作前不呈现任何核验警告：单任务确认框
+  打开时已取回 `/candidates/{id}/preview`（其 `warnings` 为 B1 通道、
+  与导入/提交/分块保存同走 `file_warnings` 全集单点）但未消费；队列
+  弹窗打开时已逐成员并行取回 preview（`loadLinkStates` 依赖勾选初始
+  化）但仅消费 Link 0 行、warnings 同样未消费——核验结果首次呈现时机
+  为提交成功响应之后（§2.15 B8 交付形态，裁决⑤判定不可接受）。
+
+**方案**：
+1. **提交前核验预显（裁决⑤落地，本项核心）**：核验数据源一律为既有
+   `GET /candidates/{id}/preview` 的 `warnings`（B1 通道，与提交核验
+   同一解析管道与 `file_warnings` 全集单点，行号为全文件绝对行号；
+   无后端与契约变更）。单任务：提交确认框打开时消费 `openSubmit`
+   已取回的 preview warnings，确认框内新增琥珀警告区逐条渲染（条目
+   按本批新文案口径「⚠ L行号 message」），零警告零渲染；用户在知情
+   后确认提交，提交后工具条琥珀注记保留为提交回执。队列：编辑弹窗
+   （创建态与编辑态）打开时对每个成员取 preview——复用既有
+   `loadLinkStates` 的并行取数路径（现状打开时已逐成员拉取 preview
+   仅消费 Link 0 行，本批扩展为同一响应并消费 warnings，不新增第二条
+   请求路径；前端消费既有端点，成员规模内成本与预览通道同量级），
+   逐成员在成员行下渲染该成员自己的
+   warnings（任务级归属，条目「⚠ L行号 message」，限高滚动随本批
+   堆叠口径）；成员 preview 取回失败该成员占位提示、不阻断其余成员。
+   提交期注入/改写（如接续 chk 注入、规范化换行）不在预显口径——
+   预显=当前存储文本的核验，提交响应 warnings 保留为回执（队列含
+   task_id 归属，为提交后独有信息）。核验口径为补全后事实（裁决⑥）：
+   Link0 缺失项在派发时经 `resolve_link0` 按运行级设置缺省注入
+   （补全单点，completed_text 为 G16 实际执行文本），核验判定须以
+   补全后文本为事实基础。当前缺省值经设置校验恒为合法值、缺失指令
+   本身不产 warnings（仅中性「未声明 · 执行时将按默认值补齐」注记），
+   故存储文本核验与补全后核验的 warnings 内容集恒等。补全为行注入
+   （`resolve_link0` 将缺省行插入 Link 0 块末尾），注入 N 行时 Link 0
+   块之后所有警告行号整体 +N——等价性口径为 `(kind, keyword, message,
+   suggestion)` 多重集逐条一致、行号差恰为注入行数；B9 以测试断言
+   固化该等价性（缺省补全前后 `file_warnings` 按上述口径比较）作为
+   回归闸门；预显行号不取补全后文本，维持存储文本绝对行号（与预览/
+   编辑所见一致）。若未来补全规则或缺省值校验变化破坏等价，预显链路
+   改为消费 `resolve_link0` 之后的 completed_text 核验（补全单点不动）。
+2. **文案修订**：导入琥珀清单条目改为自含形「⚠文件名: L行号 message」
+   （文件名入条目，按文件分组取消；汇总行同步改为「导入警告 N 条」）；单任务提交注记条目改为「⚠ L行号 message」（去
+   「提交警告」前缀，上下文由所在琥珀区承担）；队列直接提交条目改为
+   「⚠ 任务 #task_id: L行号 message」；行号一律「L行号」形；警告族内
+   相关表述（汇总行、详情区标题等）随同改口径，分隔一律冒号或括注；
+   `message` 逐 kind 审计并固化为中文警告语（关键字名、选项名、单位
+   等术语保留原文），模板清单随批留痕并以测试断言固化。
+3. **条目堆叠**：全部警告展示区（导入清单、提交注记区、单任务确认框
+   预显区、队列弹窗注记区与成员预显区、候选详情警告区）实施限高滚动
+   （既有先例：提交确认框完整
+   输入限高滚动），限高值与滚动样式自行设计、须符合既有前端风格
+   （设计令牌、mono 行形）；条目再多都不得溢出容器、被裁切吞没或遮挡
+   其他内容。本批前端实现的视觉样式一律复用既有设计令牌，不得私设
+   令牌或在组件内硬编码字面值；既有令牌无法覆盖时，先在令牌库
+   （`web/frontend/src/styles/tokens.css`，含 m0-ui-preview.html 样板
+   同步，受 check_tokens 闸门约束）新增令牌再引用。
+4. **持久化与复验**：核验新鲜度为硬口径（裁决⑥）——全部警告展示点
+   （预显、列表徽标、候选详情、提交回执）一律现算自当前存储文本，
+   禁止任何落库快照或滞后保留；用户经分块编辑修正后，保存响应即
+   复验结果，对应警告在徽标、详情与再次打开的预显中即时消退，不得
+   出现「用户已修正、警告仍保留」。导入警告不阻断导入（既有语义）；带警告文件入库
+   后警告随候选持续显示，用户主动消除仅两条路径——分块编辑修复（保存
+   后复验）或删除候选；提交规范化补空行使 EOF 类警告随复验自然消退，
+   属复验机制的自然结果、不属用户主动消除路径；重复导入同一文件新建
+   条目、不覆盖既有条目（既有
+   语义），不构成消除手段。机制（派生即复验，不落库）：候选列表条目
+   增 `warning_count`，由列表端点对分页切片后的当前页条目现算
+   （`file_warnings` 全集单点，页大小内解析成本与预览通道同量级；
+   不进入切片前的全量视图构建，避免成本随全量候选数增长）；候选行
+   「文件名」与「标题」列之间新增无表头占位列承载琥珀「⚠ N」徽标
+   （N>0 时显示并附 title/aria 语义标注，N=0 时空置占位；列宽固定，
+   显隐不引起列移。无表头系对既有表格「列均有列名」规范的显式授权
+   偏离）；选中候选的预览区各分块下方渲染该候选当前对应区块的 warnings
+   详情（取预览 `warnings`，条目「⚠ L行号 message」，限高滚动）；分块
+   保存响应即新 InputPreview + warnings，保存成功后详情即复验结果并
+   刷新列表徽标（BlockEditor 现无对外事件，本批新增保存完成事件供
+   候选页刷新徽标与详情）；提交规范化改写文本后经列表刷新同径复验。§2.15 已
+   登记的 QueueEditorModal「再次保存即清空」必做实现动作随本批队列
+   弹窗改造承接；HistoryView/ResumeDialog 渲染维持 §2.15 后续按需项
+   登记不变。
+
+**契约动作**：候选列表条目（Candidate）增 `warning_count: int`（必填；
+沿 `title` 先例为响应中现算、不落库字段，schema description 同步注明
+现算口径；先改
+openapi.yaml；gen_models + gen:types 再生零 diff）；`Warning` schema 与
+kind 词表不变（message 中文口径为文案修订，非 schema 变更）；提交前
+核验预显零契约变更（消费既有 InputPreview.warnings 通道）。
+
+**涉及文件**：`web/src/parse/keywords.py`、`web/src/parse/blocks.py`、
+`web/src/parse/link0_rules.py`（message 逐 kind 审计）； 
+`docs/api/openapi.yaml`；`web/src/routers/candidates.py`（列表现算）；
+前端 `CandidatesView.vue`、`BlockEditor.vue`、`QueueEditorModal.vue`；
+测试：逐 kind message 中文断言、列表 `warning_count` 链路用例（导入带
+警告 → N；分块修复保存后 → 0；删除随行消失）、缺省补全前后
+`file_warnings` 内容集等价断言（含行号平移口径）、
+`test_contract_rest.py` Candidate 契约用例、堆叠限高场景用例。
+
+**验收标准**：提交前核验预显——打开单任务确认框即见该文件全部核验
+警告（拼错关键字等），零警告零渲染；打开队列弹窗（创建态与编辑态）
+即见各成员自己的 warnings（任务级归属正确），成员 preview 取回失败
+仅该成员占位提示、不阻断其余成员；两链路浏览器实测留痕。
+核验新鲜度——分块修正保存后，徽标、详情与再次打开的预显中对应
+警告即时消退（无滞后保留，浏览器实测）；缺省补全前后 `file_warnings`
+内容集等价性（含行号平移口径）以测试断言固化。
+三条链路条目文案逐字符合新口径（浏览器实测）；逐 kind
+`message` 模板清单全中文并测试固化；多警告限高滚动无溢出/裁切/
+遮挡；导入带警告 → 占位列徽标与详情出现（徽标显隐无列移），分块
+修复保存后复验消退，删除候选随行消失，重复导入同文件各自带警告互
+不影响；「再次保存即清空」
+落地；全量测试不回归；前端三闸门（audit_frontend_offline.sh、
+check_tokens.py、check_contrast.py）全绿。
 
 ---
 
@@ -1063,7 +1203,8 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
 | B5 字典扩面 | G7+G8 | 字典重生成幂等闸门通过（1166 词条；三处断言同步；KB skip 记录）；`#t`/`#n` 模板保存通过；`scf=conven`/`scf=conv` 组合词经键名命中放行、`fre`/`geo` 裸词 enforce 拒绝（缩写不识别限于词典层面，§8.6 口径修正 2）；G8 用例（在典零警告/未知选项/嵌套取值/`opt=(readfcht)` 跨关键字/`opt=(readfc)` 零警告/`opt=(calcfc,xyzzy)` 仅报未命中选项/`opt=(calfcf)` 附 `suggestion=calcfc`/IOp 零警告/ONIOM 零警告/External 零警告）转绿（2026-10-20 勘误：原验收「两处断言」「scf=conven/conv enforce 拒绝」与实施口径不符，原位改写） | warnings kind 词表增 `route_option_unknown` |
 | B6 口径修订与词典扩面 | G10-a+G10-b | 模板保存拼写错误仅警告、零 422（enforce 屏蔽，决策点 12）；warn 口径断言含 `ignore_spelling=true` 与不传行为一致；前端豁免按钮隐藏以浏览器实测验收（AGENTS §6.2）；面⑤散文提及选项审计三路差集清单落盘并逐条人工复核留痕，复核通过的缺口选项全部入典（幂等闸门 + 规模断言同步）；`opt=addredundant`/`freq=nnroa` 零警告复测通过，`td=window`/`units=bohr` 等 A 类判归形态维持预期警告不复测（决策点 11）；全量测试不回归；语料基线仅作回归对照记录（不作通过判据），扩面后复跑并逐条归因 `route_option_unknown` 增量、不得含唯一前缀歧义翻转型新增误报，A 类判归形态顺带记录 G16 实测对照（不作判据）；G16 冒烟按 §3.1 B6 清单执行（B 类复测、`prop=wrf` 一例、缩写判活正反例各一）；`keywords.py` 中 window 相关注释按 A 类口径修正；`web/src/engine/workspace.py` 模块头 docstring 旧单位口径残留顺带修正 | 模板保存端点 description 更新（enforce → 仅警告；ignore_spelling 注明不生效）+ 生成物再生零 diff；warnings 词表不变 |
 | B7 正确性补修 | G11 | `parse_charge_tokens` 剥离引号外 `!` 行内注释后，`0 1 ! …` 与 `0,1 0,1 0,1 ! …` 在预览/导入/提交零错误、编辑保存放行，`charge_mult` 规范化输出不含注释文本；剥离后 token 不足/非整数仍报错；既有电荷行用例（斜杠/en-dash/多组对）不回归；全量测试不回归；G16 冒烟一例（电荷行行内注释）实测背书，实测与手册分歧按 §2.14 登记 | 无 schema 与 kind 词表变更；CHANGELOG 登记接受集扩大 |
-| B8 前端渲染收口 | G12 | 四场景浏览器实测通过（导入琥珀清单/提交工具条注记/队列 task_id 警告 + B6 补测三场景）；全量测试不回归；前端三闸门全绿 | 无契约变更（纯前端消费既有 warnings 形态） |
+| B8 前端渲染收口 | G12+全面复审 R2–R5、F-2 随批整改 | 四场景浏览器实测通过（导入琥珀清单/提交工具条注记/队列 task_id 警告 + B6 补测三场景）；全量测试不回归；前端三闸门全绿 | 无契约变更（纯前端消费既有 warnings 形态） |
+| B9 提交前核验预显、警告文案、堆叠与持久化复验 | G13 | 单任务确认框与队列弹窗提交前即见文件级核验警告（任务级归属、零警告零渲染，浏览器实测）；分块修正保存后警告即时消退无滞后、缺省补全前后 warnings 内容集等价性（含行号平移口径）测试固化；条目文案与逐 kind 中文 message 按 §2.16 逐字落地并测试固化；导入徽标/编辑修复复验消退/删除随行消失/重复导入互不影响全链路浏览器实测；多警告限高滚动无溢出/裁切/遮挡；「再次保存即清空」落地；全量测试不回归；前端三闸门全绿 | Candidate 增 `warning_count`（必填、响应中现算不落库，openapi 先行 + 生成物零 diff）；kind 词表不变；提交前预显零契约变更（消费既有 InputPreview.warnings） |
 
 ### 3.1 批次依赖与节点
 
@@ -1078,8 +1219,9 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
   屏蔽独立提交、G10-b 词典扩面同批完成（实际提交序列以 prose-audit
   §9.2 R3 勘误留痕为准）；出口另加 G16 冒烟
   （`opt=addredundant`/`freq=nnroa` 及其宿主关键字各一例，确认零误报；
-  `prop=wrf` 兼容触发词随同批冒烟一例确认，作 `COMPAT_EXTRA_KEYWORDS`
-  去留裁决输入——决策点 9）；缩写判活实测背书（`freq=numer` 判活零
+  `prop=wrf` 兼容触发词随同批冒烟一例确认——G16 Rev. C.01 实测拒绝
+  （QPErr syntax error），`COMPAT_EXTRA_KEYWORDS` 据此删除——决策点 9）；
+  缩写判活实测背书（`freq=numer` 判活零
   警告；`scf=conv` 歧义前缀报 `route_option_unknown`，G16 Rev. C.01
   实测接受、警告系键内歧义判活的保守残余；`freq=readanh` 歧义警告与
   G16 实测拒绝一致——补足 B5 未设冒烟节点的 G8 唯一前缀口径实测背书）。
@@ -1089,6 +1231,9 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
 - **B8（2026-10-21 立项，§2.15）**：依赖 B3 的 warnings 数据面（已收口），
   与 B7 无文件交集；出口含 B6 视觉补测三场景（B57 审查待办承接）；
   全面复审 P3（R2–R5、F-2）同轮随批处置，留痕 §8.12。
+- **B9（2026-10-21 立项，§2.16）**：依赖 B8；提交前核验预显（裁决⑤
+  核心）、文案修订、message 中文审计、堆叠限高与持久化复验同批完成，
+  并入 3.4.0；出口为 §2.16 验收标准全场景浏览器实测留痕 + 闸门全绿。
 - 每批入口 = 上一批验收全绿 + `validate_progress.py` 通过；每批出口 =
   §5 闸门全绿 + CHANGELOG/progress 当批登记（禁止集中回补）。
 - 真实 G16 冒烟节点：B1 后一次（Checkpoint/AllCheck 各一例）、B2 后一次
@@ -1227,8 +1372,9 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
 7. **Link 0 指令名/重复检测**：仅 `warnings`，不阻断。
 8. **`%mem=0`**：拒绝——编辑保存阻断、模板 `mem_gb` 阻断、导入/提交
    警告。
-9. **`prop=wrf` 兼容触发词**：保留一版 `COMPAT_EXTRA_KEYWORDS`，避免既有
-   行为回退；G16 冒烟确认后裁决去留，冒烟节点在 B6 出口（§3.1）。
+9. **`prop=wrf` 兼容触发词**：以 `COMPAT_EXTRA_KEYWORDS` 保留一版避免
+   既有行为回退；B6 出口冒烟 G16 Rev. C.01 实测拒绝，裁决删除，
+   冒烟节点在 B6 出口（§3.1）。
 10. **发布窗口与批次工期**：3.4.0 为目标版本；不设日历承诺，排程由批次
     闸门驱动（每批入口 = 上一批验收全绿 + `validate_progress.py` 通过），
     发布冻结时点在批次验收全绿后的发布流程中确定（B6 立项后顺延至 B6
@@ -1465,7 +1611,8 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
      已废弃；density=curr、freq=numer、guess=lowsym 等官方
      合法缩写被报为非官方选项）。修正为：在该键官方选项集（词典 `键=*`
      组合词）内唯一前缀判活（`scf=conven` 官方正面例合法、`scf=conv`
-     歧义前缀 G16 拒绝仍报）；词级拼写通道（决策点 5）不变。
+     键内歧义前缀仍报——G16 Rev. C.01 实测接受（B6 冒烟 t5），警告系
+     键内歧义判活的保守残余）；词级拼写通道（决策点 5）不变。
   2. **`scf=conven` enforce 口径（G7）**：§2.8「scf=conven/conv enforce
      拒绝」与 §2.3/决策点 5「保持整词与键名精确命中」冲突（= 形 token
      键名命中即放行，B1 起如此）——以决策点 5 原文为准：组合词
@@ -1663,7 +1810,7 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
 - **全面复审**：code-reviewer 子代理按 AGENTS §6.2 四查分两批执行——
   B1–B4（报告
   [input-verify-gap-remediation-plan-B14-review.md](input-verify-gap-remediation-plan-B14-review.md)，
-  区间 v3.3.0..f5387615，31 提交）与 B5–B7（报告
+  区间 v3.3.0..f5387615，38 提交）与 B5–B7（报告
   [input-verify-gap-remediation-plan-B57-review.md](input-verify-gap-remediation-plan-B57-review.md)，
   区间 f5387615..04db8a4b，48 提交）。结论：**两批均通过，无 P0/P1**——
   851 基线内 848 passed 0 skipped、七闸门全绿、生成物零 diff、G16 冒烟
@@ -1683,16 +1830,17 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
     自足表述；F-2：extract_keywords/audit_prose_options 三处
     「三路差集全量审计」措辞对齐 D-3 收敛口径；
   - R1（G12）：CandidatesView 导入琥珀清单（按文件聚合）+ 单任务提交
-    琥珀警告区 + QueueEditorModal 队列提交 task_id 警告；
-    HistoryView/ResumeDialog 渲染登记为后续按需项（§2.15）。
+    琥珀警告区 + QueueEditorModal 队列提交 task_id 警告（弹窗重开即
+    清空）；HistoryView/ResumeDialog 渲染登记为后续按需项、
+    「再次保存即清空」登记为必做实现动作（均见 §2.15）。
 - **浏览器实测（playwright，AGENTS §6.2）**：隔离实例
   （`G16WEB_HOME=/tmp/g16web-b8`、`G16WEB_ENGINE=0`、:8399，构建版本
   v3.3.0-94-gea7ea5c2）六场景全过——
   ①导入 `optt` 拼写文件：琥珀清单「导入警告 1 条 — 非阻断，已入库」
   按文件聚合（spell.gjf 第 5 行 keyword_spell；clean.gjf 零警告不入列）；
-  ②单任务提交：工具条下方琥珀「⚠ 提交警告 · 第 4 行 …」（提交通道
+  ②单任务提交：工具条下方琥珀「⚠ 提交警告 — 第 4 行 …」（提交通道
   规范化后行号，全文件绝对口径）；
-  ③队列直接提交：done 注记下方「⚠ 任务 #3 · 第 3 行 …」，task_id 归属
+  ③队列直接提交：done 注记下方「⚠ 任务 #3 — 第 3 行 …」，task_id 归属
   正确；
   ④B6 视觉补测——组合流模板弹窗无「忽略拼写警告并保存」豁免按钮
   （foot 仅「关闭/保存」，G10-a 移除口径在当前构建成立）；
@@ -1708,3 +1856,18 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
   gen_changelog_md --check / check_plan_status（状态行回填后）通过。
   **B1–B8 全部收口**，按 §3.1 版本归属进入 3.4.0 发布流程（冻结时点由
   用户确定）。
+- **B8 批次独立审查与 P3 处置（2026-10-21）**：code-reviewer 子代理按
+  AGENTS §6.2 四查独立复核 04db8a4b..6b992ff9（报告
+  [input-verify-gap-remediation-plan-B8-review.md](input-verify-gap-remediation-plan-B8-review.md)），
+  主会话以 playwright 补齐六场景视觉复测（报告 §7，六场景全过），结论
+  **通过**；登记 3 条 P3 文档层偏差，同日整改闭环（为本文件与 B14 报告
+  的未提交修正，随下轮文档提交入库）——
+  ①P3-1：§2.15 条目文案原位勘误为实际交付口径（导入「文件名 ⚠ 第 N 行
+  message」、提交「⚠ 提交警告 — 第 N 行 message」、队列
+  「⚠ 任务 #task_id — 第 N 行 message」）；本节浏览器实测场景②③留痕
+  分隔符随勘误改为交付后「—」形（B8 时点实测为「·」，原始观察见审查
+  报告 P3-1 与 git 历史）；
+  ②P3-2：本节与 B14 报告三处「31 提交」改「38 提交」
+  （`git rev-list --count v3.3.0..f5387615` 实测 38）；
+  ③P3-3：§2.15 补「再次保存即清空」B9 承接登记，本节实施序列 R1
+  bullet「均见 §2.15」回指随之成立。
