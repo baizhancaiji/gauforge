@@ -1005,10 +1005,10 @@ tbody tr.row--checked:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* 警告徽标占位列（B9 G13）：列宽固定，徽标显隐不引起列移 */
+/* 警告徽标占位列（B9 G13）：列宽走令牌（实现审查 I-1），行级徽标显隐不引起列移 */
 .warn-col {
-  width: 56px;
-  min-width: 56px;
+  width: var(--warn-col-width);
+  min-width: var(--warn-col-width);
 }
 .warn-badge {
   display: inline-block;
