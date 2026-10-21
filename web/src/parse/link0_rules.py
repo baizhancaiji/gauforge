@@ -132,7 +132,7 @@ def check_link0_lines(lines: list[str], *,
                              "keyword": f"%{head}",
                              "kind": "link0_directive_duplicate",
                              "message": f"Link 0 指令「%{head}」重复出现 "
-                                        f"{count} 次（后值覆盖前值，请确认)"})
+                                        f"{count} 次（后值覆盖前值，请确认）"})
     return warnings
 
 
