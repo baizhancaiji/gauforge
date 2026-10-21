@@ -28,6 +28,7 @@ import { causeLabel } from "@/utils/labels";
 
 type Candidate = components["schemas"]["Candidate"];
 type Queue = components["schemas"]["Queue"];
+type Warning = components["schemas"]["Warning"];
 
 const events = useEventsStore();
 
@@ -103,6 +104,12 @@ const importErrors = ref<{ filename: string; message: string }[]>([]);
 const queueFromFolder = ref(false);
 const queueName = ref("");
 const fallbackNote = ref<string | null>(null);
+/** B8 G12：导入成功条目的非阻断 warnings（按文件聚合，仅非空文件入列；
+ *  契约 Warning.message 必填，行号全文件 1 起）。 */
+const importWarnings = ref<{ filename: string; items: Warning[] }[]>([]);
+const importWarningCount = computed(
+  () => importWarnings.value.reduce((n, g) => n + g.items.length, 0),
+);
 
 /** B3：文件夹导入仅提交受支持输入文件（.gjf/.com，不区分大小写）。
  *  整目录直传会因杂文件触发整批 422，前端先行过滤（F-03）。 */
@@ -133,6 +140,7 @@ function pickFiles() {
   filterNote.value = null;
   fallbackNote.value = null;
   importErrors.value = [];
+  importWarnings.value = [];
   fileInput.value?.click();
 }
 function pickFolder() {
@@ -140,6 +148,7 @@ function pickFolder() {
   filterNote.value = null;
   fallbackNote.value = null;
   importErrors.value = [];
+  importWarnings.value = [];
   dirInput.value?.click();
 }
 
@@ -162,6 +171,7 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
   filterNote.value = null;
   fallbackNote.value = null;
   importErrors.value = [];
+  importWarnings.value = [];
   const fd = new FormData();
   fd.append("mode", mode);
   if (mode === "folder" && queueFromFolder.value) {
@@ -195,6 +205,9 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
       // 越界拒绝成队：回落全部生成候选（后端明示原因），中性信息注记展示
       fallbackNote.value = `成队未满足 — ${data.queue_fallback_reason}`;
     }
+    importWarnings.value = data.files
+      .filter((f) => f.warnings?.length)
+      .map((f) => ({ filename: f.filename ?? "", items: f.warnings ?? [] }));
     queueFromFolder.value = false;
     queueName.value = "";
   }
@@ -215,6 +228,8 @@ const submitError = ref<string | null>(null);
 const submitActive = computed(() => submitting.value != null);
 /** 提交核验规范化注记（§2.5 契约增量：仅据响应 normalized 字段展示）。 */
 const submitNote = ref<string | null>(null);
+/** B8 G12：提交成功响应的非阻断 warnings（琥珀注记区展示，不阻断）。 */
+const submitWarnings = ref<Warning[]>([]);
 
 async function openSubmit(c: Candidate) {
   submitting.value = c;
@@ -222,6 +237,7 @@ async function openSubmit(c: Candidate) {
   submitMissing.value = [];
   submitError.value = null;
   submitNote.value = null;
+  submitWarnings.value = [];
   submitFetching.value = true;
   const [inp, prev, set] = await Promise.all([
     // 该端点契约为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
@@ -275,6 +291,7 @@ async function confirmSubmit() {
   submitNote.value = data?.normalized
     ? `已提交 ${fmtTaskId(c.id)} — 输入已自动规范化（换行/空行）`
     : null;
+  submitWarnings.value = data?.warnings ?? [];
   load();
 }
 
@@ -488,6 +505,13 @@ function onComboSubmitted(resp: { workflow_id: string }) {
       </button>
     </div>
 
+    <!-- 提交非阻断警告（B8 G12：提交成功响应 warnings，琥珀档不阻断） -->
+    <div v-if="submitWarnings.length" class="import-warnings" role="status">
+      <div v-for="(w, i) in submitWarnings" :key="`sw${i}`" class="iw-row mono">
+        <span class="iw-msg">⚠ 提交警告 · 第 {{ w.line }} 行 {{ w.message }}</span>
+      </div>
+    </div>
+
     <!-- 导入失败清单（422 details 逐文件） -->
     <div v-if="importErrors.length" class="import-errors" role="alert">
       <p class="ie-head mono">导入失败 {{ importErrors.length }} 份 — 未产生任何候选（整批原子）</p>
@@ -495,6 +519,17 @@ function onComboSubmitted(resp: { workflow_id: string }) {
         <span class="ie-file">{{ e.filename }}</span>
         <span class="ie-msg">{{ e.message }}</span>
       </div>
+    </div>
+
+    <!-- 导入非阻断警告清单（B8 G12：按文件聚合 warnings 通道，已入库） -->
+    <div v-if="importWarnings.length" class="import-warnings" role="status">
+      <p class="iw-head mono">导入警告 {{ importWarningCount }} 条 — 非阻断，已入库</p>
+      <template v-for="g in importWarnings" :key="g.filename">
+        <div v-for="(w, i) in g.items" :key="`${g.filename}:${i}`" class="iw-row mono">
+          <span class="iw-file">{{ g.filename }}</span>
+          <span class="iw-msg">⚠ 第 {{ w.line }} 行 {{ w.message }}</span>
+        </div>
+      </template>
     </div>
 
     <div class="duo">
@@ -765,6 +800,32 @@ function onComboSubmitted(resp: { workflow_id: string }) {
   min-width: 160px;
 }
 .ie-msg {
+  color: var(--text-secondary);
+}
+/* 非阻断警告清单（B8 G12：导入/提交 warnings 通道渲染；琥珀档——需要
+   确认的非阻断提示，§4.6 警告纪律与 BlockEditor be-warn 同源） */
+.import-warnings {
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  padding: var(--space-3) var(--space-4);
+  display: grid;
+  gap: var(--space-1);
+}
+.iw-head {
+  font-size: var(--text-sm);
+  color: var(--warn);
+}
+.iw-row {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+}
+.iw-file {
+  color: var(--text-primary);
+  min-width: 160px;
+}
+.iw-msg {
   color: var(--text-secondary);
 }
 .confirm-line {

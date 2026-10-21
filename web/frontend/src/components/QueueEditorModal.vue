@@ -93,6 +93,8 @@ const error = ref<string | null>(null);
 /** 成功注记（含 normalized 规范化提示；提交成功后锁定输入等待关闭） */
 const note = ref<string | null>(null);
 const done = ref(false);
+/** B8 G12：队列提交响应的非阻断 warnings（逐条附 task_id，琥珀档展示） */
+const submitWarnings = ref<components["schemas"]["Warning"][]>([]);
 
 // ---------- 依赖勾选（m4-plan §4.9 C5「接续前置 chk」） ----------
 /** per-member 勾选状态：打开对话框时拉取成员预览初始化。
@@ -272,6 +274,7 @@ watch(
     error.value = null;
     note.value = null;
     done.value = false;
+    submitWarnings.value = [];
     busy.value = false;
     if (props.mode === "create") {
       name.value = props.initialName ?? defaultQueueName();
@@ -432,6 +435,7 @@ async function submitNow() {
   note.value = sub?.normalized
     ? "已保存并提交 — 输入已自动规范化（换行/空行）"
     : "已保存并提交";
+  submitWarnings.value = sub?.warnings ?? [];
   emit("submitted");
 }
 
@@ -468,6 +472,10 @@ function tryClose() {
       </p>
       <p v-if="error" class="q-error mono" role="alert">{{ error }}</p>
       <p v-if="note" class="q-note mono" role="status">{{ note }}</p>
+      <!-- 队列提交非阻断警告（B8 G12：warnings 逐条附 task_id，琥珀档） -->
+      <p v-for="(w, i) in submitWarnings" :key="`qw${i}`" class="q-warn mono" role="status">
+        ⚠ 任务 #{{ w.task_id ?? "?" }} · 第 {{ w.line }} 行 {{ w.message }}
+      </p>
 
       <p class="q-label mono">成员（{{ members.length }}）— 顺序即执行序列</p>
       <!-- 滚动容器只管滚动与内边距；行定位交给画布（无内边距，坐标量测基准） -->
@@ -623,6 +631,11 @@ function tryClose() {
 .q-note {
   font-size: var(--text-sm);
   color: var(--text-secondary);
+}
+/* 提交非阻断警告（B8 G12：琥珀档——需要确认但不阻断，BlockEditor 同纪律） */
+.q-warn {
+  font-size: var(--text-sm);
+  color: var(--warn);
 }
 /* 滚动容器：仅滚动与内边距；行定位/间距由画布与步距量测接管（§4.6 拖拽排序） */
 .q-members {
