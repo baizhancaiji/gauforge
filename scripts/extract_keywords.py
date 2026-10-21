@@ -46,7 +46,7 @@
   3. default 句：the default is X / X is the default；
   4. 主语侧停用词表过滤（代词/句首动词/方法名/单位/Link 词等散文噪声）。
   句式覆盖不足的复核通过形态以 B6_MANUAL_OPTIONS 手工补录常量入典
-  （B6 三路差集全量审计逐条裁决，清单与依据见
+  （B6 三路互补差集近似全量审计逐条裁决，清单与依据见
   docs/plans/input-verify-gap-b6-prose-audit.md 与
   docs/plans/audit/review_decisions.txt）。
 
@@ -348,7 +348,7 @@ def _route_alt_words(text: str) -> set[str]:
     return {x.casefold() for x in _ALT_ITEM.findall(section)}
 
 
-# 面⑦手工补录常量（B6 G10-b，2026-10-20 三路差集全量审计逐条人工复核
+# 面⑦手工补录常量（B6 G10-b，2026-10-20 三路互补差集近似全量审计逐条人工复核
 # 通过、面⑦句式覆盖不足的散文提及/官方枚举/字面实锤形态）。载体一律按
 # 语义确定（手册原文书写），逐条依据见 docs/plans/audit/review_decisions.txt
 # 与 input-verify-gap-b6-prose-audit.md；受幂等闸门与规模断言同规约束。

@@ -153,7 +153,7 @@ def pred_irc_report_read(f: RouteFacts) -> bool:
 
 def pred_read_window(f: RouteFacts) -> bool:
     """轨道冻结信息：post-SCF 方法关键字的 ReadWindow 选项（frozencore
-    页，RW 同义词）；缩写 RW 词面过短不纳入（§2.12 已知限制）。"""
+    页）；缩写 RW 词面过短，作触发词会造成裸子串误报，不纳入。"""
     return "readwindow" in f.all_option_values()
 
 
