@@ -1,7 +1,8 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**实施中**（2026-10-21 立项 B8 前端渲染收口，随批回填；B1–B7 验收留痕
-> docs/plans/input-verify-gap-remediation-plan-final-review-r1.md，目标版本 3.4.0）。
+> 状态：**已实施并验收**（2026-10-21 B8 收口与全面复审整改完成；验收留痕
+> docs/plans/input-verify-gap-remediation-plan-final-review-r1.md 与本文 §8.12，
+> 目标版本 3.4.0）。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
@@ -1656,3 +1657,54 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
 - 状态行回填「已实施并验收」（验收留痕 final-review-r1.md，目标版本
   3.4.0）；出口闸门 validate_progress / gen_changelog_md --check /
   check_plan_status 复跑全绿。
+
+### 8.12 B8 批次与全面复审整改（2026-10-21 实施收口）
+
+- **全面复审**：code-reviewer 子代理按 AGENTS §6.2 四查分两批执行——
+  B1–B4（报告
+  [input-verify-gap-remediation-plan-B14-review.md](input-verify-gap-remediation-plan-B14-review.md)，
+  区间 v3.3.0..f5387615，31 提交）与 B5–B7（报告
+  [input-verify-gap-remediation-plan-B57-review.md](input-verify-gap-remediation-plan-B57-review.md)，
+  区间 f5387615..04db8a4b，48 提交）。结论：**两批均通过，无 P0/P1**——
+  851 基线内 848 passed 0 skipped、七闸门全绿、生成物零 diff、G16 冒烟
+  与审计漏斗逐字节独立复现；问题清单合计 1 P2 + 6 P3。
+- **立项与勘误**：P2 R1（CandidatesView 渲染缺口）按 §2.15 立项 G12/B8；
+  F-1 键名笔误随批原位勘误（§2.9 与 §8.6 口径修正 1 的
+  `scrf=conven`→`scf=conven`，词典/scrf 页/探针三重证据）。
+- **实施序列**（文档→测试→实现→进度同步，6 提交）：
+  - 测试先行：R3 空值警告先行红用例（实测 1 failed）+ R2 矩阵
+    「不适用」格防回归断言（分块保存列 G9/G4/C1/C2、模板列触发词
+    route 放行代表断言）；
+  - R3：`check_link0_lines` 对 %nproc 系空值（含截断形 %nprocshare）
+    与 `%cpu=` 空值记 `link0_value_invalid`（%cpu 系 R3 同根因
+    `if val` 短路的顺带拉齐，属审查未登记面，随批登记）；
+  - R4：`_validate_one` 死键 `bom_stripped` 删除（无消费方）；
+  - R5：`pred_read_window` docstring 落空引用（§2.12 无 RW 条目）改
+    自足表述；F-2：extract_keywords/audit_prose_options 三处
+    「三路差集全量审计」措辞对齐 D-3 收敛口径；
+  - R1（G12）：CandidatesView 导入琥珀清单（按文件聚合）+ 单任务提交
+    琥珀警告区 + QueueEditorModal 队列提交 task_id 警告；
+    HistoryView/ResumeDialog 渲染登记为后续按需项（§2.15）。
+- **浏览器实测（playwright，AGENTS §6.2）**：隔离实例
+  （`G16WEB_HOME=/tmp/g16web-b8`、`G16WEB_ENGINE=0`、:8399，构建版本
+  v3.3.0-94-gea7ea5c2）六场景全过——
+  ①导入 `optt` 拼写文件：琥珀清单「导入警告 1 条 — 非阻断，已入库」
+  按文件聚合（spell.gjf 第 5 行 keyword_spell；clean.gjf 零警告不入列）；
+  ②单任务提交：工具条下方琥珀「⚠ 提交警告 · 第 4 行 …」（提交通道
+  规范化后行号，全文件绝对口径）；
+  ③队列直接提交：done 注记下方「⚠ 任务 #3 · 第 3 行 …」，task_id 归属
+  正确；
+  ④B6 视觉补测——组合流模板弹窗无「忽略拼写警告并保存」豁免按钮
+  （foot 仅「关闭/保存」，G10-a 移除口径在当前构建成立）；
+  ⑤词典外 token route 保存 200 放行 + 琥珀「词典外关键词（已放行）：
+  zzzzzq」（freq 联动补温度照常）；
+  ⑥`%mem=0` 保存 422 + %mem 输入框 `.ct-invalid` 红描边（computed
+  borderColor 为 --danger）+ 顶部错误清单「%mem 须为正数（GB 数值）」。
+  截图六张存 `.playwright-mcp/`（本地留证，不入库）；实测工作区/种子
+  用毕清理。
+- **出口闸门**：全量 `uv run pytest` **851 passed 0 skipped**（848 + B8
+  新增 3）；前端构建 vue-tsc 通过、audit_frontend_offline /
+  check_tokens / check_contrast 全绿；validate_progress /
+  gen_changelog_md --check / check_plan_status（状态行回填后）通过。
+  **B1–B8 全部收口**，按 §3.1 版本归属进入 3.4.0 发布流程（冻结时点由
+  用户确定）。
