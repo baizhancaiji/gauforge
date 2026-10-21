@@ -866,3 +866,97 @@ def test_g6_mm_and_free_format_atom_lines():
         assert f.startswith("C") or f.startswith("Cl"), (line, f)
         assert not any(w["kind"] == "atom_label_unknown"
                        for w in r["warnings"]), line
+
+
+# ---------------- B9 G13：缺省补全前后 file_warnings 内容集等价 ----------------
+# 等价性口径（§2.16 裁决⑥固化）：resolve_link0 缺省注入为 Link 0 块末行注入，
+# 注入 N 行时块后所有警告行号整体 +N，块内警告行号不变；内容多重集
+# (kind, keyword, message, suggestion) 逐条一致。若未来补全规则破坏该等价，
+# 预显链路须改消费 completed_text 核验（补全单点不动）。
+
+
+def _file_warnings_of(text: str) -> list[dict]:
+    from web.src.parse.blocks import split_lines
+    from web.src.services.candidates import file_warnings
+    r = parse_input(text)
+    return file_warnings(r, r["blocks"]["route"], split_lines(text))
+
+
+def _warn_content(warnings: list[dict]) -> list[tuple]:
+    """(kind, keyword, message, suggestion) 多重集（行号不参与内容比较）。"""
+    return sorted((w["kind"], w["keyword"], w["message"], w.get("suggestion"))
+                  for w in warnings)
+
+
+def _leading_link0_lines(text: str) -> int:
+    """前导空行/注释后的连续 % 行数（与 workspace.resolve_link0 收集规则
+    同规）——块内警告（line ≤ 块行数）不随注入平移的判据。"""
+    lines = text.replace("\r\n", "\n").split("\n")
+    i, n = 0, len(lines)
+    while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
+        i += 1
+    start = i
+    while i < n and lines[i].lstrip().startswith("%"):
+        i += 1
+    return i - start
+
+
+def _assert_completion_invariant(text: str) -> None:
+    from web.src.engine.workspace import resolve_link0
+    before = _file_warnings_of(text)
+    completed = resolve_link0(text, 4, 10.0)["completed_text"]
+    after = _file_warnings_of(completed)
+    injected = len(completed.split("\n")) - len(text.split("\n"))
+    block = _leading_link0_lines(text)
+    assert _warn_content(before) == _warn_content(after), \
+        "缺省补全前后警告内容多重集不一致"
+    assert len(before) == len(after)
+    for wb, wa in zip(before, after):
+        expect = wb["line"] + (injected if wb["line"] > block else 0)
+        assert wa["line"] == expect, \
+            f"行号平移不符：{wb['kind']} {wb['line']}→{wa['line']}（期望 {expect}）"
+
+
+def test_file_warnings_invariant_under_default_completion_missing_both():
+    """缺 %nprocshared/%mem（注入 2 行）：块内未知指令警告行号不变、
+    块后 Variables EOF 警告行号 +2，内容多重集一致。"""
+    _assert_completion_invariant(
+        "%chk=a.chk\n%zz=1\n\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\n"
+        "Variables:\nR 0.9\n")
+
+
+def test_file_warnings_invariant_under_default_completion_complete():
+    """Link0 齐全（注入 0 行）：警告列表逐字段全等。"""
+    text = ("%mem=1GB\n%nprocshared=4\n\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\n"
+            "Variables:\nR 0.9\n")
+    from web.src.engine.workspace import resolve_link0
+    before = _file_warnings_of(text)
+    completed = resolve_link0(text, 4, 10.0)["completed_text"]
+    assert _file_warnings_of(completed) == before
+    assert before  # 样例须确有警告（variables_unterminated），防恒真
+
+
+def test_file_warnings_divergence_only_duplicate_when_mem_invalid():
+    """等价性的登记边界（值域外声明）：resolve_link0 对不可解析的 %mem
+    声明按缺失处置、在块末注入缺省行（后值覆盖前值，G16 实际以缺省值
+    执行），补全后文本新增恰一条 link0_directive_duplicate——系补全伪影
+    而非用户输入问题（用户可见问题由 link0_value_invalid 本身承载）。
+    预显维持存储文本核验口径、不显示该伪影；等价断言在此类上收窄为
+    「去 duplicate 后内容多重集一致 + 行号平移口径不变」。
+    """
+    text = "%mem=2W\n\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\nVariables:\nR 0.9\n"
+    from web.src.engine.workspace import resolve_link0
+    before = _file_warnings_of(text)
+    completed = resolve_link0(text, 4, 10.0)["completed_text"]
+    after = _file_warnings_of(completed)
+    injected = len(completed.split("\n")) - len(text.split("\n"))
+    block = _leading_link0_lines(text)
+    assert injected == 2  # %nprocshared 缺失 + %mem 不可解析各注入 1 行
+    assert len(after) == len(before) + 1
+    dups = [w for w in after if w["kind"] == "link0_directive_duplicate"]
+    assert len(dups) == 1 and dups[0]["keyword"] == "%mem"
+    a2 = [w for w in after if w["kind"] != "link0_directive_duplicate"]
+    assert _warn_content(before) == _warn_content(a2)
+    for wb, wa in zip(before, a2):
+        expect = wb["line"] + (injected if wb["line"] > block else 0)
+        assert wa["line"] == expect

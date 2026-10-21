@@ -272,3 +272,41 @@ def test_import_strips_bom_silently(ind):
     # 剥离后可正常提交（无 BOM 时 # 识别正常）
     from web.src.services.verify import verify_and_store
     assert verify_and_store(out["id"])["normalized"] is False
+
+
+# ---------------- B9 G13：列表 warning_count 现算链路 ----------------
+
+def test_candidate_warning_count_chain(tmp_path, monkeypatch):
+    """列表/详情 warning_count 现算链路（不落库）：导入带警告候选 N≥1；
+    分块修复保存后复验归 0（列表与单条 GET 同口径）；删除候选随行消失；
+    输入副本不可读回落 0。"""
+    from fastapi.testclient import TestClient
+
+    from web.src import config
+    from web.src.main import app
+    monkeypatch.setattr(config, "HOME_DIR", tmp_path)
+    (tmp_path / "inputs").mkdir()
+    c = TestClient(app)
+    spell = b"#p optt\n\nt\n\n0 1\nO 0 0 0\n\n"  # optt → keyword_spell 一条
+    r = c.post("/api/v1/candidates", files={"files": ("s.gjf", spell)})
+    assert r.status_code == 201
+    cid = r.json()["files"][0]["id"]
+    row = next(x for x in c.get("/api/v1/candidates").json()["items"]
+               if x["id"] == cid)
+    assert row["warning_count"] == 1
+    assert c.get(f"/api/v1/candidates/{cid}").json()["warning_count"] == 1
+    # 分块修复（route 拼写改正）→ 保存即复验，列表徽标即时归 0
+    rr = c.put(f"/api/v1/candidates/{cid}/blocks/route",
+               json={"lines": ["#p opt"]})
+    assert rr.status_code == 200
+    row = next(x for x in c.get("/api/v1/candidates").json()["items"]
+               if x["id"] == cid)
+    assert row["warning_count"] == 0
+    assert c.get(f"/api/v1/candidates/{cid}").json()["warning_count"] == 0
+    # 输入副本不可读（异常兜底）回落 0，不 500
+    (tmp_path / "inputs" / str(cid)).unlink()
+    assert c.get(f"/api/v1/candidates/{cid}").json()["warning_count"] == 0
+    # 删除候选随行消失
+    assert c.delete(f"/api/v1/candidates/{cid}").status_code == 204
+    assert all(x["id"] != cid
+               for x in c.get("/api/v1/candidates").json()["items"])

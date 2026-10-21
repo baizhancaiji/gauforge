@@ -136,6 +136,20 @@ def test_candidate_detail_against_schema(tmp_path):
                            r.status_code, r.json())
 
 
+def test_candidate_carries_warning_count(tmp_path, monkeypatch):
+    """B9 G13：Candidate 契约必填 warning_count（现算不落库）——列表条目
+    与详情响应均携带且 ≥0；无警告候选为 0（schema 校验对含 items 的列表
+    体型全量生效）。"""
+    cid = _seed_candidate(tmp_path, monkeypatch)  # SAMPLE 无警告
+    body = client.get("/api/v1/candidates").json()
+    row = next(x for x in body["items"] if x["id"] == cid)
+    assert row["warning_count"] == 0
+    detail = client.get(f"/api/v1/candidates/{cid}").json()
+    assert detail["warning_count"] == 0
+    assert_contract_schema(spec, "GET", "/api/v1/candidates", 200, body)
+    assert_contract_schema(spec, "GET", "/candidates/{cid}", 200, detail)
+
+
 def test_404_for_missing_execution_schema():
     r = client.get("/api/v1/executions/999999")
     assert r.status_code == 404
