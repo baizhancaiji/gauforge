@@ -20,13 +20,7 @@ import { client, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 
 type InputPreview = components["schemas"]["InputPreview"];
-type SaveWarning = {
-  line: number;
-  keyword: string;
-  kind: string;
-  message?: string;
-  suggestion?: string;
-};
+type Warning = components["schemas"]["Warning"];
 
 const props = defineProps<{
   taskId: number;
@@ -34,10 +28,35 @@ const props = defineProps<{
   editable?: boolean;
 }>();
 
+/** 保存完成事件（B9 G13）：保存响应即复验结果，宿主据此刷新列表徽标。 */
+const emit = defineEmits<{ saved: [] }>();
+
 const preview = ref<InputPreview | null>(null);
 const loading = ref(false);
 const parseErrors = computed(() => preview.value?.parse_errors ?? []);
-const warnings = ref<SaveWarning[]>([]);
+
+// ---------- 逐块 warnings 详情（B9 G13：现算自 preview.warnings，不落库） ----------
+// kind→块归属映射（openapi Warning.kind 词表 12 kind 全覆盖；词表扩容须
+// 同步本表——新 kind 在此缺席将不渲染，契约变更即提醒点）。
+// variables_unterminated 产出自变量/常数区，展示归 MOLECULE 块（VARS/CONSTS 读数所在）。
+const KIND_SECTION: Record<string, string> = {
+  keyword_spell: "route",
+  route_duplicate: "route",
+  route_option_unknown: "route",
+  title_forbidden_char: "title",
+  molecule_multiple_charge_pairs: "charge_mult",
+  atom_label_unknown: "molecule",
+  molecule_unterminated: "molecule",
+  variables_unterminated: "molecule",
+};
+const allWarnings = computed<Warning[]>(() => preview.value?.warnings ?? []);
+function warningsFor(section: string): Warning[] {
+  return allWarnings.value.filter(
+    (w) =>
+      (KIND_SECTION[w.kind] ??
+      (w.kind.startsWith("link0_") ? "link0" : "")) === section,
+  );
+}
 
 // 化学式读数拆分（Hill 式）：元素符号主色、计数数字弱色小字提高区分度；
 // 仅当整串可完整切分才走分色渲染，否则原样显示（防御异常输入被静默丢弃）
@@ -117,7 +136,6 @@ async function toggle() {
   if (!editing.value) {
     initEdit();
     editing.value = true;
-    warnings.value = [];
     crlf.value = false;
     // CRLF 检出：读原文（跨形态端点，契约 getCandidateInput）
     const res = await getText("/candidates/{id}/input", props.taskId);
@@ -136,7 +154,6 @@ async function toggle() {
 function exitEditLocal() {
   editing.value = false;
   edits.clear();
-  warnings.value = [];
   crlf.value = false;
   clearTimers();
 }
@@ -202,10 +219,10 @@ async function saveSectionDelayed(section: string) {
   }
   if (data) {
     preview.value = data; // 保存响应即新态（契约 mapping：不推事件）
-    warnings.value = data.warnings ?? [];
     st.dirty = false;
     st.saved = true;
     st.text = sectionText(section); // 与规约后内容对齐
+    emit("saved"); // B9 G13：保存即复验，宿主刷新列表徽标（详情已随 data 更新）
   }
 }
 </script>
@@ -268,6 +285,12 @@ async function saveSectionDelayed(section: string) {
             ⚠ {{ preview.blocks.link0.missing.map((m) => `%${m.toLowerCase()}`).join("、") }} 未声明 · 执行时将按默认值补齐
           </div>
         </template>
+        <!-- 逐块核验警告详情（B9 G13：现算自 preview.warnings，限高滚动） -->
+        <div v-if="warningsFor('link0').length" class="be-warns" role="status">
+          <div v-for="(w, i) in warningsFor('link0')" :key="`wl0${i}`" class="be-warn mono">
+            ⚠ L{{ w.line }} {{ w.message }}
+          </div>
+        </div>
         <div v-if="editOf('link0')?.error" class="be-error mono" role="alert">
           {{ editOf('link0')?.error }}
         </div>
@@ -288,10 +311,12 @@ async function saveSectionDelayed(section: string) {
           @blur="onBlur('route')"
         ></textarea>
         <div v-else class="val mono">{{ preview.blocks.route || "—" }}</div>
-        <!-- 拼写警告（琥珀纪律允许清单：近邻命中才警告，非阻断不阻止自动保存；
-             message 为后端统一文案（G0），缺省回落 keyword/suggestion 拼接） -->
-        <div v-for="(w, i) in warnings" :key="i" class="be-warn mono">
-          ⚠ 第 {{ w.line }} 行 {{ w.message ?? `「${w.keyword}」${w.suggestion ? `是否意为「${w.suggestion}」？` : ""}` }}
+        <!-- 逐块核验警告详情（B9 G13：拼写/重复/子选项归属，限高滚动；
+             message 为后端中文警告语，保存响应即复验结果） -->
+        <div v-if="warningsFor('route').length" class="be-warns" role="status">
+          <div v-for="(w, i) in warningsFor('route')" :key="`wr${i}`" class="be-warn mono">
+            ⚠ L{{ w.line }} {{ w.message }}
+          </div>
         </div>
         <div v-if="editOf('route')?.error" class="be-error mono" role="alert">
           {{ editOf('route')?.error }}
@@ -313,6 +338,11 @@ async function saveSectionDelayed(section: string) {
           @blur="onBlur('title')"
         ></textarea>
         <div v-else class="val mono">{{ preview.blocks.title ?? "—" }}</div>
+        <div v-if="warningsFor('title').length" class="be-warns" role="status">
+          <div v-for="(w, i) in warningsFor('title')" :key="`wt${i}`" class="be-warn mono">
+            ⚠ L{{ w.line }} {{ w.message }}
+          </div>
+        </div>
         <div v-if="editOf('title')?.error" class="be-error mono" role="alert">
           {{ editOf('title')?.error }}
         </div>
@@ -333,6 +363,11 @@ async function saveSectionDelayed(section: string) {
           @blur="onBlur('charge_mult')"
         ></textarea>
         <div v-else class="val mono">{{ preview.blocks.charge_mult || "—" }}</div>
+        <div v-if="warningsFor('charge_mult').length" class="be-warns" role="status">
+          <div v-for="(w, i) in warningsFor('charge_mult')" :key="`wc${i}`" class="be-warn mono">
+            ⚠ L{{ w.line }} {{ w.message }}
+          </div>
+        </div>
         <div v-if="editOf('charge_mult')?.error" class="be-error mono" role="alert">
           {{ editOf('charge_mult')?.error }}
         </div>
@@ -361,6 +396,12 @@ async function saveSectionDelayed(section: string) {
           <div class="r">
             <div class="n mono">{{ preview.blocks.molecule.constants_present ? "有" : "—" }}</div>
             <div class="l mono">CONSTS</div>
+          </div>
+        </div>
+        <!-- 原子标签/分子说明与变量区 EOF 警告（B9 G13：归 MOLECULE 块展示） -->
+        <div v-if="warningsFor('molecule').length" class="be-warns" role="status">
+          <div v-for="(w, i) in warningsFor('molecule')" :key="`wm${i}`" class="be-warn mono">
+            ⚠ L{{ w.line }} {{ w.message }}
           </div>
         </div>
       </div>
@@ -512,9 +553,15 @@ async function saveSectionDelayed(section: string) {
   font-size: var(--text-sm);
   color: var(--danger);
 }
-/* 拼写警告（琥珀：需要行动——确认是否拼错；非阻断不阻止自动保存） */
-.be-warn {
+/* 逐块核验警告详情（B9 G13）：琥珀档需要确认；限高滚动防条目堆叠溢出 */
+.be-warns {
   margin-top: var(--space-2);
+  max-height: var(--warn-list-max-height);
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+}
+.be-warn {
   font-size: var(--text-sm);
   color: var(--warn);
 }

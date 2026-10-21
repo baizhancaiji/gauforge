@@ -112,6 +112,9 @@ interface LinkState {
   dirty: boolean;
   /** 预览不可达（如输入解析失败）：不渲染可用勾选（禁用+提示） */
   available: boolean;
+  /** B9 G13 裁决⑤：成员输入的核验警告预显（任务级归属，打开时现算自
+   *  preview.warnings；available=false 时为空，改显占位提示） */
+  warnings: components["schemas"]["Warning"][];
 }
 const linkStates = ref<Map<number, LinkState>>(new Map());
 const linksReady = ref(false);
@@ -140,12 +143,15 @@ const linkState = (i: number) => {
 };
 
 /** 前驱是否为 crest 任务不可行——crest 不入队（B6 校验），勾选无需特判；
- *  单成员队列无前驱：首行不渲染勾选框。 */
+ *  单成员队列无前驱：首行不渲染勾选框。
+ *  B9 G13 裁决⑤：同一并行取数路径扩展消费 warnings——创建态与编辑态
+ *  （含仅成员可改的 submitted 态）打开时逐成员预显核验警告（复用既有
+ *  preview 请求，不新增第二条请求路径）；只读/已提交完成态不预显。 */
 async function loadLinkStates() {
   linkStates.value = new Map();
   depErrors.value = new Map();
   linksReady.value = false;
-  if (!linkEditable.value) {
+  if (readonly.value || done.value) {
     linksReady.value = true;
     return;
   }
@@ -154,13 +160,18 @@ async function loadLinkStates() {
     ids.map((id) =>
       client
         .GET("/candidates/{id}/preview", { params: { path: { id } } })
-        .then(({ data }) => data?.blocks.link0.lines ?? null)
+        .then(({ data }) =>
+          data
+            ? { lines: data.blocks.link0.lines, warnings: data.warnings ?? [] }
+            : null,
+        )
         .catch(() => null),
     ),
   );
   const map = new Map<number, LinkState>();
   ids.forEach((id, i) => {
-    const lines = previews[i];
+    const pv = previews[i];
+    const lines = pv?.lines ?? null;
     const prevId = i > 0 ? ids[i - 1] : null;
     const init = prevId != null && (lines ?? []).some((l) =>
       new RegExp(`^%oldchk\\s*=\\s*@task:${prevId}$`, "i").exec(l.trim()),
@@ -172,10 +183,14 @@ async function loadLinkStates() {
       checked: init,
       dirty: false,
       available: lines != null,
+      warnings: pv?.warnings ?? [],
     });
   });
   linkStates.value = map;
   linksReady.value = true;
+  // 警告区改变行高：渲染完成后重测画布（前缀和定位依赖实测行高）
+  await nextTick();
+  sort.measure();
 }
 
 function toggleLink(i: number) {
@@ -407,6 +422,9 @@ async function save() {
   const q = await saveInternal();
   busy.value = false;
   if (!q) return;
+  // B9 G13「再次保存即清空」：直接提交的警告为提交回执，再次保存动作
+  // 即视为知悉，旧回执不跨动作滞留（弹窗重开清空已有 watch(open) 承接）
+  submitWarnings.value = [];
   emit("saved", q);
 }
 
@@ -436,6 +454,9 @@ async function submitNow() {
     ? "已保存并提交 — 输入已自动规范化（换行/空行）"
     : "已保存并提交";
   submitWarnings.value = sub?.warnings ?? [];
+  // B9 G13 裁决⑥：提交可能规范化改写文本，打开时预显不再代表当前存储
+  // 文本——done 后重拉清空成员预显，最新核验由提交回执（含 task_id）承载
+  void loadLinkStates();
   emit("submitted");
 }
 
@@ -472,10 +493,13 @@ function tryClose() {
       </p>
       <p v-if="error" class="q-error mono" role="alert">{{ error }}</p>
       <p v-if="note" class="q-note mono" role="status">{{ note }}</p>
-      <!-- 队列提交非阻断警告（B8 G12：warnings 逐条附 task_id，琥珀档） -->
-      <p v-for="(w, i) in submitWarnings" :key="`qw${i}`" class="q-warn mono" role="status">
-        ⚠ 任务 #{{ w.task_id ?? "?" }} — 第 {{ w.line }} 行 {{ w.message }}
-      </p>
+      <!-- 队列提交回执警告（B8 G12 通道 / B9 G13 文案：条目
+           「⚠ 任务 #task_id: L行号 message」，限高滚动防堆叠溢出） -->
+      <div v-if="submitWarnings.length" class="q-warns" role="status">
+        <p v-for="(w, i) in submitWarnings" :key="`qw${i}`" class="q-warn mono">
+          ⚠ 任务 #{{ w.task_id ?? "?" }}: L{{ w.line }} {{ w.message }}
+        </p>
+      </div>
 
       <p class="q-label mono">成员（{{ members.length }}）— 顺序即执行序列</p>
       <!-- 滚动容器只管滚动与内边距；行定位交给画布（无内边距，坐标量测基准） -->
@@ -492,44 +516,61 @@ function tryClose() {
             @pointerup="sort.onUp"
             @pointercancel="sort.onUp"
           >
-            <span v-if="canSort" class="m-drag mono" aria-hidden="true">⋮⋮</span>
-            <span class="m-id mono">{{ fmtTaskId(m.id) }}</span>
-            <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
-            <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
-            <!-- 接续前置 chk（m4-plan §4.9 C5）：勾选=对前置成员写入
-                 %oldchk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
-                 首成员无前驱不渲染；预览不可达（编辑态成员锁定/解析失败）
-                 禁用并提示——不静默：原生勾选视觉态曾掩盖持久化失效；
-                 pointerdown.stop 防拖拽误触 -->
-            <label
-              v-if="i > 0 && linkEditable"
-              class="m-link"
-              :class="{ 'm-link--disabled': !linksReady || !linkState(i)?.available }"
-              :title="linkTitle(i)"
-              @pointerdown.stop
-              @click.stop
+            <div class="q-mem-main">
+              <span v-if="canSort" class="m-drag mono" aria-hidden="true">⋮⋮</span>
+              <span class="m-id mono">{{ fmtTaskId(m.id) }}</span>
+              <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
+              <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
+              <!-- 接续前置 chk（m4-plan §4.9 C5）：勾选=对前置成员写入
+                   %oldchk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
+                   首成员无前驱不渲染；预览不可达（编辑态成员锁定/解析失败）
+                   禁用并提示——不静默：原生勾选视觉态曾掩盖持久化失效；
+                   pointerdown.stop 防拖拽误触 -->
+              <label
+                v-if="i > 0 && linkEditable"
+                class="m-link"
+                :class="{ 'm-link--disabled': !linksReady || !linkState(i)?.available }"
+                :title="linkTitle(i)"
+                @pointerdown.stop
+                @click.stop
+              >
+                <input
+                  class="ck"
+                  type="checkbox"
+                  :disabled="!linksReady || busy || !linkState(i)?.available"
+                  :checked="linkStates.get(m.id)?.checked ?? false"
+                  @change="toggleLink(i)"
+                />
+                <span class="m-link-text">接续前置 chk</span>
+              </label>
+              <StateChip v-if="m.state" :state="m.state" />
+              <span v-if="m.cause" class="m-cause mono">{{ causeLabel[m.cause] ?? m.cause }}</span>
+              <button
+                v-if="!readonly"
+                class="btn btn--ghost m-remove"
+                type="button"
+                :disabled="members.length <= 1 || done || (memberOnly && m.state === 'running')"
+                :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : undefined)"
+                @click="removeAt(i)"
+              >
+                -
+              </button>
+            </div>
+            <!-- B9 G13 裁决⑤：该成员自己的核验警告预显（任务级归属，
+                 打开时现算自 preview.warnings，限高滚动）；预览取回失败仅
+                 该成员占位提示、不阻断其余成员；done 后成员区有意清空
+                 （提交回执承载最新核验），不显占位 -->
+            <div
+              v-if="!done && linksReady && !linkState(i)?.available"
+              class="q-mem-warns q-mem-warns--empty mono"
             >
-              <input
-                class="ck"
-                type="checkbox"
-                :disabled="!linksReady || busy || !linkState(i)?.available"
-                :checked="linkStates.get(m.id)?.checked ?? false"
-                @change="toggleLink(i)"
-              />
-              <span class="m-link-text">接续前置 chk</span>
-            </label>
-            <StateChip v-if="m.state" :state="m.state" />
-            <span v-if="m.cause" class="m-cause mono">{{ causeLabel[m.cause] ?? m.cause }}</span>
-            <button
-              v-if="!readonly"
-              class="btn btn--ghost m-remove"
-              type="button"
-              :disabled="members.length <= 1 || done || (memberOnly && m.state === 'running')"
-              :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : undefined)"
-              @click="removeAt(i)"
-            >
-              -
-            </button>
+              成员输入预览不可用 — 无法核验
+            </div>
+            <div v-else-if="linkState(i)?.warnings?.length" class="q-mem-warns" role="status">
+              <p v-for="(w, j) in linkState(i)?.warnings ?? []" :key="`mw${i}-${j}`" class="q-warn mono">
+                ⚠ L{{ w.line }} {{ w.message }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -632,10 +673,17 @@ function tryClose() {
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
-/* 提交非阻断警告（B8 G12：琥珀档——需要确认但不阻断，BlockEditor 同纪律） */
+/* 提交回执警告区（B9 G13：琥珀档 + 限高滚动防堆叠溢出） */
+.q-warns {
+  max-height: var(--warn-list-max-height);
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+}
 .q-warn {
   font-size: var(--text-sm);
   color: var(--warn);
+  word-break: break-word;
 }
 /* 滚动容器：仅滚动与内边距；行定位/间距由画布与步距量测接管（§4.6 拖拽排序） */
 .q-members {
@@ -656,8 +704,8 @@ function tryClose() {
   left: 0;
   width: 100%;
   display: flex;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column; /* 主行 + 警告预显区两行（B9 G13），前缀和量测按整行高 */
+  align-items: flex-start;
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--border-hair);
   border-radius: var(--r-md);
@@ -669,6 +717,26 @@ function tryClose() {
     transform var(--dur-drag) var(--ease-std),
     border-color var(--dur-fast) var(--ease-std);
   will-change: transform;
+}
+/* 主行（成员信息 + 动作，占满整行宽） */
+.q-mem-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+/* 成员核验警告预显区（B9 G13 裁决⑤）：琥珀档，限高滚动 */
+.q-mem-warns {
+  margin-top: var(--space-1);
+  width: 100%;
+  max-height: var(--warn-list-max-height);
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+}
+.q-mem-warns--empty {
+  color: var(--text-faint);
 }
 .q-canvas--live .q-mem {
   cursor: grab;

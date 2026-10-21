@@ -104,12 +104,10 @@ const importErrors = ref<{ filename: string; message: string }[]>([]);
 const queueFromFolder = ref(false);
 const queueName = ref("");
 const fallbackNote = ref<string | null>(null);
-/** B8 G12：导入成功条目的非阻断 warnings（按文件聚合，仅非空文件入列；
- *  契约 Warning.message 必填，行号全文件 1 起）。 */
-const importWarnings = ref<{ filename: string; items: Warning[] }[]>([]);
-const importWarningCount = computed(
-  () => importWarnings.value.reduce((n, g) => n + g.items.length, 0),
-);
+/** B8 G12 / B9 G13：导入成功条目的非阻断 warnings（自含条目「⚠文件名:
+ *  L行号 message」，不再按文件分组；仅非空文件入列）。 */
+const importWarnings = ref<(Warning & { filename: string })[]>([]);
+const importWarningCount = computed(() => importWarnings.value.length);
 
 /** B3：文件夹导入仅提交受支持输入文件（.gjf/.com，不区分大小写）。
  *  整目录直传会因杂文件触发整批 422，前端先行过滤（F-03）。 */
@@ -205,9 +203,9 @@ async function onImportChange(e: Event, mode: "files" | "folder") {
       // 越界拒绝成队：回落全部生成候选（后端明示原因），中性信息注记展示
       fallbackNote.value = `成队未满足 — ${data.queue_fallback_reason}`;
     }
-    importWarnings.value = data.files
-      .filter((f) => f.warnings?.length)
-      .map((f) => ({ filename: f.filename ?? "", items: f.warnings ?? [] }));
+    importWarnings.value = data.files.flatMap((f) =>
+      (f.warnings ?? []).map((w) => ({ ...w, filename: f.filename ?? "" })),
+    );
     queueFromFolder.value = false;
     queueName.value = "";
   }
@@ -228,8 +226,12 @@ const submitError = ref<string | null>(null);
 const submitActive = computed(() => submitting.value != null);
 /** 提交核验规范化注记（§2.5 契约增量：仅据响应 normalized 字段展示）。 */
 const submitNote = ref<string | null>(null);
-/** B8 G12：提交成功响应的非阻断 warnings（琥珀注记区展示，不阻断）。 */
+/** B8 G12：提交成功响应的非阻断 warnings（琥珀注记区展示，不阻断；
+ *  B9 G13 起为提交回执，预显职责移交确认框）。 */
 const submitWarnings = ref<Warning[]>([]);
+/** B9 G13 裁决⑤：提交前核验预显——确认框打开时消费 openSubmit 已取回的
+ *  preview warnings（与提交核验同一解析管道，行号全文件绝对），知情后确认。 */
+const submitPreviewWarnings = ref<Warning[]>([]);
 
 async function openSubmit(c: Candidate) {
   submitting.value = c;
@@ -238,6 +240,7 @@ async function openSubmit(c: Candidate) {
   submitError.value = null;
   submitNote.value = null;
   submitWarnings.value = [];
+  submitPreviewWarnings.value = [];
   submitFetching.value = true;
   const [inp, prev, set] = await Promise.all([
     // 该端点契约为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
@@ -248,6 +251,7 @@ async function openSubmit(c: Candidate) {
   submitFetching.value = false;
   submitInput.value = inp.data ?? "";
   submitMissing.value = prev.data?.blocks.link0.missing ?? [];
+  submitPreviewWarnings.value = prev.data?.warnings ?? [];
   const runtime = set.data?.runtime ?? [];
   const num = (k: string) => runtime.find((s) => s.key === k)?.value;
   submitDefaults.value = {
@@ -505,10 +509,10 @@ function onComboSubmitted(resp: { workflow_id: string }) {
       </button>
     </div>
 
-    <!-- 提交非阻断警告（B8 G12：提交成功响应 warnings，琥珀档不阻断） -->
+    <!-- 提交回执警告（B8 G12 通道 / B9 G13 文案：琥珀档，条目「⚠ L行号 message」） -->
     <div v-if="submitWarnings.length" class="import-warnings" role="status">
       <div v-for="(w, i) in submitWarnings" :key="`sw${i}`" class="iw-row mono">
-        <span class="iw-msg">⚠ 提交警告 — 第 {{ w.line }} 行 {{ w.message }}</span>
+        <span class="iw-msg">⚠ L{{ w.line }} {{ w.message }}</span>
       </div>
     </div>
 
@@ -521,15 +525,13 @@ function onComboSubmitted(resp: { workflow_id: string }) {
       </div>
     </div>
 
-    <!-- 导入非阻断警告清单（B8 G12：按文件聚合 warnings 通道，已入库） -->
+    <!-- 导入非阻断警告清单（B9 G13 文案：自含条目「⚠文件名: L行号 message」，
+         不按文件分组；限高滚动防堆叠溢出） -->
     <div v-if="importWarnings.length" class="import-warnings" role="status">
-      <p class="iw-head mono">导入警告 {{ importWarningCount }} 条 — 非阻断，已入库</p>
-      <template v-for="g in importWarnings" :key="g.filename">
-        <div v-for="(w, i) in g.items" :key="`${g.filename}:${i}`" class="iw-row mono">
-          <span class="iw-file">{{ g.filename }}</span>
-          <span class="iw-msg">⚠ 第 {{ w.line }} 行 {{ w.message }}</span>
-        </div>
-      </template>
+      <p class="iw-head mono">导入警告 {{ importWarningCount }} 条</p>
+      <div v-for="(w, i) in importWarnings" :key="`iw${i}`" class="iw-row mono">
+        <span class="iw-msg">⚠{{ w.filename }}: L{{ w.line }} {{ w.message }}</span>
+      </div>
     </div>
 
     <div class="duo">
@@ -559,6 +561,9 @@ function onComboSubmitted(resp: { workflow_id: string }) {
                   <th class="chk-col"><input class="ck" type="checkbox" :checked="allChecked" aria-label="全选候选任务" @change="toggleAll" /></th>
                   <th class="mono">ID</th>
                   <th class="mono">文件名</th>
+                  <!-- 警告徽标占位列（B9 G13：无表头系「列均有列名」规范的
+                       计划授权偏离；列宽固定，徽标显隐不引起列移） -->
+                  <th class="warn-col" aria-label="核验警告数"></th>
                   <th class="mono">标题</th>
                   <th class="mono">来源</th>
                   <th class="mono">创建</th>
@@ -587,6 +592,16 @@ function onComboSubmitted(resp: { workflow_id: string }) {
                   </td>
                   <td class="mono">{{ fmtTaskId(c.id) }}</td>
                   <td class="mono filename" :title="c.filename">{{ c.filename }}</td>
+                  <td class="warn-col">
+                    <!-- 琥珀徽标（B9 G13）：现算 warning_count，N>0 显示、
+                         N=0 空置占位；分块修复保存后经 saved 事件刷新 -->
+                    <span
+                      v-if="c.warning_count > 0"
+                      class="warn-badge mono"
+                      :title="`${c.warning_count} 条核验警告 — 预览区分块详情`"
+                      :aria-label="`${c.filename} 有 ${c.warning_count} 条核验警告`"
+                    >⚠ {{ c.warning_count }}</span>
+                  </td>
                   <td class="title" :title="c.title ?? ''">{{ c.title ?? "—" }}</td>
                   <td>
                     <StateChip
@@ -629,8 +644,9 @@ function onComboSubmitted(resp: { workflow_id: string }) {
       </section>
 
       <section class="preview">
-        <!-- 分块预览/编辑（M2 C1：BlockEditor 承载双态与自动保存） -->
-        <BlockEditor v-if="selected" :key="selected.id" :task-id="selected.id" :editable="true">
+        <!-- 分块预览/编辑（M2 C1：BlockEditor 承载双态与自动保存）；
+             saved 事件 = 保存即复验，刷新列表徽标（B9 G13） -->
+        <BlockEditor v-if="selected" :key="selected.id" :task-id="selected.id" :editable="true" @saved="load">
           <template #head>
             <span class="p-name mono">{{ selected.filename }}</span>
             <StateChip
@@ -664,6 +680,14 @@ function onComboSubmitted(resp: { workflow_id: string }) {
           ⚠ {{ submitWarnText }}
         </p>
         <p v-else class="submit-ok mono">Link0 声明齐全</p>
+
+        <!-- 提交前核验预显（B9 G13 裁决⑤：动作发生前即见全部核验警告，
+             条目「⚠ L行号 message」，零警告零渲染，限高滚动） -->
+        <div v-if="submitPreviewWarnings.length" class="submit-warns" role="status">
+          <div v-for="(w, i) in submitPreviewWarnings" :key="`spw${i}`" class="submit-warn mono">
+            ⚠ L{{ w.line }} {{ w.message }}
+          </div>
+        </div>
 
         <p v-if="submitError" class="submit-error mono" role="alert">{{ submitError }}</p>
 
@@ -803,7 +827,8 @@ function onComboSubmitted(resp: { workflow_id: string }) {
   color: var(--text-secondary);
 }
 /* 非阻断警告清单（B8 G12：导入/提交 warnings 通道渲染；琥珀档——需要
-   确认的非阻断提示，§4.6 警告纪律与 BlockEditor be-warn 同源） */
+   确认的非阻断提示，§4.6 警告纪律与 BlockEditor be-warn 同源。
+   B9 G13：限高滚动防条目堆叠溢出/遮挡） */
 .import-warnings {
   border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
   border-radius: var(--r-md);
@@ -811,6 +836,8 @@ function onComboSubmitted(resp: { workflow_id: string }) {
   padding: var(--space-3) var(--space-4);
   display: grid;
   gap: var(--space-1);
+  max-height: var(--warn-list-max-height);
+  overflow: auto;
 }
 .iw-head {
   font-size: var(--text-sm);
@@ -821,12 +848,9 @@ function onComboSubmitted(resp: { workflow_id: string }) {
   gap: var(--space-4);
   font-size: var(--text-sm);
 }
-.iw-file {
-  color: var(--text-primary);
-  min-width: 160px;
-}
 .iw-msg {
   color: var(--text-secondary);
+  word-break: break-word;
 }
 .confirm-line {
   font-size: var(--text-sm);
@@ -844,6 +868,16 @@ function onComboSubmitted(resp: { workflow_id: string }) {
 .submit-warn {
   font-size: var(--text-sm);
   color: var(--warn);
+}
+/* 提交前核验预显区（B9 G13 裁决⑤：动作前即见核验警告；限高滚动） */
+.submit-warns {
+  max-height: var(--warn-list-max-height);
+  overflow: auto;
+  display: grid;
+  gap: 2px;
+}
+.submit-warns .submit-warn {
+  word-break: break-word;
 }
 .submit-ok {
   font-size: var(--text-sm);
@@ -969,6 +1003,20 @@ tbody tr.row--checked:hover {
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 警告徽标占位列（B9 G13）：列宽固定，徽标显隐不引起列移 */
+.warn-col {
+  width: 56px;
+  min-width: 56px;
+}
+.warn-badge {
+  display: inline-block;
+  font-size: var(--text-xs);
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  border-radius: var(--r-md);
+  padding: 0 var(--space-1);
   white-space: nowrap;
 }
 .dim {
