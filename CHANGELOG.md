@@ -17,6 +17,7 @@
 - 【scripts】新增发布前计划文档状态校验闸门 scripts/check_plan_status.py：默认扫描 docs/plans/*-plan.md 头部状态行（支持定点路径），状态须为终态「已实施并验收」（修复清单类「已执行完毕」同认），未回填、缺状态行、文件缺失均非零退出；AGENTS.md §5.2 发布序列将其列为冻结前强制步骤
 - 【parse】面⑤散文提及选项三路差集全量审计与词典扩面（G10-b）：extract_keywords 增面⑦ Options 条目正文官方句式直述（synonym/says-to/default 四句式 + 主语停用词）与 B6 手工补录常量清单，词典 1166→1345（幂等闸门通过），opt=addredundant/freq=nnroa 等 B 类误报形态零警告复测通过；field 键入 G8 值形白名单（场向量取值）；prop=wrf 兼容触发词经 G16 实测拒绝删除（决策点 9）；语料基线 route_option_unknown 417→394 文件、498→469 条，新增 readanh 形态经 G16 实测拒绝证实为歧义前缀正确警告；scf=conv 歧义前缀 G16 实测接受（B5 拒绝推断随批修正登记），审计留痕 docs/plans/input-verify-gap-b6-prose-audit.md；warn/review 过滤层脚本化入库使审计漏斗逐字节可复现，787 条排除形态机械归因落盘（B6 独立审查整改，报告 docs/plans/input-verify-gap-b6-code-review.md、留痕 §9）
 - 【web】候选页渲染导入/提交与队列提交非阻断 warnings（G12/B8）：导入成功按文件聚合琥珀警告清单（仅非空文件入列）、单任务提交成功后工具条下方琥珀警告区（第 N 行 message）、队列直接提交 done 注记下方 task_id 归属警告；纯前端消费既有 warnings 契约形态，无后端与契约变更——全面复审（B14 报告）P2 R1 前端渲染缺口落地，playwright 六场景浏览器实测验收（含 B6 视觉补测三场景）
+- 【web】新增提交前核验预显、警告文案修订、条目堆叠限高与持久化复验（B9 G13）：单任务提交确认框与队列弹窗在动作前琥珀预显各成员核验警告（复用预览并行取数不新增请求路径，预览不可达仅该成员占位不阻断其余，done 后清空成员预显防规范化改写后滞后保留）；导入警告清单改自含条目「⚠文件名: L行号 message」并附「导入警告 N 条」汇总行，提交/队列回执统一「⚠ L行号 message」「⚠ 任务 #task_id: L行号 message」冒号形文案，route_duplicate message 补中英文间空格；全部警告展示区限高滚动（新令牌 --warn-list-max-height: 200px）；候选列表增核验警告徽标占位列、BlockEditor 逐块警告详情（kind→块映射）与保存完成事件（保存即复验，列表徽标与详情即时刷新）、「再次保存即清空」提交回执；契约 Candidate 增现算字段 warning_count（列表/单条/退回候选现算不落库，输入副本不可读回落 0，openapi 先行生成物零 diff）
 
 ### 变更
 

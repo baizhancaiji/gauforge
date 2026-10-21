@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21T18:05+0800",
+  "updated": "2026-10-21T19:07+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -148,11 +148,18 @@
       "summary": "立项 B9/G13「提交前核验预显、警告文案、条目堆叠与持久化复验」并落盘计划审查报告（docs/plans/input-verify-gap-remediation-plan-B9-review.md，有条件通过；P2 等价性断言口径改内容多重集+行号平移、删除「新增成员即预显」等不存在交互的指认与 P3×6 项已在计划同批整改）：§2.16 登记六条用户裁决与方案四要点（提交确认框与队列弹窗动作前即预显各成员核验警告、条目文案改「L行号」冒号形并逐 kind 中文警告语测试固化、全部警告展示区限高滚动、警告一律现算不落库并随分块编辑即时复验，仅分块修复与删除候选两条路径可消除）；契约动作 Candidate 增现算字段 warning_count（openapi 先行、生成物零 diff）；计划状态改「部分实施（B1–B8 已收口并验收；B9 待执行）」，§3/§3.1 补 B9 行与节点、并入 3.4.0（冻结顺延至 B9 验收）",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "新增提交前核验预显、警告文案修订、条目堆叠限高与持久化复验（B9 G13）：单任务提交确认框与队列弹窗在动作前琥珀预显各成员核验警告（复用预览并行取数不新增请求路径，预览不可达仅该成员占位不阻断其余，done 后清空成员预显防规范化改写后滞后保留）；导入警告清单改自含条目「⚠文件名: L行号 message」并附「导入警告 N 条」汇总行，提交/队列回执统一「⚠ L行号 message」「⚠ 任务 #task_id: L行号 message」冒号形文案，route_duplicate message 补中英文间空格；全部警告展示区限高滚动（新令牌 --warn-list-max-height: 200px）；候选列表增核验警告徽标占位列、BlockEditor 逐块警告详情（kind→块映射）与保存完成事件（保存即复验，列表徽标与详情即时刷新）、「再次保存即清空」提交回执；契约 Candidate 增现算字段 warning_count（列表/单条/退回候选现算不落库，输入副本不可读回落 0，openapi 先行生成物零 diff）",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": {"task": "B9 提交前核验预显、警告文案、条目堆叠与持久化复验（G13，§2.16）", "note": "入口基线 851 passed 0 skipped（78bef9fa 后）；序列=契约先行（Candidate 增现算 warning_count，openapi 先行+生成物零 diff）→ 测试先行（先行红：逐 kind message 中文断言、warning_count 链路、缺省补全前后 file_warnings 内容集等价含行号平移、契约用例）→ 后端实现（列表现算+message 审计）→ 前端（预显/文案/堆叠/徽标复验/再次保存清空）→ playwright 浏览器实测 → 前端三闸门；出口并入 3.4.0"},
+  "in_progress": null,
   "next_steps": [
-    "B9 实施中（2026-10-21 开工，§2.16 G13）：提交前核验预显（单任务确认框消费 openSubmit 已取 preview warnings；队列弹窗复用 loadLinkStates 并行取数并扩展消费 warnings）、文案修订（「L行号」冒号形+逐 kind 中文 message 测试固化）、堆叠限高（全部警告展示区）、持久化复验（Candidate 增现算 warning_count、徽标、详情、BlockEditor 保存完成事件、再次保存清空）；契约先行 openapi Candidate.warning_count + 生成物零 diff；出口 playwright 全场景浏览器实测+前端三闸门，并入 3.4.0",
+    "B1–B9 全部收口（§8.13），进入 3.4.0 发布流程，冻结时点由用户按 §5.2 启动",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
