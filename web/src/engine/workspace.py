@@ -50,8 +50,14 @@ def resolve_link0(text: str, nproc_default: int,
                   mem_gb_default: float) -> dict:
     """解析 Link0 区 → 声明资源 + 补齐后的实际执行文本。
 
-    返回 {"completed_text", "nproc": {value, defaulted}, "mem_gb": {…}}；
-    缺失/不可识别的 %nprocshared/%mem 按运行级设置缺省值注入（defaulted=True）。
+    返回 {"completed_text", "nproc": {value, defaulted}, "mem_gb": {…}}。
+    补全口径（B9 用户裁决收窄，2026-10-21）：仅指令行**缺失**时注入缺省行
+    ——%nproc 系（含 %cpu）行均不存在才注入 %nprocshared、%mem 行不存在才
+    注入 %mem；指令存在但值非法（值域外/空值/非数值）时**不再注入**，非法
+    输入不遮蔽（此前按缺失处置注入缺省、后值覆盖前值，会掩盖用户错误），
+    核验警告 link0_value_invalid 已承载提示，运行结果交 G16 裁决。
+    defaulted 语义 = 是否注入了缺省行；值非法未注入时记账值回落缺省
+    （消费方 dispatcher 直接 int(value)，须数值安全）。
     核资源两类声明并行不混同：%nproc 系给分配核数（%nproc 前缀超集，判定依据
     见 parse/blocks.py），%cpu 给具体逻辑处理器（不注入 %nprocshared，会与
     核位绑定冲突）；记账核数优先取 %nproc，仅 %cpu 时取 proc-list 推导值。
@@ -66,6 +72,8 @@ def resolve_link0(text: str, nproc_default: int,
         i += 1
     end = i  # [start, end) 为 Link0 行区间
 
+    has_nproc_line = False  # %nproc 系或 %cpu 任一行存在（声明即不注入）
+    has_mem_line = False
     nproc: int | None = None
     cpu_count: int | None = None
     mem_gb: float | None = None
@@ -74,30 +82,40 @@ def resolve_link0(text: str, nproc_default: int,
         key, _, val = body.partition("=")
         k = key.strip().casefold()
         if k.startswith("nproc"):
+            has_nproc_line = True
             try:
                 nproc = int(val.strip())
             except ValueError:
                 pass
         elif k == "cpu":
+            has_nproc_line = True
             cpu_count = _cpu_list_count(val)
         elif k == "mem":
+            has_mem_line = True
             mem_gb = _mem_to_gb(val)
 
-    declared = nproc if nproc is not None else cpu_count
     inject: list[str] = []
-    nproc_defaulted = declared is None
-    if nproc_defaulted:
-        declared = int(nproc_default)
-        inject.append(f"%nprocshared={declared}")
-    mem_defaulted = mem_gb is None
-    if mem_defaulted:
-        mem_gb = float(mem_gb_default)
-        inject.append(f"%mem={_fmt_gb(mem_gb)}GB")
+    if not has_nproc_line:
+        nproc_value: int = int(nproc_default)
+        nproc_defaulted = True
+        inject.append(f"%nprocshared={nproc_value}")
+    else:
+        declared = nproc if nproc is not None else cpu_count
+        # 行存在但值全部不可解析：记账回落缺省（不注入，defaulted=False）
+        nproc_value = declared if declared is not None else int(nproc_default)
+        nproc_defaulted = False
+    if not has_mem_line:
+        mem_value: float = float(mem_gb_default)
+        mem_defaulted = True
+        inject.append(f"%mem={_fmt_gb(mem_value)}GB")
+    else:
+        mem_value = mem_gb if mem_gb is not None else float(mem_gb_default)
+        mem_defaulted = False
 
     completed = "\n".join(lines[:end] + inject + lines[end:])
     return {"completed_text": completed,
-            "nproc": {"value": declared, "defaulted": nproc_defaulted},
-            "mem_gb": {"value": mem_gb, "defaulted": mem_defaulted}}
+            "nproc": {"value": nproc_value, "defaulted": nproc_defaulted},
+            "mem_gb": {"value": mem_value, "defaulted": mem_defaulted}}
 
 
 # ---------------- 物化与环境 ----------------
