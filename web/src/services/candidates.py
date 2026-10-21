@@ -68,6 +68,20 @@ def file_warnings(parsed: dict, route_text: str, lines: list[str]) -> list[dict]
     return parsed["warnings"] + _route_warnings(route_text, lines)
 
 
+def warning_count(candidate_id: int) -> int:
+    """候选当前存储文本的非阻断警告条数（B9 G13 现算口径，不落库）。
+
+    列表徽标（分页切片后逐条现算）、单条 GET 与退回候选同走 file_warnings
+    全集单点；输入副本不可读（缺失/解码失败）回落 0，不抛错。"""
+    try:
+        text = (default_inputs_dir() / str(candidate_id)).read_bytes().decode(
+            "utf-8")
+    except (OSError, UnicodeDecodeError):
+        return 0
+    r = parse_input(text)
+    return len(file_warnings(r, r["blocks"]["route"], split_lines(text)))
+
+
 def _validate_one(filename: str, data: bytes) -> dict:
     """单文件校验（G1 改造）：始终返回 {"error": dict|None, "warnings": list}。
 

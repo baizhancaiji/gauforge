@@ -94,7 +94,13 @@ def list_candidates(origin: str | None = None, page: int = 1,
     size = (page_size if page_size is not None
             else int(settings_store().get("page_size")))
     start = (page - 1) * size
-    return {"items": items[start:start + size], "page": page,
+    page_items = items[start:start + size]
+    # B9 G13：warning_count 对分页切片后的当前页条目现算（file_warnings
+    # 全集单点，页大小内解析成本与预览通道同量级；不进入切片前的全量视图
+    # 构建，成本不随全量候选数增长）
+    for c in page_items:
+        c["warning_count"] = candidates_svc.warning_count(c["id"])
+    return {"items": page_items, "page": page,
             "page_size": size, "total": total}
 
 
@@ -143,7 +149,10 @@ async def import_candidates(files: list[UploadFile] = File(...),
 
 @router.get("/candidates/{id}")
 def get_candidate(id: int) -> dict:
-    return _candidate_view(_candidate_row(id))
+    view = _candidate_view(_candidate_row(id))
+    # B9 G13：单条 GET 与列表同口径现算（契约 Candidate.warning_count 必填）
+    view["warning_count"] = candidates_svc.warning_count(id)
+    return view
 
 
 @router.delete("/candidates/{id}", status_code=status.HTTP_204_NO_CONTENT)

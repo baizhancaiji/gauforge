@@ -233,7 +233,9 @@ def return_candidate(execution_id: int) -> dict:
     return {"id": row2["id"], "filename": row2["filename"],
             "origin": row2["origin"], "failure_note": row2["failure_note"],
             "created_at": row2["created_at"],
-            "title": candidates_svc.resolve_title(new_id)}
+            "title": candidates_svc.resolve_title(new_id),
+            # B9 G13：Candidate 契约必填现算字段（与列表/单条 GET 同口径）
+            "warning_count": candidates_svc.warning_count(new_id)}
 
 
 def cleanup(scope: str = "expired") -> dict:
