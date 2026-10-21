@@ -474,7 +474,7 @@ function tryClose() {
       <p v-if="note" class="q-note mono" role="status">{{ note }}</p>
       <!-- 队列提交非阻断警告（B8 G12：warnings 逐条附 task_id，琥珀档） -->
       <p v-for="(w, i) in submitWarnings" :key="`qw${i}`" class="q-warn mono" role="status">
-        ⚠ 任务 #{{ w.task_id ?? "?" }} · 第 {{ w.line }} 行 {{ w.message }}
+        ⚠ 任务 #{{ w.task_id ?? "?" }} — 第 {{ w.line }} 行 {{ w.message }}
       </p>
 
       <p class="q-label mono">成员（{{ members.length }}）— 顺序即执行序列</p>

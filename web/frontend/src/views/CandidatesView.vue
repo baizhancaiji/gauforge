@@ -508,7 +508,7 @@ function onComboSubmitted(resp: { workflow_id: string }) {
     <!-- 提交非阻断警告（B8 G12：提交成功响应 warnings，琥珀档不阻断） -->
     <div v-if="submitWarnings.length" class="import-warnings" role="status">
       <div v-for="(w, i) in submitWarnings" :key="`sw${i}`" class="iw-row mono">
-        <span class="iw-msg">⚠ 提交警告 · 第 {{ w.line }} 行 {{ w.message }}</span>
+        <span class="iw-msg">⚠ 提交警告 — 第 {{ w.line }} 行 {{ w.message }}</span>
       </div>
     </div>
 
