@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-21T18:01+0800",
+  "updated": "2026-10-21T18:05+0800",
   "latest_released_version": "3.3.0",
   "unreleased": [
     {
@@ -150,9 +150,9 @@
       "migration": null
     }
   ],
-  "in_progress": null,
+  "in_progress": {"task": "B9 提交前核验预显、警告文案、条目堆叠与持久化复验（G13，§2.16）", "note": "入口基线 851 passed 0 skipped（78bef9fa 后）；序列=契约先行（Candidate 增现算 warning_count，openapi 先行+生成物零 diff）→ 测试先行（先行红：逐 kind message 中文断言、warning_count 链路、缺省补全前后 file_warnings 内容集等价含行号平移、契约用例）→ 后端实现（列表现算+message 审计）→ 前端（预显/文案/堆叠/徽标复验/再次保存清空）→ playwright 浏览器实测 → 前端三闸门；出口并入 3.4.0"},
   "next_steps": [
-    "B8 独立审查闭环（B8-review 报告通过，3 条 P3 处置留痕 §8.12）；B9/G13 已立项待实施（§2.16，B9-review 报告有条件通过且 R1–R8 已整改）：提交前核验预显、文案修订、堆叠限高与持久化复验，并入 3.4.0，冻结顺延至 B9 验收后由用户按 §5.2 流程启动",
+    "B9 实施中（2026-10-21 开工，§2.16 G13）：提交前核验预显（单任务确认框消费 openSubmit 已取 preview warnings；队列弹窗复用 loadLinkStates 并行取数并扩展消费 warnings）、文案修订（「L行号」冒号形+逐 kind 中文 message 测试固化）、堆叠限高（全部警告展示区）、持久化复验（Candidate 增现算 warning_count、徽标、详情、BlockEditor 保存完成事件、再次保存清空）；契约先行 openapi Candidate.warning_count + 生成物零 diff；出口 playwright 全场景浏览器实测+前端三闸门，并入 3.4.0",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
