@@ -895,7 +895,7 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | Guess=Cards EOF 手册与实测分歧 | 官方表 terminator=yes，G16 Rev. C.01 实测 EOF 收尾容忍（语料 1/1156，§8.2） | G4 维持 parse_errors 级；同类语料增多再议降级 warnings，需用户裁决（同决策点 3 变更） |
 | 键内歧义前缀警告的保守残余（`scf=conv` 类） | 词典选项集有限，键内歧义前缀无法离线判定 G16 实际接受面；`scf=conv` G16 Rev. C.01 实测接受（B6 冒烟 t5）而警告照发，同口径的 `freq=readanh` 歧义警告与 G16 实测拒绝一致（t6） | warn 级保守口径维持不回退；登记为已知限制 |
 | title 禁字警告行级粒度（每行仅报首个禁字） | warn 级不影响阻断语义；行级粒度保留精确定位（B2–B4 审查 R6 裁决：不聚合），同行其余禁字对用户不可见（语料 test0380 同文件 4 条即此粒度所致） | 维持现状；如需 message 单行列出该行全部禁字，另批立项 |
-| 缺省补全等价性在值域外声明上的边界 | resolve_link0 对不可解析的 %mem/%nproc 系声明按缺失处置、在块末注入缺省行，补全后文本新增恰一条 link0_directive_duplicate（后值覆盖前值语义，G16 实际以缺省值执行）——「缺省补全前后 file_warnings 内容集等价」在此类上不成立（B9 实测，B9-review R1 担忧的实证面） | 补全伪影非用户输入问题，预显维持存储文本核验口径不显示；用户可见问题由 link0_value_invalid 本身承载；测试按实测钉死边界（test_parse_blocks.py 等价三例之边界例），未来补全规则变化破坏等价时预显链路改消费 completed_text（§2.16 既定 fallback） |
+| 缺省补全等价性在值域外声明上的边界（已消除，2026-10-21 用户裁决） | B9 实测登记：原实现按「值可解析与否」判定补全，值域外声明（%mem=2W/abc/空值类）被按缺失处置注入缺省行（后值覆盖前值），补全后文本新增恰一条 link0_directive_duplicate 补全伪影，「缺省补全前后 file_warnings 内容集等价」在此类上不成立（B9-review R1 担忧的实证面） | 用户裁决收窄补全口径（§8.14）：仅指令行缺失时注入；存在但值非法时不再注入，非法输入由 link0_value_invalid 警告承载、G16 运行期裁决——等价性自构造恢复，duplicate 伪影消除；实现与测试留痕 §8.14，测试边界例改写回等价断言 |
 
 ---
 
@@ -1119,6 +1119,9 @@ web/frontend/src/components/QueueEditorModal.vue；无契约与后端变更
    回归闸门；预显行号不取补全后文本，维持存储文本绝对行号（与预览/
    编辑所见一致）。若未来补全规则或缺省值校验变化破坏等价，预显链路
    改为消费 `resolve_link0` 之后的 completed_text 核验（补全单点不动）。
+   （2026-10-21 追记：B9 实测发现值域外声明类的等价破例后，用户裁决
+   收窄补全口径为仅指令行缺失时注入，破例自构造消除，留痕 §8.14；
+   本 fallback 条款对未来变化继续有效。）
 2. **文案修订**：导入琥珀清单条目改为自含形「⚠文件名: L行号 message」
    （文件名入条目，按文件分组取消；汇总行同步改为「导入警告 N 条」）；单任务提交注记条目改为「⚠ L行号 message」（去
    「提交警告」前缀，上下文由所在琥珀区承担）；队列直接提交条目改为
@@ -1940,3 +1943,28 @@ check_tokens.py、check_contrast.py）全绿。
   check_contrast 全绿；validate_progress / gen_changelog_md --check /
   check_plan_status（状态行回填后）通过。**B1–B9 全部收口**，并入 3.4.0
   （发布冻结时点由用户确定）。
+
+### 8.14 B9 批次后裁决：Link0 缺省补全收窄（2026-10-21，用户裁决）
+
+- 裁决背景：§8.13 登记的等价性边界（值域外声明类补全伪影）经用户复核，
+  裁决收窄补全口径——**仅在 %mem/%nproc 系指令行缺失时注入缺省行；指令
+  存在但值非法（值域外/空值/非数值）时不再注入**。非法输入不遮蔽（原实现
+  按缺失处置注入缺省、后值覆盖前值静默执行，掩盖用户错误），由既有核验
+  警告 link0_value_invalid 承载提示，运行结果交 G16 裁决（§2.12「坐标数值
+  等同类交 G16 运行期报错」同口径）。
+- 实现（`workspace.resolve_link0` 单点，docstring 同步改写）：缺失判定从
+  「值可解析与否」改为「按行存在性」——%nproc 系与 %cpu 任一行存在即视为
+  已声明核资源、不注入 %nprocshared；%mem 行存在即不注入 %mem。
+  `defaulted` 语义改为「是否注入了缺省行」；值非法未注入时记账值回落
+  缺省（消费方 dispatcher 直接 `int(value)`，须数值安全）。行为变更随
+  CHANGELOG migration 登记：此前 %mem=2W 类文件提交后按缺省值静默执行，
+  现以原行进入 G16（运行期大概率报错）——需修正取值或删除非法行。
+- 测试：test_dispatch_engine.py 增 test_link0_invalid_value_not_injected
+  （%mem=2W/abc/空值、%nprocshared=zz、%cpu=x-y 五态无注入 + 记账回落
+  断言）并改写 test_link0_cpu_list_semantics 末段（%CPU=x 行存在即不
+  注入）；test_parse_blocks.py 等价边界例改写回等价断言（duplicate 伪影
+  随收窄消除：内容多重集一致 + 行号平移口径 + 无 duplicate）。
+- §2.12「缺省补全等价性在值域外声明上的边界」条目改写为已消除；§2.16 的
+  fallback 条款对未来补全规则变化继续有效。
+- 出口：全量 uv run pytest **872 passed 0 skipped**（871 + 收窄断言 1）；
+  闸门 validate_progress / gen_changelog_md --check 通过。
