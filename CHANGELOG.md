@@ -16,6 +16,7 @@
 - 【parse】route 子选项归属校验（G8）：kw(...)、kw=(...) 与 key=value 形 token 逐选项对照该键官方选项集（词典 键=* 组合词）查典，未知 选项记非阻断警告 kind=route_option_unknown 并近邻附 suggestion（部分命中只报未命中项）；官方最短唯一缩写判活（input 页 Syntax Rules 明文 keywords 与 options 均可缩写至最短唯一前缀，歧义前缀如 scf=conv 仍报——G16 拒绝该形态）、值形白名单 iop/oniom/external、纯数字取值与单字母括号形（ccsd(t)）豁免、基组/方法括号形（无组合词条目）整体豁免；拼写通道选项型 token 职责移交消除 opt=(calcfc,ts) 类双重报告面；分块保存/导入/提交/预览经 file_warnings 单点生效，模板保存随 notice.route_option_warnings 携带——B5 独立审查整改：check_route_options 不可达死代码清理、值形白名单/参数剥离注释据实修正（iop 靠键名不在典兜底；td=window 官方选项登记另批词典扩面），报告 docs/plans/input-verify-gap-b5-review.md
 - 【scripts】新增发布前计划文档状态校验闸门 scripts/check_plan_status.py：默认扫描 docs/plans/*-plan.md 头部状态行（支持定点路径），状态须为终态「已实施并验收」（修复清单类「已执行完毕」同认），未回填、缺状态行、文件缺失均非零退出；AGENTS.md §5.2 发布序列将其列为冻结前强制步骤
 - 【parse】面⑤散文提及选项三路差集全量审计与词典扩面（G10-b）：extract_keywords 增面⑦ Options 条目正文官方句式直述（synonym/says-to/default 四句式 + 主语停用词）与 B6 手工补录常量清单，词典 1166→1345（幂等闸门通过），opt=addredundant/freq=nnroa 等 B 类误报形态零警告复测通过；field 键入 G8 值形白名单（场向量取值）；prop=wrf 兼容触发词经 G16 实测拒绝删除（决策点 9）；语料基线 route_option_unknown 417→394 文件、498→469 条，新增 readanh 形态经 G16 实测拒绝证实为歧义前缀正确警告；scf=conv 歧义前缀 G16 实测接受（B5 拒绝推断随批修正登记），审计留痕 docs/plans/input-verify-gap-b6-prose-audit.md；warn/review 过滤层脚本化入库使审计漏斗逐字节可复现，787 条排除形态机械归因落盘（B6 独立审查整改，报告 docs/plans/input-verify-gap-b6-code-review.md、留痕 §9）
+- 【web】候选页渲染导入/提交与队列提交非阻断 warnings（G12/B8）：导入成功按文件聚合琥珀警告清单（仅非空文件入列）、单任务提交成功后工具条下方琥珀警告区（第 N 行 message）、队列直接提交 done 注记下方 task_id 归属警告；纯前端消费既有 warnings 契约形态，无后端与契约变更——全面复审（B14 报告）P2 R1 前端渲染缺口落地，playwright 六场景浏览器实测验收（含 B6 视觉补测三场景）
 
 ### 变更
 
@@ -29,6 +30,7 @@
 - 【parse】Geom 括号/空格形态识别（C2）：geom=(allcheck,…)、geom = allcheck、geom (allcheck) 及大小写变体与裸形态豁免判定一致，消除 AllCheck 括号形合法文件的缺节误报
 - 【parse】route 拼写 token 化换括号/引号感知公共管道（C3）：逗号分隔、! 行内注释、kw(opt) 无等号括号形、@file 包含、= 两侧空格、key (…) 空格形、引号值、IOp 括号内斜杠等官方合法形态在模板 enforce 与分块保存 warn 通道不再误拒/误报；token_in_dict 判定迁入 parse.keywords 并扩展括号形键名命中，combo 模板与 check_route_spelling 共用同一管道；含 @file/N 抑制回显后缀整词豁免与模板 freq 无等号括号形温度联动补齐（独立审查整改 R1/R2，报告 docs/plans/input-verify-gap-b1-review.md）
 - 【parse】电荷/多重度行剥离引号外行内 ! 注释（G11）：parse_charge_tokens 归一化前剥离引号外首个 ! 及其后内容（与 route 通道 C3 管道同规，引号内 ! 不截断、留作分隔符不入 token；电荷行为整数对自由格式不引入括号跟踪），官方「注释任意处」形态 0 1 ! … 与 0,1 0,1 0,1 ! … 在预览/导入/提交零错误、编辑保存放行，charge_mult 规范化输出不含注释文本；剥离后 token 不足/非整数仍照常记 parse_errors；无 schema 与 warnings kind 词表变更
+- 【parse】Link 0 空值形态补 link0_value_invalid 警告（B14 复审 R3）：%nproc=/%nprocshared=/%nprocshare= 空值与无值裸形、%cpu= 空值（同根因 if val 短路顺带拉齐）在预览/导入/提交通道与编辑保存 empty_value 阻断、%mem= 空值既有告警同源一致；顺带清理 _validate_one 无消费的 bom_stripped 死键（R4）并对齐 docstring 引用与审计措辞口径（R5/F-2）
 
 ## v3.3.0（2026-10-15T22:51+0800 发布，minor）
 

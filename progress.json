@@ -120,11 +120,25 @@
       "summary": "计划文档再修收口（终审 R1 文档勘误）：正文四处口径与留痕/实测对齐——§2.9/§3.1 scf=conv 歧义前缀改按 B6 冒烟实测口径（G16 实测接受，警告系键内歧义判活的保守残余，freq=readanh 同口径警告与 G16 拒绝一致）、§2.6 G3 检测面限定补全（文件开头前导 % 行归 Link 0 收集）、「三路差集全量审计」统一收敛为「三路互补差集近似全量审计」并注明路②覆盖边界、去除 G10-a「先行独立提交」序列断言（prose-audit §9.2 R3 口径）；§2.12 补登记 scf=conv 保守残余与 title 禁字行级粒度两条已知限制；B6 审计留痕补「同文件同 kind ≤3」逐文件维度（超阈 6 文件、最大 test0386 5 条，沿用 R6 行级粒度裁决）；报告 docs/plans/input-verify-gap-remediation-plan-final-review-r1.md",
       "breaking": false,
       "migration": null
+    },
+    {
+      "type": "added",
+      "scope": "web",
+      "summary": "候选页渲染导入/提交与队列提交非阻断 warnings（G12/B8）：导入成功按文件聚合琥珀警告清单（仅非空文件入列）、单任务提交成功后工具条下方琥珀警告区（第 N 行 message）、队列直接提交 done 注记下方 task_id 归属警告；纯前端消费既有 warnings 契约形态，无后端与契约变更——全面复审（B14 报告）P2 R1 前端渲染缺口落地，playwright 六场景浏览器实测验收（含 B6 视觉补测三场景）",
+      "breaking": false,
+      "migration": null
+    },
+    {
+      "type": "fixed",
+      "scope": "parse",
+      "summary": "Link 0 空值形态补 link0_value_invalid 警告（B14 复审 R3）：%nproc=/%nprocshared=/%nprocshare= 空值与无值裸形、%cpu= 空值（同根因 if val 短路顺带拉齐）在预览/导入/提交通道与编辑保存 empty_value 阻断、%mem= 空值既有告警同源一致；顺带清理 _validate_one 无消费的 bom_stripped 死键（R4）并对齐 docstring 引用与审计措辞口径（R5/F-2）",
+      "breaking": false,
+      "migration": null
     }
   ],
-  "in_progress": {"task": "全面复审（B14/B57 报告，2026-10-21）整改：P2 R1 导入/提交 warnings 前端渲染落地（计划立项 G12/B8）+ B6 视觉三场景补测 + P3 R2–R5/F-1/F-2 处置", "note": "按文档→测试→实现→进度同步分批提交；B8 收口后回填计划状态行终态"},
+  "in_progress": null,
   "next_steps": [
-    "计划再修已收口（2026-10-21，终审 R1 的 D-1…D-4 文档勘误与 I-1/I-2 观察项全部处置，§8.11 留痕）：B1–B7 全部实施并通过全面终审，计划状态已回填「已实施并验收」（check_plan_status 转绿），3.4.0 发布冻结待用户按 §5.2 流程启动",
+    "B8 已收口（2026-10-21，全面复审 1 P2 + 6 P3 全数处置，§8.12 留痕）：B1–B8 全部实施并验收，计划状态「已实施并验收」，3.4.0 发布冻结待用户按 §5.2 流程启动",
     "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
     "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
   ],
