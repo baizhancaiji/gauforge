@@ -106,17 +106,22 @@ def check_link0_lines(lines: list[str], *,
                                  "message": "%mem 值须为正数（可选单位 "
                                             "KB/MB/GB/TB/KW/MW/GW/TW）"})
         elif head in ("nproc", "nprocshared", "nprocshare"):
+            # 空值（%nproc= 或无值裸形）与非法值同告警（B14 复审 R3：
+            # 与编辑保存 empty_value 阻断、%mem= 空值既有告警同源拉齐）
+            ok = False
             if val:
                 try:
                     ok = int(val) > 0
                 except ValueError:
                     ok = False
-                if not ok:
-                    warnings.append({"line": line, "keyword": f"%{head}",
-                                     "kind": "link0_value_invalid",
-                                     "message": "%nproc 系值须为正整数"})
+            if not ok:
+                warnings.append({"line": line, "keyword": f"%{head}",
+                                 "kind": "link0_value_invalid",
+                                 "message": "%nproc 系值须为正整数"})
         elif head == "cpu":
-            if val and cpu_list_count(val) is None:
+            # 空值同告警（R3 同根因顺带拉齐：`if val and …` 短路使 %cpu=
+            # 空值静默，与矩阵「%cpu 列表：警告」不符）
+            if not val or cpu_list_count(val) is None:
                 warnings.append({"line": line, "keyword": "%cpu",
                                  "kind": "link0_value_invalid",
                                  "message": "%cpu 值须为处理器列表"
