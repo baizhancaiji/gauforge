@@ -235,8 +235,8 @@ def check_route_duplicates(route_text: str, *,
             "line": first_line + line_offset, "keyword": head,
             "kind": "route_duplicate",
             "message": f"route 中关键字「{head}」出现 {len(hits)} 次"
-                       f"（{names}），官方 testrt 不检测重复（重复 MP2 会跑成"
-                       "MP4 类意外结果），请确认是否有意为之"})
+                       f"（{names}），官方 testrt 不检测重复（重复 MP2 会跑"
+                       "成 MP4 类意外结果），请确认是否有意为之"})
     return out
 
 
