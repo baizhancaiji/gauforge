@@ -103,7 +103,7 @@ def _validate_one(filename: str, data: bytes) -> dict:
                                      f"（第 {first['line']} 行）",
                           "parse_errors": r["parse_errors"]},
                 "warnings": []}
-    return {"error": None, "bom_stripped": stripped is not data,
+    return {"error": None,
             "data": stripped,
             "warnings": file_warnings(r, r["blocks"]["route"],
                                        split_lines(text))}
