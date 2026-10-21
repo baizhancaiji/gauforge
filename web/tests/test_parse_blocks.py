@@ -936,27 +936,16 @@ def test_file_warnings_invariant_under_default_completion_complete():
     assert before  # 样例须确有警告（variables_unterminated），防恒真
 
 
-def test_file_warnings_divergence_only_duplicate_when_mem_invalid():
-    """等价性的登记边界（值域外声明）：resolve_link0 对不可解析的 %mem
-    声明按缺失处置、在块末注入缺省行（后值覆盖前值，G16 实际以缺省值
-    执行），补全后文本新增恰一条 link0_directive_duplicate——系补全伪影
-    而非用户输入问题（用户可见问题由 link0_value_invalid 本身承载）。
-    预显维持存储文本核验口径、不显示该伪影；等价断言在此类上收窄为
-    「去 duplicate 后内容多重集一致 + 行号平移口径不变」。
-    """
+def test_file_warnings_invariant_under_default_completion_invalid_mem():
+    """值域外声明（B9 用户裁决收窄补全后）：resolve_link0 仅在指令行
+    缺失时注入缺省，%mem=2W 行存在即不注入——补全前后文本除缺失指令
+    行外一致，警告列表逐字段全等（B9 早前实测的 duplicate 补全伪影
+    随收窄消除，§2.12 边界登记由此失效）。"""
     text = "%mem=2W\n\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\nVariables:\nR 0.9\n"
     from web.src.engine.workspace import resolve_link0
     before = _file_warnings_of(text)
+    _assert_completion_invariant(text)  # 内容多重集一致 + 行号平移口径
+    assert before  # 样例须确有警告（link0_value_invalid 等），防恒真
     completed = resolve_link0(text, 4, 10.0)["completed_text"]
-    after = _file_warnings_of(completed)
-    injected = len(completed.split("\n")) - len(text.split("\n"))
-    block = _leading_link0_lines(text)
-    assert injected == 2  # %nprocshared 缺失 + %mem 不可解析各注入 1 行
-    assert len(after) == len(before) + 1
-    dups = [w for w in after if w["kind"] == "link0_directive_duplicate"]
-    assert len(dups) == 1 and dups[0]["keyword"] == "%mem"
-    a2 = [w for w in after if w["kind"] != "link0_directive_duplicate"]
-    assert _warn_content(before) == _warn_content(a2)
-    for wb, wa in zip(before, a2):
-        expect = wb["line"] + (injected if wb["line"] > block else 0)
-        assert wa["line"] == expect
+    assert not any(w["kind"] == "link0_directive_duplicate"
+                   for w in _file_warnings_of(completed))

@@ -139,9 +139,10 @@ def test_link0_cpu_list_semantics(home):
     r2 = resolve_link0("%nproc=6\n%CPU=0-5\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
     assert r2["nproc"] == {"value": 6, "defaulted": False}
     assert "%nprocshared" not in r2["completed_text"]
-    # 无法识别的 %CPU 值：视作未声明，走缺省注入
+    # 无法识别的 %CPU 值（B9 收窄补全）：行存在即不注入，记账回落缺省
     r3 = resolve_link0("%CPU=x\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
-    assert r3["nproc"] == {"value": 4, "defaulted": True}
+    assert r3["nproc"] == {"value": 4, "defaulted": False}
+    assert "%nprocshared" not in r3["completed_text"]
 
 
 def test_g16_env_construction(home):
@@ -534,3 +535,27 @@ def test_mem_to_gb_official_units_only():
     assert _mem_to_gb("100") == 100 * 8 / 1024**3
     assert _mem_to_gb("2W") is None  # W 已出官方值域（B4 收紧）
     assert _mem_to_gb("2QW") is None  # 官方值域外
+
+
+def test_link0_invalid_value_not_injected(home):
+    """B9 收窄补全（用户裁决 2026-10-21）：仅指令行缺失时注入缺省；
+    指令存在但值非法（值域外/空值/非数值）时不再注入——非法输入不遮蔽，
+    警告由核验管道 link0_value_invalid 承载，运行结果交 G16 裁决。
+    记账值回落缺省（dispatcher 直接 int(value)，须数值安全），
+    defaulted=False（语义 = 是否注入了缺省行）。"""
+    r = resolve_link0("%mem=2W\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r["mem_gb"] == {"value": 8.0, "defaulted": False}
+    assert r["completed_text"].count("%mem=") == 1  # 仅原行，无注入
+    assert "%nprocshared=4" in r["completed_text"]  # %nproc 缺失照常注入
+    r2 = resolve_link0("%mem=abc\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r2["mem_gb"] == {"value": 8.0, "defaulted": False}
+    assert r2["completed_text"].count("%mem=") == 1
+    r3 = resolve_link0("%mem=\n%nprocshared=zz\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r3["mem_gb"] == {"value": 8.0, "defaulted": False}
+    assert r3["nproc"] == {"value": 4, "defaulted": False}  # 行存在值非法→不注入
+    assert r3["completed_text"].count("%nprocshared=") == 1
+    assert "%mem=" in r3["completed_text"]
+    # %cpu 行存在但列表非法：同样不注入 %nprocshared（核位声明不遮蔽）
+    r4 = resolve_link0("%cpu=x-y\n\n#p\n\nt\n\n0 1\nO\n", 4, 8)
+    assert r4["nproc"] == {"value": 4, "defaulted": False}
+    assert "%nprocshared" not in r4["completed_text"]
