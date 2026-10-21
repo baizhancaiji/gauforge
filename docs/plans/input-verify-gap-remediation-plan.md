@@ -1,6 +1,6 @@
 # 输入文件勘误校验缺口补齐计划
 
-> 状态：**部分实施**（B1–B8 已收口并验收；B9为后期立项，待执行)目标版本 3.4.0。
+> 状态：**已实施并验收**（B1–B9 全部收口，验收留痕 §8.1–§8.13）目标版本 3.4.0。
 > 本文由两轮分析凝成：①输入文件勘误能力全面盘点（代码层面）；②gaussian-kb MCP
 > 官方规则核对（规则层面）。§1 为官方规则核对结论（本计划的规则 SSOT 摘录），
 > §2 为缺口登记与逐项补齐方案，§3 为实施批次，§4 为契约影响，§6 为决策记录。
@@ -895,6 +895,7 @@ checkpoint/allcheck 档不报）、`--Link1--` 紧跟原子行附注断言、
 | Guess=Cards EOF 手册与实测分歧 | 官方表 terminator=yes，G16 Rev. C.01 实测 EOF 收尾容忍（语料 1/1156，§8.2） | G4 维持 parse_errors 级；同类语料增多再议降级 warnings，需用户裁决（同决策点 3 变更） |
 | 键内歧义前缀警告的保守残余（`scf=conv` 类） | 词典选项集有限，键内歧义前缀无法离线判定 G16 实际接受面；`scf=conv` G16 Rev. C.01 实测接受（B6 冒烟 t5）而警告照发，同口径的 `freq=readanh` 歧义警告与 G16 实测拒绝一致（t6） | warn 级保守口径维持不回退；登记为已知限制 |
 | title 禁字警告行级粒度（每行仅报首个禁字） | warn 级不影响阻断语义；行级粒度保留精确定位（B2–B4 审查 R6 裁决：不聚合），同行其余禁字对用户不可见（语料 test0380 同文件 4 条即此粒度所致） | 维持现状；如需 message 单行列出该行全部禁字，另批立项 |
+| 缺省补全等价性在值域外声明上的边界 | resolve_link0 对不可解析的 %mem/%nproc 系声明按缺失处置、在块末注入缺省行，补全后文本新增恰一条 link0_directive_duplicate（后值覆盖前值语义，G16 实际以缺省值执行）——「缺省补全前后 file_warnings 内容集等价」在此类上不成立（B9 实测，B9-review R1 担忧的实证面） | 补全伪影非用户输入问题，预显维持存储文本核验口径不显示；用户可见问题由 link0_value_invalid 本身承载；测试按实测钉死边界（test_parse_blocks.py 等价三例之边界例），未来补全规则变化破坏等价时预显链路改消费 completed_text（§2.16 既定 fallback） |
 
 ---
 
@@ -1871,3 +1872,71 @@ check_tokens.py、check_contrast.py）全绿。
   （`git rev-list --count v3.3.0..f5387615` 实测 38）；
   ③P3-3：§2.15 补「再次保存即清空」B9 承接登记，本节实施序列 R1
   bullet「均见 §2.15」回指随之成立。
+
+### 8.13 B9 批次（2026-10-21 实施收口）
+
+- 实施序列：progress 开工登记（4bb5d842）→ 契约先行（a228e738，Candidate 增
+  必填现算字段 warning_count，openapi 先行 + gen_models/gen:types 再生零 diff）
+  → 测试先行（161ed8ab，先行红 4 failed / 867 passed）→ 后端实现（703ccd4f
+  三处 Candidate 视图现算 + e0dd03d5 message 标点收口，全量 871 passed 0
+  failed 转绿）→ 前端实现（含实测期两处随批修正）→ 本留痕与进度同步。
+- 测试先行落点：新增 test_warning_messages.py（14 样例覆盖 Warning.kind 12
+  kind 全集：message 含 CJK、命中模板短语、无 kind 字样——逐 kind 中文警告语
+  模板清单随批固化，词表扩容由覆盖断言强制同步）；test_parse_blocks.py 增
+  缺省补全前后 file_warnings 等价三例（双注入行号平移 +2 / 齐全全等 / 值域外
+  声明边界例）；test_candidates_import.py 增 warning_count 现算链路（导入
+  N≥1、分块修复归 0、不可读回落 0、删除随行消失）；test_contract_rest.py 增
+  Candidate 契约用例。先行红实际 4 例（预估 3 例）：POST
+  /history/{id}/return-candidate 的 201 响应同为 Candidate 形态被 schema 必填
+  转红波及（test_return_candidate_from_failed，预估漏列），随实现提交一并转绿。
+- **等价性边界实测（§2.12 同批补录）**：「缺省补全前后 file_warnings 内容集
+  等价」在值域外声明（%mem=2W 类）上不成立——resolve_link0 对不可解析声明按
+  缺失处置、块末注入缺省行，补全后新增恰一条 link0_directive_duplicate（后值
+  覆盖前值，G16 实际以缺省值执行），系补全伪影而非用户输入问题；预显维持存储
+  文本核验口径不显示该伪影，用户可见问题由 link0_value_invalid 本身承载。测试
+  按实测钉死边界（差异恰为一条 duplicate + 平移口径不变），B9-review R1 的
+  担忧在「值域外声明」类上实证落地。
+- 后端：services/candidates.warning_count 单点（file_warnings 全集现算、输入
+  副本不可读回落 0）；列表端点对分页切片后的当前页条目逐条现算（不进切片前
+  全量构建，成本不随全量候选数增长）；单条 GET 与 history 退回候选同口径；
+  link0_directive_duplicate message 尾括号半角改全角（逐 kind 审计唯一不符点）、
+  route_duplicate message 补「会跑成 MP4」空格（实测发现随批修正）。
+- 前端：BlockEditor 逐块 warnings 详情（kind→块归属映射，词表 12 kind 全覆盖，
+  词表扩容须同步映射表）+ saved 事件（保存即复验，宿主刷新徽标与详情）；
+  CandidatesView 提交确认框预显区（裁决⑤，消费 openSubmit 已取 preview
+  warnings）、导入清单自含条目「⚠文件名: L行号 message」与汇总行「导入警告
+  N 条」、提交回执「⚠ L行号 message」、徽标占位列（文件名与标题之间，无表头
+  系对「列均有列名」规范的计划授权偏离，列宽固定显隐无列移，N=0 空置）；
+  QueueEditorModal 成员行下任务级预显（复用 loadLinkStates 并行取数路径扩展
+  消费 warnings，不新增请求路径；创建态与编辑态均取数，只读/完成态不取数）
+  + 直接提交回执「⚠ 任务 #task_id: L行号 message」+ 保存成功路径清空
+  submitWarnings（§2.15「再次保存即清空」必做动作承接，重开清空原有 watch(open)
+  延续）+ done 后成员预显清空（提交回执承载最新核验，防规范化改写后滞后保留，
+  裁决⑥）；全部警告展示区限高滚动（新令牌 --warn-list-max-height: 200px，
+  tokens.css 与 m0-ui-preview.html 同步，check_tokens 93/93 + 31/31 一致）。
+- **浏览器实测（playwright，AGENTS §6.2；隔离实例 G16WEB_HOME=/tmp/g16web-b9、
+  G16WEB_ENGINE=0、:8399，构建版本 v3.3.0-104）九场景全过**：
+  ①导入四文件：琥珀清单汇总行「导入警告 14 条」、自含条目「⚠multi.gjf: L1 …」
+  逐条渲染，限高滚动（scrollHeight 416 / clientHeight 198，滚动可达末条无
+  吞没）；②徽标列：multi ⚠13、spell ⚠1、clean/broken 空置占位，aria 语义
+  到位，列宽固定显隐无列移；③单任务确认框预显（裁决⑤）：spell 打开即见
+  「⚠ L1 「optt」疑似拼写错误…」（动作发生前），clean 零警告零渲染；④队列
+  创建态与编辑态弹窗：multi 13 条 / spell 1 条各归其位（任务级归属），broken
+  预览 404 仅该成员占位「成员输入预览不可用 — 无法核验」、其余成员不阻断
+  （console 仅预期 404）；⑤直接提交回执：「⚠ 任务 #4/#7: L行号 …」task_id
+  归属正确，回执区限高滚动（515/200），done 后成员区无占位；⑥复验链（裁决⑥）：
+  分块修复 route（optt→opt）保存后详情警告即时消退、列表徽标即时消失、再次
+  打开提交框预显零渲染；提交规范化补空行使 multi 的 EOF 类警告 13→12 自然
+  消退（§2.16④ 复验机制活例）；⑦删除带徽标候选随行消失；⑧重复导入同文件
+  各自带警告互不影响、输入副本不可读徽标回落空置；⑨队列弹窗重开回执清空、
+  submitted（memberOnly）成员占位符合端点守卫语义（preview 对 submitted 成员
+  本就 404）、保存链路无回归。截图存 .playwright-mcp/（本地留证，不入库）；
+  实测工作区/种子用毕清理。
+  - 实测期发现并随批修正两处：done 态成员区误显「预览不可用」占位（占位
+    条件补 !done，重建后复测通过）；route_duplicate message 缺空格（后端
+    message，重启后生效、pytest 模板断言同步复绿）。
+- 出口闸门：全量 uv run pytest **871 passed 0 skipped**（入口基线 851 + B9
+  新增 20）；前端构建 vue-tsc 通过、audit_frontend_offline / check_tokens /
+  check_contrast 全绿；validate_progress / gen_changelog_md --check /
+  check_plan_status（状态行回填后）通过。**B1–B9 全部收口**，并入 3.4.0
+  （发布冻结时点由用户确定）。
