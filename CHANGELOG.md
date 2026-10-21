@@ -21,6 +21,7 @@
 
 - 【web】组合流模板保存 enforce 口径暂时屏蔽（G10-a，决策点 12）：词典外 token 不再 422 拒绝，一律放行并随 notice.spelling_warnings 回传；ignore_spelling 字段保留但屏蔽期间不生效；前端「忽略拼写警告并保存」豁免按钮移除（playwright 浏览器实测验收）；契约 description 同步（词表三/ignore_spelling/notice/PUT 端点四处）+ 生成物再生
 - 【plans】计划状态回填为「部分实施，待再修」并落盘全面终审报告（第 1 轮）：实现层通过——13 项缺口（C1–C3/G0–G11）与 B1–B7 验收标准逐条独立证实，848 测试与 9 闸门全绿、四通道 API 与前端视觉实测；同时登记 2 条 P3 观察项（title 禁字同行只报首个、B6 留痕条数维度缺登）与 4 处计划文档勘误建议（D-1 scf=conv 已被实测推翻的断言优先勘误）；3.4.0 冻结顺延至计划文档再修订完成，报告 docs/plans/input-verify-gap-remediation-plan-final-review-r1.md
+- 【plans】计划文档再修收口（终审 R1 文档勘误）：正文四处口径与留痕/实测对齐——§2.9/§3.1 scf=conv 歧义前缀改按 B6 冒烟实测口径（G16 实测接受，警告系键内歧义判活的保守残余，freq=readanh 同口径警告与 G16 拒绝一致）、§2.6 G3 检测面限定补全（文件开头前导 % 行归 Link 0 收集）、「三路差集全量审计」统一收敛为「三路互补差集近似全量审计」并注明路②覆盖边界、去除 G10-a「先行独立提交」序列断言（prose-audit §9.2 R3 口径）；§2.12 补登记 scf=conv 保守残余与 title 禁字行级粒度两条已知限制；B6 审计留痕补「同文件同 kind ≤3」逐文件维度（超阈 6 文件、最大 test0386 5 条，沿用 R6 行级粒度裁决）；报告 docs/plans/input-verify-gap-remediation-plan-final-review-r1.md
 
 ### 修复
 
