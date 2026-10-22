@@ -439,10 +439,11 @@ def test_refine_input_accepts_serialized_template():
 
 
 def test_spelling_words_loaded_and_gate_ready():
-    """校验单点依赖的词典在位（1345 词=3.3 面⑤选项面 + B5 面⑥替代表单
-    + B6 面⑦散文句式直述与手工补录，判据①token 全命中）。"""
+    """校验单点依赖的词典在位（1419 词=3.3 面⑤选项面 + B5 面⑥替代表单
+    + B6 面⑦散文句式直述与手工补录 + 3.4 面⑧ R2 复扫扩面，
+    判据①token 全命中）。"""
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 1345
+    assert len(words) == 1419
     assert {"p", "b3lyp", "6-31g(d)", "opt", "freq"} <= words
     # 3.4.0 enforce 屏蔽（决策点 12）：模板保存词典校验仅 warn
     assert svc.SPELLING_MODE == "warn"

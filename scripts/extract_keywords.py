@@ -49,6 +49,18 @@
   （B6 三路互补差集近似全量审计逐条裁决，清单与依据见
   docs/plans/input-verify-gap-b6-prose-audit.md 与
   docs/plans/audit/review_decisions.txt）。
+- 面⑧（正文提及选项 R2 复扫，3.4 unreleased，L5 opt=NoEigenTest 误报
+  事故）：面⑦四句式未覆盖的官方句式补齐——成对动词 No-对句（X requests
+  and Y suppresses / X activates and Y turns off / X retains and Y discards /
+  X enables and Y disables，任意动词序）、等价句（X is equivalent to Y
+  [and Z]）、Use-X-to 指令句、option X 指称句、主语并列行为句（X and Y
+  request/suppress …）、No* 主语定义动词句（NoXxx prevents/forbids/…）、
+  「one of A, B, and C may be」枚举句；面⑤空格标题缺口同步修复（#### 条
+  目含「, 」枚举时逐段归一，Raff, Raf1, Raf2, Raf3 系）；句式仍不达的以
+  R2_MANUAL_OPTIONS 手工补录、裸关键词（TDA/NoSymmetry/NoTestMO/FOpt/POpt
+  等正文实锤的非 slug 形态）以 R2_BARE_KEYWORDS 入典。R2 全量候选与逐条
+  裁决见 docs/plans/audit/review_decisions_r2.txt（含 B6 A 类误判翻案 4 条：
+  geom=NoCrowd、scf=NoInCore、scf=NoVarAcc、ept=D2 均现行手册明载）。
 
 词条小写化、按码点排序、去重——确定性输出，重跑幂等。
 
@@ -298,7 +310,10 @@ def _norm_option(heading: str) -> str | None:
 
 
 def _option_words(markdown_dir: Path) -> set[str]:
-    """面⑤keyword 页：Options 章节 #### 条目规则提取 + 章节外白名单。"""
+    """面⑤keyword 页：Options 章节 #### 条目规则提取 + 章节外白名单。
+
+    面⑧补：整标题归一失败且含「, 」时按枚举标题逐段归一（Raff, Raf1,
+    Raf2, Raf3 系——空格使整标题不可归一，枚举段各自为官方选项名）。"""
     words: set[str] = set()
     kdir = markdown_dir / "keyword"
     if not kdir.is_dir():
@@ -322,6 +337,11 @@ def _option_words(markdown_dir: Path) -> set[str]:
                 opt = _norm_option(m.group(1))
                 if opt:
                     words.add(f"{slug}={opt}".casefold())
+                elif "," in m.group(1):
+                    for part in m.group(1).split(","):
+                        opt = _norm_option(part)
+                        if opt:
+                            words.add(f"{slug}={opt}".casefold())
     for carrier, opts in _MANUAL_OPTIONS.items():
         for opt in opts:
             words.add(f"{carrier}={opt}".casefold())
@@ -421,15 +441,104 @@ B6_MANUAL_OPTIONS: dict[str, tuple[str, ...]] = {
     "gfinput": ("Coulomb",),
 }
 
+# 面⑧手工补录常量（B6 续 R2 复扫，2026-10-22：面⑧句式仍不达——表格式
+# 记载、Options 章节外正文、页首句与 B6 A 类误判翻案形态）。逐条依据见
+# docs/plans/audit/review_decisions_r2.txt；受幂等闸门与规模断言同规约束。
+R2_MANUAL_OPTIONS: dict[str, tuple[str, ...]] = {
+    # scrf：Calculation Method Variations 官方表行（Dis/Rep/Cav 正形与
+    # No* 默认形——表格位于 Options 命名章节之外，句式规则不可达；
+    # CavityFieldEffects/NonEq/CF 为同表官方行名；SkipVacuum/NoVacuum/
+    # DoVacuum 由面⑧等价句承接不在此列）
+    "scrf": ("Dis", "Rep", "Cav", "NoDis", "NoRep", "NoCav",
+             "CavityFieldEffects", "NonEq", "CF"),
+    # scf：VarAcc 条目正文「it can be turned off via NoVarAcc」——无数义
+    # 动词，句式不达（NoInCore/NoPass/NoVShift 由面⑧定义动词与等价句承接）
+    "scf": ("NoVarAcc",),
+    # densityfit：页首句（Options 章节外）「NoDenFit is a synonym for
+    # NoDensityFit」——面⑦句式仅扫 Options 条目正文，页首不达
+    "densityfit": ("NoDensityFit", "NoDenFit"),
+    # guess：Read 条目正文条件句「Guess=NoTranslate should be specified」
+    # （无数义动词，句式不达）
+    "guess": ("NoTranslate",),
+    # integral：Relativistic Calculations 节（章节名不含 option，与 3.3
+    # DKH/DKH0/DKHSO/RESC 白名单同源）DKH 条目正文并列行为句
+    # 「NoDKH and NonRelativistic request …」；Raff 系正文全形（标题枚举
+    # Raff, Raf1, Raf2, Raf3 由面⑤逗号枚举规则承接）
+    "integral": ("NoDKH", "NonRelativistic", "Raff1", "Raff2", "Raff3"),
+    # oniom：Compress 条目正文「NoCompress performs …」不在定义动词表
+    "oniom": ("NoCompress",),
+    # population：空格标题「Orbitals[=N] AllOrbitals」前半（后半 allorbitals
+    # 已由 B6 补录）；MK 条目正文 Uncharged 由面⑧ option-X 句承接，此处保底
+    "population": ("Orbitals", "Uncharged"),
+    # ept：B6 A 类误判翻案——现行手册 Examples 明载 EPT=D2 可执行输出
+    # （「For EPT=D2 calculations, the results … appear as follows」）
+    "ept": ("D2",),
+}
+
+# 面⑧裸关键词补录（route 裸词形态、正文实锤但无独立页面/非标题变体）：
+# - tda：td 页明载「via the TDA keyword」；
+# - nosymmetry：symmetry 页明载 NoSymmetry 关键词形（页 slug 仅 symmetry，
+#   标题变体不含 NoSymmetry）；
+# - notestmo：testmo 页明载「The NoTestMO keyword suppresses this check」；
+# - fopt/popt：opt 页明载「the keyword FOpt rather than Opt」「The POpt
+#   form requests a partial optimization」（Opt 的整词替代表单）。
+R2_BARE_KEYWORDS: tuple[str, ...] = (
+    "tda", "nosymmetry", "notestmo", "fopt", "popt",
+)
+
 
 # 面⑦四句式（Options 章节 #### 条目正文；主语捕获组）
 _SYN_MAIN = re.compile(
     r"\b([A-Z][A-Za-z0-9]+)(?:\s+and\s+([A-Z][A-Za-z0-9]+))?"
     r"(?:\s+are\s+all)?\s+(?:is\s+(?:a\s+)?|are\s+)synonym")
-_SYN_WITH = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+is\s+synonymous\s+with\b")
+_SYN_WITH = re.compile(
+    r"\b([A-Z][A-Za-z0-9]+)\s+is\s+synonymous\s+with"
+    r"(?:\s+([A-Z][A-Za-z0-9]+))?")
 _SAYS_TO = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+says\s+(?:not\s+)?to\b")
 _DEFAULT_IS = re.compile(r"\b[Tt]he\s+default\s+is\s+([A-Z][A-Za-z0-9]+)\b")
 _IS_DEFAULT = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+is\s+the\s+default\b")
+# 面⑧句式（B6 续 R2 复扫：面⑦四句式盲区，L5 opt=NoEigenTest 误报类）。
+# 官方定义动词集（成对句与并列句共用；取自 opt/geom/scf/symmetry/integral
+# 页实际用词；suppress 需显式可选 es——复数主语用原形）
+_DEF_VERB = (r"(?:requests?|activates?|retains?|enables?|disables?|"
+             r"suppress(?:es)?|turns\s+off|discards?|prohibits?|forbids?|"
+             r"forces?)")
+# 成对动词 No-对句：X requests and Y suppresses（EigenTest/NoEigenTest）、
+# X activates and Y turns off（Independent/NoIndependent）、X retains and
+# Y discards（KeepConstants/NoKeepConstants）、X enables and Y disables
+# （Int/NoInt，任意动词序）
+_PAIR_VERBS = re.compile(
+    rf"\b([A-Z][A-Za-z0-9]+)\s+{_DEF_VERB}\s+and\s+"
+    rf"([A-Z][A-Za-z0-9]+)\s+{_DEF_VERB}\b")
+# 等价句：1stPCM is equivalent to SkipVacuum and NoVacuum；主语侧另收
+# （NoVShift is equivalent to this setting——宾语指示词不可判）
+_EQUIV_TO = re.compile(
+    r"\bis\s+equivalent\s+to\s+([A-Z][A-Za-z0-9]+)"
+    r"(?:\s+and\s+([A-Z][A-Za-z0-9]+))?")
+_EQUIV_SUBJ = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+is\s+equivalent\s+to\b")
+# Use-X-to 指令句（Use NoExtra to disable this feature）
+_USE_TO = re.compile(r"\bUse\s+([A-Z][A-Za-z0-9]+)\s+to\b")
+# option 指称句，正逆两序（The option NoGIC builds… / The HFIVOGuess
+# option forces… / the additional option Uncharged will…）
+_OPT_NAMED_FWD = re.compile(r"\boption\s+((?:No)?[A-Z][A-Za-z0-9]+)\b")
+_OPT_NAMED_REV = re.compile(r"\b((?:No)?[A-Z][A-Za-z0-9]+)\s+option\b")
+# 主语并列行为句（NoDKH and NonRelativistic request… / NoNonAdiabaticCoupling
+# and NoNAC suppress…）
+_SUBJ_AND_VERB = re.compile(
+    rf"\b([A-Z][A-Za-z0-9]+)\s+and\s+([A-Z][A-Za-z0-9]+)\s+{_DEF_VERB}\b")
+# No* 主语定义动词句（NoInCore prevents… / NoMicro forbids… / NoMBS tells…）
+_NO_DEF_VERB = re.compile(
+    r"\b(No[A-Z][A-Za-z0-9]+)\s+"
+    r"(?:prevents?|prohibits?|forbids?|suppress(?:es)?|disables?|discards?|"
+    r"forces?|retains?|deactivates?|skips?|tells?|causes?|requires?)\b")
+# 单主语 request 直述句（Angle requests printing of the interatomic angles…）
+_SUBJ_REQ = re.compile(r"\b([A-Z][A-Za-z0-9]+)\s+requests?\s")
+# 官方枚举句（Only one of CAngle, Angle, and NoAngle may be specified /
+# one of these keywords: Microcanonical, Fixed, and Local）
+_ENUM_ONE_OF = re.compile(
+    r"\bone\s+of\s+(?:these\s+keywords:\s+)?"
+    r"([A-Z][A-Za-z0-9]+(?:\s*,\s*[A-Z][A-Za-z0-9]+)*"
+    r"(?:\s*,?\s+and\s+[A-Z][A-Za-z0-9]+)?)")
 # 主语停用词（散文噪声：代词/句首动词/方法名/单位/Link 词/键名等——
 # B6 复核否决集高频形态提炼；大小写不敏感全词比对）
 _RULE_STOP = frozenset("""
@@ -450,20 +559,28 @@ spin singlets triplets calcgsum gsum window window hdf5
 # 「CPHF=RdFreq is the default」跨键载体错位）；yes/never 为 ReCorrect 等
 # 条目的参数取值（值形，irc 页「The default is Yes」）
 rdfreq yes never
+# 特例停用（R2 复扫甄别）：geom 为等价句宾语键名指称（geom/opt 页
+# 「is equivalent to Geom=…」）；pass0grid 为 Grid= 取值（值形非选项，
+# integral 页「Pass0Grid requests the obsolete pruned (35,110) grid」）
+geom pass0grid
 """.split())
 
 
 def _prose_candidates(head: str, body: str) -> set[str]:
-    """面⑦：单条目正文 → 官方句式直述的选项名集合（casefold）。
+    """面⑦/面⑧：单条目正文 → 官方句式直述的选项名集合（casefold）。
 
     head 为条目名（归一前），与主语相同的词不重复提取（条目名已由面⑤
     收录）；markdown 链接整体剥离（链接文本键归属属链接载体，跨页引用
-    由审计路①字面扫描承接）。"""
+    由审计路①字面扫描承接）。_ENUM_ONE_OF 捕获组为「,  / and」并列
+    枚举，逐段拆分入集。"""
     text = re.sub(r"\[[^\]]*\]\([^)]*\)", " ",
                   re.sub(r"`[^`]*`", " ", body))
     found: set[str] = set()
     head_cf = _norm_option(head)
-    for pat in (_SYN_MAIN, _SYN_WITH, _SAYS_TO, _DEFAULT_IS, _IS_DEFAULT):
+    for pat in (_SYN_MAIN, _SYN_WITH, _SAYS_TO, _DEFAULT_IS, _IS_DEFAULT,
+                _PAIR_VERBS, _EQUIV_TO, _EQUIV_SUBJ, _USE_TO,
+                _OPT_NAMED_FWD, _OPT_NAMED_REV, _SUBJ_AND_VERB,
+                _NO_DEF_VERB, _SUBJ_REQ):
         for m in pat.finditer(text):
             for g in m.groups():
                 if not g:
@@ -474,6 +591,14 @@ def _prose_candidates(head: str, body: str) -> set[str]:
                 if head_cf and cf == head_cf:
                     continue
                 found.add(cf)
+    for m in _ENUM_ONE_OF.finditer(text):
+        for part in re.split(r"[,\s]+|\band\b", m.group(1)):
+            cf = part.casefold()
+            if not cf or cf in _RULE_STOP or len(cf) < 2:
+                continue
+            if head_cf and cf == head_cf:
+                continue
+            found.add(cf)
     return found
 
 
@@ -519,6 +644,9 @@ def _prose_option_words(markdown_dir: Path) -> set[str]:
     for carrier, opts in B6_MANUAL_OPTIONS.items():
         for opt in opts:
             words.add(f"{carrier}={opt}".casefold())
+    for carrier, opts in R2_MANUAL_OPTIONS.items():
+        for opt in opts:
+            words.add(f"{carrier}={opt}".casefold())
     return words
 
 
@@ -557,6 +685,7 @@ def extract(manifest_path: Path, markdown_dir: Path | None) -> list[str]:
             words |= _route_alt_words(route.read_text(encoding="utf-8"))
         words |= _option_words(markdown_dir)
         words |= _prose_option_words(markdown_dir)
+    words.update(R2_BARE_KEYWORDS)
     return sorted(words)
 
 

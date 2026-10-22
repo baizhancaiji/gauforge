@@ -10,6 +10,10 @@
 
 3.3 unreleased 面⑤增补断言：Options 章节 #### 条目以「页slug=选项」组合词
 入典、散文标题剔除；scf=xqc 词典缺失事故回归（真实 KB 一致性测试）。
+
+3.4 面⑧增补断言（B6 续 R2 复扫，L5 opt=NoEigenTest 误报事故回归）：
+成对动词/No* 定义动词/等价/Use-to/option 指称/one-of 枚举句式、逗号枚举
+标题、R2 手工补录与裸关键词面；闸门样例含 B6 误拒翻案 4 条。
 """
 from __future__ import annotations
 
@@ -27,9 +31,11 @@ FIX_MD = Path(__file__).resolve().parent / "fixtures"
 
 # mini 清单预期词条：keyword 分类 7 页，剔除文章页 thermo/oniom_technote；
 # slug 全集（opt/densityfit/cas/extrabasis/cbs/scf）+ 标题等价变体
-# （nodensityfit/casscf/extradensitybasis；「CBS Methods」含空格不收）。
+# （nodensityfit/casscf/extradensitybasis；「CBS Methods」含空格不收）
+# + 面⑧裸关键词补录常量（与 markdown 无关，恒入典）。
 EXPECTED = ["cas", "casscf", "cbs", "densityfit", "extrabasis",
-            "extradensitybasis", "nodensityfit", "opt", "scf"]
+            "extradensitybasis", "fopt", "nodensityfit", "nosymmetry",
+            "notestmo", "opt", "popt", "scf", "tda"]
 
 
 def _run(*args: str) -> subprocess.CompletedProcess:
@@ -84,6 +90,13 @@ def test_mini_kb_markdown_faces(tmp_path):
             "6-31g(d)", "6-31+g(d,p)", "6-311++g(2d,2p)", "6-31g**"} <= words
     # 面⑤Options 章节 #### 条目（占位符 NDamp=*N* 归一为基名）
     assert {"scf", "scf=qc", "scf=xqc", "scf=yqc", "scf=ndamp"} <= words
+    # 面⑤逗号枚举标题（面⑧补：#### Raff, RafEx1 逐段归一）
+    assert {"scf=raff", "scf=rafex1"} <= words
+    # 面⑧正文句式（B6 续 R2）：成对动词 No-对 / No* 定义动词 / 等价句
+    # / Use-X-to / option 指称 / one-of 枚举
+    assert {"scf=nofermitest", "scf=nopassex", "scf=novshiftex",
+            "scf=usefallbackex", "scf=noextraguess", "scf=nogicex",
+            "scf=noanglesex"} <= words
     # 面⑥route 替代表单（B5 G7）：Alternate Forms 章节 #### #N/#P/#T →
     # n/p/t（p 已由面②单字母白名单覆盖，去重）；章节外 #### #Z 不收
     assert {"n", "p", "t"} <= words
@@ -134,7 +147,10 @@ def test_real_kb_inrepo_dictionary_matches_regeneration(tmp_path):
     # → 1345（B6 面⑦：Options 条目正文官方句式直述（synonym/says-to/
     # default 四句式）+ B6 手工补录常量——散文提及选项 B 类缺口补齐，
     # opt=addredundant/freq=nnroa 等不再误报 route_option_unknown）
-    assert len(inrepo.decode("utf-8").splitlines()) == 1345
+    # → 1419（3.4 面⑧ R2 复扫：成对动词/等价/Use-to/option 指称/枚举句式
+    # + 面⑤逗号枚举标题 + R2 手工补录与裸关键词面——L5 opt=NoEigenTest
+    # 误报修复，B6 误拒翻案 geom=NoCrowd/scf=NoInCore/scf=NoVarAcc/ept=D2）
+    assert len(inrepo.decode("utf-8").splitlines()) == 1419
 
 
 def test_inrepo_dictionary_lowercase_unique_sorted():
@@ -197,6 +213,43 @@ def test_gate_option_face_tokens_in_dictionary():
         assert tok in words, tok
 
 
+def test_gate_r2_prose_option_tokens_in_dictionary():
+    """面⑧ R2 复扫（3.4 unreleased，L5 opt=NoEigenTest 误报事故回归）：
+    散文提及的 No-对/等价形/替代表单逐条精确匹配——含 B6 误拒翻案 4 条。"""
+    words = kw_mod.load_keywords(refresh=True)
+    for tok in (
+            # L5 事故本尊与其同页 No-对（成对动词句）
+            "opt=noeigentest", "opt=nolinear", "opt=notrustupdate",
+            # No* 定义动词句 / 等价句 / Use-to / option 指称 / 枚举句
+            "opt=nomicro", "opt=nonrscale", "opt=nodownhill",
+            "geom=nokeepconstants", "geom=nogic", "geom=noindependent",
+            "geom=noangle", "geom=nodihedral", "geom=nodistance",
+            "guess=noextra", "guess=notranslate", "scf=nopass",
+            "scf=novshift", "population=nombs", "population=noncs",
+            "prop=nopotential", "integral=noraff", "integral=nosymmetry",
+            "symmetry=noint", "symmetry=nograd", "td=noivoguess",
+            "td=nononadiabaticcoupling", "td=hfivoguess",
+            "freq=noworkerperturbations", "polar=noworkerperturbations",
+            "oniom=nocompress", "bd=noincore", "bd=notwincore",
+            "mp=noincore", "mp=notwincore", "cc=notwincore",
+            "eom=notwincore", "scrf=nocav", "scrf=nodis", "scrf=norep",
+            "scrf=skipvacuum", "scrf=novacuum", "scrf=dovacuum",
+            "scrf=cavityfieldeffects",
+            # B6 A 类误判翻案（现行手册明载）
+            "geom=nocrowd", "scf=noincore", "scf=novaracc", "ept=d2",
+            # 页首句/表格行/空格标题（句式与章节双不达，手工补录）
+            "densityfit=nodensityfit", "densityfit=nodenfit",
+            "integral=nonrelativistic", "integral=nodkh",
+            "integral=raff", "integral=raf1", "integral=raff1",
+            "scrf=dis", "scrf=rep", "scrf=cav", "scrf=noneq", "scrf=cf",
+            "population=orbitals", "population=uncharged",
+            "sacci=maxr", "output=rawmatrixelement",
+            # 裸关键词面
+            "tda", "nosymmetry", "notestmo", "fopt", "popt",
+    ):
+        assert tok in words, tok
+
+
 def test_gate_route_alt_forms_in_dictionary():
     """面⑥替代表单（B5 G7）：#N/#P/#T 官方替代形式（route 页 Alternate
     Forms 章节逐条）入典，#T/#N 模板不再被 enforce 误拒。"""
@@ -209,7 +262,7 @@ def test_gate_route_alt_forms_in_dictionary():
 
 def test_loader_reads_inrepo_dictionary():
     words = kw_mod.load_keywords(refresh=True)
-    assert len(words) == 1345
+    assert len(words) == 1419
     assert "opt" in words and "casscf" in words and "scrf" in words
     assert all(w == w.casefold() for w in words)
 
