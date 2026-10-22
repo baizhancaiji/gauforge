@@ -73,6 +73,14 @@ cp "$out/$name.tar.gz" "$out/$ASSET_FIXED"
 ( cd "$out" && sha256sum "$ASSET_FIXED" > "$ASSET_FIXED.sha256" )
 printf '%s\n' "$version" > "$out/VERSION"
 
+# 版本归档子目录（既有惯例 v3.2.0/v3.3.0/…）：正式 tag 包 5 件套归档
+# $out/vX.Y.Z/ 一套（顶层平铺副本保留）；HEAD 验证包（无 tag）不归档
+if [ -n "$tag" ]; then
+  mkdir -p "$out/$tag"
+  cp "$out/$name.tar.gz" "$out/$name.tar.gz.sha256" \
+     "$out/$ASSET_FIXED" "$out/$ASSET_FIXED.sha256" "$out/VERSION" "$out/$tag/"
+fi
+
 if [ "$upload" = "1" ]; then
   [ -n "$tag" ] || { echo "验证包不得上传" >&2; exit 1; }
   command -v gh >/dev/null 2>&1 || { echo "未安装 gh CLI，无法上传" >&2; exit 1; }
@@ -85,4 +93,5 @@ fi
 
 echo "[package] 完成："
 ls -lh "$out" | grep -v '^total\|^d'
+[ -d "$out/$tag" ] && { echo "[package] 版本归档：$out/$tag/"; ls -lh "$out/$tag"; }
 echo "[package] 附件清单（--upload 已传/未传待传）：$name.tar.gz(+.sha256)、$ASSET_FIXED(+.sha256)、VERSION"
