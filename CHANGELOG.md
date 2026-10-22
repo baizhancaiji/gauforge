@@ -4,7 +4,9 @@
 
 ## Unreleased（未发布）
 
-_暂无条目。_
+### 修复
+
+- 【parse】修复 route 选项校验词典缺口误报（面⑧ R2 复扫扩面）：NoEigenTest 等 74 项手册正文提及选项入典（成对动词/等价/Use-to/option 指称/one-of 枚举句式规则 + 表格行/页首句/章节外正文手工补录 + 裸关键词面 tda/nosymmetry/notestmo/fopt/popt + 面⑤逗号枚举标题承接），B6 误拒翻案 9 项（No* 类 td=NoIVOGuess、geom=NoKeepConstants/NoGIC、opt=NoMicro、guess=NoTranslate；A 类 geom=NoCrowd、scf=NoInCore/NoVarAcc、ept=D2；noise 类 output=RawMatrixElement）；词典 1345→1419，真实 QST2 输入（opt=(qst2,calcfc,noeigentest,maxstep=15)）不再误报
 
 ## v3.4.0（2026-10-21T21:54+0800 发布，minor）
 
