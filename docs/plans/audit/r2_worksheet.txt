@@ -1,0 +1,2807 @@
+[No* new] cas=normally  paths=A
+      | Normally used with Guess=Read.
+[No* new] densityfit=nodensity  paths=B +章节外
+      | The NoDensity keyword turns off the use of density fitting in pure DFT calculations. Since density fitting is off by default in the program, this keyword’s only use is to override any DensityFit in [Default.Route](/defroute/). NoDenFit is a synonym for NoDensi
+[No* new] external=nomicro  paths=B
+      | # ONIOM(B3LYP/6-31G(d):AM1:External="RunTink Amber") Opt=NoMicro
+      | # ONIOM(External="RunCC SDT":B3LYP/6-31G(d)) Opt=NoMicro
+[No* new] freq=nocomb  paths=B
+      | - NoComb: Skip computation of combination bands.
+[No* new] freq=nocor  paths=B
+      | - NoCor: Discards Coriolis couplings in calculations. By default, all couplings will be retained.
+[No* new] freq=nodarden  paths=B
+      | - NoDarDen: Deactivates the search for Darling-Dennison (2–2, 1–1 and 1–3) resonances.
+      | PT2Model=GVPT2 Resonances=(NoDarDen,NoFermi)
+[No* new] freq=noreorient  paths=B
+      | - NoReorient: Do not try to superpose the structures.
+[No* new] freq=nouse  paths=B
+      | - NoUse: Discard the transition dipole read in the data source and replace it with a unitary one. This is the default behavior for electronic transition with a change in multiplicity or charge. Keyword is not supported for HT and FCHT calculations.
+[No* new] gen=nobasistransform  paths=B
+      | **Basis set transformation option to the Integral keyword.** Several options to the [Integral](/integral/) keyword control whether/how generalized contraction basis sets are transformed to reduce the number of primitives. [Int=BasisTransform=*N*](/integral) sa
+[No* new] guess=normally  paths=A
+      | Normally, the occupied orbitals are selected as those with lowest eigenvalues for the one-electron Hamiltonian used in the initial guess programs.
+[No* new] opt=normally  paths=A
+      | Normally it is preferable to pick up the force constants already converted to internal coordinates as described above (ReadFC).
+[No* new] sacci=notransitiondensity  paths=B +章节外
+      | #### *SpinState*=(NoTransitionDensity)
+      | By default, the transition density and oscillator strength are calculated between the SAC ground state and the SAC-CI singlet excited states when *SpinState* is Singlet, and between the lowest SAC-CI states and SAC-CI excited states for other spin states. NoTr
+[No* xref] cbs=nosave  paths=B
+      | %NoSave
+[No* xref] charge=nosymm  paths=B
+      | To perform geometry optimizations in the presence of background charges, you must use [Opt=Z-Matrix NoSymm](/opt/?tabid=2#Opt_keyword__Z-matrix_option) keywords and define the input geometry either in traditional Z-matrix coordinates or symbolic Cartesian coor
+      | # B3LYP/6=31G(d) Opt=Z-Matrix Charge NoSymm
+[No* xref] counterpoise=nosymm  paths=B
+      | # B3LYP/LANL2DZ Counterpoise=2 NoSymm Opt
+[No* xref] field=nosymm  paths=B
+      | Note that if symmetry is left on during a GVB calculation, the finite field may not lead to correct numerical derivatives if the selected field breaks molecular symmetry. To be safe, use [Guess=NoSymm](/guess/?tabid=1#Guess_keyword__NoSymm_option) whenever usi
+      | In general, if the electric field causes the wavefunction to have different symmetry than the original molecule, incorrect numerical derivatives can result. Accordingly, you might want to use [NoSymm](/symmetry/?tabid=1#) when doing numerical derivatives with 
+[No* xref] freq=nofermi  paths=B
+      | - NoFermi: Deactivates the search for 1–2 Fermi resonances. No12Res is a synonym for this item.
+      | PT2Model=GVPT2 Resonances=(NoDarDen,NoFermi)
+[No* xref] freq=nosave  paths=B
+      | %NoSave
+[No* xref] gn=nosave  paths=B
+      | %NoSave
+[No* xref] guess=noscf  paths=A,B
+      | Synonymous with SCF=NoSymm and Symm=NoSCF.
+      | Requests that all orbital symmetry constraints be lifted. Synonymous with [SCF=NoSymm](/scf/?tabid=1#SCF_keyword__Symm_option) and [Symm=NoSCF](/symmetry/?tabid=1#SCF_keyword__SCF_option).
+[No* xref] gvb=noscf  paths=B +章节外
+      | Generally [Guess=Alter](/guess/?tabid=1#Guess_keyword__Alter_option) is required to ensure that guess-occupied orbitals, which will be used as first natural orbitals, match up with the correct guess virtual orbitals that will become the corresponding higher na
+[No* xref] opt=nosymm  paths=B
+      | The following input sets up an optimization in redundant internal coordinates in which atoms N1 through Nn are frozen (such jobs may require the [NoSymm](/symmetry/) keyword). Note that the lines containing the B action code will generate Cartesian coordinates
+      | Relaxed PES scans are available only for the Berny algorithm. If any scanning variable breaks symmetry during the calculation, then you must include [NoSymm](/symmetry/) in the route section of the job, since it may fail with an error.
+[No* xref] restart=nosave  paths=B +章节外
+      | %NoSave
+      | By default, any file which is named with a % line is retained when the job finishes. The %NoSave after the %RWF overrides this default, so that the read-write file will still be deleted if the job finishes normally (but will be left behind if the job terminate
+[No* xref] sacci=nosymm  paths=B
+      | # SAC-CI=(Singlet=(NState=8))/6-31G(d) NoSymm …
+[No* xref] scan=nosymm  paths=B +章节外
+      | If any scanning variable breaks symmetry during the calculation, then you must include [NoSymm](/symmetry/) in the route section of the job, or the job will fail with an error.
+[No* xref] scf=noscf  paths=A,B
+      | It is synonymous with Guess=NoSymm and Symm=NoSCF.
+      | Requests that all orbital symmetry constraints be lifted. It is synonymous with [Guess=NoSymm](/guess/?tabid=1#Guess_keyword__NoSymm_option) and [Symm=NoSCF](/symmetry/?tabid=1#Symmetry_keyword__SCF_option).
+[No* xref] scrf=nosymm  paths=B
+      | **Step 4: Relaxation of the excited state geometry.** Next, we perform a TD-DFT geometry optimization, with equilibrium, linear response solvation, in order to find the minimum energy point on the excited state potential energy surface. Since this is a TD-DFT 
+      | Geom=Check Guess=Read Opt=CalcFC Freq NoSymm
+[No* xref] symmetry=nosymm  paths=B +章节外
+      | By default, symmetry is used wherever possible to reduce CPU, disk storage, and I/O requirements. The NoSymmetry keyword prevents molecule reorientation and causes all computations to be performed in the input orientation (although the program still attempts t
+[No* xref] symmetry=nosymmetry  paths=B +章节外
+      | By default, symmetry is used wherever possible to reduce CPU, disk storage, and I/O requirements. The NoSymmetry keyword prevents molecule reorientation and causes all computations to be performed in the input orientation (although the program still attempts t
+[No* xref] testmo=notestmo  paths=B +章节外
+      | The cutoffs used in computing and storing integrals and the convergence criteria applied in SCF and CPHF calculations are appropriate for most molecules and basis sets. However, if a nearly linearly dependent basis set is used, very large MO coefficients may o
+[    new] admp=cartesian  paths=A
+      | Read initial Cartesian velocities from the input stream.
+      | Read initial mass-weighted Cartesian velocities from the input stream.
+[    new] admp=fock  paths=A
+      | Whether to diagonalize the Fock matrix in order to report the band gap at each step.
+[    new] admp=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] admp=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] admp=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] admp=whether  paths=A
+      | Whether to diagonalize the Fock matrix in order to report the band gap at each step.
+[    new] bd=brueckner  paths=A
+      | Requests a Brueckner Doubles calculation with a triples contribution [Handy89] added.
+      | Requests a Brueckner Doubles calculation with triples and quadruples contributions [Raghavachari90] added.
+[    new] bd=doubles  paths=A
+      | Requests a Brueckner Doubles calculation with a triples contribution [Handy89] added.
+      | Requests a Brueckner Doubles calculation with triples and quadruples contributions [Raghavachari90] added.
+[    new] bd=handy89  paths=A
+      | Requests a Brueckner Doubles calculation with a triples contribution [Handy89] added.
+[    new] bd=raghavachari90  paths=A
+      | Requests a Brueckner Doubles calculation with triples and quadruples contributions [Raghavachari90] added.
+[    new] bd=reads  paths=A
+      | Reads the converged amplitudes from the checkpoint file (if present).
+      | Reads the initial orbitals from the checkpoint file rather than doing an HF calculation.
+[    new] bd=saves  paths=A
+      | Saves the converged amplitudes in the checkpoint file for use in a subsequent calculation (e.g., using a larger basis set).
+[    new] bd=whether  paths=A
+      | Whether to store amplitudes and products in memory during higher-order post-SCF calculations.
+[    new] bomd=additional  paths=A
+      | Additional parameters are read in, as described above.
+[    new] bomd=cartesian  paths=A
+      | Read initial Cartesian velocities from the input stream.
+      | Read initial mass-weighted Cartesian velocities from the input stream.
+[    new] bomd=defines  paths=A
+      | Defines the phase for the transition vector such that forward motion along the transition vector corresponds to an increase in the specified internal coordinate.
+[    new] bomd=hessian  paths=A
+      | Using the Update keyword causes the program to perform Hessian updates for *n* gradient points before doing a new analytic Hessian.
+      | GradOnly requests that only gradients be done and that the Hessian be updated all the time (full second derivatives are not computed).
+[    new] bomd=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] bomd=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] bomd=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] bomd=randomly  paths=A
+      | Randomly generate initial velocities for dynamics without using any second derivative information.
+[    new] cas=alter  paths=A
+      | The orbitals which belong in the active space are then selected, and a single-point CASSCF(…,UNO) Guess=(Read, Alter) calculation is performed.
+[    new] cas=bofill89  paths=A
+      | Requests that the initial orbitals for the CAS be produced from the natural orbitals generated from a previous UHF calculation [Hamilton88, Bofill89].
+[    new] cas=clifford96  paths=A
+      | Number of GVB pairs outside of the CAS active space in a CAS-GVB calculation [Clifford96].
+[    new] cas=conical  paths=A
+      | StateAverage is not allowed in combination with Opt=Conical or CASSCF=SpinOrbit, both of which perform state-averaged calculations by default.
+      | OrbRot includes and NoCPMCSCF excludes the orbital rotation derivative contributions from the CP-MC-SCF equations in an Opt=Conical calculation.
+[    new] cas=consequently  paths=A
+      | Consequently, unless the entire valence space is being correlated (which is usually prohibitively expensive), one normally runs one job which does a UHF calculation with Pop=NaturalOrbitals and then examines the resulting orbitals.
+[    new] cas=davidson  paths=A
+      | Requests the use of the Davidson diagonalization method for the CI matrix instead of the Lanczos iterations.
+      | Requests the use of Lanczos iterations when diagonalizing the CI matrix instead of the Davidson method.
+[    new] cas=f10  paths=A
+      | This option requires the weighting for the various states to be input in format *n*F10.8 (no trailing blank line).
+[    new] cas=hamilton88  paths=A
+      | Requests that the initial orbitals for the CAS be produced from the natural orbitals generated from a previous UHF calculation [Hamilton88, Bofill89].
+[    new] cas=hamiltonian  paths=A
+      | The positions correspond to the lowest *j+1* energy diagonal elements of the CI Hamiltonian.
+[    new] cas=jacobi  paths=A
+      | Requests the use of the full (Jacobi) diagonalization method for the CI matrix instead of Lanczos or Davidson iterations.
+      | The full Jacobi diagonalization method must be used if quadratic convergence is required (see the QC option below) and when the CI eigenvector is unknown (in the latter case, specify FullDiag for calculations involving more than 6 active orbitals).
+[    new] cas=naturalorbitals  paths=A
+      | Consequently, unless the entire valence space is being correlated (which is usually prohibitively expensive), one normally runs one job which does a UHF calculation with Pop=NaturalOrbitals and then examines the resulting orbitals.
+[    new] cas=number  paths=A
+      | Number of GVB pairs outside of the CAS active space in a CAS-GVB calculation [Clifford96].
+[    new] cas=often  paths=A
+      | Often, some of the natural orbitals which have modest occupation are not the important ones for the process of interest.
+[    new] cas=pop  paths=A
+      | Consequently, unless the entire valence space is being correlated (which is usually prohibitively expensive), one normally runs one job which does a UHF calculation with Pop=NaturalOrbitals and then examines the resulting orbitals.
+[    new] cas=ras1  paths=A
+      | Requests a RASSCF calculation which allows up to *a* holes (i.e., excitations from RAS1 into RAS2 or RAS3) in the *b* orbitals in the RAS1 space, and to *c* particles in the *d* orbitals in the RAS3 space (i.e., excitations from RAS1 or RAS2 into RAS3).
+      | Thus, the minimum number of electrons in RAS1 is 2*b*–*a*.
+[    new] cas=ras2  paths=A
+      | Requests a RASSCF calculation which allows up to *a* holes (i.e., excitations from RAS1 into RAS2 or RAS3) in the *b* orbitals in the RAS1 space, and to *c* particles in the *d* orbitals in the RAS3 space (i.e., excitations from RAS1 or RAS2 into RAS3).
+      | Note that the two CASSCF keyword parameters specify the size of the *entire* active space: RAS1 + RAS2 + RAS3 (see the examples).
+[    new] cas=ras3  paths=A
+      | Requests a RASSCF calculation which allows up to *a* holes (i.e., excitations from RAS1 into RAS2 or RAS3) in the *b* orbitals in the RAS1 space, and to *c* particles in the *d* orbitals in the RAS3 space (i.e., excitations from RAS1 or RAS2 into RAS3).
+      | Note that the two CASSCF keyword parameters specify the size of the *entire* active space: RAS1 + RAS2 + RAS3 (see the examples).
+[    new] cas=rasscf  paths=A
+      | Requests a RASSCF calculation which allows up to *a* holes (i.e., excitations from RAS1 into RAS2 or RAS3) in the *b* orbitals in the RAS1 space, and to *c* particles in the *d* orbitals in the RAS3 space (i.e., excitations from RAS1 or RAS2 into RAS3).
+[    new] cas=saves  paths=A
+      | Saves ground- and excited-state alpha and beta total and transition density matrices (as is done for CIS).
+[    new] cas=slater  paths=A
+      | Use Slater determinants in the CASSCF calculation.
+      | Forces the use of Slater determinants.
+[    new] cbs=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] cbs=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] cbs=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] cbs=tprojected  paths=A
+      | Freq=TProjected is implied.
+[    new] cbsextrapolate=boys  paths=A
+      | Use Boys localization [Boys60, Foster60, Boys66].
+      | Newton-Raphson Boys localization.
+[    new] cbsextrapolate=boys60  paths=A
+      | Use Boys localization [Boys60, Foster60, Boys66].
+[    new] cbsextrapolate=boys66  paths=A
+      | Use Boys localization [Boys60, Foster60, Boys66].
+[    new] cbsextrapolate=foster60  paths=A
+      | Use Boys localization [Boys60, Foster60, Boys66].
+[    new] cbsextrapolate=montgomery00  paths=A
+      | Use localization based on populations in minimal basis [Montgomery00].
+[    new] cbsextrapolate=newton  paths=A
+      | Newton-Raphson population localization.
+      | Newton-Raphson Boys localization.
+[    new] cbsextrapolate=pipek89  paths=A
+      | Use population localization as described in reference [Pipek89].
+[    new] cbsextrapolate=raphson  paths=A
+      | Newton-Raphson population localization.
+      | Newton-Raphson Boys localization.
+[    new] cbsextrapolate=save  paths=A
+      | Save the localized CBS orbitals to the read-write file.
+[    new] cc=computes  paths=A
+      | Computes the T1 diagnostic of T.
+[    new] cc=lee  paths=A
+      | Lee and coworkers [Lee89] (CCSD only).
+[    new] cc=lee89  paths=A
+      | Lee and coworkers [Lee89] (CCSD only).
+[    new] cc=pople87  paths=A
+      | Include triple excitations non-iteratively [Purvis82, Pople87] (CCSD only).
+[    new] cc=purvis82  paths=A
+      | Include triple excitations non-iteratively [Purvis82, Pople87] (CCSD only).
+[    new] cc=reads  paths=A
+      | Reads the converged amplitudes from the checkpoint file (if present).
+[    new] cc=saves  paths=A
+      | Saves the converged amplitudes in the checkpoint file for use in a subsequent calculation (e.g., using a larger basis set).
+[    new] cc=whether  paths=A
+      | Whether to store amplitudes and products in memory during higher-order post-SCF calculations.
+[    new] charge=reads  paths=A
+      | Reads the background charge distribution from the checkpoint file.
+[    new] cid=reads  paths=A
+      | Reads the converged amplitudes from the checkpoint file (if present).
+[    new] cid=saves  paths=A
+      | Saves the converged amplitudes in the checkpoint file for use in a subsequent calculation (e.g., using a larger basis set).
+[    new] cis=computes  paths=A
+      | Computes the transition densities between every pair of states.
+[    new] cis=converge  paths=A
+      | Converge only states having excitation energy ≥ *N*/1000 eV; if *N*=-2, read threshold from input; if *N*<-2, set the threshold to |*N*|/1000 Hartrees.
+[    new] cis=davidson  paths=A
+      | Limits the submatrix diagonalized in the Davidson procedure to dimension *N*.
+[    new] cis=generate  paths=A
+      | Generate initial guesses using only active occupied orbitals * N* and higher.
+      | Generate initial guesses: if *N*>0, use only the first *N* active occupied orbitals; if *N*<0, do not use the highest |*N*| occupieds.
+[    new] cis=limits  paths=A
+      | Limits the submatrix diagonalized in the Davidson procedure to dimension *N*.
+[    new] cis=max  paths=A
+      | The default for IFact is *Max*(4,*g*) where *g* is the order of the Abelian point group.
+[    new] cis=reads  paths=A
+      | Reads initial guesses for the CI-Singles states off the checkpoint file.
+[    new] cis=reduce  paths=A
+      | Reduce to the desired number of states after iteration M.
+[    new] cis=restarts  paths=A
+      | Restarts the CI-Singles iterations off the checkpoint file.
+      | Restarts the CI-Singles iterations off the read-write file.
+[    new] cis=singles  paths=A
+      | Forces solution of the CI-Singles equation using AO integrals which are recomputed as needed.
+      | Forces solution of the CI-Singles equations using the AO integrals, avoiding an integral transformation.
+[    new] cis=specify  paths=A
+      | Specify factor by which the number of states updated during initial iterations is increased.
+[    new] cis=useful  paths=A
+      | Useful when using non-standard routes to do successive CI-Singles calculations.
+[    new] cis=whether  paths=A
+      | Whether to perform equilibrium or non-equilibrium PCM solvation.
+[    new] constants=cohen86  paths=A
+      | Constants used in Gaussian 88 through Gaussian 98, from [Cohen86, CRC80].
+[    new] constants=constyear79  paths=A
+      | Constants used in Gaussian 80 through Gaussian 86, mostly from [Constyear79].
+[    new] constants=crc80  paths=A
+      | Constants used in Gaussian 88 through Gaussian 98, from [Cohen86, CRC80].
+[    new] constants=mohr00  paths=A
+      | Constants used in Gaussian 03 from [Mohr00] and references therein.
+[    new] constants=mohr08  paths=A
+      | Constants used in Gaussian 09, taken from [Mohr08] and references therein.
+[    new] constants=mohr12  paths=A
+      | Constants used in Gaussian 16, taken from [Mohr12, Mohr12a] and references therein.
+[    new] constants=mohr12a  paths=A
+      | Constants used in Gaussian 16, taken from [Mohr12, Mohr12a] and references therein.
+[    new] cphf=allcheck  paths=A
+      | Read in perturbation frequencies rather than take them from the checkpoint file when doing Geom=AllCheck.
+[    new] cphf=anharmonic  paths=A
+      | Finally, be aware that Fine is used in the CPHF as the default integration grid for a few DFT jobs including Polar=OptRot, Freq=Anharmonic and Freq=NNROA.
+[    new] cphf=automatically  paths=A
+      | Automatically include the static perturbations when doing dynamic ones.
+[    new] cphf=cptd  paths=A
+      | DFT nuclear 2^{nd} derivatives (ground- or excited-state) should use a grid for CPHF and CPTD one step smaller than the rest of the calculation.
+      | DFT nuclear 2^{nd} derivatives (ground- or excited-state) should use a grid for CPHF and CPTD two steps smaller than the rest of the calculation.
+[    new] cphf=int  paths=A
+      | The syntax is the same as for the Int=Grid option.
+      | When a specific grid is specified to the Int=Grid option, then that grid is also used for the CPHF.
+[    new] cphf=larger  paths=A
+      | Larger reduced problems are solved by a second level of DIIS.
+[    new] cphf=osamura81  paths=A
+      | Solve CPHF in the atomic orbital basis [Stevens63, Osamura81, Osamura82, Pulay83].
+[    new] cphf=osamura82  paths=A
+      | Solve CPHF in the atomic orbital basis [Stevens63, Osamura81, Osamura82, Pulay83].
+[    new] cphf=pulay83  paths=A
+      | Solve CPHF in the atomic orbital basis [Stevens63, Osamura81, Osamura82, Pulay83].
+[    new] cphf=roa  paths=A
+      | It is the default for Freq=ROA.
+      | This is the default except for Polar=OptRot and Freq=ROA.
+[    new] cphf=route  paths=A
+      | The step options are primarily useful in Default.Route
+[    new] cphf=sac  paths=A
+      | Use MOD orbital derivatives for SAC-CI gradients (which uses configuration selection).
+[    new] cphf=specify  paths=A
+      | Specify the integration grid for the CPHF portion of the calculation.
+[    new] cphf=stevens63  paths=A
+      | Solve CPHF in the atomic orbital basis [Stevens63, Osamura81, Osamura82, Pulay83].
+[    new] cphf=tddft  paths=A
+      | TDDFT 2^{nd} derivatives should use a grid for CPHF and CPKS one step smaller than the rest of the calculation, but ground-state frequencies continue to default to 2 steps.
+      | TDDFT 2^{nd} derivatives should use a grid for CPHF and CPKS one step smaller than the rest of the calculation when using tau functionals, but excited-state frequencies with GGAs and all ground-state frequencies continue to default to 2 steps.
+[    new] density=chapter  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=chemistry  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=electronic  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=exploring  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=foresman96b  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=methods  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=plesset  paths=A
+      | Use the density correct to second-order in Møller-Plesset theory.
+[    new] density=recover  paths=A
+      | Recover the density from the checkpoint file for analysis.
+[    new] density=root  paths=A
+      | Note that this is not the same as the density resulting from CIS(Root=*N*,…) Density=Current, which is to be preferred [Wiberg92].
+[    new] density=singles  paths=A
+      | Note that this option does not produce densities for all of the excited states in a CI-Singles calculation, only the density for the state of interest (see the examples tab for a method of doing the former).
+[    new] density=structure  paths=A
+      | Chapter 9 of *Exploring Chemistry with Electronic Structure Methods* discusses this issue [Foresman96b].
+[    new] density=wiberg92  paths=A
+      | This is not the same as the CI density [Wiberg92], and its use is discouraged!
+      | [Wiberg92]
+[    new] densityfit=controls  paths=A
+      | Controls whether a generalized inverse is formed or the fitting equations are solved iteratively.
+[    new] eet=l913  paths=A
+      | The default choice of equilibrium vs non-equilibrium is such that the EET is consistent with what has been done in L913/L914.
+[    new] eet=l914  paths=A
+      | The default choice of equilibrium vs non-equilibrium is such that the EET is consistent with what has been done in L913/L914.
+[    new] eet=pcm  paths=A
+      | Use the PCM cavity for the whole system when evaluating the EET coupling.
+      | Set up a PCM cavity for each pair of fragments when evaluating the EET coupling.
+[    new] eom=applies  paths=A
+      | Applies only to singlet closed shell and open shell systems.
+[    new] eom=irr  paths=A
+      | The default with NStates is *N*\**Irr.Reps.*; with NStPIR, it is (*K*+2)\**Irr.Reps.*
+[    new] eom=kallay04  paths=A
+      | Requests linear response transition densities [Koch94a, Koch90, Kallay04] in addition to EOM-style (unrelaxed) ones.
+[    new] eom=kjob  paths=A
+      | The symmetry ordering can be determined quickly by running a preliminary job with the %KJob L301 Link 0 command.
+[    new] eom=koch90  paths=A
+      | Requests linear response transition densities [Koch94a, Koch90, Kallay04] in addition to EOM-style (unrelaxed) ones.
+[    new] eom=koch94a  paths=A
+      | Requests linear response transition densities [Koch94a, Koch90, Kallay04] in addition to EOM-style (unrelaxed) ones.
+[    new] eom=l301  paths=A
+      | The symmetry ordering can be determined quickly by running a preliminary job with the %KJob L301 Link 0 command.
+[    new] eom=link  paths=A
+      | The symmetry ordering can be determined quickly by running a preliminary job with the %KJob L301 Link 0 command.
+[    new] eom=number  paths=A
+      | Number of states per symmetry type to solve for in the EOM.
+[    new] eom=reads  paths=A
+      | Reads the converged amplitudes from the checkpoint file (if present).
+      | Reads in only the ground-state (and Z-vector) amplitudes and not the excited state amplitudes.
+[    new] eom=reps  paths=A
+      | The default with NStates is *N*\**Irr.Reps.*; with NStPIR, it is (*K*+2)\**Irr.Reps.*
+[    new] eom=save  paths=A
+      | Save time by computing only right eigenvectors, which are sufficient for excitation energies but not for transition densities.
+[    new] eom=saves  paths=A
+      | Saves the converged amplitudes in the checkpoint file for use in a subsequent calculation (e.g., using a larger basis set).
+[    new] eom=total  paths=A
+      | Total number of states to be generated as guesses by CIS.
+[    new] eom=try  paths=A
+      | Try to solve for the lowest *N* states in EOM.
+[    new] ept=ed2ia  paths=A
+      | ED2 does both attachment (electron affinities) and detachment (ionization potentials) from all orbitals, while the variant ED2IA does only ionization from active (non-frozen-core) orbitals, (which is even less expensive).
+[    new] ept=homo  paths=A
+      | For example, using the default frozen core for ethene, the input 3 8 will skip the two 2s valence orbitals (in addition to the two frozen 1s cores), resulting in the HOMO being labeled as orbital 6 in the output.
+[    new] ept=often  paths=A
+      | Often used as part of a compound method in conjection with a higher-order EPT calculation using a smaller basis set.
+[    new] ept=orbital  paths=A
+      | Orbital numbering starts with the first active orbital after the frozen core.
+[    new] ept=specify  paths=A
+      | Specify starting and ending orbitals to refine, in a separate, blank-terminated input section.
+[    new] external=conventional  paths=A
+      | This option implies SCF=Conventional.
+[    new] external=file  paths=A
+      | For example, the following option:
+
+
+External=Files=(123,(456,offset=1,integer=27))
+
+
+will cause the contents of internal file 123 (assumed by default to be real values) to be included in the matrix element file (labeled as “File 123”).
+      | The second item in the file list specifies the 27 integers in internal file 456 starting after the first (8-byte) word (labeled as “File 456 integers section 001”), as well as any real values following the integers (labeled “File 456 reals section 002”).
+[    new] external=generate  paths=A
+      | Generate the AO 1-electron and 2-electron integral derivatives and include them in the matrix element file.
+[    new] external=hamiltonian  paths=A
+      | A unformatted matrix element file will be provided to the external program containing coordinates and one-electron matrix elements (overlap, core Hamiltonian, etc.).
+[    new] external=refer  paths=A
+      | Refer to g16/doc/unfdat.txt for details on the contents of the file and to g16/doc/rdmat.F for a sample program which reads the file and prints its contents.
+[    new] external=request  paths=A
+      | Request MO integral transformation and storage in the unf file.
+[    new] external=retain  paths=A
+      | Retain the intermediate files used.
+[    new] external=run  paths=A
+      | Run the external program after the SCF calculation in Gaussian but before the population analysis and molecular property links.
+      | Run the external program after the SCF calculation and the population analysis and molecular property links.
+[    new] external=save  paths=A
+      | Save the post-SCF contribution to the 2-particle density matrix on the matrix element file.
+[    new] field=allcheck  paths=A
+      | Do not retrieve external field coefficients from the checkpoint file when using Geom=AllCheck.
+[    new] field=check  paths=A
+      | Checkpoint is the default with Geom=Check.
+[    new] field=extracts  paths=A
+      | Extracts only the three electric dipole field components from the read-write file.
+      | Extracts only the three electric dipole field components from the checkpoint file.
+[    new] field=reads  paths=A
+      | Reads the coefficients of 34 electric multipole components from the input stream in free format.
+      | Reads the coefficients of 35 electric multipole components from the input stream, in the old style format (including the monopole term): using format 3D20.10 (the first component is a charge).
+[    new] field=takes  paths=A
+      | Takes the 35 multipole components from the read-write file.
+[    new] force=restarts  paths=A
+      | Restarts numerical evaluation of the forces.
+[    new] freq=accordingly  paths=A
+      | Accordingly, the geometry should be specified to at least 5 significant digits.
+[    new] freq=analyze  paths=A
+      | Analyze vibrational-rotational coupling.
+[    new] freq=angstoms  paths=A
+      | Specifies the step-size for numerical differentiation to be 0.0001\**N* (in Angstoms unless Units=Bohr has been specified).
+[    new] freq=anharm  paths=A
+      | Do four displacements instead of two for each degree of freedom during numerical frequencies, polarizabilities, or Freq=Anharm.
+[    new] freq=applicable  paths=A
+      | Applicable only to methods having analytic frequencies but no analytic third derivatives.
+[    new] freq=atom1  paths=A
+      | The input section is terminated with a blank line, and has the following format:
+
+|  |  |
+| --- | --- |
+| *VMax-value* |  |
+| *Atom1  Atom2  periodicity  symmetry  spin* | Repeated as necessary.
+[    new] freq=atom2  paths=A
+      | The input section is terminated with a blank line, and has the following format:
+
+|  |  |
+| --- | --- |
+| *VMax-value* |  |
+| *Atom1  Atom2  periodicity  symmetry  spin* | Repeated as necessary.
+[    new] freq=availability  paths=A
+      | Available input options are listed in the “Availability” tab.
+      | Available input options are documented in the “Availability” tab.
+[    new] freq=ayala98  paths=A
+      | Requests the identification of internal rotation modes during the harmonic vibrational analysis [McClurg97, Ayala98, McClurg99].
+[    new] freq=baboul97  paths=A
+      | Note that this computation is very sensitive to the accuracy of the structure and the path [Baboul97].
+[    new] freq=barone09  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=because  paths=A
+      | Because some structures, such as transition states, may have a specific bonding pattern not automatically recognized, the set of redundant internal coordinates may need to be altered via the Geom=Modify keyword.
+[    new] freq=berger97  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=berger98  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=borrelli03  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=calcall  paths=A
+      | Since Opt=CalcAll automatically performs a vibrational analysis on the optimized structure, Opt=(CalcAll, HinderedRotor) may also be used.
+[    new] freq=causes  paths=A
+      | Causes an additional input section to be read containing the rotational barrier cutoff height (in kcal/mol) and optionally the periodicity, symmetry number and multiplicity for rotational modes.
+[    new] freq=cheeseman11a  paths=A
+      | Compute dynamic analytic Raman optical activity intensities using GIAOs [Cheeseman11a].
+[    new] freq=condon  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+      | Use the Franck-Condon-Herzberg-Teller method [Santoro08].
+[    new] freq=coutsias04  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=cpu  paths=A
+      | Skips the extra steps required to compute the Raman intensities during Hartree-Fock analytic frequency calculations, saving 10-30% in CPU time.
+[    new] freq=diagonalize  paths=A
+      | Diagonalize the full (*3N*_{atoms})^{2} force constant matrix—including the translation and rotational degrees of freedom—and report the lowest frequencies to test the numerical stability of the frequency calculation.
+[    new] freq=dierksen04  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=dierksen04a  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=dierksen05  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=display  paths=A
+      | Display only modes involving the smallest model system in an ONIOM calculation.
+      | Display only modes involving the two model systems in a 3-layer ONIOM.
+[    new] freq=doktorov77  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=during  paths=A
+      | During numerical frequencies using Linda parallelism, run separate displacements on each worker instead of parallelizing each energy+derivative evaluation across the cluster.
+[    new] freq=franck  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+      | Use the Franck-Condon-Herzberg-Teller method [Santoro08].
+[    new] freq=giaos  paths=A
+      | Compute dynamic analytic Raman optical activity intensities using GIAOs [Cheeseman11a].
+[    new] freq=herzberg  paths=A
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+      | Use the Franck-Condon-Herzberg-Teller method [Santoro08].
+[    new] freq=herzberg33  paths=A
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+[    new] freq=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] freq=jankowiak07  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] freq=kupka86  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=lami04  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=liang05  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=lin74  paths=A
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+[    new] freq=link  paths=A
+      | FourPoint will make four displacements but only works with Link 106 (Freq=Numer).
+[    new] freq=mcclurg97  paths=A
+      | Requests the identification of internal rotation modes during the harmonic vibrational analysis [McClurg97, Ayala98, McClurg99].
+[    new] freq=mcclurg99  paths=A
+      | Requests the identification of internal rotation modes during the harmonic vibrational analysis [McClurg97, Ayala98, McClurg99].
+[    new] freq=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] freq=modify  paths=A
+      | Because some structures, such as transition states, may have a specific bonding pattern not automatically recognized, the set of redundant internal coordinates may need to be altered via the Geom=Modify keyword.
+[    new] freq=numer  paths=A
+      | Freq=Numer can be combined with Polar=Numer in one job step.
+      | If Freq=Numer and Polar=Numer are combined, *N* also specifies the step-size in the electric field.
+[    new] freq=orlandi73  paths=A
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+[    new] freq=peluso97  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=print  paths=A
+      | Print modes as displacements in redundant internal coordinates.
+      | Print normal mode derivatives of the dipole moment, polarizability, and so on.
+[    new] freq=readanharmon  paths=A
+      | This input section precedes that for ReadAnharmon if both are present.
+[    new] freq=repeated  paths=A
+      | The input section is terminated with a blank line, and has the following format:
+
+|  |  |
+| --- | --- |
+| *VMax-value* |  |
+| *Atom1  Atom2  periodicity  symmetry  spin* | Repeated as necessary.
+[    new] freq=rms  paths=A
+      | Perform a projected harmonic frequency analysis if the RMS force is ≥ 1.d-3 Hartree/Bohr and perform regular harmonic analysis if the RMS force is smaller.
+[    new] freq=santoro07  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=santoro07a  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=santoro08  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+[    new] freq=save  paths=A
+      | Save all modes in the checkpoint file.
+[    new] freq=sharp64  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+[    new] freq=since  paths=A
+      | Since Opt=CalcAll automatically performs a vibrational analysis on the optimized structure, Opt=(CalcAll, HinderedRotor) may also be used.
+[    new] freq=skips  paths=A
+      | Skips the extra steps required to compute the Raman intensities during Hartree-Fock analytic frequency calculations, saving 10-30% in CPU time.
+[    new] freq=small71  paths=A
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+[    new] freq=sort  paths=A
+      | Sort modes by ONIOM layer in the output.
+[    new] freq=teller  paths=A
+      | Use the Herzberg-Teller method [Herzberg33, Sharp64, Small71, Orlandi73, Lin74, Santoro08] (the implementation is described in [Santoro08]).
+      | Use the Franck-Condon-Herzberg-Teller method [Santoro08].
+[    new] freq=under  paths=A
+      | Under ideal conditions, the lowest 6 modes reported by this analysis will be very small in magnitude.
+[    new] freq=vmax  paths=A
+      | The input section is terminated with a blank line, and has the following format:
+
+|  |  |
+| --- | --- |
+| *VMax-value* |  |
+| *Atom1  Atom2  periodicity  symmetry  spin* | Repeated as necessary.
+[    new] freq=weber03  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] freq=you  paths=A
+      | You must provide the periodicity, symmetry and spin multiplicity for all rotatable bonds contain metals.
+[    new] freq=zhixing89  paths=A
+      | Use the Franck-Condon method [Sharp64, Doktorov77, Kupka86, Zhixing89, Berger97, Peluso97, Berger98, Borrelli03, Weber03, Coutsias04, Dierksen04, Lami04, Dierksen04a, Dierksen05, Liang05, Jankowiak07, Santoro07, Santoro07a, Barone09] (the implementation is des
+[    new] frozencore=freeze  paths=A
+      | Freeze orbitals according to the G2 convention: d orbitals of main group elements are frozen, but the outer sp core of 3rd row and later alkali and alkaline earth elements are kept in the valence.
+      | Freeze orbitals according to the G3 convention.
+[    new] frozencore=freezes  paths=A
+      | |
+| 5,0 | Freezes the 4 core orbitals and keeps all virtual orbitals (equivalent to FC if the basis has a single zeta core).
+      | |
+| 5,-4 | Freezes the four core orbitals and the highest four virtual orbitals.
+[    new] frozencore=reads  paths=A
+      | Reads a list of orbitals to freeze from the input stream, terminated by a blank line.
+[    new] geom=activate  paths=A
+      | These are the available action codes:
+
+|  |  |
+| --- | --- |
+| A | Activate the coordinate for optimization if it has been frozen.
+[    new] geom=add  paths=A
+      | |
+| B | Add the coordinate and build all related coordinates.
+      | Add harmonic constraints to the initial structure with force constant *n*/1000000 Hartree/Bohr^{2}.
+[    new] geom=adds  paths=A
+      | Here are some examples:
+
+|  |  |
+| --- | --- |
+| atoms=3-6,17 notatoms=5 | Adds atoms 3,4,6,17 to atom list.
+      | |
+| atoms=3 C 18-30 notatoms=H | Adds all C & non-H among atoms 3, 18-30.
+[    new] geom=atom  paths=A
+      | Atom numbering begins at 1, and any dummy atoms are not counted.
+[    new] geom=atoms  paths=A
+      | Atoms can also be specified by ONIOM layer via the [not]layer keywords, which accept these values: real for the real system, model for the model system in a 2-layer ONIOM, middle for the middle layer in a 3-layer ONIOM, and small for the model layer of a 3-lay
+      | Atoms may be similarly included/excluded by residue with residue and notresidue, which accept lists of residue names.
+[    new] geom=bond  paths=A
+      | |
+| B | Bond length.
+      | Bond orders involving dummy atoms are discarded.
+[    new] geom=calculate  paths=A
+      | |
+| D | Calculate numerical second derivatives for the row and column of the initial Hessian for this coordinate.
+[    new] geom=cartesian  paths=A
+      | The Geom=(Checkpoint,GIC) option (i.e., without ModRedundant) will not use the GICs from the checkpoint file, but instead, it will build a new set of GICs automatically based on the current molecular specification (e.g., Cartesian coordinates) from the checkpo
+      | The Geom=(Checkpoint,ReadAllGIC) option will not use the GICs from the checkpoint file, but instead, it will read a new set of GICs from the input file and calculate their values based on the current molecular specification (e.g., Cartesian coordinates) from t
+[    new] geom=change  paths=A
+      | |
+| H | Change the diagonal element for this coordinate in the initial Hessian to *diag-elem*.
+[    new] geom=freeze  paths=A
+      | |
+| F | Freeze the coordinate in the optimization.
+[    new] geom=gaussview  paths=A
+      | NGeom=*N* retrieves the *N*^{th} geometry from an optimization checkpoint file using the same record of points used for display in GaussView, where *N*=1 corresponds to the input molecule specification.
+[    new] geom=generate  paths=A
+      | Generate a new set of redundant internal coordinates, replacing any that were in the checkpoint file.
+[    new] geom=generates  paths=A
+      | Generates bonds but omits angles and dihedrals.
+[    new] geom=hessian  paths=A
+      | Note that not all steps are always present in the checkpoint file; a Hessian updated message in the log file means that the corresponding step is available in the checkpoint file.
+      | |
+| D | Calculate numerical second derivatives for the row and column of the initial Hessian for this coordinate.
+[    new] geom=increment  paths=A
+      | Increment the coordinate by *stepsize* a total of *nsteps* times, performing an optimization from each resulting starting geometry.
+[    new] geom=info  paths=A
+      | The syntax of the GIC input section is described in *GIC Info* tab.
+      | The syntax of the GIC input section is described in *GIC Info*.
+[    new] geom=linear  paths=A
+      | |
+| L | Linear bend specified by three atoms (if *N*4 is -1) or by four atoms, where the fourth atom is used to determine the 2 orthogonal directions of the linear bend.
+[    new] geom=matrix  paths=A
+      | Build an automatic set of redundant internal coordinates such as bonds, angles, and dihedrals from the current Cartesian coordinates or Z-Matrix values, using the old algorithm available in Gaussian 09.
+[    new] geom=modification  paths=A
+      | Modification specifications for geometry optimizations using Z-matrix coordinates have the following form:
+
+
+*variable*  [*new-value*] [A|F|D]
+
+
+where *variable* is the name of a variable in the molecule specification, *new-value* is an optional new value to b
+[    new] geom=order  paths=A
+      | This option requires one line of input per atom, ordered the same as in the molecule specification, using the following syntax:
+
+
+*M* *N*1 *Order*1 [*N*2 *Order*2 …]
+
+
+where *M* is the atom number, the ‘*N*‘s are atoms to which the current atom is bonded, and 
+      | Connectivity modifications use the following syntax:
+
+
+*M* *N*1 *Order*1 [*N*2 *Order*2 …]
+
+
+where *M* is the atom number, the ‘*N*‘s are atoms to which that atom is bonded, and the ‘*Order*‘s are the bond order of the corresponding bond.
+[    new] geom=peng96  paths=A
+      | The option NoGIC builds the internal coordinates of [Peng96] as in Gaussian 09, and it is the default.
+      | Build the default set of redundant internal coordinates of [Peng96] as in Gaussian 09, and then convert the coordinates into GIC-type internal coordinate definitions.
+[    new] geom=rebuilds  paths=A
+      | Rebuilds the redundant internal coordinates from the current Cartesian coordinates.
+[    new] geom=recompute  paths=A
+      | Recompute connectivity rather than using the information in the checkpoint file when using Geom=AllCheck.
+[    new] geom=remove  paths=A
+      | |
+| K | Remove the coordinate and kill all related coordinates containing this coordinate.
+      | |
+| R | Remove the coordinate from the definition list (but not the related coordinates).
+[    new] geom=removes  paths=A
+      | Removes 5 if present.
+[    new] geom=route  paths=A
+      | Make GICs the default (for use in a Default.Route file).
+      | Make Peng internal coordinates the default (for use in a Default.Route, but this is the default anyway).
+[    new] geom=skips  paths=A
+      | Skips generation of hydrogen-bond coordinates.
+[    new] geom=specify  paths=A
+      | Specify explicit atom bonding data via an additional input section (blank line-terminated) following the geometry specification and any modification to it.
+[    new] geom=symm  paths=A
+      | Currently, this sets Geom=NoTest and Symm=None.
+[    new] geom=take  paths=A
+      | Take the molecule specification (including variables) from the checkpoint file.
+      | Take the molecule specification (including variables), the charge and multiplicity, and the title section from the checkpoint file.
+[    new] geom=type  paths=A
+      | Lines in a ModRedundant input section use the following syntax:
+
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] [A | F]
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] B 
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] K | R 
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] D 
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N
+[    new] geom=valence  paths=A
+      | |
+| A | Valence angle.
+[    new] geom=you  paths=A
+      | |
+
+You can start from an empty atom list by placing noatoms as the first item in the input section.
+[    new] gfinput=print  paths=A
+      | Print the density basis using Coulomb normalization.
+      | Print the density fitting basis set using AO (atomic overlap) normalization.
+[    new] gn=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] gn=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] gn=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] gn=readiso  paths=A
+      | When used in combination with ReadIso, this option allows for the rapid computation of the energy using different thermochemistry parameters and/or isotope selections.
+[    new] gn=resume  paths=A
+      | Resume a partially-completed calculation from its checkpoint file.
+[    new] gn=tprojected  paths=A
+      | Freq=TProjected is implied.
+[    new] guess=assignment  paths=A
+      | Assignment of atoms to fragments and fragment charges and multiplicities are specified as described in Molecule Specifications, except that a negative spin multiplicity means that the unpaired orbitals for the fragment are to become β spin orbitals in the comb
+[    new] guess=biorth  paths=A
+      | This option is also useful in the combination of Guess=(BiOrth,Read,Only,Save) to replace the canonical UHF orbitals with ones which have alpha and beta orbitals matched up as much as possible for viewing in GaussView or other visualization packages.
+[    new] guess=boys  paths=A
+      | Requests that orbitals be localized using the Boys method [Boys60].
+[    new] guess=boys60  paths=A
+      | Requests that orbitals be localized using the Boys method [Boys60].
+[    new] guess=copy  paths=A
+      | Copy the MOs and density unedited, unprojected and unchecked from the checkpoint file for the guess.
+[    new] guess=designed  paths=A
+      | Designed for multistep jobs so that the SCF can be restarted in a later step when possible or it can be run with Guess=Read otherwise.
+[    new] guess=diagonalize  paths=A
+      | Diagonalize the Harris functional [Harris85] for the initial guess.
+[    new] guess=done  paths=A
+      | Done automatically when a UHF wavefunction is read-in as a guess for ROHF.
+[    new] guess=fortran  paths=A
+      | The replacement orbitals input section (the α replacement orbitals section for UHF) begins with a line specifying the Fortran format with which to read the replacement orbital input, enclosed in parentheses.
+      | The format for the line containing *IVec* is Fortran I5.
+[    new] guess=gaussview  paths=A
+      | This option is also useful in the combination of Guess=(BiOrth,Read,Only,Save) to replace the canonical UHF orbitals with ones which have alpha and beta orbitals matched up as much as possible for viewing in GaussView or other visualization packages.
+[    new] guess=generate  paths=A
+      | Generate a guess built from fragment guesses or SCF solutions.
+[    new] guess=hamiltonian  paths=A
+      | Requests that the core Hamiltonian be diagonalized to form the initial guess.
+      | Normally, the occupied orbitals are selected as those with lowest eigenvalues for the one-electron Hamiltonian used in the initial guess programs.
+[    new] guess=harris85  paths=A
+      | Diagonalize the Harris functional [Harris85] for the initial guess.
+[    new] guess=homo  paths=A
+      | Requests that the HOMO and LUMO be mixed so as to destroy α-β and spatial symmetries.
+      | Pre-defined values of *N* are 0 (no mixing), -1 (mix all orbitals equally), -2 (mix valence orbitals and an equal number of virtual orbitals), and -3 (mix valence occupied orbitals with 0.05 au (according to ZDO) of the HOMO and virtual orbitals within 0.15 au
+[    new] guess=ilsw  paths=A
+      | By default, this is done if the default Harris guess is allowed, no alteration of configuration was requested, and the optimization did not take a small step as flagged by variable 4 in ILSW (interlink status word).
+[    new] guess=ivec  paths=A
+      | The remainder of the section contains one or more instances of the following:
+
+
+*IVec*               Orbital to replace (0=end, -1=replace all orbitals in order).
+      | (*A*(*I*,*IVec*),*I*=1,*N*)    New orbital in the format specified in the first line.
+[    new] guess=link  paths=A
+      | The numbers correspond to the order in which the representations are listed by Link 301 in the output file (see the Examples).
+[    new] guess=localized  paths=A
+      | Localized orbital analysis of a converged SCF wavefunction may then be done using a second job step, which includes Guess(Read,Local,Only) and Pop=Full in its route section.
+[    new] guess=lumo  paths=A
+      | Requests that the HOMO and LUMO be mixed so as to destroy α-β and spatial symmetries.
+[    new] guess=mopac  paths=A
+      | Guess=Only may not be used with the MOPAC-based semi-empirical methods (INDO, CNDO, MNDO, MINDO3).
+[    new] guess=mos  paths=A
+      | Copy the MOs and density unedited, unprojected and unchecked from the checkpoint file for the guess.
+      | For an unrestricted guess, biorthogonalize the α and β MOs to maximally pair electrons of opposite spin.
+[    new] guess=occupied  paths=A
+      | Occupied and virtual orbitals are localized separately, and the irreducible representations (after possible merging using LowSymm or NoSymm) are not mixed.
+[    new] guess=orbital  paths=A
+      | The remainder of the section contains one or more instances of the following:
+
+
+*IVec*               Orbital to replace (0=end, -1=replace all orbitals in order).
+[    new] guess=pop  paths=A
+      | Note that the amount of orbital information that is printed is controlled by the Pop keyword.
+      | Localized orbital analysis of a converged SCF wavefunction may then be done using a second job step, which includes Guess(Read,Local,Only) and Pop=Full in its route section.
+[    new] guess=pre  paths=A
+      | Pre-defined values of *N* are 0 (no mixing), -1 (mix all orbitals equally), -2 (mix valence orbitals and an equal number of virtual orbitals), and -3 (mix valence occupied orbitals with 0.05 au (according to ZDO) of the HOMO and virtual orbitals within 0.15 au
+[    new] guess=ranges  paths=A
+      | Ranges (e.g.
+[    new] guess=reuse  paths=A
+      | Reuse Fock matrices rather than orbitals when reading from previous results from the read-write or checkpoint files.
+[    new] guess=separate  paths=A
+      | Separate permutation lists for α and β orbitals must be specified (each list separated by a blank line) for open shell systems.
+[    new] guess=since  paths=A
+      | Since this input section is always exactly one line long, it is not terminated by a blank line.
+[    new] guess=specifications  paths=A
+      | Assignment of atoms to fragments and fragment charges and multiplicities are specified as described in Molecule Specifications, except that a negative spin multiplicity means that the unpaired orbitals for the fragment are to become β spin orbitals in the comb
+[    new] guess=start  paths=A
+      | Start a new SCF calculation using the restart data saved on the checkpoint file from a job with a different geometry and/or basis set.
+[    new] guess=symm  paths=A
+      | Synonymous with SCF=NoSymm and Symm=NoSCF.
+[    new] guess=useful  paths=A
+      | Useful when importing from matrix element files.
+[    new] guess=whether  paths=A
+      | Whether to mix occupied and virtual orbital contributions in forming the initial guess density.
+[    new] guess=zdo  paths=A
+      | Pre-defined values of *N* are 0 (no mixing), -1 (mix all orbitals equally), -2 (mix valence orbitals and an equal number of virtual orbitals), and -3 (mix valence occupied orbitals with 0.05 au (according to ZDO) of the HOMO and virtual orbitals within 0.15 au
+[    new] gvb=bobrowicz  paths=A
+      | The Hamiltonian coefficients are described in Bobrowicz and Goddard [Bobrowicz77].
+[    new] gvb=bobrowicz77  paths=A
+      | The Hamiltonian coefficients are described in Bobrowicz and Goddard [Bobrowicz77].
+[    new] gvb=combining  paths=A
+      | # (1.0=closed-shell) (D15.8)
+
+(*AJ(I), I =1,NHam*)    J coefficients (5D15.8)
+
+(*AK(I), I =1,NHam*)    K coefficients (5D15.8)
+
+
+Combining several orbitals with the same *AJ* and *AK* coefficients into one “shell” is not currently supported, so *NO* is always 
+[    new] gvb=d15  paths=A
+      | # (1.0=closed-shell) (D15.8)
+
+(*AJ(I), I =1,NHam*)    J coefficients (5D15.8)
+
+(*AK(I), I =1,NHam*)    K coefficients (5D15.8)
+
+
+Combining several orbitals with the same *AJ* and *AK* coefficients into one “shell” is not currently supported, so *NO* is always 
+[    new] gvb=gives  paths=A
+      | Gives the number of perfect-pairing pairs.
+[    new] gvb=goddard  paths=A
+      | The Hamiltonian coefficients are described in Bobrowicz and Goddard [Bobrowicz77].
+      | A good introduction to the qualitative interpretation of GVB wavefunctions can be found in the review article by Goddard and Harding [Goddard78].
+[    new] gvb=goddard78  paths=A
+      | A good introduction to the qualitative interpretation of GVB wavefunctions can be found in the review article by Goddard and Harding [Goddard78].
+[    new] gvb=hamiltonian  paths=A
+      | Each Hamiltonian is read using the following syntax (format in parentheses):
+
+
+*NO*    # of orbitals in current Hamiltonian (I5)
+
+*Fj*    Occup.
+      | The Hamiltonian coefficients are described in Bobrowicz and Goddard [Bobrowicz77].
+[    new] gvb=hamiltonians  paths=A
+      | Read in *N* Hamiltonians (Fock operators, sets of coupling coefficients).
+      | The ham506 utility can be used to generate averaged Hamiltonians for the common case of spherical averaging in atomic calculations.
+[    new] gvb=harding  paths=A
+      | A good introduction to the qualitative interpretation of GVB wavefunctions can be found in the review article by Goddard and Harding [Goddard78].
+[    new] gvb=nham  paths=A
+      | # (1.0=closed-shell) (D15.8)
+
+(*AJ(I), I =1,NHam*)    J coefficients (5D15.8)
+
+(*AK(I), I =1,NHam*)    K coefficients (5D15.8)
+
+
+Combining several orbitals with the same *AJ* and *AK* coefficients into one “shell” is not currently supported, so *NO* is always 
+[    new] gvb=occup  paths=A
+      | Each Hamiltonian is read using the following syntax (format in parentheses):
+
+
+*NO*    # of orbitals in current Hamiltonian (I5)
+
+*Fj*    Occup.
+[    new] huckel=edgar  paths=A
+      | Requests an Extended Huckel calculation using parameters collected by Edgar Muller.
+[    new] huckel=fitzpatrick86  paths=A
+      | Requests an Extended Huckel calculation using the modified parameters used for Guess=Huckel [Pyykko81, Pyykko84, Fitzpatrick86].
+[    new] huckel=pyykko81  paths=A
+      | Requests an Extended Huckel calculation using the modified parameters used for Guess=Huckel [Pyykko81, Pyykko84, Fitzpatrick86].
+[    new] huckel=pyykko84  paths=A
+      | Requests an Extended Huckel calculation using the modified parameters used for Guess=Huckel [Pyykko81, Pyykko84, Fitzpatrick86].
+[    new] integral=cartesian  paths=A
+      | Transform integrals from Cartesian to Pure form before digesting them (contracting with density matrices during direct calculations).
+[    new] integral=coarsegrid  paths=A
+      | Other special values for this parameter are CoarseGrid, which requests a pruned version of the (35,110) grid, and SG1Grid, a pruned version of (50,194).
+[    new] integral=ecp  paths=A
+      | Set ECP accuracy parameter to *N*.
+[    new] integral=finegrid  paths=A
+      | For example FineGrid is a pruned (75,302 grid), having 75 radial shells and 302 angular points per shell, resulting in about 7000 points per atom.
+[    new] integral=krack98  paths=A
+      | Note, however, that they are *not* recommended for production calculations [Krack98].
+[    new] integral=large  paths=A
+      | Large values are expensive.
+[    new] integral=lebedev75  paths=A
+      | The valid numbers of angular points are 38, 50 [Lebedev75], 72 [McLaren63], 86, 110 [Lebedev75], 146, 194, 302 [Lebedev76], 434 [Lebedev80], 590, 770, and 974 [Lebedev92].
+[    new] integral=lebedev76  paths=A
+      | The valid numbers of angular points are 38, 50 [Lebedev75], 72 [McLaren63], 86, 110 [Lebedev75], 146, 194, 302 [Lebedev76], 434 [Lebedev80], 590, 770, and 974 [Lebedev92].
+[    new] integral=lebedev80  paths=A
+      | The valid numbers of angular points are 38, 50 [Lebedev75], 72 [McLaren63], 86, 110 [Lebedev75], 146, 194, 302 [Lebedev76], 434 [Lebedev80], 590, 770, and 974 [Lebedev92].
+[    new] integral=lebedev92  paths=A
+      | The valid numbers of angular points are 38, 50 [Lebedev75], 72 [McLaren63], 86, 110 [Lebedev75], 146, 194, 302 [Lebedev76], 434 [Lebedev80], 590, 770, and 974 [Lebedev92].
+[    new] integral=matrixelement  paths=A
+      | Primarily useful with External or Output=MatrixElement.
+[    new] integral=mclaren63  paths=A
+      | The valid numbers of angular points are 38, 50 [Lebedev75], 72 [McLaren63], 86, 110 [Lebedev75], 146, 194, 302 [Lebedev76], 434 [Lebedev80], 590, 770, and 974 [Lebedev92].
+[    new] integral=primarily  paths=A
+      | Primarily for debugging.
+      | Primarily useful with External or Output=MatrixElement.
+[    new] integral=pure  paths=A
+      | Transform integrals from Cartesian to Pure form before digesting them (contracting with density matrices during direct calculations).
+[    new] integral=raffenetti  paths=A
+      | Whether to write out regular or the Raffenetti integrals.
+      | Raff2 and Raff3 will write the 1 and 2/1,2 and 3 Raffenetti integral combinations (respectively).
+[    new] integral=raffenetti1  paths=A
+      | Raff and Raff1 integrals write the Raffenetti1 integrals.
+[    new] integral=scuseria  paths=A
+      | Use the weighting scheme of Scuseria and Stratmann [Stratmann96] for the numerical integration for DFT calculations.
+[    new] integral=sg1grid  paths=A
+      | Other special values for this parameter are CoarseGrid, which requests a pruned version of the (35,110) grid, and SG1Grid, a pruned version of (50,194).
+[    new] integral=skip  paths=A
+      | Skip tests of numerical accuracy of XC quadrature.
+[    new] integral=split  paths=A
+      | Split density S=P shells into separate S and P shells.
+[    new] integral=stratmann  paths=A
+      | Use the weighting scheme of Scuseria and Stratmann [Stratmann96] for the numerical integration for DFT calculations.
+[    new] integral=stratmann96  paths=A
+      | Use the weighting scheme of Scuseria and Stratmann [Stratmann96] for the numerical integration for DFT calculations.
+[    new] integral=superfinegrid  paths=A
+      | SuperFineGrid is a more accurate grid than UltraFine; SuperFineGrid is a pruned 175,974 for first-row atoms and 250,974 for atoms in the second and later rows.
+[    new] integral=trace  paths=A
+      | Trace Linda transactions.
+[    new] integral=transform  paths=A
+      | Transform integrals from Cartesian to Pure form before digesting them (contracting with density matrices during direct calculations).
+      | Transform generalized contraction basis sets to reduce the number of primitives, neglecting primitives with coefficients of 10^{*-N*} or less.
+[    new] integral=uncontract  paths=A
+      | Uncontract all the primitives in the AO basis.
+      | Uncontract all the primitives in the density fitting basis.
+[    new] integral=whether  paths=A
+      | Whether to write out regular or the Raffenetti integrals.
+[    new] irc=always  paths=A
+      | |
+| Always | Always recompute the corrector at least once regardless of the size of the initial correction.
+[    new] irc=analytic  paths=A
+      | Analytic second derivatives can be requested intermittently during IRCs using IRC=(CalcFC,RecalcFC=(Predictor=*N*,Corrector=*M*)), which computes second derivatives at the initial point and then at every *N*^{th} predictor step and every *M*^{th} corrector ste
+[    new] irc=angles  paths=A
+      | |
+| Angles | Reports angles from the internal coordinates (if present).
+[    new] irc=bonds  paths=A
+      | |
+| Bonds | Reports bonds from the internal coordinates (if present).
+[    new] irc=bulrisch  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+[    new] irc=cartesians  paths=A
+      | |
+| Cartesians | Reports all Cartesian coordinates.
+[    new] irc=collins02  paths=A
+      | This corrector integrator is done using a distance-weighted interpolant surface [Collins02] fitted to energies, gradients, and Hessians at the beginning and ending points of the predictor step.
+[    new] irc=controls  paths=A
+      | Controls which geometric parameters are reported by an IRC.
+      | Controls testing-and-recomputing for the correction step of HPC and EulerPC IRCs.
+[    new] irc=corrector  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+      | Analytic second derivatives can be requested intermittently during IRCs using IRC=(CalcFC,RecalcFC=(Predictor=*N*,Corrector=*M*)), which computes second derivatives at the initial point and then at every *N*^{th} predictor step and every *M*^{th} corrector ste
+[    new] irc=defines  paths=A
+      | Defines the phase for the transition vector such that forward motion along the transition vector corresponds to an increase in the specified internal coordinate, designated by up to four atom numbers.
+[    new] irc=dihedrals  paths=A
+      | |
+| Dihedrals | Reports dihedrals from the internal coordinates (if present).
+[    new] irc=extremely  paths=A
+      | Extremely tight optimization convergence criteria.
+[    new] irc=follow  paths=A
+      | Follow the path only in the forward direction.
+      | Follow the path only in the reverse direction.
+[    new] irc=gonzalez89  paths=A
+      | Use the IRC algorithm that was the default in Gaussian 03 and earlier [Gonzalez89, Gonzalez90].
+[    new] irc=gonzalez90  paths=A
+      | Use the IRC algorithm that was the default in Gaussian 03 and earlier [Gonzalez89, Gonzalez90].
+[    new] irc=hessian  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+      | Compute the Hessian analytically every *N* predictor steps or every |*N*| corrector steps if *N*<0.
+[    new] irc=hessians  paths=A
+      | This corrector integrator is done using a distance-weighted interpolant surface [Collins02] fitted to energies, gradients, and Hessians at the beginning and ending points of the predictor step.
+[    new] irc=hratchian02  paths=A
+      | Use the damped velocity verlet integrator [Hratchian02].
+[    new] irc=hratchian04a  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+[    new] irc=hratchian05a  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+[    new] irc=hratchian05b  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+[    new] irc=int  paths=A
+      | For DFT calculations, Int=UltraFine should be specified as well.
+[    new] irc=ircs  paths=A
+      | Analytic second derivatives can be requested intermittently during IRCs using IRC=(CalcFC,RecalcFC=(Predictor=*N*,Corrector=*M*)), which computes second derivatives at the initial point and then at every *N*^{th} predictor step and every *M*^{th} corrector ste
+      | Controls testing-and-recomputing for the correction step of HPC and EulerPC IRCs.
+[    new] irc=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] irc=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] irc=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] irc=modredundant  paths=A
+      | These are specified as 1-4 atom numbers *only* (ModRedundant-style coordinate specifications are *not* supported).
+[    new] irc=number  paths=A
+      | Number of points along the reaction path to examine (in each direction if both are being considered).
+[    new] irc=page88  paths=A
+      | Use the local quadratic approximation [Page88, Page90] for the predictor step.
+[    new] irc=page90  paths=A
+      | Use the local quadratic approximation [Page88, Page90] for the predictor step.
+[    new] irc=predictor  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+      | Analytic second derivatives can be requested intermittently during IRCs using IRC=(CalcFC,RecalcFC=(Predictor=*N*,Corrector=*M*)), which computes second derivatives at the initial point and then at every *N*^{th} predictor step and every *M*^{th} corrector ste
+[    new] irc=proceed  paths=A
+      | Proceed downhill from the input geometry.
+[    new] irc=reports  paths=A
+      | |
+| Bonds | Reports bonds from the internal coordinates (if present).
+      | |
+| Angles | Reports angles from the internal coordinates (if present).
+[    new] irc=restarts  paths=A
+      | Restarts an IRC calculation that did not complete, or restarts an IRC calculation which did complete, but for which additional points along the path are desired.
+[    new] irc=step  paths=A
+      | Step size along the reaction path, in units of 0.01 Bohr.
+[    new] irc=stoer  paths=A
+      | Use the Hessian-based Predictor-Corrector integrator [Hratchian04a, Hratchian05a, Hratchian05b]: a very accurate algorithm that uses the Hessian-based local quadratic approximation as the predictor component and a modified Bulrisch-Stoer integrator for the cor
+[    new] irc=test  paths=A
+      | |
+| Test | Test the quality of the corrector step and report the results, but do not take an additional corrector step.
+[    new] irc=you  paths=A
+      | You must still specify RCFC or CalcFC to provide the initial Hessian.
+[    new] ircmax=baboul97  paths=A
+      | The projected vibrational frequencies for motion are calculated for each optimized point on the path [Baboul97].
+[    new] ircmax=fff  paths=A
+      | The format is Z-matrix (FFF(I), I=1,NVAR), read as (8F10.6).
+[    new] ircmax=follow  paths=A
+      | Follow the path only in the forward direction.
+      | Follow the path only in the reverse direction.
+[    new] ircmax=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] ircmax=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] ircmax=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] ircmax=number  paths=A
+      | Number of points along the reaction path to examine (in each direction if both are being considered).
+[    new] ircmax=nvar  paths=A
+      | The format is Z-matrix (FFF(I), I=1,NVAR), read as (8F10.6).
+[    new] ircmax=restarts  paths=A
+      | Restarts an IRCMax calculation which did not complete, or restarts an IRCMax calculation which did complete, but for which additional points along the path are desired.
+[    new] ircmax=step  paths=A
+      | Step size along the reaction path, in units of 0.01 amu^{1/2}-Bohr.
+[    new] ircmax=tightens  paths=A
+      | Tightens the convergence criteria used in the optimization at each point along the path.
+[    new] mm=allcheck  paths=A
+      | Not valid with Geom=Check or Geom=AllCheck.
+[    new] mm=assign  paths=A
+      | Assign charges to all atoms using the QEq method [Rappe07].
+      | Assign QEq charges only to those atoms for which the user did not specify a particular type in the input.
+[    new] mm=charmm  paths=A
+      | Switch=CHARMM means use CHARMM-style switching for van der Waals.
+      | Switch=CHARMMSq means to use CHARMM-style expression but with R^{2} instead of R for van der Waals switching.
+[    new] mm=charmmsq  paths=A
+      | Switch=CHARMMSq means to use CHARMM-style expression but with R^{2} instead of R for van der Waals switching.
+[    new] mm=check  paths=A
+      | Not valid with Geom=Check or Geom=AllCheck.
+[    new] mm=hence  paths=A
+      | Hence, read-in parameters are used only if there is no corresponding hard-wired value.
+[    new] mm=ignore  paths=A
+      | Ignore any parameters in the checkpoint file when reading the geometry.
+[    new] mm=negative  paths=A
+      | Negative for hard cutoffs.
+[    new] mm=printing  paths=A
+      | Printing for all atoms in the current job is still useful because complex rules are involved in deciding what parameters are actually applied to a given bond, dihedral, etc.
+[    new] mm=rappe07  paths=A
+      | Assign charges to all atoms using the QEq method [Rappe07].
+[    new] mm=rappe91  paths=A
+      | C [Rappe91].
+[    new] mm=ron  paths=A
+      | Thus with VRange=*N*, CutRad=*M* the soft cutoffs have ROn=*N*–*M*, ROff=*N*.
+[    new] mm=waals  paths=A
+      | Set the van der Waals cutoff to *N* Å.
+      | Use soft cutoffs with radius *M* (in Å), with either van der Waals or Coulomb if VRange or CRange was set.
+[    new] mp=whether  paths=A
+      | Whether to store amplitudes and products in memory during higher-order post-SCF calculations.
+[    new] nmr=acid  paths=A
+      | The data file for the ACID program can be generated with NMR=CSGT IOp(10/93=1).
+[    new] nmr=adds  paths=A
+      | Here are some examples:
+
+|  |  |
+| --- | --- |
+| atoms=3-6,17 notatoms=5 | Adds atoms 3, 4, 6 and 17 to the atom list.
+      | |
+| atoms=3 C 18-30 notatoms=H | Adds all C atoms and all non-H among atoms 3, 18-30.
+[    new] nmr=calculate  paths=A
+      | Calculate spin-spin coupling constants only for selected atoms.
+[    new] nmr=contact  paths=A
+      | In the first, the basis set specified by the user is modified to be appropriate for the Fermi Contact term, by uncontracting the basis and adding tight polarization functions for the core.
+      | The final results reported at the end of the second job step include the Fermi Contact contribution from the first step.
+[    new] nmr=deng06  paths=A
+      | Requests a two-step spin-spin coupling calculation [Deng06].
+[    new] nmr=display  paths=A
+      | Display the eigenvectors of the shielding tensor for each atom.
+[    new] nmr=fermi  paths=A
+      | In the first, the basis set specified by the user is modified to be appropriate for the Fermi Contact term, by uncontracting the basis and adding tight polarization functions for the core.
+      | The final results reported at the end of the second job step include the Fermi Contact contribution from the first step.
+[    new] nmr=fock  paths=A
+      | It is available only for Hartree-Fock and DFT methods.
+[    new] nmr=removes  paths=A
+      | Removes 5 if present.
+[    new] oniom=additional  paths=A
+      | Additional charge and spin multiplicity pair(s) may be specified for the additional calculations (see below).
+[    new] oniom=atoms  paths=A
+      | Atoms bonded to the inner layers use a scale factor of 0.2*n*, those two bonds away use 0.2*m*, and so on.
+[    new] oniom=blank  paths=A
+      | Blank does the uncompressed calculation but then discards contributions from inactive atoms (which are currently non-zero only for nuclear moment perturbations: shielding and spin-spin coupling tensors).
+[    new] oniom=fullmatrix  paths=A
+      | FullMatrix causes the full Hessian to be stored and used in mechanical embedding Opt=QuadMac, instead of using the molecular mechanics Hessian for the real system in operator form.
+[    new] oniom=hessian  paths=A
+      | FullMatrix causes the full Hessian to be stored and used in mechanical embedding Opt=QuadMac, instead of using the molecular mechanics Hessian for the real system in operator form.
+[    new] oniom=hly  paths=A
+      | Specifies the Hu, Lu, and Yang (see Population=HLYGAt) charge fitting method be used during geometry optimization microiterations with electronic embedding, but using Gaussian’s standard atomic densities instead of those of HLY.
+[    new] oniom=kollman  paths=A
+      | MKUFF uses the Merz-Kollman-Singh approximate charges during geometry optimization microiterations with electronic embedding but using UFF radii, which are defined for the full periodic table.
+      | Specifies that Merz-Kollman-Singh (see Population=MK) approximate charges be used during geometry optimization microiterations with electronic embedding.
+[    new] oniom=morokuma01  paths=A
+      | Requests that the full square be done for testing, to produce substituent values (S-values) for the S-value test [Morokuma01].
+[    new] oniom=onlyinputfiles  paths=A
+      | OnlyInputFiles just generates the files without doing any calculations.
+[    new] oniom=prints  paths=A
+      | Prints out an input file for each intermediate calculation, to facilitate running these calculations separately.
+[    new] oniom=quadmac  paths=A
+      | FullMatrix causes the full Hessian to be stored and used in mechanical embedding Opt=QuadMac, instead of using the molecular mechanics Hessian for the real system in operator form.
+[    new] oniom=singh  paths=A
+      | MKUFF uses the Merz-Kollman-Singh approximate charges during geometry optimization microiterations with electronic embedding but using UFF radii, which are defined for the full periodic table.
+      | Specifies that Merz-Kollman-Singh (see Population=MK) approximate charges be used during geometry optimization microiterations with electronic embedding.
+[    new] oniom=yang  paths=A
+      | Specifies the Hu, Lu, and Yang (see Population=HLYGAt) charge fitting method be used during geometry optimization microiterations with electronic embedding, but using Gaussian’s standard atomic densities instead of those of HLY.
+[    new] opt=activate  paths=A
+      | These are the available action codes:
+
+|  |  |
+| --- | --- |
+| A | Activate the coordinate for optimization if it has been frozen.
+[    new] opt=activates  paths=A
+      | Activates (unfreezes) all variables, in other words freeze nothing and optimize all atoms.
+[    new] opt=add  paths=A
+      | |
+| B | Add the coordinate and build all related coordinates.
+      | Add harmonic constraints to the initial structure with force constant *N*/1000000 Hartree/Bohr^{2}.
+[    new] opt=adds  paths=A
+      | Here are some examples:
+
+|  |  |
+| --- | --- |
+| atoms=3-6,17 notatoms=5 | Adds atoms 3,4,6,17 to atom list.
+      | |
+| atoms=3 C 18-30 notatoms=H | Adds all C & non-H among atoms 3, 18-30.
+[    new] opt=always  paths=A
+      | Guess=Always can be used to prevent the wavefunction of a reactant-like structure from being used as a guess for the wavefunction of a product-like structure.
+[    new] opt=appendix  paths=A
+      | See Appendix C for details and examples of Z-matrix molecule specifications.
+[    new] opt=assume  paths=A
+      | Assume that numerical errors in the energy and forces are those appropriate for HF and post-SCF calculations (1.0D-07 and 1.0D-07, respectively).
+      | Assume that numerical errors in the energy and forces are those appropriate for DFT calculations using the default grid (1.0D-07 and 1.0D-06, respectively).
+[    new] opt=atom  paths=A
+      | Atom numbering begins at 1, and any dummy atoms are not counted.
+[    new] opt=ayala97  paths=A
+      | In combination with either the QST2 or the QST3 option, requests the simultaneous optimization of a transition state and an *M*-point reaction path in redundant internal coordinates [Ayala97].
+[    new] opt=banerjee85  paths=A
+      | Requests an eigenvalue-following algorithm [Simons83, Cerjan81, Banerjee85], which is useful only for methods without derivatives (for which it is the default).
+[    new] opt=bofill  paths=A
+      | *Keyword* is one of: Powell, BFGS, PDBFGS, ND2Corr, OD2Corr, D2CorrBFGS, Bofill, D2CMix and None.
+[    new] opt=bond  paths=A
+      | |
+| B | Bond length.
+[    new] opt=build  paths=A
+      | Build an automatic set of redundant internal coordinates such as bonds, angles, and dihedrals from the current Cartesian coordinates or Z-Matrix values, using the old algorithm available in Gaussian 16.
+      | Build an automatic set of redundant internal coordinates using the new GIC algorithm.
+[    new] opt=calculate  paths=A
+      | |
+| D | Calculate numerical second derivatives for the row and column of the initial Hessian for this coordinate.
+      | Calculate VCD intensities at each point of a Hartree-Fock or DFT Opt=CalcAll optimization.
+[    new] opt=cerjan81  paths=A
+      | Requests an eigenvalue-following algorithm [Simons83, Cerjan81, Banerjee85], which is useful only for methods without derivatives (for which it is the default).
+[    new] opt=change  paths=A
+      | |
+| H | Change the diagonal element for this coordinate in the initial Hessian to *diag-elem*.
+[    new] opt=check  paths=A
+      | with Geom=Check).
+[    new] opt=controls  paths=A
+      | Controls whether the coupled, quadratic macro step is used during ONIOM(MO:MM) geometry optimizations [Vreven06a].
+[    new] opt=d24  paths=A
+      | The format for this input is:
+
+|  |  |
+| --- | --- |
+| *Energy* | Format (D24.16) |
+| *Cartesian forces* | Lines of format (6F12.8) |
+| *Force constants* | Lines of format (6F12.8) |
+
+The force constants are in lower triangular form: ((*F*(*J,I*),*J*=1,*I*),*I
+[    new] opt=d2cmix  paths=A
+      | *Keyword* is one of: Powell, BFGS, PDBFGS, ND2Corr, OD2Corr, D2CorrBFGS, Bofill, D2CMix and None.
+[    new] opt=d2corrbfgs  paths=A
+      | *Keyword* is one of: Powell, BFGS, PDBFGS, ND2Corr, OD2Corr, D2CorrBFGS, Bofill, D2CMix and None.
+[    new] opt=derivatives  paths=A
+      | Requests that read the energy (although value is not used), cartesian forces and force constants from the input stream, as written out by Punch=Derivatives.
+[    new] opt=dihedral  paths=A
+      | |
+| D | Dihedral angle.
+[    new] opt=energy  paths=A
+      | The format for this input is:
+
+|  |  |
+| --- | --- |
+| *Energy* | Format (D24.16) |
+| *Cartesian forces* | Lines of format (6F12.8) |
+| *Force constants* | Lines of format (6F12.8) |
+
+The force constants are in lower triangular form: ((*F*(*J,I*),*J*=1,*I*),*I
+[    new] opt=estimate  paths=A
+      | Estimate the force constants using a valence force field.
+      | Estimate the force constants using the old diagonal guesses.
+[    new] opt=extract  paths=A
+      | Extract force constants from a checkpoint file.
+[    new] opt=extremely  paths=A
+      | Extremely tight optimization convergence criteria.
+[    new] opt=fine  paths=A
+      | These values are consistent with the Int(Grid=SG1) keyword, and may be appropriate for initial optimizations of large molecules using DFT methods which are intended to be followed by a full convergence optimization using the default (Fine) grid.
+[    new] opt=finegrid  paths=A
+      | This is the default for optimizations using a DFT method and specifying Int=FineGrid.
+[    new] opt=format  paths=A
+      | The format for this input is:
+
+|  |  |
+| --- | --- |
+| *Energy* | Format (D24.16) |
+| *Cartesian forces* | Lines of format (6F12.8) |
+| *Force constants* | Lines of format (6F12.8) |
+
+The force constants are in lower triangular form: ((*F*(*J,I*),*J*=1,*I*),*I
+[    new] opt=freeze  paths=A
+      | |
+| F | Freeze the coordinate in the optimization.
+[    new] opt=function  paths=A
+      | Requests the Rational Function Optimization [Simons83] step during Berny optimizations.
+[    new] opt=golab83  paths=A
+      | NoNRScale causes a minimization on the surface of the sphere of maximum step size [Golab83].
+[    new] opt=hessian  paths=A
+      | |
+| D | Calculate numerical second derivatives for the row and column of the initial Hessian for this coordinate.
+      | |
+| H | Change the diagonal element for this coordinate in the initial Hessian to *diag-elem*.
+[    new] opt=increment  paths=A
+      | Increment the coordinate by *stepsize* a total of *nsteps* times, performing an optimization from each resulting starting geometry.
+[    new] opt=info  paths=A
+      | The syntax of the GIC input section is described in *GIC Info*.
+      | The syntax of the GIC input section is described in the GIC Info tab.
+[    new] opt=nd2corr  paths=A
+      | *Keyword* is one of: Powell, BFGS, PDBFGS, ND2Corr, OD2Corr, D2CorrBFGS, Bofill, D2CMix and None.
+[    new] opt=occasionally  paths=A
+      | Occasionally, transition state optimizations converge even if the test is not passed, but NoEigenTest is only recommended for those with large computing budgets.
+[    new] opt=od2corr  paths=A
+      | *Keyword* is one of: Powell, BFGS, PDBFGS, ND2Corr, OD2Corr, D2CorrBFGS, Bofill, D2CMix and None.
+[    new] opt=raman  paths=A
+      | Specifies that Raman intensities are not to be calculated at each point of a Hartree-Fock Opt=CalcAll job (since it includes a frequency analysis using the results of the final point of the optimization).
+      | The Raman intensities add 10-20% to the cost of each intermediate second derivative point.
+[    new] opt=raphson  paths=A
+      | Use the Newton-Raphson step rather than the RFO step during Berny optimizations.
+      | NRScale requests that if the step size in the Newton-Raphson step in Berny optimizations exceeds the maximum, then it is to be scaled back.
+[    new] opt=rational  paths=A
+      | Requests the Rational Function Optimization [Simons83] step during Berny optimizations.
+[    new] opt=relaxes  paths=A
+      | Relaxes various limits on maximum and minimum force constants and step sizes enforced by the Berny program.
+[    new] opt=remove  paths=A
+      | |
+| K | Remove the coordinate and kill all related coordinates containing this coordinate.
+      | |
+| R | Remove the coordinate from the definition list (but not the related coordinates).
+[    new] opt=removes  paths=A
+      | Removes 5 if present.
+[    new] opt=restarts  paths=A
+      | Restarts a geometry optimization from the checkpoint file.
+[    new] opt=rms  paths=A
+      | Sets the optimization convergence criteria to a maximum step size of 0.01 au and an RMS force of 0.0017 au.
+[    new] opt=schlegel82  paths=A
+      | Perform the optimization with the Berny algorithm using internal coordinates [Schlegel82, Schlegel89, Schlegel95].
+[    new] opt=schlegel89  paths=A
+      | Perform the optimization with the Berny algorithm using internal coordinates [Schlegel82, Schlegel89, Schlegel95].
+[    new] opt=schlegel95  paths=A
+      | Perform the optimization with the Berny algorithm using internal coordinates [Schlegel82, Schlegel89, Schlegel95].
+[    new] opt=separate  paths=A
+      | Separate sections are read for each geometry for transition state optimizations using QST2 or QST3.
+[    new] opt=sg1  paths=A
+      | These values are consistent with the Int(Grid=SG1) keyword, and may be appropriate for initial optimizations of large molecules using DFT methods which are intended to be followed by a full convergence optimization using the default (Fine) grid.
+[    new] opt=sg1grid  paths=A
+      | This is the default for optimizations using a DFT method and Int(Grid=SG1Grid).
+[    new] opt=simons83  paths=A
+      | Requests the Rational Function Optimization [Simons83] step during Berny optimizations.
+      | Requests an eigenvalue-following algorithm [Simons83, Cerjan81, Banerjee85], which is useful only for methods without derivatives (for which it is the default).
+[    new] opt=take  paths=A
+      | Take a step of length *N*/1000 (Bohr or radians) when moving away from a saddle point.
+[    new] opt=type  paths=A
+      | Lines in a ModRedundant input section use the following syntax:
+
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] [A | F]
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] B 
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] K | R 
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N*4]]] D 
+
+[*Type*] *N*1 [*N*2 [*N*3 [*N
+[    new] opt=unfreezeall  paths=A
+      | This option should not be used with GICs; use UnFreezeAll in the GIC input section instead.
+[    new] opt=valence  paths=A
+      | |
+| A | Valence angle.
+[    new] opt=vreven06a  paths=A
+      | Controls whether the coupled, quadratic macro step is used during ONIOM(MO:MM) geometry optimizations [Vreven06a].
+[    new] output=aimpac  paths=A
+      | Write a wavefunction file used by the newer versions of AIMPAC (.wfx files).
+[    new] output=anharm  paths=A
+      | Synonym for Freq=(VibRot,Anharm) Output=Pickett.
+[    new] output=atoms  paths=A
+      | Atoms numbers are specified in free format, and this input section is blank-terminated.
+[    new] output=barone94  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=barone95  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=barone96  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=core  paths=A
+      | Include derivatives of the overlap, Core Hamiltonian and other matrices (as available) in the matrix element file.
+[    new] output=cossi03  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=csgt  paths=A
+      | Include CSGT Cx in .wfn or .wfx file.
+[    new] output=curl65  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=dipolar  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=electronic  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=fermi  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=file  paths=A
+      | For example, the following option:
+
+
+Output=(Matrix,Files=(123,(456,offset=1,integer=27)))
+
+
+will cause the contents of internal file 123 (assumed by default to be real values) to be included in the matrix element file (labeled as “File 123”).
+      | The second item in the file list specifies the 27 integers in internal file 456 starting after the first (8-byte) word (labeled as “File 456 integers section 001”), as well as any real values following the integers (labeled “File 456 reals section 002”).
+[    new] output=gauss96  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=hamiltonian  paths=A
+      | Include derivatives of the overlap, Core Hamiltonian and other matrices (as available) in the matrix element file.
+[    new] output=hirota85  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=hirota94  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=interfacing  paths=A
+      | See *Interfacing to Gaussian 16* for details.
+[    new] output=matrix  paths=A
+      | For example, the following option:
+
+
+Output=(Matrix,Files=(123,(456,offset=1,integer=27)))
+
+
+will cause the contents of internal file 123 (assumed by default to be real values) to be included in the matrix element file (labeled as “File 123”).
+[    new] output=mills93  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=minichino94  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=mos  paths=A
+      | When combined with the MatrixElement option, include two-electron integrals over MOs when writing the matrix element file.
+[    new] output=neese01  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=nuclear  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=pickett91  paths=A
+      | Write *g* tensors and other tensors for hyperfine spectra [Curl65, Hirota85, Mills93, Hirota94, Gauss96, Neese01] to the output file in the form of input for Pickett's program [Pickett91] (see spec.jpl.nasa.gov).
+[    new] output=proaims  paths=A
+      | Write a PROAIMS wavefunction (.wfn) file.
+[    new] output=quartic  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=rega96  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=rotational  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+[    new] output=store  paths=A
+      | Store the AO 2-electron integral derivatives on disk and then in the matrix element file.
+[    new] output=vcd  paths=A
+      | The following tensors can be computed by Gaussian [Barone94, Minichino94, Barone95, Barone96, Rega96, Cossi03]:
+
+- Nuclear electric quadrupole constants: all jobs
+- Rotational constants: [Freq=(VibRot[,Anharmonic])](/freq/?tabid=3#Freq_keyword__VibRot_option)
+
+      | It is equivalent to Freq=(VCD,VibRot) Output=Pickett.
+[    new] output=write  paths=A
+      | Write a PROAIMS wavefunction (.wfn) file.
+      | Write a wavefunction file used by the newer versions of AIMPAC (.wfx files).
+[    new] polar=analytically  paths=A
+      | Analytically compute the polarizability and the hyperpolarizability when analytic third derivatives are available.
+[    new] polar=applicable  paths=A
+      | Applicable only to methods having analytic frequencies but no analytic third derivatives.
+[    new] polar=barron04  paths=A
+      | Include IOp(10/46=7) in the route section to include the dipole-quadrupole contribution to the dipole-magnetic dipole polarizability in order to compute the full optical rotation tensor [Pedersen95,Barron04]; the latter will be labeled as Optical Rotation G’ t
+[    new] polar=calculate  paths=A
+      | Calculate Raman spectrum from force constants read-in from the checkpoint file.
+[    new] polar=cheeseman11a  paths=A
+      | Compute dynamic analytic Raman optical activity intensities using GIAOs [Cheeseman11a].
+[    new] polar=computes  paths=A
+      | Computes hyperpolarizabilities in addition to polarizabilities for methods with analytic gradients (first derivatives).
+      | Computes polarizabilities by double numerical differentiation of the energy for methods without analytic derivatives.
+[    new] polar=during  paths=A
+      | During numerical frequencies using Linda parallelism, run separate displacements on each worker instead of parallelizing each energy+derivative evaluation across the cluster.
+[    new] polar=giaos  paths=A
+      | Compute dynamic analytic Raman optical activity intensities using GIAOs [Cheeseman11a].
+[    new] polar=link  paths=A
+      | FourPoint will make four displacements but only works with Link 106 (Polar=Numer).
+[    new] polar=numer  paths=A
+      | FourPoint will make four displacements but only works with Link 106 (Polar=Numer).
+[    new] polar=numerically  paths=A
+      | Numerically differentiate analytic polarizabilities to produce hyperpolarizabilities.
+[    new] polar=optical  paths=A
+      | Include IOp(10/46=7) in the route section to include the dipole-quadrupole contribution to the dipole-magnetic dipole polarizability in order to compute the full optical rotation tensor [Pedersen95,Barron04]; the latter will be labeled as Optical Rotation G’ t
+[    new] polar=pedersen95  paths=A
+      | Include IOp(10/46=7) in the route section to include the dipole-quadrupole contribution to the dipole-magnetic dipole polarizability in order to compute the full optical rotation tensor [Pedersen95,Barron04]; the latter will be labeled as Optical Rotation G’ t
+[    new] polar=restarts  paths=A
+      | Restarts a *numerical* calculation from the checkpoint file.
+[    new] polar=rotation  paths=A
+      | Include IOp(10/46=7) in the route section to include the dipole-quadrupole contribution to the dipole-magnetic dipole polarizability in order to compute the full optical rotation tensor [Pedersen95,Barron04]; the latter will be labeled as Optical Rotation G’ t
+[    new] polar=shg  paths=A
+      | Do extra frequency-dependent CPHF for dc-SHG (direct current second harmonic generation) hyperpolarizabilities.
+[    new] population=adamo15  paths=A
+      | Compute Ciofini’s D_{CT} charge transfer diagnostic [LeBahers11, Adamo15] for whichever unrelaxed excited-state density/densities are available and, if a relaxed density was requested, for that as well.
+[    new] population=after  paths=A
+      | After the initial excited state calculation (using %Chk=ex.chk), use a technique like the following to generate visualization data for each state:
+
+|  |  |
+| --- | --- |
+| $ g16 <<END | Run a Guess=Only job just to generate orbitals.
+[    new] population=allcheck  paths=A
+      | |
+| # Geom=AllCheck ChkBas Guess=Only |  |
+| Density=(Check,Transition=*n*) Pop=SaveNTO | Repeat for each state.
+      | Use a second job step of this form to place the natural orbitals into the checkpoint file:
+
+
+--Link1--
+
+%Chk=*name*
+
+# Guess=(Save,Only,NaturalOrbitals) Geom=AllCheck ChkBasis
+
+
+Run the formchk utility on the resulting checkpoint file to prepare the orbitals f
+[    new] population=analysis  paths=A
+      | Requests just the Natural Population Analysis phase of NBO.
+[    new] population=besler90  paths=A
+      | Produce charges fit to the electrostatic potential at points selected according to the Merz-Singh-Kollman scheme [Singh84, Besler90].
+[    new] population=bohmann  paths=A
+      | Requests a partitioning of the NMR shielding tensors (computed using GIAOs) into magnetic contributions from bonds and lone pairs using the Natural Chemical Shielding analysis of Bohmann et al.
+[    new] population=bohmann97  paths=A
+      | [Bohmann97], which is based upon the NBO analysis method.
+[    new] population=bond  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=breneman90  paths=A
+      | Produce charges fit to the electrostatic potential at points selected according to the CHelpG scheme [Breneman90].
+[    new] population=carpenter87  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=carpenter88  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=check  paths=A
+      | Must be accompanied by Density=(Check,Transition=*N*) in order to specify which transition density is to be used to generate the orbitals.
+      | To print the orbitals from several states of interest, run successive Pop=NTO Density=(Check,Transition=*N*) Guess=Only jobs after the initial excited state calculation.
+[    new] population=chemical  paths=A
+      | Requests a partitioning of the NMR shielding tensors (computed using GIAOs) into magnetic contributions from bonds and lone pairs using the Natural Chemical Shielding analysis of Bohmann et al.
+[    new] population=chirlian87  paths=A
+      | Produce charges fit to the electrostatic potential at points selected according to the CHelp scheme [Chirlian87].
+[    new] population=chkbas  paths=A
+      | |
+| # Geom=AllCheck ChkBas Guess=Only |  |
+| Density=(Check,Transition=*n*) Pop=SaveNTO | Repeat for each state.
+[    new] population=ciofini  paths=A
+      | Compute Ciofini’s D_{CT} charge transfer diagnostic [LeBahers11, Adamo15] for whichever unrelaxed excited-state density/densities are available and, if a relaxed density was requested, for that as well.
+[    new] population=computed  paths=A
+      | Computed atomic charges can be stored on the checkpoint file for use in a later MM calculation with Geom=Check.
+[    new] population=end  paths=A
+      | After the initial excited state calculation (using %Chk=ex.chk), use a technique like the following to generate visualization data for each state:
+
+|  |  |
+| --- | --- |
+| $ g16 <<END | Run a Guess=Only job just to generate orbitals.
+      | |
+| END | End of Gaussian input file.
+[    new] population=foster80  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=generate  paths=A
+      | Generate natural orbitals for the spin density (with α considered positive).
+[    new] population=giaos  paths=A
+      | Requests a partitioning of the NMR shielding tensors (computed using GIAOs) into magnetic contributions from bonds and lone pairs using the Natural Chemical Shielding analysis of Bohmann et al.
+[    new] population=hirshfeld77  paths=A
+      | Perform Hirshfeld population analysis [Hirshfeld77, Ritchie85, Ritchie87].
+[    new] population=hu07  paths=A
+      | Specifies the Hu, Lu, and Yang charge fitting method [Hu07].
+[    new] population=lebahers11  paths=A
+      | Compute Ciofini’s D_{CT} charge transfer diagnostic [LeBahers11, Adamo15] for whichever unrelaxed excited-state density/densities are available and, if a relaxed density was requested, for that as well.
+[    new] population=link1  paths=A
+      | Use a second job step of this form to place the natural orbitals into the checkpoint file:
+
+
+--Link1--
+
+%Chk=*name*
+
+# Guess=(Save,Only,NaturalOrbitals) Geom=AllCheck ChkBasis
+
+
+Run the formchk utility on the resulting checkpoint file to prepare the orbitals f
+[    new] population=marenich12  paths=A
+      | CM5 atomic charges [Marenich12] are computed along with Hirshfeld charges.
+[    new] population=martin03  paths=A
+      | Requests Natural Transition Orbital analysis [Martin03] of a CI-Singles or TD-DFT excited state.
+[    new] population=montgomery00  paths=A
+      | Perform minimum basis set Mulliken population analysis [Montgomery99, Montgomery00].
+[    new] population=montgomery99  paths=A
+      | Perform minimum basis set Mulliken population analysis [Montgomery99, Montgomery00].
+[    new] population=mos  paths=A
+      | Save biorthogonalized orbitals in the checkpoint file over the canonical MOs.
+[    new] population=mulliken  paths=A
+      | The five highest occupied and five lowest virtual orbitals are printed, along with the density matrices and a full (orbital by orbital and atom by atom) Mulliken population analysis.
+      | This is a Mulliken population analysis in which only density terms involving pairs of basis functions on different centers are retained.
+[    new] population=natural  paths=A
+      | Requests Natural Transition Orbital analysis [Martin03] of a CI-Singles or TD-DFT excited state.
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=nbos  paths=A
+      | Save the NBOs for the occupied orbitals and the NLMOs for the unoccupied orbitals in the checkpoint file (for later visualization).
+[    new] population=nlmos  paths=A
+      | Save the NBOs for the occupied orbitals and the NLMOs for the unoccupied orbitals in the checkpoint file (for later visualization).
+[    new] population=oldchk  paths=A
+      | |
+| %OldChk=excited.chk | Work on copy of original checkpoint file.
+[    new] population=orbital  paths=A
+      | Requests Natural Transition Orbital analysis [Martin03] of a CI-Singles or TD-DFT excited state.
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=pop  paths=A
+      | To print the orbitals from several states of interest, run successive Pop=NTO Density=(Check,Transition=*N*) Guess=Only jobs after the initial excited state calculation.
+      | |
+| # Geom=AllCheck ChkBas Guess=Only |  |
+| Density=(Check,Transition=*n*) Pop=SaveNTO | Repeat for each state.
+[    new] population=produce  paths=A
+      | Produce charges fit to the electrostatic potential at points selected according to the Merz-Singh-Kollman scheme [Singh84, Besler90].
+      | Produce charges fit to the electrostatic potential at points selected according to the CHelp scheme [Chirlian87].
+[    new] population=reed83a  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=reed85  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=reed85a  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=reed88  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=repeat  paths=A
+      | |
+| # Geom=AllCheck ChkBas Guess=Only |  |
+| Density=(Check,Transition=*n*) Pop=SaveNTO | Repeat for each state.
+[    new] population=resp  paths=A
+      | The data file for Antechamber (the AMBER program for generating RESP charges) can be generated using Pop=MK IOp(6/50=1) and specifying the file name on a separate line at the end of the Gaussian input file.
+[    new] population=ritchie85  paths=A
+      | Perform Hirshfeld population analysis [Hirshfeld77, Ritchie85, Ritchie87].
+[    new] population=ritchie87  paths=A
+      | Perform Hirshfeld population analysis [Hirshfeld77, Ritchie85, Ritchie87].
+[    new] population=run  paths=A
+      | After the initial excited state calculation (using %Chk=ex.chk), use a technique like the following to generate visualization data for each state:
+
+|  |  |
+| --- | --- |
+| $ g16 <<END | Run a Guess=Only job just to generate orbitals.
+      | Use a second job step of this form to place the natural orbitals into the checkpoint file:
+
+
+--Link1--
+
+%Chk=*name*
+
+# Guess=(Save,Only,NaturalOrbitals) Geom=AllCheck ChkBasis
+
+
+Run the formchk utility on the resulting checkpoint file to prepare the orbitals f
+[    new] population=save  paths=A
+      | Save biorthogonalized orbitals in the checkpoint file over the canonical MOs.
+      | Save the generated orbitals in the checkpoint file, replacing the canonical ones if the density was read-in from there.
+[    new] population=shielding  paths=A
+      | Requests a partitioning of the NMR shielding tensors (computed using GIAOs) into magnetic contributions from bonds and lone pairs using the Natural Chemical Shielding analysis of Bohmann et al.
+[    new] population=since  paths=A
+      | Since the size of the output depends on the square of the size of the molecule, it can become quite substantial for larger molecules.
+[    new] population=singh84  paths=A
+      | Produce charges fit to the electrostatic potential at points selected according to the Merz-Singh-Kollman scheme [Singh84, Besler90].
+[    new] population=singles  paths=A
+      | Requests Natural Transition Orbital analysis [Martin03] of a CI-Singles or TD-DFT excited state.
+[    new] population=suppress  paths=A
+      | Suppress orthogonalization of saved Pop=(SaveMixed,NoOrthogonalize) orbitals (primarily for visualizing raw NBO results).
+[    new] population=total  paths=A
+      | Total atomic charges and orbital energies are printed.
+[    new] population=transition  paths=A
+      | Requests Natural Transition Orbital analysis [Martin03] of a CI-Singles or TD-DFT excited state.
+      | Must be accompanied by Density=(Check,Transition=*N*) in order to specify which transition density is to be used to generate the orbitals.
+[    new] population=unix  paths=A
+      | Note that NBO input starts in column 2 so that the UNIX shell does not interpret the initial $.
+[    new] population=uses  paths=A
+      | Uses the MK fitting but using UFF radii, which are defined for the full periodic table.
+[    new] population=weinhold88  paths=A
+      | Requests a full Natural Bond Orbital analysis, using NBO version 3 [Foster80, Reed83a, Reed85, Reed85a, Carpenter87, Carpenter88, Reed88, Weinhold88].
+[    new] population=wfn  paths=A
+      | Do separate natural orbital analyses for the α and β densities, but store only the α densities for use in a .wfn file (see Output=WFN).
+      | Do separate natural orbital analyses for the α and β densities, but store only the β densities for use in a .wfn file (see Output=WFN).
+[    new] population=work  paths=A
+      | |
+| %OldChk=excited.chk | Work on copy of original checkpoint file.
+[    new] population=yang  paths=A
+      | Specifies the Hu, Lu, and Yang charge fitting method [Hu07].
+      | Specifies the Hu, Lu, and Yang charge fitting method, but using Gaussian’s standard atomic densities instead of those of HLY.
+[    new] prop=barone96  paths=A
+      | Compute the anisotropic hyperfine coupling constants (i.e., spin-dipole EPR terms) [Barone96, Rega96, Barone96a].
+[    new] prop=barone96a  paths=A
+      | Compute the anisotropic hyperfine coupling constants (i.e., spin-dipole EPR terms) [Barone96, Rega96, Barone96a].
+[    new] prop=cartesian  paths=A
+      | The Cartesian coordinates of each center in angstroms are read in free field, with one center per line, in the standard orientation.
+[    new] prop=causes  paths=A
+      | Causes the program to read a list of additional centers at which properties will be computed from the input stream.
+      | Causes the program to read a list of centers as in Prop=Read, but then to locate the minimum in the electric potential closest to each specified point.
+[    new] prop=constrain  paths=A
+      | Constrain fitted charges to the dipole moment.
+[    new] prop=fit  paths=A
+      | Fit atomic charges to the electrostatic potential at the van der Waals surface.
+[    new] prop=fortran  paths=A
+      | Three additional input lines are required for a uniform grid:
+
+|  |  |
+| --- | --- |
+| *KTape,XO,YO,ZO* | Fortran unit for write, coords.
+      | For example, the following input indicates that 19,696 points for the electrostatic potential (code 3) will be read from Fortran unit 10, with output written to Fortran unit 11:
+
+
+19696,3,10,11
+[    new] prop=ktape  paths=A
+      | Three additional input lines are required for a uniform grid:
+
+|  |  |
+| --- | --- |
+| *KTape,XO,YO,ZO* | Fortran unit for write, coords.
+      | |
+
+For points read from an auxiliary file, a single line of input supplies all of the necessary information:
+
+
+*N,NEFG,LTape,KTape*
+
+
+The coordinates of *N* points in Angstroms will be read from unit *LTape*, in format 3F20.12.
+[    new] prop=nefg  paths=A
+      | |
+
+For points read from an auxiliary file, a single line of input supplies all of the necessary information:
+
+
+*N,NEFG,LTape,KTape*
+
+
+The coordinates of *N* points in Angstroms will be read from unit *LTape*, in format 3F20.12.
+      | The potential (*NEFG=3*), potential and field (*NEFG=2*), or potential, field, and field gradient (*NEFG=1*) will be computed and written to unit *KTape*.
+[    new] prop=rega96  paths=A
+      | Compute the anisotropic hyperfine coupling constants (i.e., spin-dipole EPR terms) [Barone96, Rega96, Barone96a].
+[    new] prop=waals  paths=A
+      | Fit atomic charges to the electrostatic potential at the van der Waals surface.
+[    new] pseudo=dolg  paths=A
+      | The default is not to scale, which is appropriate for Dolg (Stuttgart) potentials.
+[    new] pseudo=stuttgart  paths=A
+      | The default is not to scale, which is appropriate for Dolg (Stuttgart) potentials.
+[    new] punch=browse  paths=A
+      | This output is in the same format used by the Browse Quantum Chemistry Database System.
+[    new] punch=cartesian  paths=A
+      | Outputs the atomic numbers and Cartesian coordinates in a form which could be read back into Gaussian.
+      | Outputs the energy, Cartesian nuclear coordinate derivatives, and second derivatives in format 6F12.8, suitable for later use with Opt=FCCards.
+[    new] punch=chemistry  paths=A
+      | This output is in the same format used by the Browse Quantum Chemistry Database System.
+[    new] punch=database  paths=A
+      | This output is in the same format used by the Browse Quantum Chemistry Database System.
+[    new] punch=fccards  paths=A
+      | Outputs the energy, Cartesian nuclear coordinate derivatives, and second derivatives in format 6F12.8, suitable for later use with Opt=FCCards.
+[    new] punch=gamess  paths=A
+      | Outputs an input deck for GAMESS.
+[    new] punch=hondo  paths=A
+      | Outputs an input deck for one version of Hondo, which is probably easily modified to fit most others.
+[    new] punch=outputs  paths=A
+      | Outputs the title section.
+      | Outputs the atomic numbers and Cartesian coordinates in a form which could be read back into Gaussian.
+[    new] punch=quantum  paths=A
+      | This output is in the same format used by the Browse Quantum Chemistry Database System.
+[    new] punch=system  paths=A
+      | This output is in the same format used by the Browse Quantum Chemistry Database System.
+[    new] qci=cluster  paths=A
+      | Note that Q1 is analogous to the T1 diagnostic for CCSD when it is computed using QCISD instead of the Coupled Cluster method.
+[    new] qci=computes  paths=A
+      | Computes the Q1 diagnostic of T.
+[    new] qci=coupled  paths=A
+      | Note that Q1 is analogous to the T1 diagnostic for CCSD when it is computed using QCISD instead of the Coupled Cluster method.
+[    new] qci=lee  paths=A
+      | Lee and coworkers [Lee89, Lee90].
+[    new] qci=lee89  paths=A
+      | Lee and coworkers [Lee89, Lee90].
+[    new] qci=lee90  paths=A
+      | Lee and coworkers [Lee89, Lee90].
+[    new] qci=pople87  paths=A
+      | Requests a Quadratic CI calculation including single and double substitutions with a triples contribution to the energy added [Pople87].
+[    new] qci=qcisd  paths=A
+      | Note that Q1 is analogous to the T1 diagnostic for CCSD when it is computed using QCISD instead of the Coupled Cluster method.
+[    new] qci=quadratic  paths=A
+      | Requests a Quadratic CI calculation including single and double substitutions with a triples contribution to the energy added [Pople87].
+      | Requests a Quadratic CI calculation including single and double substitutions with a triples contribution to the energy and also an evaluation of MP4 triples.
+[    new] qci=raghavachari90  paths=A
+      | Requests a Quadratic CI calculation including single and double substitutions with an energy contribution from triples and quadruples [Raghavachari90] added.
+[    new] qci=reads  paths=A
+      | Reads the converged amplitudes from the checkpoint file (if present).
+[    new] qci=saves  paths=A
+      | Saves the converged amplitudes in the checkpoint file for use in a subsequent calculation (e.g., using a larger basis set).
+[    new] sacci=activates  paths=A
+      | Activates the calculation of core-excited/core-ionized states and specifies core orbitals from which an electron is excited or ionized in the core-electron processes; *M* and *N* specify the range of core orbitals.
+[    new] sacci=b01  paths=A
+      | B01 and later) [Fukuda08].
+[    new] sacci=boys  paths=A
+      | The available types are PM (Pipek-Mezey) and Boys.
+[    new] sacci=collect  paths=A
+      | Collect data and determine the thresholds and operator selections at specified points in order to form a consistent set which can then be used at every point.
+[    new] sacci=electron  paths=A
+      | If spin densities at the nuclei are of interest, as for Electron Spin Resonance or hyperfine splitting, then the core orbitals must be included in the window.
+[    new] sacci=fukuda08  paths=A
+      | B01 and later) [Fukuda08].
+[    new] sacci=general  paths=A
+      | Direct is not compatible with General-R, WithoutR2S2, FullUnlinked, InCoreDiag, and InCoreSAC.
+      | Generate quadruple and higher-order linked operators in the General-R scheme via the exponential generation algorithm.
+[    new] sacci=generate  paths=A
+      | Generate quadruple and higher-order linked operators in the General-R scheme via the exponential generation algorithm.
+      | Generate all higher-order linked operators in the General-R scheme up to MaxR=4 and then perform perturbation selection as above.
+[    new] sacci=incorediag  paths=A
+      | Direct is not compatible with General-R, WithoutR2S2, FullUnlinked, InCoreDiag, and InCoreSAC.
+[    new] sacci=item  paths=A
+      | *Item* specifies the initial guess type: SInitial for CIS and SDInitial for CISD.
+[    new] sacci=means  paths=A
+      | Means that the SAC/SAC-CI calculation is done within the *M*-th to *N*-th active orbital space (*M* < *N* in the energy order).
+[    new] sacci=mezey  paths=A
+      | The available types are PM (Pipek-Mezey) and Boys.
+[    new] sacci=pipek  paths=A
+      | The available types are PM (Pipek-Mezey) and Boys.
+[    new] sacci=resonance  paths=A
+      | If spin densities at the nuclei are of interest, as for Electron Spin Resonance or hyperfine splitting, then the core orbitals must be included in the window.
+[    new] sacci=sac  paths=A
+      | Solve the SAC-CI equations for non-symmetric matrices.
+      | Requests to use the direct algorithm for the SAC/SAC-CI SD-R calculations.
+[    new] sacci=sdinitial  paths=A
+      | *Item* specifies the initial guess type: SInitial for CIS and SDInitial for CISD.
+[    new] sacci=sinitial  paths=A
+      | *Item* specifies the initial guess type: SInitial for CIS and SDInitial for CISD.
+[    new] sacci=variational  paths=A
+      | Variational proceeds by diagonalizing symmetrized matrices, and it is the default.
+[    new] scan=pes  paths=A
+      | Restarts a PES scan calculation.
+[    new] scan=restarts  paths=A
+      | Restarts a PES scan calculation.
+[    new] scf=above  paths=A
+      | Above this, scaled steepest descent is used; above 100 times this, steepest descent is used.
+[    new] scf=add  paths=A
+      | Add an extra SCF=QC step in case the first-order SCF has not converged.
+[    new] scf=allows  paths=A
+      | Allows use of a short integral list even if the wavefunction does not have the full molecular symmetry.
+[    new] scf=bacskay81  paths=A
+      | Calls for the use of a quadratically convergent SCF procedure [Bacskay81].
+[    new] scf=below  paths=A
+      | Below this threshold the program switches to the QC SCF procedure (if using SCF=QC), or to the regular SCF procedure (if using SCF=YQC).
+[    new] scf=calls  paths=A
+      | Calls for the use of a quadratically convergent SCF procedure [Bacskay81].
+      | Calls for use of the direct minimization SCF program [Seeger76].
+[    new] scf=changes  paths=A
+      | Changes the maximum number of SCF cycles permitted to *N*; the default is 64 (or 512 for SCF=DM and SCF=QC).
+[    new] scf=does  paths=A
+      | Does steepest descent SCF
+      | Does scaled steepest descent SCF.
+[    new] scf=ediis  paths=A
+      | Note that damping and EDIIS do not work well together.
+[    new] scf=fock  paths=A
+      | Forces use of incremental Fock matrix formation.
+      | NoIncFock prevents the use of incremental Fock matrix formation, and it is the default for conventional SCF.
+[    new] scf=insists  paths=A
+      | Insists that the SCF be performed storing the full integral list in memory.
+[    new] scf=inversion  paths=A
+      | DIIS calls for and NoDIIS prohibits use of Pulay’s Direct Inversion in the Iterative Subspace (DIIS) extrapolation method [Pulay82].
+[    new] scf=iterative  paths=A
+      | DIIS calls for and NoDIIS prohibits use of Pulay’s Direct Inversion in the Iterative Subspace (DIIS) extrapolation method [Pulay82].
+[    new] scf=maxconventional  paths=A
+      | XQC defaults to MaxConventional=32
+      | YQC defaults to MaxConventional=32
+[    new] scf=mcscf  paths=A
+      | This is possible for all available methods, except for MCSCF second derivatives and anything using complex orbitals.
+[    new] scf=newton  paths=A
+      | By default this involves linear searches when far from convergence and Newton-Raphson steps when close (unless the energy goes up).
+      | Sets the maximum rotation gradient for a Newton-Raphson step in SCF=QC and SCF=YQC to 10^{-N}.
+[    new] scf=provides  paths=A
+      | Provides a new algorithm that is useful for difficult SCF convergence cases involving very large molecules.
+[    new] scf=pulay  paths=A
+      | DIIS calls for and NoDIIS prohibits use of Pulay’s Direct Inversion in the Iterative Subspace (DIIS) extrapolation method [Pulay82].
+[    new] scf=pulay82  paths=A
+      | DIIS calls for and NoDIIS prohibits use of Pulay’s Direct Inversion in the Iterative Subspace (DIIS) extrapolation method [Pulay82].
+[    new] scf=rabuck99  paths=A
+      | Requests temperature broadening during early iterations [Rabuck99], combined with CDIIS and damping.
+[    new] scf=raphson  paths=A
+      | By default this involves linear searches when far from convergence and Newton-Raphson steps when close (unless the energy goes up).
+      | Sets the maximum rotation gradient for a Newton-Raphson step in SCF=QC and SCF=YQC to 10^{-N}.
+[    new] scf=retain  paths=A
+      | Retain all symmetry constraints: make the number of occupied orbitals of each symmetry type (abelian irreducible representation) match that of the initial guess.
+[    new] scf=rms  paths=A
+      | SCF convergence requires both <10^{-N} RMS change in the density matrix and <10^{-(N-2)} maximum change in the density matrix.
+      | Note that the energy change is not used to test convergence; however, an SCF 10^{-N} RMS density matrix change typically corresponds to a 10^{-2N} change in energy in atomic units.
+[    new] scf=seeger76  paths=A
+      | Calls for use of the direct minimization SCF program [Seeger76].
+[    new] scf=shift  paths=A
+      | Shift orbital energies by *N*\*0.001 (i.e., *N* milliHartrees); *N* defaults to 100.
+[    new] scf=subspace  paths=A
+      | DIIS calls for and NoDIIS prohibits use of Pulay’s Direct Inversion in the Iterative Subspace (DIIS) extrapolation method [Pulay82].
+[    new] scf=symmetrize  paths=A
+      | Symmetrize the density matrix at the first iteration to match the symmetry of the molecule (“initial density symmetrize”).
+      | Symmetrize the density matrix at every SCF iteration to match the symmetry of the molecule (“density symmetrize”).
+[    new] scf=turn  paths=A
+      | Turn on dynamic damping of early SCF iterations.
+[    new] scrf=action  paths=A
+      | *Action* is one of the following:
+
+- Save or Write: Save the slow/inertial charges in the checkpoint file (from which they will be retrieved in a subsequent non-equilibrium solvation calculation).
+[    new] scrf=barone98  paths=A
+      | Performs a PCM calculation using the CPCM polarizable conductor calculation model [Barone98, Cossi03].
+[    new] scrf=cammi09  paths=A
+      | Use the perturbation theory and density approach (PTED) to PCM-CCSD coupling [Cammi09, Caricato12b] for an EOM-CCSD calculation in solution.
+[    new] scrf=caricato06  paths=A
+      | Do a state-specific correction to the energy of a CIS/RPA/TD-DFT SCRF excited state, according to [Caricato06].
+[    new] scrf=caricato12b  paths=A
+      | Use the perturbation theory and density approach (PTED) to PCM-CCSD coupling [Cammi09, Caricato12b] for an EOM-CCSD calculation in solution.
+      | Other schemes discussed in [Caricato12b] are available via IOp(9/116).
+[    new] scrf=ccload  paths=A
+      | - CCRead or CCLoad: Retrieve the slow/inertial correlation charges for use in the current non-equilibrium solvation coupled cluster calculation.
+[    new] scrf=ccread  paths=A
+      | - CCRead or CCLoad: Retrieve the slow/inertial correlation charges for use in the current non-equilibrium solvation coupled cluster calculation.
+[    new] scrf=ccsave  paths=A
+      | - CCSave or CCWrite: Save the slow/inertial correlation charges for use in a subsequent non-equilibrium solvation coupled cluster calculation.
+[    new] scrf=ccwrite  paths=A
+      | - CCSave or CCWrite: Save the slow/inertial correlation charges for use in a subsequent non-equilibrium solvation coupled cluster calculation.
+[    new] scrf=cosmo  paths=A
+      | Produces the data file used by COSMO/RS and other programs.
+[    new] scrf=cossi03  paths=A
+      | Performs a PCM calculation using the CPCM polarizable conductor calculation model [Barone98, Cossi03].
+[    new] scrf=does  paths=A
+      | Does a self-consistent PCM calculation performing an external iteration through Link 124.
+[    new] scrf=improta06  paths=A
+      | This approach computes the energy in solution by making the solute’s electrostatic potential self-consistent with the solvent reaction field [Improta06, Improta07].
+[    new] scrf=improta07  paths=A
+      | This approach computes the energy in solution by making the solute’s electrostatic potential self-consistent with the solvent reaction field [Improta06, Improta07].
+[    new] scrf=link  paths=A
+      | Does a self-consistent PCM calculation performing an external iteration through Link 124.
+[    new] scrf=load  paths=A
+      | - Read or Load: Read the slow/inertial charges for use in the current non-equilibrium solvation calculation.
+[    new] scrf=marenich09  paths=A
+      | Do an IEFPCM calculation with radii and non-electrostatic terms for Truhlar and coworkers’ SMD solvation model [Marenich09].
+[    new] scrf=mo04  paths=A
+      | Performs an ONIOM calculation in solution [Vreven01, Mo04] according to the scheme selected by the code letter *k*, for which these are the valid values:
+
+|  |  |
+| --- | --- |
+| A | The reaction field is computed self-consistently using the integrated ONIOM d
+[    new] scrf=mos  paths=A
+      | Force the use of MOs in evaluating the density.
+[    new] scrf=onsager  paths=A
+      | Performs an Onsager model reaction field calculation.
+[    new] scrf=performs  paths=A
+      | Performs a reaction field calculation using the integral equation formalism model (IEFPCM).
+      | Performs a PCM calculation using the CPCM polarizable conductor calculation model [Barone98, Cossi03].
+[    new] scrf=produces  paths=A
+      | Produces the data file used by COSMO/RS and other programs.
+[    new] scrf=restarts  paths=A
+      | Restarts a PCM external iteration calculation from the checkpoint file.
+[    new] scrf=retrieve  paths=A
+      | - CCRead or CCLoad: Retrieve the slow/inertial correlation charges for use in the current non-equilibrium solvation coupled cluster calculation.
+[    new] scrf=retrieves  paths=A
+      | Retrieves the SCRF information from the checkpoint file.
+      | Retrieves the SCRF information from the checkpoint file, and also reads modifications from the input stream.
+[    new] scrf=rpa  paths=A
+      | Do a state-specific correction to the energy of a CIS/RPA/TD-DFT SCRF excited state, according to [Caricato06].
+[    new] scrf=save  paths=A
+      | Save or retrieve data for non-equilibrium solvation.
+      | *Action* is one of the following:
+
+- Save or Write: Save the slow/inertial charges in the checkpoint file (from which they will be retrieved in a subsequent non-equilibrium solvation calculation).
+[    new] scrf=scalmani10  paths=A
+      | Some details of the formalism and the implementation have changed with respect to Gaussian 03, as described in [Scalmani10].
+[    new] scrf=selects  paths=A
+      | Selects the solvent in which the calculation is to be performed.
+[    new] scrf=truhlar  paths=A
+      | Do an IEFPCM calculation with radii and non-electrostatic terms for Truhlar and coworkers’ SMD solvation model [Marenich09].
+[    new] scrf=vne  paths=A
+      | Use Vne basins for the numerical integration.
+[    new] scrf=vreven01  paths=A
+      | Performs an ONIOM calculation in solution [Vreven01, Mo04] according to the scheme selected by the code letter *k*, for which these are the valid values:
+
+|  |  |
+| --- | --- |
+| A | The reaction field is computed self-consistently using the integrated ONIOM d
+[    new] scrf=write  paths=A
+      | *Action* is one of the following:
+
+- Save or Write: Save the slow/inertial charges in the checkpoint file (from which they will be retrieved in a subsequent non-equilibrium solvation calculation).
+      | Write the PCM charges on the checkpoint file.
+[    new] scrf=you  paths=A
+      | You can define a new solvent for use with SMD by providing additional input via the SCRF=Read option (see “Additional Input” for details).
+[    new] semiempirical=mopac  paths=A
+      | Read parameters from the input stream in MOPAC’s external format and units.
+      | Read parameters from the input stream, first in Gaussian’s format, followed by more parameters in MOPAC’s format.
+[    new] stable=allow  paths=A
+      | Allow testing for real to complex instabilities in spin-restricted wavefunctions.
+      | Allow testing for real to complex instabilities in spin-unrestricted wavefunctions.
+[    new] stable=constrain  paths=A
+      | Constrain the wavefunction testing or reoptimization to be real, spin-restricted.
+      | Constrain the wavefunction testing or reoptimization to be real, spin-unrestricted.
+[    new] stable=conven  paths=A
+      | It is the default when SCF=Conven is also specified.
+[    new] stable=link  paths=A
+      | Suppresses the use of the regular SCF procedure (i.e., non quadratic convergence: Link 502) during later SCF calculations of the Stable=Opt iterations.
+      | Try to use the regular SCF procedure (Link 502) before quadratic convergence SCF (Link 508) for later SCF calculations of the Stable=Opt iterations.
+[    new] stable=redo  paths=A
+      | Redo the SCF once if an instability is detected.
+[    new] stable=restarts  paths=A
+      | Restarts the calculation off the checkpoint file.
+[    new] stable=test  paths=A
+      | Test for external real instability as well as internal instability (the default).
+      | Test for internal instability (a lower determinant with the same constraints) only.
+[    new] stable=try  paths=A
+      | Try to use the regular SCF procedure (Link 502) before quadratic convergence SCF (Link 508) for later SCF calculations of the Stable=Opt iterations.
+[    new] symmetry=lowsym  paths=A
+      | Symm=NoSCF is equivalent to Guess=LowSym and combining all irreducible representations together.
+[    new] symmetry=mark  paths=A
+      | Mark the standard orientation as the input orientation.
+[    new] symmetry=print  paths=A
+      | Print the standard orientation to high precision.
+[    new] symmetry=specify  paths=A
+      | Specify axis to help specify subgroup.
+[    new] symmetry=tells  paths=A
+      | Tells the program to use looser cutoffs in determining symmetry at the first point.
+[    new] symmetry=try  paths=A
+      | Try to follow point group/orientation during optimization.
+[    new] symmetry=turn  paths=A
+      | Turn on symmetry when it would otherwise be off.
+[    new] td=abelian  paths=A
+      | The default for IFact is *Max*(4,*g*) where *g* is the order of the Abelian point group.
+[    new] td=converge  paths=A
+      | Converge only states having excitation energy ≥ *N*/1000 eV; if *N*=-2, read threshold from input; if *N*<-2, set the threshold to |*N*|/1000 Hartrees.
+[    new] td=current  paths=A
+      | NonEqSolv is the default except for excited state optimizations and when the excited state density is requested (e.g., with Density=Current or All).
+[    new] td=generate  paths=A
+      | Generate initial guesses using only active occupied orbitals * N* and higher.
+      | Generate initial guesses: if *N*>0, use only the first *N* active occupied orbitals; if *N*<0, do not use the highest |*N*| occupieds.
+[    new] td=ivo  paths=A
+      | Force use of IVO guess.
+[    new] td=larger  paths=A
+      | Larger values may be needed if there are many states in the range of interest.
+[    new] td=lestrange15  paths=A
+      | [Liang11, Lestrange15]
+[    new] td=liang11  paths=A
+      | [Liang11, Lestrange15]
+[    new] td=lingerfelt16  paths=A
+      | Requests that the ground-to-excited-state non-adiabatic coupling be computed [Send10, Lingerfelt16].
+[    new] td=reads  paths=A
+      | Reads initial guesses for the states off the checkpoint file.
+[    new] td=reduce  paths=A
+      | Reduce to the desired number of states after iteration M.
+[    new] td=send10  paths=A
+      | Requests that the ground-to-excited-state non-adiabatic coupling be computed [Send10, Lingerfelt16].
+[    new] td=specify  paths=A
+      | Specify factor by which the number of states updated during initial iterations is increased.
+[    new] td=whether  paths=A
+      | Whether to perform equilibrium or non-equilibrium PCM solvation.
+[    new] td=zero  paths=A
+      | Zero frequency is always done and need not be in the list.
+[    new] transformation=l804  paths=A
+      | Equivalent to L804.
+[    new] transformation=link  paths=A
+      | Link 804 will select between the in-core, fully direct, and semi-direct methods automatically.
+      | Forces use of the in-core algorithm in Link 804.
+[    new] transformation=produce  paths=A
+      | Produce only <IJ||AB> integrals.
+      | Produce <IJ||AB> and <IA||JB> integrals.
+[    new] units=bohrs  paths=A
+      | Distances are in atomic units (Bohrs).
+[    new] w1=iso  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] w1=jobtype  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] w1=method  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    new] w1=reads  paths=A
+      | Reads the converged amplitudes from the checkpoint file (if present).
+[    new] w1=saves  paths=A
+      | Saves the converged amplitudes in the checkpoint file for use in a subsequent calculation (e.g., using a larger basis set).
+[    new] w1=tprojected  paths=A
+      | Freq=TProjected is implied.
+[    xref] admp=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] admp=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] admp=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] bomd=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] bomd=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] bomd=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] cbs=cbs  paths=A
+      | Restart from the checkpoint file from a previous CBS calculation.
+[    xref] cbs=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] cbs=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] cbs=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] cbsextrapolate=cbs  paths=A
+      | Save the localized CBS orbitals to the read-write file.
+[    xref] cid=cisd  paths=A
+      | Specifies the maximum number of cycles for CISD calculations.
+[    xref] cis=density  paths=A
+      | NonEqSolv is the default except for excited state optimizations and when the excited state density is requested (e.g., with the Current or All options to the Density keyword).
+[    xref] cis=eet  paths=A
+      | This is typically used in EET calculations.
+[    xref] constants=constants  paths=A
+      | Constants used in Gaussian 16, taken from [Mohr12, Mohr12a] and references therein.
+      | Constants used in Gaussian 09, taken from [Mohr08] and references therein.
+[    xref] cphf=nnroa  paths=A
+      | Finally, be aware that Fine is used in the CPHF as the default integration grid for a few DFT jobs including Polar=OptRot, Freq=Anharmonic and Freq=NNROA.
+[    xref] cphf=optrot  paths=A
+      | This is the default except for Polar=OptRot and Freq=ROA.
+      | Finally, be aware that Fine is used in the CPHF as the default integration grid for a few DFT jobs including Polar=OptRot, Freq=Anharmonic and Freq=NNROA.
+[    xref] cphf=polar  paths=A
+      | This option is relevant for Freq and Polar jobs.
+      | This is the default except for Polar=OptRot and Freq=ROA.
+[    xref] density=chkbasis  paths=A
+      | Implies Guess=Only ChkBasis: the calculation does not recompute new integrals, SCF, and so on, and retrieves the basis set from the checkpoint file.
+[    xref] densityfit=admp  paths=A
+      | NonIterative is the default except for ADMP and PBC.
+      | The default is 10^{-6} for ADMP and 10^{-9} for BOMD.
+[    xref] densityfit=bomd  paths=A
+      | The default is 10^{-6} for ADMP and 10^{-9} for BOMD.
+[    xref] eom=ccsd  paths=A
+      | Use 10^{-N} as the convergence on the CCSD and ground-state Z-vector iterations.
+      | This formalism is more rigorous than the default EOM-CCSD, but it is also computationally more expensive.
+[    xref] ept=ept  paths=A
+      | Often used as part of a compound method in conjection with a higher-order EPT calculation using a smaller basis set.
+[    xref] external=external  paths=A
+      | For example, the following option:
+
+
+External=Files=(123,(456,offset=1,integer=27))
+
+
+will cause the contents of internal file 123 (assumed by default to be real values) to be included in the matrix element file (labeled as “File 123”).
+[    xref] force=units  paths=A
+      | The units are Angstroms by default unless Units=Bohr has been specified.
+[    xref] freq=irc  paths=A
+      | For a point on a mass-weighted reaction path (IRC), compute the projected frequencies for vibrations perpendicular to the path.
+[    xref] freq=optrot  paths=A
+      | This option also computes optical rotations (see Polar=OptRot).
+[    xref] freq=polar  paths=A
+      | This option also computes optical rotations (see Polar=OptRot).
+      | Note that the Polar=ROA keyword is often a better choice.
+[    xref] freq=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] freq=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] freq=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] freq=units  paths=A
+      | Specifies the step-size for numerical differentiation to be 0.0001\**N* (in Angstoms unless Units=Bohr has been specified).
+[    xref] gen=extrabasis  paths=A
+      | The ExtraBasis keyword may be used to make additions to standard basis sets.
+[    xref] gen=extradensitybasis  paths=A
+      | Similarly, the ExtraDensityBasis keyword may be used to make additions to standard density fitting basis sets.
+[    xref] gen=gfinput  paths=A
+      | The GFInput keyword may be used to have the table printed in a form that is suitable for input to Gen.
+[    xref] gen=gfprint  paths=A
+      | The GFPrint keyword may be used to include the gaussian function table within the output file.
+[    xref] gn=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] gn=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] gn=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] guess=cas  paths=A
+      | For example, Guess=Only may be specified with CASSCF in order to obtain information on the number of CI configurations in the CAS active space (as well as the initial orbitals).
+[    xref] guess=full  paths=A
+      | Localized orbital analysis of a converged SCF wavefunction may then be done using a second job step, which includes Guess(Read,Local,Only) and Pop=Full in its route section.
+[    xref] guess=population  paths=A
+      | See the discussion of the Population keyword for details.
+[    xref] guess=prop  paths=A
+      | Guess(Only,Read) Prop will cause electrostatic properties to be calculated using the wavefunction in the checkpoint file.
+[    xref] integral=external  paths=A
+      | Primarily useful with External or Output=MatrixElement.
+[    xref] integral=fmm  paths=A
+      | Set the threshold size for turning on FMM by default to *N*.
+[    xref] irc=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] irc=recalcfc  paths=A
+      | Analytic second derivatives can be requested intermittently during IRCs using IRC=(CalcFC,RecalcFC=(Predictor=*N*,Corrector=*M*)), which computes second derivatives at the initial point and then at every *N*^{th} predictor step and every *M*^{th} corrector ste
+[    xref] irc=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] irc=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] irc=ultrafine  paths=A
+      | For DFT calculations, Int=UltraFine should be specified as well.
+[    xref] ircmax=ircmax  paths=A
+      | Include the zero-point energy in the IRCMax computation.
+      | Restarts an IRCMax calculation which did not complete, or restarts an IRCMax calculation which did complete, but for which additional points along the path are desired.
+[    xref] ircmax=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] ircmax=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] ircmax=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] mm=coulomb  paths=A
+      | Set the Coulomb cutoff to *N* Å.
+      | Use soft cutoffs with radius *M* (in Å), with either van der Waals or Coulomb if VRange or CRange was set.
+[    xref] nmr=iop  paths=A
+      | The data file for the ACID program can be generated with NMR=CSGT IOp(10/93=1).
+[    xref] oniom=merz  paths=A
+      | MKUFF uses the Merz-Kollman-Singh approximate charges during geometry optimization microiterations with electronic embedding but using UFF radii, which are defined for the full periodic table.
+      | Specifies that Merz-Kollman-Singh (see Population=MK) approximate charges be used during geometry optimization microiterations with electronic embedding.
+[    xref] oniom=population  paths=A
+      | Specifies that Merz-Kollman-Singh (see Population=MK) approximate charges be used during geometry optimization microiterations with electronic embedding.
+      | (See Population default method.)
+[    xref] oniom=uff  paths=A
+      | MKUFF uses the Merz-Kollman-Singh approximate charges during geometry optimization microiterations with electronic embedding but using UFF radii, which are defined for the full periodic table.
+[    xref] opt=am1  paths=A
+      | CalcHFFC is used with MP2 optimizations, and it is equivalent to CalcFC for DFT methods, AM1, PM3, PM3MM, PM6 and PDDG.
+[    xref] opt=pddg  paths=A
+      | CalcHFFC is used with MP2 optimizations, and it is equivalent to CalcFC for DFT methods, AM1, PM3, PM3MM, PM6 and PDDG.
+[    xref] opt=pm3  paths=A
+      | CalcHFFC is used with MP2 optimizations, and it is equivalent to CalcFC for DFT methods, AM1, PM3, PM3MM, PM6 and PDDG.
+[    xref] opt=pm3mm  paths=A
+      | CalcHFFC is used with MP2 optimizations, and it is equivalent to CalcFC for DFT methods, AM1, PM3, PM3MM, PM6 and PDDG.
+[    xref] opt=pm6  paths=A
+      | CalcHFFC is used with MP2 optimizations, and it is equivalent to CalcFC for DFT methods, AM1, PM3, PM3MM, PM6 and PDDG.
+[    xref] opt=popt  paths=A
+      | The POpt form requests a partial optimization in internal coordinates.
+[    xref] opt=punch  paths=A
+      | Requests that read the energy (although value is not used), cartesian forces and force constants from the input stream, as written out by Punch=Derivatives.
+[    xref] opt=ultrafine  paths=A
+      | For DFT calculations, Int=UltraFine should be specified as well.
+[    xref] polar=iop  paths=A
+      | Include IOp(10/46=7) in the route section to include the dipole-quadrupole contribution to the dipole-magnetic dipole polarizability in order to compute the full optical rotation tensor [Pedersen95,Barron04]; the latter will be labeled as Optical Rotation G’ t
+[    xref] population=amber  paths=A
+      | The data file for Antechamber (the AMBER program for generating RESP charges) can be generated using Pop=MK IOp(6/50=1) and specifying the file name on a separate line at the end of the Gaussian input file.
+[    xref] population=checkpoint  paths=A
+      | |
+| %Chk=state*n*.chk | Checkpoint file for this state.
+[    xref] population=chk  paths=A
+      | After the initial excited state calculation (using %Chk=ex.chk), use a technique like the following to generate visualization data for each state:
+
+|  |  |
+| --- | --- |
+| $ g16 <<END | Run a Guess=Only job just to generate orbitals.
+      | |
+| %Chk=state*n*.chk | Checkpoint file for this state.
+[    xref] population=chkbasis  paths=A
+      | Use a second job step of this form to place the natural orbitals into the checkpoint file:
+
+
+--Link1--
+
+%Chk=*name*
+
+# Guess=(Save,Only,NaturalOrbitals) Geom=AllCheck ChkBasis
+
+
+Run the formchk utility on the resulting checkpoint file to prepare the orbitals f
+[    xref] population=density  paths=A
+      | Must be accompanied by Density=(Check,Transition=*N*) in order to specify which transition density is to be used to generate the orbitals.
+      | To print the orbitals from several states of interest, run successive Pop=NTO Density=(Check,Transition=*N*) Guess=Only jobs after the initial excited state calculation.
+[    xref] population=iop  paths=A
+      | The data file for Antechamber (the AMBER program for generating RESP charges) can be generated using Pop=MK IOp(6/50=1) and specifying the file name on a separate line at the end of the Gaussian input file.
+[    xref] population=merz  paths=A
+      | Produce charges fit to the electrostatic potential at points selected according to the Merz-Singh-Kollman scheme [Singh84, Besler90].
+[    xref] population=population  paths=A
+      | Requests just the Natural Population Analysis phase of NBO.
+[    xref] population=uff  paths=A
+      | Uses the MK fitting but using UFF radii, which are defined for the full periodic table.
+[    xref] population=zindo  paths=A
+      | This is the default for all calculations using the ZIndo method.
+      | This is the default for all job types and methods except Guess=Only and/or ZIndo.
+[    xref] prop=prop  paths=A
+      | Causes the program to read a list of centers as in Prop=Read, but then to locate the minimum in the electric potential closest to each specified point.
+[    xref] pseudo=pseudo  paths=A
+      | When reading pseudopotentials from input using Pseudo=Read, scale the spin-orbit coefficients (if present) by 2/L as appropriate for published CRENBL potentials.
+[    xref] punch=cards  paths=A
+      | Outputs the orbitals in a format suitable for Guess=Cards input.
+[    xref] punch=density  paths=A
+      | Outputs natural orbitals (for the density selected with the Density keyword).
+[    xref] qci=ccsd  paths=A
+      | Note that Q1 is analogous to the T1 diagnostic for CCSD when it is computed using QCISD instead of the Coupled Cluster method.
+[    xref] sacci=cisd  paths=A
+      | *Item* specifies the initial guess type: SInitial for CIS and SDInitial for CISD.
+[    xref] sacci=scan  paths=A
+      | The Scan calculation must be performed three times: at the first point with BeforeGSUM, then at some or all subsequent points with CalcGSUM and then finally at all points with AfterGSUM.
+[    xref] scrf=ccsd  paths=A
+      | Use the perturbation theory and density approach (PTED) to PCM-CCSD coupling [Cammi09, Caricato12b] for an EOM-CCSD calculation in solution.
+[    xref] scrf=eom  paths=A
+      | Use the perturbation theory and density approach (PTED) to PCM-CCSD coupling [Cammi09, Caricato12b] for an EOM-CCSD calculation in solution.
+[    xref] scrf=iop  paths=A
+      | Other schemes discussed in [Caricato12b] are available via IOp(9/116).
+[    xref] td=density  paths=A
+      | NonEqSolv is the default except for excited state optimizations and when the excited state density is requested (e.g., with Density=Current or All).
+[    xref] td=eet  paths=A
+      | This features is typically used in EET calculations.
+[    xref] td=tda  paths=A
+      | The default for WhenReduce is 1 for TD and 2 for TDA.
+[    xref] w1=pressure  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] w1=scale  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
+[    xref] w1=temperature  paths=A
+      | Be aware, however, that all of these can be specified in the route section (Temperature, Pressure and Scale keywords) and molecule specification (the Iso parameter), as in this example:
+
+
+#T *Method*/6-31G(d) *JobType* Temperature=300.0 …
+
+…
+
+0 1
+
+C(Iso=13)
+
+…
