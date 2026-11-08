@@ -42,6 +42,23 @@ WSL2 已启用 systemd 时（`systemctl --user status` 可验证；未启用则 
 - 免登录自启需 linger：安装脚本自动尝试，失败时按提示执行 `sudo loginctl enable-linger <用户名>`。
 - 自定义工作区（`G16WEB_HOME`）在安装时写入 unit；卸载：`./systemd_install.sh --remove`（不动工作区数据）。
 
+### 2.2 Windows 一键启动（systemd 托管配套）
+
+Windows 侧双击 `start_gauforge.bat`（仓库 `scripts/deploy/windows/`，bat 与
+`start_gauforge.ps1` 放同目录，或拷到 `%LOCALAPPDATA%\GauForge\` 供桌面快捷方式调用）：
+
+- 首次运行自动发现 WSL 内部署包（顶层含 `systemd_install.sh` 与 `VERSION`），
+  发行版与部署目录记入 `%LOCALAPPDATA%\GauForge\launcher.json`，此后双击直达；
+- 启动前做**交互级探活**：Windows 侧 curl 经完整链路（含 WSL2 localhost 转发）
+  调 `/api/v1/system/health`，并真实导入一个探活输入再删除（自清洁：候选行与
+  `inputs/` 副本均不留）——「页面能打开但 API 不可交互」的挂死形态按服务已死处理；
+- 探活通过则只提示不重启；失败自动修复：清崩溃循环（`reset-failed` + `stop`）
+  → 执行 `systemd_install.sh`（幂等）→ 15 秒内复验探活；
+- 复验仍失败时给出排障指引：`journalctl --user -u gauforge -n 50 --no-pager`、
+  WSL 内 curl 自测、`wsl --shutdown` 后重开（处理 WSL2 localhost 转发断链）。
+- 注意：不要用 Git Bash 直接打开 `systemd_install.sh`——那是在 Windows 的 MSYS
+  环境执行，没有 WSL 与 systemctl，必然失败；一键入口是 bat。
+
 ## 3. 工作区与 G16 接入
 
 ### 3.1 工作区目录结构
