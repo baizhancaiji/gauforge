@@ -20,6 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -28,6 +29,8 @@ import time
 from pathlib import Path
 
 import pytest
+
+from web.src.services.candidates import delete_candidate, import_files
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[2] / "scripts" / "deploy"
 PKG_VERSION = "v9.9.9"
@@ -552,3 +555,45 @@ def test_setup_deps_usage_guards():
     assert help_proc.returncode == 0
     assert "--dest" in help_proc.stdout
     assert "set -euo pipefail" not in help_proc.stdout
+
+
+# ---------------- start_gauforge.ps1（Windows 一键启动器） ----------------
+
+def _launcher_ps1() -> str:
+    """ps1 源文本（utf-8-sig 剥 BOM；CRLF 原样保留供正则容错）。"""
+    return (SCRIPTS_DIR / "windows" / "start_gauforge.ps1").read_text(
+        encoding="utf-8-sig")
+
+
+def test_launcher_probe_input_parses(tmp_path):
+    """启动器内嵌探活输入可被真实解析器接受：从 ps1 here-string 提取 →
+    import_files 无 422 → delete_candidate 清理（自清洁语义锁定：探活
+    文件改动必须同步过解析关，否则 Windows 端交互级探活会永远误判服务
+    已死而反复重装）。"""
+    match = re.search(r"\$script:ProbeGjf = @'\r?\n(.*?)\r?\n'@",
+                      _launcher_ps1(), re.S)
+    assert match, "ps1 缺少 $script:ProbeGjf here-string"
+    ind = tmp_path / "inputs"
+    ind.mkdir()
+    (out,) = import_files([("gauforge-probe.gjf",
+                            match.group(1).encode("utf-8"))], inputs_dir=ind)
+    delete_candidate(out["id"], inputs_dir=ind)
+    assert not (ind / str(out["id"])).exists()
+
+
+def test_windows_launcher_static_gates():
+    """启动器结构闸门：交互级探活与自动修复在位；「已在运行」假门控
+    （systemctl is-active 探测进程状态）与 -Reinstall 开关不得回归。"""
+    ps1 = _launcher_ps1()
+    bat = (SCRIPTS_DIR / "windows" / "start_gauforge.bat").read_text(
+        encoding="utf-8")
+    # 探活与修复路径在位
+    assert "/api/v1/system/health" in ps1  # L1 健康检查
+    assert "/api/v1/candidates" in ps1  # L2 交互级往返（导入+删除）
+    assert "$script:ProbeGjf" in ps1  # 内嵌探活输入（配对解析测试）
+    assert "systemd_install.sh" in ps1  # 修复执行体
+    assert "reset-failed" in ps1  # 崩溃循环清理
+    # 误报根源不得回归：is-active 门控与 -Reinstall 开关已删
+    assert "is-active" not in ps1
+    assert "Reinstall" not in ps1
+    assert "Reinstall" not in bat
