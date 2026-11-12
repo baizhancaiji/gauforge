@@ -90,6 +90,32 @@ def test_resolve_chk_appends_ext_when_missing(home):
     assert finalize.resolve_chk(rd) == Path("/tmp/water.v1")  # 有扩展名按原样
 
 
+# ---------------- parse_chk_line（3.5.0 自 finalize 下沉的纯函数） ----------------
+
+def test_parse_chk_line_empty_value_undeclared():
+    """%chk= 空值返回 None（正则 (.+) 不匹配空，等价迁移形态）；
+    无 %chk 行文本同 None。剥引号判空（%chk=""）为 T5 行为修复内容。"""
+    from web.src.engine.workspace import parse_chk_line
+    assert parse_chk_line("%chk=\n%nprocshared=2\n\n#p\n\nt\n\n0 1\nO\n") \
+        is None
+    assert parse_chk_line("no chk line at all\n\n#p\n\nt\n\n0 1\nO\n") is None
+    assert parse_chk_line("") is None
+
+
+def test_parse_chk_line_link0_only_ignores_extra_section():
+    """link0_only=True 仅扫 Link0 区（经共享 _link0_span 与 resolve_link0
+    同规则）：附加节 %chk 不算声明；同一文本默认模式仍返回该声明
+    （resolve_chk find-source 超集口径）。"""
+    from web.src.engine.workspace import parse_chk_line
+    text = ("%nprocshared=2\n\n#p HF/6-31G(d)\n\n水\n\n0 1\nO\n\n"
+            "! 附加节\n%chk=late.chk\n")
+    assert parse_chk_line(text, link0_only=True) is None
+    assert parse_chk_line(text) == Path("late.chk")
+    text2 = "%chk=in.chk\n\n#p\n\nt\n\n0 1\nO\n"
+    assert parse_chk_line(text2, link0_only=True) == Path("in.chk")
+    assert parse_chk_line(text2) == Path("in.chk")
+
+
 # ---------------- make_fchk ----------------
 
 def test_make_fchk_converts(home):

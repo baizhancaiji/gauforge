@@ -19,15 +19,14 @@ formchk、保全快照、异常收尸、过期/全量清理。
 """
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from ..parse import results as results_parse  # 常量单一来源（无循环依赖）
+from .workspace import resolve_chk  # 3.5.0 下沉单一事实来源（模块级名字保留）
 
-_CHK_RE = re.compile(r"^%chk\s*=\s*(.+)$", re.IGNORECASE)
 # 保全边界：仅 chk（修订定稿：rwf/Gau-* 即终收尸，不再保全）
 PROTECT_SUFFIX = ".chk"
 # 收尸边界：Gau-<pid>.rwf/int/d2e/skr/inp 等 g16 瞬态 scratch + 任意命名
@@ -71,30 +70,6 @@ def write_analysis(run_dir: Path, *,
 
 def _iso(ts: str) -> datetime:
     return datetime.fromisoformat(ts)
-
-
-def resolve_chk(run_dir: Path) -> Path:
-    """实际执行副本 input.gjf 的 Link0 %chk → chk 路径。
-
-    相对值相对 run/<id>/ 解析；无扩展名时 g16 自动追加 .chk
-    （g16 手册规则，实测 run/<id>/ 产物旁证），此处对齐；
-    无声明回落 input.chk（此时 g16 不产 chk，formchk 将因文件
-    缺失失败并按「记日志不阻断」处理）。
-    """
-    try:
-        text = (run_dir / "input.gjf").read_text(encoding="utf-8",
-                                                 errors="replace")
-    except OSError:
-        return run_dir / "input.chk"
-    for ln in text.splitlines():
-        m = _CHK_RE.match(ln.strip())
-        if m:
-            raw = m.group(1).strip().strip('"').strip("'")
-            p = Path(raw)
-            if not p.is_absolute():
-                p = run_dir / p
-            return p if p.suffix else p.with_name(p.name + ".chk")
-    return run_dir / "input.chk"
 
 
 def make_fchk(run_dir: Path, g16_root: Path) -> Path | None:

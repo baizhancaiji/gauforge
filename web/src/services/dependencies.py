@@ -49,12 +49,14 @@ def parse_link0_refs(text: str) -> list[dict]:
     目标非正整数）记 kind=malformed——校验层按不可达拒绝（文法残缺
     即引用不可达语义，不另设码）。
     """
+    # Link0 区段扫描与 workspace.resolve_link0/parse_chk_line 同源
+    # （延迟导入防环：engine 包经 __init__ 导入 dispatcher → materialize
+    # → 本模块，module 级导入触发部分初始化 ImportError；先例 inputs_path）
+    from ..engine.workspace import _link0_span
     lines = text.replace("\r\n", "\n").split("\n")
-    i, n = 0, len(lines)
-    while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
-        i += 1
+    start, end = _link0_span(text)
     refs: list[dict] = []
-    while i < n and lines[i].lstrip().startswith("%"):
+    for i in range(start, end):
         body = lines[i].strip().lstrip("%")
         key, _, val = body.partition("=")
         kind_key = _REF_KEYS.get(key.strip().casefold())
@@ -69,7 +71,6 @@ def parse_link0_refs(text: str) -> list[dict]:
                 ref["kind"] = form
                 ref["target"] = int(num)
             refs.append(ref)
-        i += 1
     return refs
 
 

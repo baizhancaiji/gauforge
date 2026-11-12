@@ -13,7 +13,10 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 from pathlib import Path
+
+_CHK_RE = re.compile(r"^%chk\s*=\s*(.+)$", re.IGNORECASE)
 
 
 def run_dir(root: Path, execution_id: int) -> Path:
@@ -26,6 +29,23 @@ def content_hash(text: str) -> str:
 
 
 # ---------------- Link0 解析与补齐 ----------------
+
+def _link0_span(text: str) -> tuple[int, int]:
+    """Link0 区段行区间 [start, end)（CRLF 归一后跳过前导空行/`!` 注释
+    行、收连续 `%` 行；与 parse/blocks 同规则，其后无空行要求）。
+
+    resolve_link0 与 parse_chk_line(link0_only=True)、services.dependencies.
+    parse_link0_refs 三处共享单一来源，防区段口径漂移。
+    """
+    lines = text.replace("\r\n", "\n").split("\n")
+    i, n = 0, len(lines)
+    while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
+        i += 1
+    start = i
+    while i < n and lines[i].lstrip().startswith("%"):
+        i += 1
+    return start, i
+
 
 def _mem_to_gb(raw: str) -> float | None:
     """G16 %mem 值 → GB 浮点；无法识别返回 None。
@@ -64,13 +84,7 @@ def resolve_link0(text: str, nproc_default: int,
     """
     lines = text.replace("\r\n", "\n").split("\n")
     # Link 0 = 前导空行/注释后的连续 % 行（与 parse/blocks 同规则，其后无空行要求）
-    i, n = 0, len(lines)
-    while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
-        i += 1
-    start = i
-    while i < n and lines[i].lstrip().startswith("%"):
-        i += 1
-    end = i  # [start, end) 为 Link0 行区间
+    start, end = _link0_span(text)  # [start, end) 为 Link0 行区间
 
     has_nproc_line = False  # %nproc 系或 %cpu 任一行存在（声明即不注入）
     has_mem_line = False
@@ -116,6 +130,62 @@ def resolve_link0(text: str, nproc_default: int,
     return {"completed_text": completed,
             "nproc": {"value": nproc_value, "defaulted": nproc_defaulted},
             "mem_gb": {"value": mem_value, "defaulted": mem_defaulted}}
+
+
+# ---------------- chk 声明解析（3.5.0 自 finalize 下沉，单一事实来源） ----------------
+
+def parse_chk_line(text: str, *, link0_only: bool = False) -> Path | None:
+    """输入文本 Link0 `%chk=` 行声明值（纯函数，无 IO）。
+
+    逐行 strip 后匹配取首个命中；声明值 strip 并剥首尾引号后 Path 化
+    （无扩展名追加与 run 目录拼接均不在本函数：前者由 resolve_chk 拼接
+    后按现状同序执行，后者为 resolve_chk 职责）。无声明返回 None——
+    等价迁移的两形态（%chk 行不存在、%chk= 空值：正则 `(.+)` 不匹配空）；
+    符号值（@task:/@exec:）返回非 None 的 Path（仅作「已声明」判据与
+    物化定位输入，不作为真实产物路径使用）。
+
+    link0_only=False（默认）全文逐行匹配，供 resolve_chk 作 find-source
+    超集扫描；link0_only=True 仅扫 Link0 区（经 _link0_span 与
+    resolve_link0 同规则），供静态校验、物化文案判定与 fake_g16 对齐
+    G16 只识别 Link0 命令的行为。多步放行（link1 B4）时本函数与
+    resolve_chk、静态校验须同步改为末个声明段口径（见 link1-multistep-
+    plan B4 补注）。
+    """
+    if link0_only:
+        lines = text.replace("\r\n", "\n").split("\n")
+        start, end = _link0_span(text)
+        lines = lines[start:end]
+    else:
+        lines = text.splitlines()
+    for ln in lines:
+        m = _CHK_RE.match(ln.strip())
+        if m:
+            raw = m.group(1).strip().strip('"').strip("'")
+            return Path(raw)
+    return None
+
+
+def resolve_chk(run_dir: Path) -> Path:
+    """实际执行副本 input.gjf 的 Link0 %chk → chk 路径。
+
+    相对值相对 run/<id>/ 解析；无扩展名时 g16 自动追加 .chk
+    （g16 手册规则，实测 run/<id>/ 产物旁证），此处对齐（绝对声明无
+    扩展名同样追加）；无声明回落 input.chk（此时 g16 不产 chk，formchk
+    将因文件缺失失败并按「记日志不阻断」处理）。3.5.0 起为 chk 资产
+    定位单一事实来源（物化溯源 / 续跑取数回落 / 成队校验共用）。
+    """
+    try:
+        text = (run_dir / "input.gjf").read_text(encoding="utf-8",
+                                                 errors="replace")
+    except OSError:
+        return run_dir / "input.chk"
+    declared = parse_chk_line(text)
+    if declared is None:
+        return run_dir / "input.chk"
+    p = declared
+    if not p.is_absolute():
+        p = run_dir / p
+    return p if p.suffix else p.with_name(p.name + ".chk")
 
 
 # ---------------- 物化与环境 ----------------
