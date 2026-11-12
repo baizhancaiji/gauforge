@@ -1,11 +1,25 @@
 {
- "updated": "2026-11-08T20:23+0800",
+ "updated": "2026-11-12T23:46+0800",
  "latest_released_version": "3.4.1",
  "unreleased": [
   {
    "type": "added",
    "scope": "scripts",
    "summary": "新增 Windows 端一键启动器（scripts/deploy/windows/ start_gauforge.bat + start_gauforge.ps1，双击定位 WSL 部署包并缓存 launcher.json）：交互级探活（Windows 侧 curl 经完整链路调 /system/health 并真实导入探活输入再删除，自清洁不留候选）通过则不打扰健康实例，失败自动修复（reset-failed + stop 清崩溃循环 → systemd_install.sh → 15 秒复验），根治 Type=simple 下进程存活但 API 不可交互时 systemctl is-active 误报「已在运行」的假门控",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "changed",
+   "scope": "plans",
+   "summary": "TUI v1 实施计划无限期延后（用户决策 2026-11-12）：撤销目标版本 3.5.0 预留、不设版本号，重入实施须先重校代码锚点与契约基线，tui-v1-plan.md 状态行回填「无限期延后」并登记决策留痕；check_plan_status.py 与 AGENTS.md §5.2 将「无限期延后」纳入终态口径，全量扫描不再阻塞发布",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "changed",
+   "scope": "plans",
+   "summary": "docs/plans TUI 三件套清理整合（2026-11-12）：审查修订版 tui-v1-plan.reviewed.md 全部修订（§1.3 增第 12–19 条基线、验收扩至 AC1–AC37、新增风险 R28/R29、B1/C1/G1/G6/H2/I1 任务加严、估算修正 40/48 人天）并入正式计划 tui-v1-plan.md，正文残留 9 处 3.5.0 预设去版本化为「目标版本」中性表述，状态行补登记分叉合并与基线清理留痕；tui-assessment/ 五份评估基线（tui-draft 定稿与四份基线，约 290KB 未入库 git）随延后决策一并移除，计划正文「tui-draft §」锚点保留为历史引用，重启实施须重估需求基线、代码事实锚点、契约基线与版本号",
    "breaking": false,
    "migration": null
   }
