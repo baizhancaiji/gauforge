@@ -9,6 +9,8 @@
     （状态行跨行折行时按引用块拼接后解析）；
   3. 状态值须为终态：包含「已实施并验收」；「已执行完毕」同认终态
     （修复清单类历史文档的既定口径，如 m1-review2-fix-plan.md）；
+    「无限期延后」同认终态（计划延后决策口径：状态行登记决策日期与
+    目标版本撤销留痕，不占发布窗口，如 tui-v1-plan.md）；
   4. 未回填状态（「执行计划」「实施计划定稿」「待执行」「待实施」
     「部分实施」等）与缺失状态行均判失败。
 失败输出问题清单并以非零码退出。
@@ -21,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PLANS_DIR = ROOT / "docs" / "plans"
 PLAN_GLOB = "*-plan.md"
-FINAL_MARKS = ("已实施并验收", "已执行完毕")
+FINAL_MARKS = ("已实施并验收", "已执行完毕", "无限期延后")
 STATUS_KEY = "状态："
 HEADER_SCAN_LINES = 40  # 状态行位于文件头部引用块内
 
