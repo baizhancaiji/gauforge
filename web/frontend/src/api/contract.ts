@@ -178,7 +178,7 @@ export interface paths {
         put?: never;
         /**
          * 导入（multipart，M1 实施；M0 mock）
-         * @description 支持 files[]（批量）/ 文件夹导入 mode=files|folder。M2 增补导入成队： queue_from_folder=true 且 mode=folder 时，导入后以候选转换并创建队列 （name=folder_name，受支持文件数 2–10 方可成队；越界拒绝成队、回落为 全部生成候选并在 queue_fallback_reason 明示原因）。mode=files 时显式 queue_from_folder=true → 422。成队事件序列：candidates.changed(created) ×N → candidates.changed(moved_out) ×N → queues.changed(created)。 UTF-8 BOM 处理：导入解码用 utf-8-sig，检测到 BOM 时落盘前剥离 BOM 字节（其余字节与 CRLF 原样保留；哈希与提交/派发均以剥离后副本为准， 静默行为、无专门响应字段）。
+         * @description 支持 files[]（批量）/ 文件夹导入 mode=files|folder。M2 增补导入成队： queue_from_folder=true 且 mode=folder 时，导入后以候选转换并创建队列 （name=folder_name，受支持文件数 2–10 方可成队；越界拒绝成队、回落为 全部生成候选并在 queue_fallback_reason 明示原因；3.5.0 起成队前执行 DAG 校验，依赖校验未通过同通道回落、不成队）。mode=files 时显式 queue_from_folder=true → 422。成队事件序列：candidates.changed(created) ×N → candidates.changed(moved_out) ×N → queues.changed(created)。 UTF-8 BOM 处理：导入解码用 utf-8-sig，检测到 BOM 时落盘前剥离 BOM 字节（其余字节与 CRLF 原样保留；哈希与提交/派发均以剥离后副本为准， 静默行为、无专门响应字段）。
          */
         post: operations["importCandidates"];
         delete?: never;
@@ -588,7 +588,7 @@ export interface paths {
         put?: never;
         /**
          * 断点续跑预览（探针+注入矩阵+输入 diff；无副作用，ineligible 恒 200）
-         * @description 两段式续跑的第一段（M4）。前置检测顺序：① 输入含 @task: 链内引用 → eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定， 引导队列回退重提）；② 续跑资产取数——优先 chk_snapshot.location= protected 的保全 chk，无保全但该任务存在成功执行记录者取最近成功执行的 input.chk，两者皆无 → reason=no_resume_asset；③ formchk 有效性探针 （临时目录，超时 120s 按探针失败→chk_corrupted/超时→probe_timeout 分列）； ④ route 任务类型判定（复用 M0 输入分块解析器取 route 节，大小写不敏感： 含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq； 其余→scf；缺失/不可解析→unknown_kind）。ineligible 时 preview 恒 200 以 eligible=false + reason 表达（不经 422）；POST /history/{id}/resume 对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。续跑入口=failed/skipped 两终态：succeeded 条目无断点，preview/confirm 同口径 404 NOT_FOUND （重跑诉求由历史页「重新排队」承载）；skipped/归档条目 preview 按 no_resume_asset 处理（200 + eligible=false，前端不展示动作）。
+         * @description 两段式续跑的第一段（M4）。前置检测顺序：① 输入含 @task: 链内引用 → eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定， 引导队列回退重提）；② 续跑资产取数——优先 chk_snapshot.location= protected 的保全 chk，无保全但该任务存在成功执行记录者取最近成功执行的 chk（3.5.0 起按该执行实际执行副本 Link0 %chk= 声明定位——相对值相对 run 目录、无扩展名自动追加 .chk，非固定 input.chk）， 两者皆无 → reason=no_resume_asset；③ formchk 有效性探针 （临时目录，超时 120s 按探针失败→chk_corrupted/超时→probe_timeout 分列）； ④ route 任务类型判定（复用 M0 输入分块解析器取 route 节，大小写不敏感： 含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq； 其余→scf；缺失/不可解析→unknown_kind）。ineligible 时 preview 恒 200 以 eligible=false + reason 表达（不经 422）；POST /history/{id}/resume 对 ineligible 条目才 422 RESUME_NOT_ELIGIBLE。续跑入口=failed/skipped 两终态：succeeded 条目无断点，preview/confirm 同口径 404 NOT_FOUND （重跑诉求由历史页「重新排队」承载）；skipped/归档条目 preview 按 no_resume_asset 处理（200 + eligible=false，前端不展示动作）。
          */
         post: operations["previewResume"];
         delete?: never;
@@ -1634,7 +1634,7 @@ export interface components {
             filename: string;
             blocks: {
                 link0: {
-                    /** @description Link0 行。M4 起 %chk=/%oldchk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/溯源 chk 已清理 422 CHK_SOURCE_MISSING），派发前由物化器重写为实际路径。 */
+                    /** @description Link0 行。M4 起 %chk=/%oldchk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/接续源缺失 422 CHK_SOURCE_MISSING——3.5.0 起两形态：上游输入未声明 %chk （details 携带 upstream_task_id、无 execution_id，引导在 上游输入 Link0 节补写）/ 上游已有成功执行但 chk 已被保留期 清理（details 注明缺失的执行 id，提示重跑上游恢复 chk 来源）），派发前由物化器重写为实际路径。 */
                     lines: string[];
                     /** @description 缺失 %nprocshared/%mem 等（驱动提交确认框琥珀警告） */
                     missing: string[];
@@ -1725,12 +1725,12 @@ export interface components {
                 /** @description 可选；导入通道的非阻断警告（route 拼写近邻/重复关键字， 行号全文件 1 起）。仅随导入成功的 files[] 条目返回；整批 422 的 details.errors[] 不携带 warnings。警告不阻断入库。 */
                 warnings?: components["schemas"]["Warning"][];
             }[];
-            /** @description M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队）为 null */
+            /** @description M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队；3.5.0 起依赖校验未通过同样拒绝成队）为 null */
             queue?: {
                 queue_id?: string;
                 name?: string;
             } | null;
-            /** @description M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」），未回落为 null */
+            /** @description M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」；3.5.0 起依赖校验未通过回落同用此字段），未回落为 null */
             queue_fallback_reason?: string | null;
         };
         /** @description 提交响应（行内提交/队列提交/历史重新排队三端点共用）。M2 起提交前输入核验对输入副本执行换行规范化或空行规约时置 normalized=true */

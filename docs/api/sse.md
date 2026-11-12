@@ -66,7 +66,7 @@
 |---|---|
 | 导入文件 | `candidates.changed(created)` |
 | 导入成队（勾选保存为队列，M2；成队） | `candidates.changed(created)` ×N（导入落候选）→ `candidates.changed(moved_out)` ×N（成队转换）→ `queues.changed(created)` |
-| 导入成队（越界拒绝回落） | 仅 `candidates.changed(created)` ×N（全部生成候选，无队列创建） |
+| 导入成队（越界或依赖校验未通过拒绝回落，3.5.0） | 仅 `candidates.changed(created)` ×N（全部生成候选，无队列创建） |
 | 行内提交成功 | `candidates.changed(moved_out)` → `pending.snapshot` |
 | 队列保存（创建） | `candidates.changed(moved_out)` ×N（成员转任务）→ `queues.changed(created)` |
 | 队列直接提交 | `queue.status(unsubmitted→submitted)` → `pending.snapshot` |

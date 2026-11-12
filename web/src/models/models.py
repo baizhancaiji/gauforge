@@ -741,7 +741,7 @@ class Warning(BaseModel):
 class Link0(BaseModel):
     lines: list[str] = Field(
         ...,
-        description='Link0 行。M4 起 %chk=/%oldchk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/溯源 chk 已清理 422 CHK_SOURCE_MISSING），派发前由物化器重写为实际路径。',
+        description='Link0 行。M4 起 %chk=/%oldchk= 取值支持符号引用文法： @task:<id>（同队列成员任务 id，队列成员间专用）、 @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样 展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/ 不可达 422 DEPENDENCY_UNREACHABLE/接续源缺失 422 CHK_SOURCE_MISSING——3.5.0 起两形态：上游输入未声明 %chk （details 携带 upstream_task_id、无 execution_id，引导在 上游输入 Link0 节补写）/ 上游已有成功执行但 chk 已被保留期 清理（details 注明缺失的执行 id，提示重跑上游恢复 chk 来源）），派发前由物化器重写为实际路径。',
     )
     missing: list[str] = Field(
         ..., description='缺失 %nprocshared/%mem 等（驱动提交确认框琥珀警告）'
@@ -888,11 +888,11 @@ class CandidateCreate(BaseModel):
     files: list[File]
     queue: Queue1 | None = Field(
         None,
-        description='M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队）为 null',
+        description='M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队；3.5.0 起依赖校验未通过同样拒绝成队）为 null',
     )
     queue_fallback_reason: str | None = Field(
         None,
-        description='M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」），未回落为 null',
+        description='M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」；3.5.0 起依赖校验未通过回落同用此字段），未回落为 null',
     )
 
 

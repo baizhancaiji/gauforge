@@ -69,8 +69,11 @@
 #     序之后，保序停等派发下永不满足、静态校验即拒，M4；队列 PATCH 移除被依赖
 #     成员同码拒绝，details 注明被谁依赖）
 #   - DEPENDENCY_CYCLE — 422：依赖图成环（含 %chk=@task:自id 续用自环，M4）
-#   - CHK_SOURCE_MISSING — 422：被引用上游已有成功执行但其 chk 已被保留期清理
-#     （提交拒绝，details 注明缺失的执行 id，提示重跑上游恢复 chk 来源，M4）
+#   - CHK_SOURCE_MISSING — 422：被引用上游接续源缺失（提交拒绝）——
+#     两形态：上游输入未声明 %chk（G16 无声明不产出检查点文件；
+#     details 携带 upstream_task_id、无 execution_id，引导在上游输入
+#     Link0 节补写 %chk，3.5.0）/ 上游已有成功执行但 chk 已被保留期
+#     清理（details 注明缺失的执行 id，提示重跑上游恢复 chk 来源，M4）
 #   - RESUME_NOT_ELIGIBLE — 422：对 ineligible 条目发起断点续跑确认（preview
 #     恒 200 以 eligible=false 表达、不经此码；确认动作 422，M4）
 #   - WORKFLOW_STATE_INVALID — 422：组合流来源候选不在候选形态（details 注明
@@ -1520,8 +1523,12 @@ components:
                     @task:<id>（同队列成员任务 id，队列成员间专用）、
                     @exec:<执行id>（断点续跑专用）。含符号引用的行在预览中原样
                     展示；提交时经 DAG 静态校验（成环 422 DEPENDENCY_CYCLE/
-                    不可达 422 DEPENDENCY_UNREACHABLE/溯源 chk 已清理 422
-                    CHK_SOURCE_MISSING），派发前由物化器重写为实际路径。
+                    不可达 422 DEPENDENCY_UNREACHABLE/接续源缺失 422
+                    CHK_SOURCE_MISSING——3.5.0 起两形态：上游输入未声明 %chk
+                    （details 携带 upstream_task_id、无 execution_id，引导在
+                    上游输入 Link0 节补写）/ 上游已有成功执行但 chk 已被保留期
+                    清理（details 注明缺失的执行 id，提示重跑上游恢复 chk
+                    来源）），派发前由物化器重写为实际路径。
                 missing:
                   type: array
                   items:
@@ -1728,7 +1735,7 @@ components:
         queue:
           type: object
           nullable: true
-          description: "M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队）为 null"
+          description: "M2；queue_from_folder=true 且成员数 2–10 成队时返回，回落（越界拒绝成队；3.5.0 起依赖校验未通过同样拒绝成队）为 null"
           properties:
             queue_id:
               type: string
@@ -1737,7 +1744,7 @@ components:
         queue_fallback_reason:
           type: string
           nullable: true
-          description: "M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」），未回落为 null"
+          description: "M2；越界拒绝成队回落全部候选时的回落原因（如「受支持文件 11 个，超出队列成员上限 10」；3.5.0 起依赖校验未通过回落同用此字段），未回落为 null"
 
     SubmitResponse:
       type: object
@@ -2097,7 +2104,8 @@ paths:
         支持 files[]（批量）/ 文件夹导入 mode=files|folder。M2 增补导入成队：
         queue_from_folder=true 且 mode=folder 时，导入后以候选转换并创建队列
         （name=folder_name，受支持文件数 2–10 方可成队；越界拒绝成队、回落为
-        全部生成候选并在 queue_fallback_reason 明示原因）。mode=files 时显式
+        全部生成候选并在 queue_fallback_reason 明示原因；3.5.0 起成队前执行
+        DAG 校验，依赖校验未通过同通道回落、不成队）。mode=files 时显式
         queue_from_folder=true → 422。成队事件序列：candidates.changed(created)
         ×N → candidates.changed(moved_out) ×N → queues.changed(created)。
         UTF-8 BOM 处理：导入解码用 utf-8-sig，检测到 BOM 时落盘前剥离 BOM
@@ -2727,7 +2735,9 @@ paths:
         eligible=false（reason=chained_ref，注入前置检测、先于 chk 资产判定，
         引导队列回退重提）；② 续跑资产取数——优先 chk_snapshot.location=
         protected 的保全 chk，无保全但该任务存在成功执行记录者取最近成功执行的
-        input.chk，两者皆无 → reason=no_resume_asset；③ formchk 有效性探针
+        chk（3.5.0 起按该执行实际执行副本 Link0 %chk= 声明定位——相对值相对
+        run 目录、无扩展名自动追加 .chk，非固定 input.chk），
+        两者皆无 → reason=no_resume_asset；③ formchk 有效性探针
         （临时目录，超时 120s 按探针失败→chk_corrupted/超时→probe_timeout 分列）；
         ④ route 任务类型判定（复用 M0 输入分块解析器取 route 节，大小写不敏感：
         含 Opt 一切变体→opt（Opt freq 组合归优化）；不含 Opt 含 Freq→freq；

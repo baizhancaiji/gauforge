@@ -9,7 +9,7 @@
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
 | 导入文件/文件夹（文件选择与拖拽） | POST /api/v1/candidates（files[]/mode，M1） | `candidates.changed(created)` ×N |
-| 导入勾选「保存为队列」（M2，队列名=文件夹名） | POST /api/v1/candidates（queue_from_folder/folder_name，M2） | `candidates.changed(created)` ×N → `candidates.changed(moved_out)` ×N → `queues.changed(created)`（越界回落时仅 `created` ×N） |
+| 导入勾选「保存为队列」（M2，队列名=文件夹名） | POST /api/v1/candidates（queue_from_folder/folder_name，M2） | `candidates.changed(created)` ×N → `candidates.changed(moved_out)` ×N → `queues.changed(created)`（越界或依赖校验未通过时回落，仅 `created` ×N；3.5.0） |
 | 候选列表（id/文件名/title/来源标记/失败归因） | GET /api/v1/candidates | `candidates.changed` → 重拉当前页 |
 | 行点击 → 右侧只读预览（分块 + 原子数/分子式） | GET /api/v1/candidates/{id}/preview | — |
 | 行内「提交」确认框完整输入 | GET /api/v1/candidates/{id}/input | — |
