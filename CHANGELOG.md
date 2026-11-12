@@ -7,12 +7,18 @@
 ### 新增
 
 - 【scripts】新增 Windows 端一键启动器（scripts/deploy/windows/ start_gauforge.bat + start_gauforge.ps1，双击定位 WSL 部署包并缓存 launcher.json）：交互级探活（Windows 侧 curl 经完整链路调 /system/health 并真实导入探活输入再删除，自清洁不留候选）通过则不打扰健康实例，失败自动修复（reset-failed + stop 清崩溃循环 → systemd_install.sh → 15 秒复验），根治 Type=simple 下进程存活但 API 不可交互时 systemctl is-active 误报「已在运行」的假门控
+- 【frontend】队列编辑弹窗宽度可调与任务名自适应截断：右缘拖宽手柄（拖拽增量=2×位移、居中面板两侧对称扩展、钳位 [560, 视口宽−48]、收窄自动钳制零溢出、只读/完成态同样可操作）+ 键盘 ←/→ 16px 步进同钳位 + localStorage 持久化（g16web-queue-editor-width，视口相关本地视图偏好不上 ui-prefs）；手柄可聚焦（role=separator、aria-valuenow 与渲染一致、焦点态全局 :focus-visible）；成员行任务名去固定 150px 改 flex 可伸缩占位，系列任务同前缀可视段随加宽区分、单行省略与 title 全名提示保留；其余共享 ConfirmModal 模态零视觉变化
 
 ### 变更
 
 - 【plans】TUI v1 实施计划无限期延后（用户决策 2026-11-12）：撤销目标版本 3.5.0 预留、不设版本号，重入实施须先重校代码锚点与契约基线，tui-v1-plan.md 状态行回填「无限期延后」并登记决策留痕；check_plan_status.py 与 AGENTS.md §5.2 将「无限期延后」纳入终态口径，全量扫描不再阻塞发布
 - 【plans】docs/plans TUI 三件套清理整合（2026-11-12）：审查修订版 tui-v1-plan.reviewed.md 全部修订（§1.3 增第 12–19 条基线、验收扩至 AC1–AC37、新增风险 R28/R29、B1/C1/G1/G6/H2/I1 任务加严、估算修正 40/48 人天）并入正式计划 tui-v1-plan.md，正文残留 9 处 3.5.0 预设去版本化为「目标版本」中性表述，状态行补登记分叉合并与基线清理留痕；tui-assessment/ 五份评估基线（tui-draft 定稿与四份基线，约 290KB 未入库 git）随延后决策一并移除，计划正文「tui-draft §」锚点保留为历史引用，重启实施须重估需求基线、代码事实锚点、契约基线与版本号
 - 【plans】补测 `%oldchk` 单独声明受控实验并闭合 link1-multistep-plan 遗留待测项：相对/绝对路径两组均正常完成（2 次 Normal termination，段 2 频率 1684.5331/3840.9525/3970.1611 与金标准逐位一致），Link 0 将 oldchk 复制至 GAUSS_SCRDIR 下 scratch 当前 chk、作业声明的 chk 不被改写（formchk 无频率数据、Total Energy 仍为段 1 单点能）；据此 `%oldchk` 单独声明即为可读 chk 源，`INPUT_STAGE_CHK_REQUIRED` 阻断条件维持「无 `%chk` 且无 `%oldchk`」不收紧，S3/§3.2/B3 与 §8 Q5 按实测回填，开工前置工作项移除并同步扣减 L0 与总工期（36–55→35–54 人日），新正例样本 q5_water_oldchk_only.gjf/.out 入 ~/g16/tests/
+- 【plans】chk 物化修复计划（docs/plans/chk-materialize-fix-plan.md）T0–T7 实施完毕：m4-plan 八处 input.chk 固定名表述勘误注记（§2.1「chk 溯源」条另附 3.5.0 声明前置语义注记——被 @task: 引用的上游无声明即以 CHK_SOURCE_MISSING 422 拒绝）、link1-multistep-plan B4 补 parse_chk_line 同源迁入与多步末个声明段口径衔接、openapi 六处 description 与 mapping/sse 导入成队回落表述同步（Pydantic 模型与 contract.ts 再生成）；测试先行红入库（fake_g16 按 Link0 %chk 声明产 chk 补齐「上游真实产出→下游物化」e2e 闭环、溯源助手按名改置、红集合 19）→ resolve_chk 下沉 workspace 等价重构（拆 parse_chk_line 纯函数与共享 _link0_span）→ 行为修复转绿（892 passed）→ 前端修订浏览器视觉实测九项通过
+
+### 修复
+
+- 【web】chk 资产定位统一按实际执行副本 Link0 %chk= 声明（resolve_chk 下沉 workspace 单一事实来源，修复三处同根因缺陷：上游 %chk=opt.chk 等自定义名产物物化必败并误报「已被清理」、@exec: 自定义名产物在保留期被续跑误判无 chk 资产、提交时「chk 在保留期但叫别的名」反向误拒 CHK_SOURCE_MISSING）；静态校验补缺：被 @task: 引用的上游须在 Link0 区声明 %chk（G16 无声明不产出检查点文件，此前运行期才失败且文案误导），创建/导入成队/PATCH/提交四时点生效；%chk="" 空值引号形态改判无声明回落 input.chk（消除 Path("" ) 派生 run 目录旁错误路径）；物化文案两形态如实区分（未声明引导补写/已清理提示重跑上游）
 
 ## v3.4.1（2026-10-22T10:23+0800 发布，patch）
 
