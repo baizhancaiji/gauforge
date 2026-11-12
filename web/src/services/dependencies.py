@@ -10,9 +10,9 @@
   同队列限制；仅由 resume 动作生成的新任务携带，队列成员载体拒绝。
 
 校验时机（全部在写操作事务内、先于席位创建）：
-- 队列创建 / PATCH（member_ids 变更）/ 队列提交：validate_queue_members
-  —— crest 不入队、@exec 载体拒绝、移除被依赖成员拒绝、可达、无环、
-  溯源 chk 存在性；
+- 队列创建 / 导入成队 / PATCH（member_ids 变更）/ 队列提交：
+  validate_queue_members——crest 不入队、@exec 载体拒绝、移除被依赖
+  成员拒绝、可达、无环、声明完整性与溯源 chk 存在性；
 - 行内提交 / 历史重新排队（单任务席位）：validate_single_seat_input
   —— @task: 拒绝、@exec 三点校验（存在/终态/chk 溯源）。
 
@@ -81,9 +81,11 @@ def run_dir(execution_id: int) -> Path:
 def latest_succeeded(task_id: int) -> dict | None:
     """任务最近一次成功执行（chk 溯源单一真相，m4-plan §2.1：
 
-    @task:X 的 chk 来源 = X 最近一次 succeeded 执行的 run/<eid>/input.chk；
-    B7 物化器与静态校验共用本定位。哈希跳过沿用的执行即该次成功执行
-    （派发时哈希匹配项；静态校验时点以最近成功执行为溯源判定对象）。
+    @task:X 的 chk 来源 = X 最近一次 succeeded 执行的 chk（具体名由该
+    执行实际执行副本 Link0 `%chk=` 声明决定，无声明回落 input.chk——
+    workspace.resolve_chk 口径，3.5.0 起）；B7 物化器与静态校验共用本
+    定位。哈希跳过沿用的执行即该次成功执行（派发时哈希匹配项；静态
+    校验时点以最近成功执行为溯源判定对象）。
     """
     exs = [e for e in executions().list_by_task(task_id)
            if e["state"] == "succeeded"]
@@ -94,16 +96,20 @@ def execution_chk_asset(execution_id: int) -> Path | None:
     """执行条目的 chk 资产定位（B9 续跑取数两条路径的公共判据）：
 
     ① 保全 chk：run/<eid>/protected/ 下任意 .chk（非正常终止保全）；
-    ② 正常执行 chk：run/<eid>/input.chk（M1 清理边界保留期内）。
-    两处皆无 → None（无续跑/溯源资产）。
+    ② 正常执行 chk：按实际执行副本 `%chk=` 声明定位（resolve_chk 口径，
+    相对值相对 run 目录、无扩展名追加 .chk，3.5.0 起），无声明回落
+    input.chk（M1 清理边界保留期内）。两处皆无 → None（无续跑/溯源
+    资产）。
     """
+    from ..engine.workspace import resolve_chk  # 延迟导入防环（module 级
+    # 导入触发 engine 包部分初始化 ImportError；先例 inputs_path）
     d = run_dir(execution_id)
     prot = d / "protected"
     if prot.is_dir():
         for f in sorted(prot.iterdir()):
             if f.is_file() and f.suffix.casefold() == ".chk":
                 return f
-    top = d / "input.chk"
+    top = resolve_chk(d)
     return top if top.is_file() else None
 
 
@@ -176,7 +182,8 @@ def member_dependencies(member_ids: list[int]) -> dict[int, list[int]]:
 
 def validate_queue_members(member_ids: list[int], *,
                            removed_ids: list[int] | None = None) -> None:
-    """队列成员集 DAG 静态校验（创建 / PATCH / 提交三时点共用）。
+    """队列成员集 DAG 静态校验（创建 / 导入成队 / PATCH / 提交四时点
+    共用）。
 
     ① crest 任务不入队（422 INVALID_MEMBERS，details 注明 crest 任务
     不可组队）；② 队列成员携带 @exec / 文法残缺引用拒绝（@exec 为
@@ -184,8 +191,10 @@ def validate_queue_members(member_ids: list[int], *,
     注明被谁依赖，提示先解除下游引用）；④ 可达——@task:id 须为本成员集
     现存成员（跨队列/悬引用/自引用同码 DEPENDENCY_UNREACHABLE）；
     ⑤ 依赖图无环（含自环，DEPENDENCY_CYCLE，details 携带环路径）；
-    ⑥ 溯源 chk 存在性——上游已有成功执行但其 chk 已被清理 →
-    CHK_SOURCE_MISSING（details 注明缺失的执行 id，提示重跑上游恢复）；
+    ⑥ 溯源 chk 两形态——上游输入未声明 %chk → 拒绝并引导在上游输入
+    Link0 节补写（3.5.0 声明前置，details 携带 upstream_task_id、无
+    execution_id）；上游已有成功执行但 chk 已被清理 → 同码拒绝
+    （details 注明缺失的执行 id，提示重跑上游恢复）；
     ⑦ 方向——引用目标须在本成员序前列（前向引用在保序停等派发下永不
     满足，前驱不被派发即窗口死锁，DEPENDENCY_UNREACHABLE 拒绝）。
     """
@@ -257,15 +266,42 @@ def validate_queue_members(member_ids: list[int], *,
                     "（调整队列顺序使被引用成员在前）",
                     {"task_id": tid, "line": ref["line"],
                      "ref": f"@task:{ref['target']}"})
-    # ⑥ 溯源 chk 存在性（§2.1：上游无成功执行=依赖满足时必然有产出，
-    # 放行；已有成功执行但 chk 已清理 → 明知物化必败的提交拒绝）
+    # ⑥ 声明前置（3.5.0，chk-materialize-fix §2.2）：被 @task: 引用的
+    # 上游须在 Link0 区声明 %chk（无声明 g16 不产 chk，下游接续必然
+    # 失败——「依赖满足时必然有产出」假设不成立）；判定按 Link0 口径
+    # 非空即声明（符号续用形态 %chk=@task:X 亦算——物化改写后产出
+    # dep-X.chk；@exec 载体形态在 ② 先拒、不进入本判定），输入副本
+    # 缺失（OSError）视同无声明
+    from ..engine.workspace import parse_chk_line, resolve_chk  # 延迟导入
+    # 防环（先例 inputs_path / execution_chk_asset）
+    for tid in member_ids:
+        for ref in refs_by[tid]:
+            if ref["kind"] != "task":
+                continue
+            try:
+                up_text = inputs_path(ref["target"]).read_text(
+                    encoding="utf-8", errors="replace")
+                declared = parse_chk_line(up_text, link0_only=True)
+            except OSError:
+                declared = None  # 输入副本缺失视同无声明
+            if declared is None:
+                raise err(
+                    "CHK_SOURCE_MISSING",
+                    f"上游任务 {ref['target']} 的输入未声明 %chk（G16 无声明"
+                    "不产出检查点文件，下游接续必然失败），请在上游任务输入"
+                    "的 Link0 节补写 %chk",
+                    {"task_id": tid, "line": ref["line"], "ref": ref["raw"],
+                     "upstream_task_id": ref["target"]}, http=422)
+    # ⑥ 溯源 chk 存在性（上游已声明 %chk，依赖满足时有产出；已有成功
+    # 执行但 chk 文件不在 → 明知物化必败的提交拒绝；定位按 resolve_chk
+    # 口径，无执行副本回落 input.chk）
     for tid in member_ids:
         for ref in refs_by[tid]:
             if ref["kind"] != "task":
                 continue
             src = latest_succeeded(ref["target"])
-            if src is not None and (run_dir(src["id"]) / "input.chk") \
-                    .is_file() is False:
+            if src is not None and not resolve_chk(
+                    run_dir(src["id"])).is_file():
                 raise err(
                     "CHK_SOURCE_MISSING",
                     f"上游任务 {ref['target']} 最近成功执行（#{src['id']}）"

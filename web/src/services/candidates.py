@@ -195,14 +195,20 @@ def import_folder_as_queue(files: list[_File], *, mode: str,
     受支持文件数 2–10 判定成队或回落。
 
     返回 (files 条目, queue {queue_id,name}|None, queue_fallback_reason|None)；
-    成队 = 导入落候选 → 候选转换入队；越界 = 拒绝成队、回落全部生成候选。
+    成队 = 导入落候选 → 候选转换入队；越界或依赖校验未通过（3.5.0 起
+    建队前 DAG 校验）= 拒绝成队、回落全部生成候选，原因如实给出。
     """
     out = import_files(files, mode=mode, inputs_dir=inputs_dir)
     n = len(out)
     if 2 <= n <= 10:
         from .queues import create_queue_from_candidates  # 延迟导入防环
-        qid = create_queue_from_candidates(folder_name,
-                                           [item["id"] for item in out])
+        try:
+            qid = create_queue_from_candidates(folder_name,
+                                               [item["id"] for item in out])
+        except ApiError as exc:
+            # 依赖校验未通过（3.5.0）：与越界回落同通道，候选全保留、
+            # 不成队（零半成品队列）
+            return out, None, exc.message
         return out, {"queue_id": qid, "name": folder_name}, None
     reason = (f"受支持文件 {n} 个，超出队列成员上限 10" if n > 10
               else f"受支持文件 {n} 个，少于队列成员下限 2")

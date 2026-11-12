@@ -149,7 +149,9 @@ def parse_chk_line(text: str, *, link0_only: bool = False) -> Path | None:
     resolve_link0 同规则），供静态校验、物化文案判定与 fake_g16 对齐
     G16 只识别 Link0 命令的行为。多步放行（link1 B4）时本函数与
     resolve_chk、静态校验须同步改为末个声明段口径（见 link1-multistep-
-    plan B4 补注）。
+    plan B4 补注）。无声明三形态语义自此齐备（3.5.0）：%chk 行不存在、
+    %chk= 空值（正则不匹配空）、剥引号后为空（%chk="" 判空返回 None，
+    消除 Path("") 透传派生错误路径）。
     """
     if link0_only:
         lines = text.replace("\r\n", "\n").split("\n")
@@ -161,6 +163,8 @@ def parse_chk_line(text: str, *, link0_only: bool = False) -> Path | None:
         m = _CHK_RE.match(ln.strip())
         if m:
             raw = m.group(1).strip().strip('"').strip("'")
+            if not raw:  # %chk="" 空值引号形态视同无声明（3.5.0 行为修复）
+                return None
             return Path(raw)
     return None
 

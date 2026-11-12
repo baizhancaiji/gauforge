@@ -104,7 +104,14 @@ def _maybe_auto_success(queue_id: str, remaining: list[dict],
 
 def create_queue_from_candidates(name: str, member_ids: list[int]) -> str:
     """导入成队转换（m2-plan §2.3）：候选 → queue_member（按给定顺序）+
-    建队列（skip_failed=False 默认）。返回 qid；事件由路由层发。"""
+    建队列（skip_failed=False 默认）。返回 qid；事件由路由层发。
+
+    3.5.0 起建队前执行 validate_queue_members（与创建/PATCH/提交同源）：
+    DAG 校验（含声明前置）失败抛 ApiError，由 import_folder_as_queue
+    捕获回落为「已导入候选、未成队」，不产生半成品队列。
+    """
+    from .dependencies import validate_queue_members  # 延迟导入防环
+    validate_queue_members(member_ids)
     qid = new_queue_id()
     queues().create(qid, name=name, skip_failed=False)
     for pos, tid in enumerate(member_ids):

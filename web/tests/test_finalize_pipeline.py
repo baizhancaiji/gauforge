@@ -93,13 +93,24 @@ def test_resolve_chk_appends_ext_when_missing(home):
 # ---------------- parse_chk_line（3.5.0 自 finalize 下沉的纯函数） ----------------
 
 def test_parse_chk_line_empty_value_undeclared():
-    """%chk= 空值返回 None（正则 (.+) 不匹配空，等价迁移形态）；
-    无 %chk 行文本同 None。剥引号判空（%chk=""）为 T5 行为修复内容。"""
+    """%chk= 空值返回 None（正则 (.+) 不匹配空，等价迁移形态）；%chk=""
+    剥引号后判空视同无声明（3.5.0 行为修复：现状经 Path("") 透传）；
+    无 %chk 行文本同 None。"""
     from web.src.engine.workspace import parse_chk_line
     assert parse_chk_line("%chk=\n%nprocshared=2\n\n#p\n\nt\n\n0 1\nO\n") \
         is None
+    assert parse_chk_line('%chk=""\n%nprocshared=2\n\n#p\n\nt\n\n0 1\nO\n') \
+        is None
     assert parse_chk_line("no chk line at all\n\n#p\n\nt\n\n0 1\nO\n") is None
     assert parse_chk_line("") is None
+
+
+def test_resolve_chk_quoted_empty_falls_back(home):
+    """%chk="" 形态 resolve_chk 回落 input.chk（消除 Path("") 派生的
+    run 目录旁 <执行id>.chk 错误路径，3.5.0 行为修复随批转绿）。"""
+    rd = home / "run" / "1"
+    write_input(rd, '%chk=""\n\n#p\n\nt\n\n0 1\nO\n')
+    assert finalize.resolve_chk(rd) == rd / "input.chk"
 
 
 def test_parse_chk_line_link0_only_ignores_extra_section():

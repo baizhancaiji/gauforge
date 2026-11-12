@@ -7,9 +7,10 @@
   并改写 `%chk=dep-<X>.chk`——G16 运行会重写 %chk 目标文件，复制语义
   保护上游原件（roadmap §8.6 教训）；
 - `%oldchk=@task:X`（只读接续）：复制至 `dep-<X>.chk`、改写 `%oldchk=`，
-  本任务自身 `%chk` 保持默认 `input.chk`；
+  本任务自身 chk 目标由自身 `%chk` 声明决定，无声明 g16 不产 chk；
 - `%oldchk=@exec:<eid>`（断点续跑）：复制该执行的 chk 资产（protected/
-  保全优先，回落保留期内 input.chk）至 `dep-exec-<eid>.chk`。
+  保全优先，回落按实际执行副本 `%chk=` 声明定位、无声明回落
+  input.chk）至 `dep-exec-<eid>.chk`。
 
 物化完成后输入文件内**零符号残留**；输入哈希按物化前的符号形式计算
 （派发器 advance 已完成，物化不改哈希语义，重跑判定稳定）。
@@ -35,7 +36,13 @@ from ..services.dependencies import (
     run_dir as execution_run_dir,
 )
 from ..store import executions
-from .workspace import content_hash, g16_env, resolve_link0
+from .workspace import (
+    content_hash,
+    g16_env,
+    parse_chk_line,
+    resolve_chk,
+    resolve_link0,
+)
 
 PROBE_TIMEOUT_S = 120  # 与 finalize.make_fchk 同款兜底上限（§2.2）
 
@@ -72,8 +79,11 @@ def _task_current_hash(task_id: int, nproc_default: int,
 def resolve_upstream_chk(task_id: int, *, nproc_default: int = 1,
                          mem_gb_default: float = 1.0) -> Path:
     """@task:X 的 chk 溯源（§2.1）：优先 X 当前输入哈希匹配的成功执行
-    （哈希跳过被沿用的那次），无匹配回落最近成功执行；取其
-    run/<eid>/input.chk。缺源抛 MaterializeError。"""
+    （哈希跳过被沿用的那次），无匹配回落最近成功执行；chk 具体名由该
+    执行实际执行副本 Link0 `%chk=` 声明决定（resolve_chk 口径，3.5.0
+    起）。缺源抛 MaterializeError——两形态文案：执行副本未声明 %chk
+    （G16 不产检查点文件，引导补写）/ 已声明但 chk 文件已被清理
+    （重跑上游恢复）。"""
     exs = [e for e in executions().list_by_task(task_id)
            if e["state"] == "succeeded"]
     if not exs:
@@ -86,13 +96,25 @@ def resolve_upstream_chk(task_id: int, *, nproc_default: int = 1,
         chosen = next((e for e in exs if e.get("input_hash") == current),
                       None)
     chosen = chosen or exs[-1]
-    chk = execution_run_dir(chosen["id"]) / "input.chk"
-    if not chk.is_file():
+    run_d = execution_run_dir(chosen["id"])
+    try:
+        copy_text = (run_d / "input.gjf").read_text(
+            encoding="utf-8", errors="replace")
+        declared = parse_chk_line(copy_text, link0_only=True)
+    except OSError:
+        declared = None  # 执行副本缺失视同无声明（生产链路恒在）
+    if declared is None:
+        raise MaterializeError(
+            f"上游任务 {task_id} 最近成功执行（#{chosen['id']}）未声明 "
+            "%chk（G16 不产出检查点文件），请为上游补写 %chk 声明",
+            {"upstream_task_id": task_id, "execution_id": chosen["id"]})
+    resolved = resolve_chk(run_d)
+    if not resolved.is_file():
         raise MaterializeError(
             f"上游任务 {task_id} 最近成功执行（#{chosen['id']}）的 chk "
             "已被清理，物化必然失败（重跑上游恢复 chk 来源）",
             {"upstream_task_id": task_id, "execution_id": chosen["id"]})
-    return chk
+    return resolved
 
 
 def _rewrite_line(line: str, dep_name: str) -> str:
@@ -118,7 +140,7 @@ def materialize_chk(run_dir: Path, text: str, *, nproc_default: int = 1,
                                        nproc_default=nproc_default,
                                        mem_gb_default=mem_gb_default)
             dep_name = f"dep-{ref['target']}.chk"
-        else:  # exec（断点续跑）：protected 优先，回落保留期内 input.chk
+        else:  # exec（断点续跑）：protected 优先，回落按执行副本声明定位
             src = execution_chk_asset(ref["target"])
             if src is None:
                 raise MaterializeError(

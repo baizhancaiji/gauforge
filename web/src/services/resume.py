@@ -5,10 +5,12 @@ ineligible 以 eligible=false + reason 表达）→ 前端弹窗 →
 `POST /history/{id}/resume`（确认；幂等重探，ineligible 422
 RESUME_NOT_ELIGIBLE、满员 409 PENDING_CAPACITY_FULL）。
 
-探针取数两条路径（与物化器同源，engine.materialize.execution_chk_asset）：
+探针取数两条路径（与物化器同源：定义处
+services.dependencies.execution_chk_asset，经 engine.materialize 再导出）：
 ① chk_snapshot.location=protected 的保全 chk；② 无保全但该任务存在
-成功执行记录者取最近成功执行的 input.chk；两者皆无 ⇒ ineligible
-（no_resume_asset）。
+成功执行记录者取最近成功执行的 chk（具体名由该执行实际执行副本
+Link0 `%chk=` 声明决定，无声明回落 input.chk）；两者皆无 ⇒
+ineligible（no_resume_asset）。
 
 注入矩阵（route 判定复用 M0 输入分块解析器取 route 节文本，token 化
 大小写不敏感；§2.2 规则）：
@@ -188,7 +190,8 @@ def _evaluate(row: dict, g16_root) -> dict:
     if any(r["kind"] == "task" for r in parse_link0_refs(text)):
         result["reason"] = "chained_ref"
         return result
-    # 资产取数（两条路径：protected 保全 → 保留期 input.chk）
+    # 资产取数（两条路径：protected 保全 → 按执行副本 %chk= 声明定位、
+    # 无声明回落保留期 input.chk）
     chk = execution_chk_asset(row["id"])
     if chk is None:
         result["reason"] = "no_resume_asset"
