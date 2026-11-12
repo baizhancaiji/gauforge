@@ -16,6 +16,10 @@ const props = defineProps<{
   loading?: boolean;
   /** 内容未就绪时禁用确认（如输入原文读取中） */
   disabled?: boolean;
+  /** 弹窗宽度覆写（CSS 长度值，透传 --modal-width 变量；不覆写 width
+   *  属性——min(var(--modal-width), calc(100vw - 48px)) 表达式保持，
+   *  超视口自动钳制、居中由 .scrim 承载不破坏）。未传入时零变化。 */
+  width?: string;
 }>();
 
 const emit = defineEmits<{ confirm: []; close: [] }>();
@@ -59,7 +63,14 @@ function trapFocus(e: KeyboardEvent) {
 
 <template>
   <div v-if="open" class="scrim" @click.self="tryClose" @keydown.esc="tryClose" @keydown="trapFocus">
-    <div ref="panel" class="modal" role="dialog" aria-modal="true" :aria-label="title">
+    <div
+      ref="panel"
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="title"
+      :style="width ? { '--modal-width': width } : undefined"
+    >
       <h3 class="title mono">{{ title }}</h3>
       <div class="body">
         <slot />
@@ -81,6 +92,10 @@ function trapFocus(e: KeyboardEvent) {
           </button>
         </slot>
       </div>
+      <!-- 弹窗级附件落点（如 QueueEditorModal 拖宽手柄）：必须渲染为
+           .modal 直接子元素——.body 是 overflow-y 滚动容器且无定位祖先，
+           绝对定位内容置其中会被裁剪、无法贴住面板右缘 -->
+      <slot name="resize-handle" />
     </div>
   </div>
 </template>
@@ -104,6 +119,8 @@ function trapFocus(e: KeyboardEvent) {
   border: 1px solid var(--border-hair);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-pop);
+  /* 仅建立定位上下文（resize-handle 等附件的绝对定位参照），不改布局外观 */
+  position: relative;
 }
 .title {
   font-size: var(--text-md);

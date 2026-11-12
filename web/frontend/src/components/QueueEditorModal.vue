@@ -54,7 +54,7 @@ export function removeOldChkTaskRef(lines: string[], target: number): string[] {
  * 「直接提交」= 保存 + submit 链式；submit 失败时队列保留 unsubmitted，展示
  * 原因引导队列页重试；提交响应 normalized=true 显「已自动规范化」中性注记。
  */
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
@@ -266,6 +266,75 @@ function mapDepError(code: string | undefined, message: string, details: Record<
 
 const canSort = computed(() => !readonly.value && !done.value);
 
+// ---------- 弹窗宽度调节（§2.5）：右缘拖拽/键盘步进，localStorage 持久化 ----------
+// 宽度属设备视口相关的本地视图偏好（不上 ui-prefs：其键为枚举白名单、
+// 连续像素值不在该域模型内），持久化通道与 g16web-theme 同前缀约定。
+const WIDTH_KEY = "g16web-queue-editor-width";
+const WIDTH_MIN = 560; // 现默认档（tokens --modal-width），默认宽度不变
+const WIDTH_STEP = 16; // 键盘 ←/→ 步长
+const WIDTH_VIEWPORT_MARGIN = 48; // 与 ConfirmModal min() 表达式同源（两侧各留 24px）
+
+function loadWidth(): number {
+  const raw = localStorage.getItem(WIDTH_KEY);
+  const v = raw == null ? NaN : Number(raw);
+  return Number.isFinite(v) && v >= WIDTH_MIN ? v : WIDTH_MIN;
+}
+
+const panelWidth = ref<number>(loadWidth());
+const viewportW = ref<number>(window.innerWidth);
+/** 实际渲染宽度 = min(内部值, 视口宽 − 48)：由 ConfirmModal 的 min()
+ *  表达式钳制，此处同式计算供 aria-valuenow 与渲染一致。 */
+const renderedWidth = computed(() =>
+  Math.min(panelWidth.value, Math.max(viewportW.value - WIDTH_VIEWPORT_MARGIN, 0)),
+);
+/** 渲染上限（视口宽 − 48）：视口宽 < 608px 时小于 aria-valuemin=560，
+ *  为如实暴露的退化区间（此时渲染宽度由 min() 钳制、拖拽不改变可见宽度）。 */
+const ariaMax = computed(() => Math.max(viewportW.value - WIDTH_VIEWPORT_MARGIN, 0));
+
+function setWidth(v: number): void {
+  const cap = Math.max(WIDTH_MIN, viewportW.value - WIDTH_VIEWPORT_MARGIN);
+  panelWidth.value = Math.round(Math.min(Math.max(v, WIDTH_MIN), cap));
+}
+
+function persistWidth(): void {
+  localStorage.setItem(WIDTH_KEY, String(panelWidth.value));
+}
+
+function nudgeWidth(delta: number): void {
+  setWidth(panelWidth.value + delta);
+  persistWidth();
+}
+
+let resizeStartX = 0;
+let resizeStartW = 0;
+
+function onResizeDown(e: PointerEvent): void {
+  e.preventDefault();
+  resizeStartX = e.clientX;
+  resizeStartW = panelWidth.value;
+  (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  const onMove = (ev: PointerEvent): void => {
+    // 居中面板两侧对称扩展：右缘拖 1px 面板宽 2px（否则拖拽与视觉增长不同步）
+    setWidth(resizeStartW + (ev.clientX - resizeStartX) * 2);
+  };
+  const onUp = (): void => {
+    persistWidth();
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", onUp);
+    window.removeEventListener("pointercancel", onUp);
+  };
+  window.addEventListener("pointermove", onMove);
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+}
+
+function onViewportResize(): void {
+  viewportW.value = window.innerWidth;
+}
+
+onMounted(() => window.addEventListener("resize", onViewportResize));
+onUnmounted(() => window.removeEventListener("resize", onViewportResize));
+
 // ---------- 拖拽排序（指针跟手画布式 usePointerSort，§4.6；只读/完成态不可拖） ----------
 const listEl = ref<HTMLElement | null>(null);
 const canvasEl = ref<HTMLElement | null>(null);
@@ -466,7 +535,13 @@ function tryClose() {
 </script>
 
 <template>
-  <ConfirmModal :open="open" :title="mode === 'create' ? '新建队列' : '队列编辑'" :loading="busy" @close="tryClose">
+  <ConfirmModal
+    :open="open"
+    :title="mode === 'create' ? '新建队列' : '队列编辑'"
+    :loading="busy"
+    :width="`${panelWidth}px`"
+    @close="tryClose"
+  >
     <div class="q-body">
       <div class="q-top">
         <label class="q-field">
@@ -623,6 +698,24 @@ function tryClose() {
         </button>
       </template>
     </template>
+    <!-- 拖宽手柄（§2.5）：经 ConfirmModal 具名插槽渲染为 .modal 直接子元素
+         （.body 是滚动容器，绝对定位置其中会被裁剪）；只读/完成态同样
+         显示可操作（宽度属本地视图偏好，与队列状态无关） -->
+    <template #resize-handle>
+      <div
+        class="q-resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="调整弹窗宽度"
+        :aria-valuenow="renderedWidth"
+        aria-valuemin="560"
+        :aria-valuemax="ariaMax"
+        tabindex="0"
+        @pointerdown="onResizeDown"
+        @keydown.left.prevent="nudgeWidth(-WIDTH_STEP)"
+        @keydown.right.prevent="nudgeWidth(WIDTH_STEP)"
+      ></div>
+    </template>
   </ConfirmModal>
 </template>
 
@@ -765,7 +858,11 @@ function tryClose() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 150px;
+  /* 弹窗宽度可调（§2.5）：可伸缩占位替代固定 150px——基准为内容宽、
+   * 与 .m-title 按 flex 比例分配行内剩余宽度；min-width: 0 防溢出撑破，
+   * 单行省略兜底保留，拖宽后长任务名显示宽度随弹窗增长 */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .m-title {
   color: var(--text-secondary);
@@ -859,5 +956,27 @@ function tryClose() {
 .tgl--on .tgl-knob {
   left: 16px;
   background: var(--bg-raised);
+}
+
+/* 拖宽手柄（§2.5）：右缘 8px 热区贴面板外缘 4px（ConfirmModal .modal
+ * 已建定位上下文），透明常态 + hover/焦点显右侧指示线；焦点态由全局
+ * :focus-visible 轮廓承载。宽度值为组件级像素写法（既有先例 .m-file） */
+.q-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -4px;
+  width: 8px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  border-right: 2px solid transparent;
+  border-radius: var(--r-lg);
+  cursor: col-resize;
+  touch-action: none;
+}
+.q-resize-handle:hover,
+.q-resize-handle:focus-visible {
+  border-right-color: var(--border-strong);
 }
 </style>
