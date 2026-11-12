@@ -94,6 +94,27 @@ def test_single_file_falls_back():
     assert tasks().count_by_form("candidate") == 1
 
 
+def test_folder_queue_dag_rejected_falls_back():
+    """导入成队前 DAG 校验失败 → 回落候选、不成队（3.5.0：成队前补
+    validate_queue_members；成员携带 @exec 在载体校验先拒，现状直接建队
+    绕过全部 DAG 校验——修复前红）。"""
+    bad = ("%mem=1GB\n%nprocshared=4\n%chk=@exec:999999\n#p opt\n\n"
+           "坏载体\n\n0 1\nO 0 0 0\n\n")
+    r = client.post(
+        "/api/v1/candidates",
+        files=[("files", ("t0.gjf", DATA.format(0), "text/plain")),
+               ("files", ("bad.gjf", bad, "text/plain"))],
+        data={"mode": "folder", "queue_from_folder": "true",
+              "folder_name": "dq"})
+    assert r.status_code == 201
+    body = r.json()
+    assert body["queue"] is None
+    assert body["queue_fallback_reason"] is not None
+    assert len(body["files"]) == 2
+    assert tasks().count_by_form("candidate") == 2  # 回落全部生成候选
+    assert len(queues().list()) == 0
+
+
 def test_flag_without_folder_mode_rejected_422():
     r = _post(3, mode="files", queue_from_folder="true",
               folder_name="x")

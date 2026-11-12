@@ -14,6 +14,8 @@ hq 不在 PATH 时跳过（§5：单测不依赖真 g16 环境，本链路依赖
 from __future__ import annotations
 
 import shutil
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -250,3 +252,84 @@ def test_e2e_queue_skip_failed_continues(tmp_path, monkeypatch):
                    for ev, d in records)
     finally:
         mgr.stop()
+
+
+# ---------------- 3.5.0 接续链端到端与 fake_g16 Link0 口径守护 ----------------
+
+def test_e2e_task_chain_chk_materialization(tmp_path, monkeypatch):
+    """上游 %chk=opt.chk 接续链端到端（chk-materialize-fix §2.4）：队列两
+    成员经真 CliGateway + 仓库构建 hq 全链路——u 成功（fake_g16 按声明产
+    opt.chk）→ d 物化拷 dep-<u>.chk 成功（字节相等）、input.gjf 零符号
+    残留、队列 completed。现状定位恒取 input.chk → d 立即
+    failed/program_error（修复前红）。"""
+    fakebin = tmp_path / "fakebin"
+    fakebin.mkdir()
+    shutil.copy(Path(__file__).parent / "fake_g16.py", fakebin / "g16")
+    settings().set("g16_root", str(fakebin))
+    settings().set("link0_default_nproc", 1)
+    monkeypatch.setenv("G16_FAKE", "sleep=0.2;steps=2")  # worker 继承
+
+    u_text = "%chk=opt.chk\n\n#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\n"
+    tid_u = import_files([("u.gjf", u_text.encode("utf-8"))])[0]["id"]
+    d_text = (f"%OldChk=@task:{tid_u}\n\n#p HF/6-31G(d)\n\n水\n\n"
+              "0 1\nO 0 0 0\n")
+    tid_d = import_files([("d.gjf", d_text.encode("utf-8"))])[0]["id"]
+
+    qid = f"q{int(time.monotonic_ns() % 100000):05d}"
+    queues().create(qid, name="t", skip_failed=False)
+    tasks().enqueue(tid_u, qid, 0)
+    tasks().enqueue(tid_d, qid, 1)
+    queues().set_state(qid, "submitted")  # 提交动作（append_queue 同语义）
+    seats().append(kind="queue", queue_id=qid)
+
+    # 仓库构建产物定位（PATH 上游 hq 无本项目改造），Windows 兼容 hq.exe
+    hq_bin = Path(__file__).resolve().parents[2] / "target" / "release" / "hq"
+    if not hq_bin.is_file():
+        hq_bin = hq_bin.with_name("hq.exe")
+    if not hq_bin.is_file():
+        pytest.skip("仓库构建 hq 缺失（cargo build --release 未运行）")
+    mgr = HqProcessManager(str(hq_bin), tmp_path / "hqws")
+    mgr.start()
+    mgr.ensure_worker(cpus=1)
+    records: list[tuple[str, dict]] = []
+    disp = Dispatcher(CliGateway(str(hq_bin), str(mgr.server_dir)),
+                      emitter=lambda e, d: records.append((e, d)))
+    try:
+        deadline = time.monotonic() + 90
+        q: dict = {}
+        while time.monotonic() < deadline:
+            disp.tick()
+            q = queues().get(qid)
+            if q["state"] in ("unsubmitted", "completed"):
+                break
+            time.sleep(0.2)
+        e_u = executions().list_by_task(tid_u)[-1]
+        assert e_u["state"] == "succeeded", e_u
+        # fake_g16 按声明真实产出 opt.chk（上游真实产出半段的闭环锚点）
+        opt_chk = tmp_path / "run" / str(e_u["id"]) / "opt.chk"
+        assert opt_chk.is_file()
+        e_d = executions().list_by_task(tid_d)[-1]
+        assert e_d["state"] == "succeeded", e_d
+        dep = tmp_path / "run" / str(e_d["id"]) / f"dep-{tid_u}.chk"
+        assert dep.is_file() and dep.read_bytes() == opt_chk.read_bytes()
+        d_final = (tmp_path / "run" / str(e_d["id"]) / "input.gjf")
+        d_source = d_final.read_text(encoding="utf-8")
+        assert "@task:" not in d_source and "@exec:" not in d_source
+        assert q["state"] == "completed", q
+        assert seats().count() == 0
+    finally:
+        mgr.stop()
+
+
+def test_fake_g16_ignores_non_link0_chk(tmp_path):
+    """fake_g16 Link0 口径守护（与静态校验口径同源）：输入在 route 之后
+    的附加节携带 %chk=late.chk → 不产 chk。直接子进程调用 fake_g16
+    （sys.executable 传脚本与输入路径），不经导入/提交链——附加节 %chk
+    经导入会先被 Link 0 错位检测以 parse_errors 拒绝，到不了 fake_g16。"""
+    inp = tmp_path / "late.gjf"
+    inp.write_text(SIMPLE + "\n! 附加节\n%chk=late.chk\n", encoding="utf-8")
+    subprocess.run([sys.executable,
+                    str(Path(__file__).parent / "fake_g16.py"), str(inp)],
+                   check=True, capture_output=True)
+    assert (tmp_path / "late.log").is_file()
+    assert not (tmp_path / "late.chk").exists()

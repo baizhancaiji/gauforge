@@ -61,13 +61,40 @@ def _mk_queue(members: list[int], skip_failed: bool = False) -> str:
 
 
 def _succeed(task_id: int, chk: bytes = b"up", **kw) -> int:
+    """造一条 succeeded 执行：按任务输入 Link0 %chk 声明落 chk 资产（命名
+    chk 与执行副本 input.gjf 两者同落，与 workspace.parse_chk_line
+    (link0_only=True) 同口径；无声明防御回落现行为 input.chk，绝对路径
+    声明不写资产文件）。"""
+    import re as _re
     eid = executions().create(
         task_id=task_id, filename="x.gjf",
         resources={"nproc": {"value": 1, "defaulted": False},
                    "mem_gb": {"value": 1, "defaulted": False}}, **kw)
     run_d = config.HOME_DIR / "run" / str(eid)
     run_d.mkdir(parents=True)
-    (run_d / "input.chk").write_bytes(chk)
+    text = (config.HOME_DIR / "inputs" / str(task_id)).read_text(
+        encoding="utf-8", errors="replace")
+    (run_d / "input.gjf").write_text(text, encoding="utf-8")
+    declared = None
+    lines = text.replace("\r\n", "\n").split("\n")
+    i, n = 0, len(lines)
+    while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
+        i += 1
+    while i < n and lines[i].lstrip().startswith("%"):
+        m = _re.match(r"^%chk\s*=\s*(.+)$", lines[i].strip(),
+                      _re.IGNORECASE)
+        if m:
+            raw = m.group(1).strip().strip('"').strip("'")
+            declared = raw or None
+            break
+        i += 1
+    if declared is None:
+        (run_d / "input.chk").write_bytes(chk)  # 防御回落现行为
+    elif not declared.startswith("@") and not Path(declared).anchor:
+        target = run_d / declared
+        if not target.suffix:
+            target = target.with_name(target.name + ".chk")
+        target.write_bytes(chk)
     executions().finalize(execution_id=eid, state="succeeded",
                           finished_at=now_iso())
     return eid

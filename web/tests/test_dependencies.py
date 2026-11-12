@@ -171,7 +171,7 @@ def test_patch_remove_depended_member_rejected(ind):
     """三段链移除中段（被末段依赖）拒绝，details 注明被谁依赖；
     先解除下游引用再移除则放行。"""
     a = _plain(ind, "a.gjf")
-    b = _mk(ind, _input(f"%OldChk=@task:{a}\n"), "b.gjf")
+    b = _mk(ind, _input(f"%chk=b.chk\n%OldChk=@task:{a}\n"), "b.gjf")
     c = _mk(ind, _input(f"%OldChk=@task:{b}\n"), "c.gjf")
     qid = create_queue({"name": "p", "member_ids": [a, b, c],
                         "skip_failed": False})["id"]
@@ -206,6 +206,83 @@ def test_chk_source_missing_rejected(ind, tmp_path):
     assert ei.value.code == "CHK_SOURCE_MISSING"
     assert ei.value.details["execution_id"] == eid
     assert ei.value.details["upstream_task_id"] == a
+
+
+# ---------------- 声明前置校验（3.5.0，chk-materialize-fix §2.2） ----------------
+
+def test_symbol_declaration_passes(ind):
+    """守护绿：符号续用声明算声明（非空即声明、不按形态特判）——三成员链
+    z（%chk=z.chk）→ a（%chk=@task:z）→ b（%OldChk=@task:a）创建与提交
+    放行，新校验不误拒符号形态。"""
+    z = _plain(ind, "z.gjf")
+    a = _mk(ind, _input(f"%chk=@task:{z}\n"), "a.gjf")
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n"), "b.gjf")
+    q = create_queue({"name": "sym", "member_ids": [z, a, b],
+                      "skip_failed": False})
+    assert q["member_ids"] == [z, a, b]
+    out = submit_queue(q["id"])
+    assert out["task_id"] in (z, a, b)
+
+
+def test_upstream_undeclared_chk_rejected(ind):
+    """被 @task: 引用的上游输入未声明 %chk → 创建 422 CHK_SOURCE_MISSING
+    （details 携带 task_id/line/ref/upstream_task_id、无 execution_id）；
+    提交时点同源：建队后清空上游声明再提交同码拒绝。"""
+    a = _mk(ind, _input("%nprocshared=2\n"), "a.gjf")  # 无 %chk 声明
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n"), "b.gjf")
+    with pytest.raises(ApiError) as ei:
+        create_queue({"name": "nd", "member_ids": [a, b],
+                      "skip_failed": False})
+    assert ei.value.code == "CHK_SOURCE_MISSING"
+    assert "未声明 %chk" in ei.value.message
+    assert "补写" in ei.value.message
+    assert ei.value.details["task_id"] == b
+    assert ei.value.details["line"] == 1
+    assert ei.value.details["ref"] == f"@task:{a}"
+    assert ei.value.details["upstream_task_id"] == a
+    assert "execution_id" not in ei.value.details
+    # 提交时点：声明在时建队成功，清空后提交（重校验）同码拒绝
+    a2 = _plain(ind, "a2.gjf")
+    b2 = _mk(ind, _input(f"%OldChk=@task:{a2}\n"), "b2.gjf")
+    qid = create_queue({"name": "ok2", "member_ids": [a2, b2],
+                        "skip_failed": False})["id"]
+    _set_input(ind, a2, _input("%nprocshared=2\n"))  # 清空 %chk 声明
+    with pytest.raises(ApiError) as ei:
+        submit_queue(qid)
+    assert ei.value.code == "CHK_SOURCE_MISSING"
+    assert ei.value.details["upstream_task_id"] == a2
+
+
+def test_upstream_input_missing_rejected(ind):
+    """上游输入副本文件缺失视同无声明 → 创建 422 同码同口径（提交时点
+    副本缺失经核验链 404 先拒，DAG 校验不可达，本用例锁创建时点）。"""
+    a = _plain(ind, "a.gjf")
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n"), "b.gjf")
+    (ind / str(a)).unlink()
+    with pytest.raises(ApiError) as ei:
+        create_queue({"name": "miss", "member_ids": [a, b],
+                      "skip_failed": False})
+    assert ei.value.code == "CHK_SOURCE_MISSING"
+    assert ei.value.details["upstream_task_id"] == a
+    assert "execution_id" not in ei.value.details
+
+
+def test_patch_revalidates_undeclared_upstream_rejected(ind):
+    """PATCH 成员集变更触发重校验：上游声明被清空后 PATCH（移除无引用
+    普通成员 c）422 拒绝，校验先于任何落库、成员集与库内顺序不变。"""
+    a = _mk(ind, _input("%chk=a.chk\n"), "a.gjf")
+    b = _mk(ind, _input(f"%OldChk=@task:{a}\n"), "b.gjf")
+    c = _plain(ind, "c.gjf")
+    qid = create_queue({"name": "pv", "member_ids": [a, b, c],
+                        "skip_failed": False})["id"]
+    _set_input(ind, a, _input("%nprocshared=2\n"))  # 清空 %chk 声明
+    with pytest.raises(ApiError) as ei:
+        queues_svc.patch_queue(qid, {"member_ids": [a, b]})
+    assert ei.value.code == "CHK_SOURCE_MISSING"
+    assert "未声明 %chk" in ei.value.message
+    assert ei.value.details["upstream_task_id"] == a
+    # 校验先于落库：成员集与库内顺序不变
+    assert [m["id"] for m in tasks().list_queue_members(qid)] == [a, b, c]
 
 
 # ---------------- 单任务席位载体 ----------------
