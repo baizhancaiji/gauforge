@@ -12,6 +12,7 @@
 
 - 【plans】TUI v1 实施计划无限期延后（用户决策 2026-11-12）：撤销目标版本 3.5.0 预留、不设版本号，重入实施须先重校代码锚点与契约基线，tui-v1-plan.md 状态行回填「无限期延后」并登记决策留痕；check_plan_status.py 与 AGENTS.md §5.2 将「无限期延后」纳入终态口径，全量扫描不再阻塞发布
 - 【plans】docs/plans TUI 三件套清理整合（2026-11-12）：审查修订版 tui-v1-plan.reviewed.md 全部修订（§1.3 增第 12–19 条基线、验收扩至 AC1–AC37、新增风险 R28/R29、B1/C1/G1/G6/H2/I1 任务加严、估算修正 40/48 人天）并入正式计划 tui-v1-plan.md，正文残留 9 处 3.5.0 预设去版本化为「目标版本」中性表述，状态行补登记分叉合并与基线清理留痕；tui-assessment/ 五份评估基线（tui-draft 定稿与四份基线，约 290KB 未入库 git）随延后决策一并移除，计划正文「tui-draft §」锚点保留为历史引用，重启实施须重估需求基线、代码事实锚点、契约基线与版本号
+- 【plans】补测 `%oldchk` 单独声明受控实验并闭合 link1-multistep-plan 遗留待测项：相对/绝对路径两组均正常完成（2 次 Normal termination，段 2 频率 1684.5331/3840.9525/3970.1611 与金标准逐位一致），Link 0 将 oldchk 复制至 GAUSS_SCRDIR 下 scratch 当前 chk、作业声明的 chk 不被改写（formchk 无频率数据、Total Energy 仍为段 1 单点能）；据此 `%oldchk` 单独声明即为可读 chk 源，`INPUT_STAGE_CHK_REQUIRED` 阻断条件维持「无 `%chk` 且无 `%oldchk`」不收紧，S3/§3.2/B3 与 §8 Q5 按实测回填，开工前置工作项移除并同步扣减 L0 与总工期（36–55→35–54 人日），新正例样本 q5_water_oldchk_only.gjf/.out 入 ~/g16/tests/
 
 ## v3.4.1（2026-10-22T10:23+0800 发布，patch）
 
