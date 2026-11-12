@@ -94,7 +94,10 @@
   `run/<执行id>/protected/` 并落库 `chk_snapshot`（rwf 与 Gau-\* 自
   2026-10-04 清理边界修订起不再保全、异常终止即时收尸，roadmap M1 段
   已同步；`finalize.protect`，续跑探针的对象）；成功执行保留期内的
-  `run/<eid>/input.chk`（链式物化溯源目标）。
+  `run/<eid>/input.chk`（链式物化溯源目标）（勘误（3.5.0）：chk 具体名由
+  该执行实际执行副本 Link0 `%chk=` 声明决定（相对值相对 run 目录、无扩展名
+  自动追加 .chk、无声明 g16 不产 chk——`finalize.resolve_chk` 实测口径），
+  非固定 `input.chk`）。
 - M3 产出（M4 的直接依赖面）：B1 解析服务与 `run/<id>/analysis.json`
   （能量表 g16 行取末次 SCF 双单位能量）；`HistoryEntry.result_ref` 链路。
 - Gaussian 16 官方手册（gaussian-kb MCP 权威核查，2026-09-30）：
@@ -191,12 +194,21 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
   `dep-<taskid>.chk` 并改写 `%Chk=dep-<taskid>.chk`（G16 会重写该文件，复制
   语义保护上游原件——遵循 roadmap §8.6「g16 启动会重写 %CHK」教训）；
   `%OldChk=@task:X`：复制至 `dep-<taskid>.chk`、改写 `%OldChk=`，本任务自身
-  `%Chk` 保持默认 `input.chk`。物化完成后输入文件内**零符号残留**；输入哈希
+  `%Chk` 保持默认 `input.chk`（勘误（3.5.0）：chk 具体名由该执行实际执行
+  副本 Link0 `%chk=` 声明决定（相对值相对 run 目录、无扩展名自动追加 .chk、
+  无声明 g16 不产 chk——`finalize.resolve_chk` 实测口径），非固定
+  `input.chk`）。物化完成后输入文件内**零符号残留**；输入哈希
   按物化前的符号形式计算（哈希语义不受物化影响，重跑判定稳定）。
 - **chk 溯源**：@task:X 的 chk 来源 = X 最近一次成功（succeeded）执行的
-  `run/<eid>/input.chk`（M1 清理边界内的保留期 chk）；X 被哈希跳过时溯源至
+  `run/<eid>/input.chk`（M1 清理边界内的保留期 chk）（勘误（3.5.0）：chk
+  具体名由该执行实际执行副本 Link0 `%chk=` 声明决定（相对值相对 run 目录、
+  无扩展名自动追加 .chk、无声明 g16 不产 chk——`finalize.resolve_chk` 实测
+  口径），非固定 `input.chk`）；X 被哈希跳过时溯源至
   其被沿用的那次历史执行。溯源目标存在性在**提交时静态校验**：X 尚无成功
-  执行（待执行/在跑）属正常（依赖满足时必然有产出），放行；X 已有成功记录
+  执行（待执行/在跑）属正常（依赖满足时必然有产出），放行（语义注记
+  （3.5.0）：3.5.0 起被 `@task:` 引用的上游须在 Link0 区声明 `%chk`——
+  无声明时即使尚无成功执行也以 `CHK_SOURCE_MISSING` 422 拒绝，原文
+  「尚无成功执行属正常、放行」自本版起以已声明为前提）；X 已有成功记录
   但其 chk 已被清理 → 提交拒绝（码 `CHK_SOURCE_MISSING`，details 注明缺失
   的执行 id，提示「重跑上游恢复 chk 来源」——重跑沿用原任务 id、下游
   @task:X 引用不受影响；不引导「从断点续跑」：上游 succeeded 条目无
@@ -287,7 +299,10 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
   → 前端弹窗 → `POST /history/{id}/resume`（**新建任务**并入待执行队列，
   沿用既有派发/核验链路；任务身份见下）。
 - **探针**：优先取 `chk_snapshot.location=protected` 的保全 chk；无保全但
-  该任务存在成功执行记录者取最近成功执行的 `input.chk`；两者皆无 ⇒
+  该任务存在成功执行记录者取最近成功执行的 `input.chk`（勘误（3.5.0）：chk
+  具体名由该执行实际执行副本 Link0 `%chk=` 声明决定（相对值相对 run 目录、
+  无扩展名自动追加 .chk、无声明 g16 不产 chk——`finalize.resolve_chk` 实测
+  口径），非固定 `input.chk`）；两者皆无 ⇒
   ineligible。探针 = 对该 chk 跑 `<g16_root>/formchk`（临时目录），formchk
   成功且 fchk 可读 ⇒ 有效；超时沿用 finalize 同款 120s，超时按探针失败
   处理（formchk 典型耗时秒级、120s 为兜底上限，preview 同步执行探针、
@@ -316,7 +331,7 @@ A4 契约评审为两链共同前置，B9 另受 B7（物化器，与 A5 并行�
 | 任务类型（route 判定） | 注入 | 说明 |
 |---|---|---|
 | 优化（route 含 Opt） | Link0 追加 `%OldChk=@exec:<原执行id>` + route 改写为 `Opt=Restart` + 原选项 | 本任务 chk 自原 chk 复制（%OldChk 只读接续），Restart 读取并继续优化；整个 route 仅 Opt 关键字与其原选项 + Restart（G16 手册 Opt=Restart 语义） |
-| 非优化 SCF（sp 等） | Link0 追加 `%OldChk=@exec:<原执行id>` + route 追加 `Guess=Read` | 只读接续做初猜；本任务 chk 为新 input.chk |
+| 非优化 SCF（sp 等） | Link0 追加 `%OldChk=@exec:<原执行id>` + route 追加 `Guess=Read` | 只读接续做初猜；本任务 chk 为新 input.chk（勘误（3.5.0）：chk 具体名由该执行实际执行副本 Link0 `%chk=` 声明决定（相对值相对 run 目录、无扩展名自动追加 .chk、无声明 g16 不产 chk——`finalize.resolve_chk` 实测口径），非固定 `input.chk`） |
 | freq | 无注入 | freq 无中断续跑语义，**回落原样重跑**（弹窗明示；不建立 @exec 引用；实现经 resume 链路新建任务以保留 resumed_from 关联——与历史页既有「重新排队」语义等价、并存）；链内成员 ineligible——原样重跑同样被单任务席位校验拒绝 |
 
 - **任务身份与关联**：resume **新建任务**
@@ -718,7 +733,10 @@ flowchart LR
   创建执行记录时写入）【历史表加列 `resumed_from`（可空 TEXT JSON），
   随 migrations 版本化迁移幂等落库】、入队——物化随派发钩子即 B7
   物化器，不提前复制）；③ M1 保全
-  chk（protected/）与最近成功执行 input.chk 两条取数路径；④ freq 回落
+  chk（protected/）与最近成功执行 input.chk 两条取数路径（勘误（3.5.0）：
+  chk 具体名由该执行实际执行副本 Link0 `%chk=` 声明决定（相对值相对 run
+  目录、无扩展名自动追加 .chk、无声明 g16 不产 chk——`finalize.resolve_chk`
+  实测口径），非固定 `input.chk`）；④ freq 回落
   分支（无注入、原样重跑、保留 resumed_from 关联）。
 - 技术要求：注入矩阵与 §2.2 逐字一致（route 判定按 §2.2 规则：含 Opt
   即优化行、Opt+Freq 并存归优化）；resume 不改动原历史条目（新任务
@@ -815,7 +833,7 @@ flowchart LR
 | test_dependencies.py | B6 | 合法链/环/自环/跨队/悬引用/PATCH 移除被依赖成员/crest 成员组队拒绝/单任务席位载体 @task: 引用拒绝（行内提交与历史重新排队 422，DoD 3/走查 2 场景的测试承载） | 单元+契约 |
 | test_materialize.py | B7 | 物化重写内容断言；上游零改动；缺源失败归因；探针三分支；重入①提交参数（禁用 HQ 重试） | 单元 |
 | test_dispatch_deps.py | B8 | 依赖停等不越位；前驱失败→skipped；前驱 skipped→下游传递 skipped（勾选跳过开关三段链中段失败、防死锁）；哈希跳过溯源物化；依赖+资源双停等叠加；重入②journal 重跑者取消+重新物化派发；重入②「120s 容差内重跑」盲区边界（独立信号/保守处置） | 单元（FakeGateway） |
-| test_resume.py | B9 | 注入矩阵三分支（`@exec` 引用与 Opt=Restart/%OldChk 形态）；无保全 chk 回落最近成功执行 input.chk 的探针与物化（§4.6 ③ 第二取数路径）；ineligible 五态与 HTTP 语义（preview 200 / resume 422；链内引用用例：输入含 @task: 引用 preview 返回 eligible=false）；confirm 幂等重探（preview 后清理 chk → 确认 422）；confirm 满员 409（入队满员拒绝、零副作用）；新建任务身份与 `resumed_from` 落库；物化链复用（与 B7 同器断言）；原历史条目不可变（`resumed_by` 派生只读） | 单元+集成 |
+| test_resume.py | B9 | 注入矩阵三分支（`@exec` 引用与 Opt=Restart/%OldChk 形态）；无保全 chk 回落最近成功执行 input.chk 的探针与物化（§4.6 ③ 第二取数路径；勘误（3.5.0）：chk 具体名由该执行实际执行副本 Link0 `%chk=` 声明决定——相对值相对 run 目录、无扩展名自动追加 .chk、无声明 g16 不产 chk（`finalize.resolve_chk` 实测口径），非固定 `input.chk`）；ineligible 五态与 HTTP 语义（preview 200 / resume 422；链内引用用例：输入含 @task: 引用 preview 返回 eligible=false）；confirm 幂等重探（preview 后清理 chk → 确认 422）；confirm 满员 409（入队满员拒绝、零副作用）；新建任务身份与 `resumed_from` 落库；物化链复用（与 B7 同器断言）；原历史条目不可变（`resumed_by` 派生只读） | 单元+集成 |
 | test_workflow_crest.py | B10/B11 | 可执行缺失 503；提交席位满员 409 零副作用（无 workflow 行）；来源候选形态校验（WORKFLOW_STATE_INVALID）；`top_n∈[2,10]`；构象数边界（<2 记 failed、2≤n<top_n 取 min）；提取器样例回归；top-N 队列生成与自动提交（含满员保留 unsubmitted）；workflow 单点与列表端点状态与聚合；能量表 workflow 聚合混排（crest+g16 行）与换算；部分完成态零点随行集重算（§2.3 零点漂移处置）；精修队列删除后的单点聚合（workflow 停留 refining、crest 结果仍可查）；启动对账 workflow 重推幂等（钩子链中断恢复） | 单元+契约 |
 | test_e2e_m4.py | D3 | chk 链、断点续跑、组合流（真机段走查留痕） | e2e |
 | 既有回归 | 全程 | `test_error_codes.py`、`test_openapi_ssot.py`、`gen:types` 零 diff、`test_e2e_fake_g16.py` 不回归 | 闸门 |
@@ -927,7 +945,10 @@ roadmap M4 段时补注「含手动停止条目」、消除两文口径差。
    分块编辑（或失败回退队列编辑框）手写 Link0 后组队生成，不经 C5
    勾选）：另跑两段链 [opt, opt2（%Chk=@task:opt）]
    ——断言 opt2 的 dep chk 被 G16 运行重写（内容/mtime 变化）后上游
-   run/<opt执行id>/input.chk 原件哈希前后一致；opt2 标记 failed 后重跑，
+   run/<opt执行id>/input.chk 原件哈希前后一致（勘误（3.5.0）：chk 具体名由
+   该执行实际执行副本 Link0 `%chk=` 声明决定（相对值相对 run 目录、无扩展名
+   自动追加 .chk、无声明 g16 不产 chk——`finalize.resolve_chk` 实测口径），
+   非固定 `input.chk`）；opt2 标记 failed 后重跑，
    物化器重新复制上游 chk（重取语义）。
 2. **依赖校验**：环/自环/悬引用/跨队列/单任务席位引用逐例 422 + 错误码；
    PATCH 移除被依赖成员拒绝；溯源 chk 清理后重提交 `CHK_SOURCE_MISSING`。
