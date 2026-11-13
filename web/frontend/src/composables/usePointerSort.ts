@@ -9,7 +9,10 @@
  *
  * 定位模型（A-12 前缀和化，2026-10-02）：逐行实测 offsetHeight，槽位位置
  * 按前缀和（Σ行高+行距）换算——行高可变（如席位行子表展开）时让位与落点
- * 仍精确对位；等高列表在前缀和模型下行为不变。量测不硬编码：行高取自
+ * 仍精确对位；等高列表在前缀和模型下行为不变。拖拽期（2026-11-14 变高行
+ * 错位修复）：y 定位改按「交换后布局」（rowHeights 移除 from 插入 to）的
+ * 前缀和——变高行交换后让位/落点分带/夹取/落定目标与可见排布一致，等高行
+ * 退化为原前缀和（数学等价，既有行为零变化）。量测不硬编码：行高取自
  * DOM（offsetHeight）、行距取画布实际 rowGap、补间时长取 --dur-drag；
  * 宿主画布只提供 position:relative，行 absolute。子表展开/收起等行高变化
  * 由宿主 watch 后重调 measure()。
@@ -73,6 +76,41 @@ export function usePointerSort(opts: PointerSortOptions) {
     return y;
   }
 
+  /** 拖拽期交换后布局：rowHeights 移除 from 插入 to 的高度序列与前缀和
+   *  （swapPrefix[s] = 交换后槽位 s 的 y）。等高行退化为 offsetAt 同值。
+   *  仅在拖拽中重建（onDown / followPointer 落点变更处），O(n)。 */
+  let swapHeights: number[] = [];
+  let swapPrefix: number[] = [0];
+
+  function rebuildSwapLayout(): void {
+    const from = dragIndex.value;
+    const to = overIndex.value;
+    const hs = [...rowHeights.value];
+    if (from >= 0 && to >= 0 && from !== to) {
+      const [moved] = hs.splice(from, 1);
+      if (moved != null) hs.splice(to, 0, moved);
+    }
+    swapHeights = hs;
+    const prefix: number[] = [0];
+    for (let j = 0; j < hs.length; j++) prefix.push(prefix[j]! + hs[j]! + gapPx.value);
+    swapPrefix = prefix;
+  }
+
+  /** 交换后布局中槽位 s 的 y；未拖拽/量测未就绪回退 offsetAt（reset 残留
+   *  缓存因 dragIndex=-1 不被读取，无需清理） */
+  function swapPrefixAt(slot: number): number {
+    if (dragIndex.value === -1 || swapHeights.length !== opts.count()) return offsetAt(slot);
+    return swapPrefix[slot] ?? offsetAt(slot);
+  }
+
+  /** 交换后布局中槽位 s 的行高；未拖拽/量测未就绪回退实测 rowHeights */
+  function swapHeightAt(slot: number): number {
+    if (dragIndex.value === -1 || swapHeights.length !== opts.count()) {
+      return rowHeights.value[slot] ?? 0;
+    }
+    return swapHeights[slot] ?? 0;
+  }
+
   /** 画布总高 = Σ行高 + (n-1)×行距；未量测前不设高 */
   const canvasStyle = computed(() => {
     const n = opts.count();
@@ -105,14 +143,15 @@ export function usePointerSort(opts: PointerSortOptions) {
   }
 
   /** 第 i 项应在的 y：拿起项跟手；向下拖中间项上移一格、向上拖下移一格
-   *  （「一格」= 让位目标槽位的前缀和位置） */
+   *  （「一格」= 交换后布局中让位目标槽位的前缀和位置——变高行交换后被拖
+   *  行高度参与前缀，让位链才能紧贴新邻居，等高行与旧 offsetAt 同值） */
   function offsetFor(i: number): number {
     const from = dragIndex.value;
     const to = overIndex.value;
     if (from === -1) return offsetAt(i);
     if (i === from) return dragY.value;
-    if (from < to && i > from && i <= to) return offsetAt(i - 1);
-    if (from > to && i >= to && i < from) return offsetAt(i + 1);
+    if (from < to && i > from && i <= to) return swapPrefixAt(i - 1);
+    if (from > to && i >= to && i < from) return swapPrefixAt(i + 1);
     return offsetAt(i);
   }
 
@@ -126,13 +165,13 @@ export function usePointerSort(opts: PointerSortOptions) {
     return style;
   }
 
-  /** 像素 y → 槽位：按「行区间」划分（槽位 i 覆盖其前缀位置前后各半
-   *  个行距）；最后一行收尾整个下方区间 */
+  /** 像素 y → 槽位：按「行区间」划分（槽位 i 覆盖交换后布局中其前缀位置
+   *  前后各半个行距——落点分带与可见排布一致）；最后一行收尾整个下方区间 */
   function slotAt(y: number): number {
     const n = opts.count();
     for (let i = 0; i < n; i++) {
-      const top = offsetAt(i);
-      const bottom = top + (rowHeights.value[i] ?? 0) + gapPx.value;
+      const top = swapPrefixAt(i);
+      const bottom = top + swapHeightAt(i) + gapPx.value;
       if (y < bottom) return i;
     }
     return Math.max(0, n - 1);
@@ -169,10 +208,10 @@ export function usePointerSort(opts: PointerSortOptions) {
   let rafId = 0;
   let settleTimer = 0;
 
-  /** 拖拽可及的最大 y（最后一行的前缀位置），防止把行拖出画布 */
+  /** 拖拽可及的最大 y（交换后布局最后一行的前缀位置），防止把行拖出画布 */
   function maxDragY(): number {
     const n = opts.count();
-    return n > 0 ? offsetAt(n - 1) : 0;
+    return n > 0 ? swapPrefixAt(n - 1) : 0;
   }
 
   function followPointer() {
@@ -184,7 +223,10 @@ export function usePointerSort(opts: PointerSortOptions) {
     const y = Math.max(0, Math.min(maxDragY(), lastClientY - rect.top - grabOffset));
     dragY.value = y;
     const next = resolveOver(slotAt(y));
-    if (next !== -1 && next !== overIndex.value) overIndex.value = next;
+    if (next !== -1 && next !== overIndex.value) {
+      overIndex.value = next;
+      rebuildSwapLayout(); // 落点变更后按新交换序列重建前缀（让位/夹取随动）
+    }
   }
 
   /** 触边自动滚屏：指针停在判定带内则逐帧滚动并按同一指针位置重算，
@@ -217,6 +259,7 @@ export function usePointerSort(opts: PointerSortOptions) {
     grabOffset = e.clientY - row.getBoundingClientRect().top;
     dragIndex.value = index;
     overIndex.value = nearestDroppable(index); // 初值给自身，迟滞才有基准
+    rebuildSwapLayout(); // 拖拽期几何基准：交换后布局（初值为恒等交换）
     dragY.value = offsetAt(index);
     lastClientY = e.clientY;
     downX = e.clientX;
@@ -252,7 +295,9 @@ export function usePointerSort(opts: PointerSortOptions) {
     isDropping.value = true;
     await nextTick(); // 等恢复过渡的样式挂上 DOM
     if (dragEl) void dragEl.offsetHeight; // 强制 reflow，否则过渡不生效
-    dragY.value = offsetAt(to);
+    // 落定目标按交换后布局（变高行下拖时旧 offsetAt(to) 落进让位行盒内，
+    // 归位动画期间重叠）
+    dragY.value = swapPrefixAt(to);
 
     settleTimer = window.setTimeout(() => {
       if (from !== to) opts.commit(from, to);
