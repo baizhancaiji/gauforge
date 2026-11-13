@@ -114,7 +114,7 @@ def test_resolve_chk_quoted_empty_falls_back(home):
 
 
 def test_parse_chk_line_link0_only_ignores_extra_section():
-    """link0_only=True 仅扫 Link0 区（经共享 _link0_span 与 resolve_link0
+    """link0_only=True 仅扫 Link0 区（经共享 _link0_span_lines 与 resolve_link0
     同规则）：附加节 %chk 不算声明；同一文本默认模式仍返回该声明
     （resolve_chk find-source 超集口径）。"""
     from web.src.engine.workspace import parse_chk_line

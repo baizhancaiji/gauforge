@@ -30,14 +30,15 @@ def content_hash(text: str) -> str:
 
 # ---------------- Link0 解析与补齐 ----------------
 
-def _link0_span(text: str) -> tuple[int, int]:
-    """Link0 区段行区间 [start, end)（CRLF 归一后跳过前导空行/`!` 注释
-    行、收连续 `%` 行；与 parse/blocks 同规则，其后无空行要求）。
+def _link0_span_lines(lines: list[str]) -> tuple[int, int]:
+    """Link0 区段行区间 [start, end)（入口为 CRLF 归一后的行列表；跳过
+    前导空行/`!` 注释行、收连续 `%` 行；与 parse/blocks 同规则，其后无
+    空行要求）。
 
     resolve_link0 与 parse_chk_line(link0_only=True)、services.dependencies.
-    parse_link0_refs 三处共享单一来源，防区段口径漂移。
-    """
-    lines = text.replace("\r\n", "\n").split("\n")
+    parse_link0_refs 三处共享单一来源，防区段口径漂移；入口收行列表
+    使调用方各自 split 一次即复用，不重复归一同一文本（3.5.0 审查
+    修复，原文本入口薄封装随调用方全量改行层移除）。"""
     i, n = 0, len(lines)
     while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
         i += 1
@@ -84,7 +85,7 @@ def resolve_link0(text: str, nproc_default: int,
     """
     lines = text.replace("\r\n", "\n").split("\n")
     # Link 0 = 前导空行/注释后的连续 % 行（与 parse/blocks 同规则，其后无空行要求）
-    start, end = _link0_span(text)  # [start, end) 为 Link0 行区间
+    start, end = _link0_span_lines(lines)  # [start, end) 为 Link0 行区间
 
     has_nproc_line = False  # %nproc 系或 %cpu 任一行存在（声明即不注入）
     has_mem_line = False
@@ -145,7 +146,7 @@ def parse_chk_line(text: str, *, link0_only: bool = False) -> Path | None:
     物化定位输入，不作为真实产物路径使用）。
 
     link0_only=False（默认）全文逐行匹配，供 resolve_chk 作 find-source
-    超集扫描；link0_only=True 仅扫 Link0 区（经 _link0_span 与
+    超集扫描；link0_only=True 仅扫 Link0 区（经 _link0_span_lines 与
     resolve_link0 同规则），供静态校验、物化文案判定与 fake_g16 对齐
     G16 只识别 Link0 命令的行为。多步放行（link1 B4）时本函数与
     resolve_chk、静态校验须同步改为末个声明段口径（见 link1-multistep-
@@ -155,7 +156,7 @@ def parse_chk_line(text: str, *, link0_only: bool = False) -> Path | None:
     """
     if link0_only:
         lines = text.replace("\r\n", "\n").split("\n")
-        start, end = _link0_span(text)
+        start, end = _link0_span_lines(lines)
         lines = lines[start:end]
     else:
         lines = text.splitlines()

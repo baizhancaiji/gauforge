@@ -52,9 +52,9 @@ def parse_link0_refs(text: str) -> list[dict]:
     # Link0 区段扫描与 workspace.resolve_link0/parse_chk_line 同源
     # （延迟导入防环：engine 包经 __init__ 导入 dispatcher → materialize
     # → 本模块，module 级导入触发部分初始化 ImportError；先例 inputs_path）
-    from ..engine.workspace import _link0_span
+    from ..engine.workspace import _link0_span_lines
     lines = text.replace("\r\n", "\n").split("\n")
-    start, end = _link0_span(text)
+    start, end = _link0_span_lines(lines)
     refs: list[dict] = []
     for i in range(start, end):
         body = lines[i].strip().lstrip("%")
