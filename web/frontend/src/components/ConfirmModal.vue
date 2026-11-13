@@ -6,6 +6,8 @@
  */
 import { nextTick, ref, watch } from "vue";
 
+import { MODAL_VIEWPORT_MARGIN } from "@/constants";
+
 const props = defineProps<{
   open: boolean;
   title: string;
@@ -17,12 +19,15 @@ const props = defineProps<{
   /** 内容未就绪时禁用确认（如输入原文读取中） */
   disabled?: boolean;
   /** 弹窗宽度覆写（CSS 长度值，透传 --modal-width 变量；不覆写 width
-   *  属性——min(var(--modal-width), calc(100vw - 48px)) 表达式保持，
+   *  属性——min(var(--modal-width), calc(100vw − 视口边距)) 表达式保持，
    *  超视口自动钳制、居中由 .scrim 承载不破坏）。未传入时零变化。 */
   width?: string;
 }>();
 
 const emit = defineEmits<{ confirm: []; close: [] }>();
+
+/** min() 表达式视口边距（两侧各留 ≥24px），自 constants 单一来源引入 */
+const viewportMargin = `${MODAL_VIEWPORT_MARGIN}px`;
 
 const panel = ref<HTMLElement | null>(null);
 const cancelButton = ref<HTMLButtonElement | null>(null);
@@ -111,7 +116,7 @@ function trapFocus(e: KeyboardEvent) {
   justify-content: center;
 }
 .modal {
-  width: min(var(--modal-width), calc(100vw - 48px));
+  width: min(var(--modal-width), calc(100vw - v-bind(viewportMargin)));
   max-height: min(var(--modal-max-height), calc(100vh - 96px));
   display: flex;
   flex-direction: column;

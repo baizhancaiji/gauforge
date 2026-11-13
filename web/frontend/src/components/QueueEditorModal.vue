@@ -61,6 +61,7 @@ import type { components } from "@/api/contract";
 import ConfirmModal from "@/components/ConfirmModal.vue";
 import StateChip from "@/components/StateChip.vue";
 import { usePointerSort } from "@/composables/usePointerSort";
+import { MODAL_WIDTH_MIN, MODAL_VIEWPORT_MARGIN } from "@/constants";
 import { fmtTaskId } from "@/utils/format";
 import { causeLabel } from "@/utils/labels";
 
@@ -270,30 +271,31 @@ const canSort = computed(() => !readonly.value && !done.value);
 // 宽度属设备视口相关的本地视图偏好（不上 ui-prefs：其键为枚举白名单、
 // 连续像素值不在该域模型内），持久化通道与 g16web-theme 同前缀约定。
 const WIDTH_KEY = "g16web-queue-editor-width";
-const WIDTH_MIN = 560; // 现默认档（tokens --modal-width），默认宽度不变
 const WIDTH_STEP = 16; // 键盘 ←/→ 步长
-const WIDTH_VIEWPORT_MARGIN = 48; // 与 ConfirmModal min() 表达式同源（两侧各留 24px）
+// 宽度下限与视口边距自 @/constants 单一来源引入（与 ConfirmModal
+// min() 表达式同源，消除 560/48 字面量跨文件漂移，3.5.0 审查修复）
 
 function loadWidth(): number {
   const raw = localStorage.getItem(WIDTH_KEY);
   const v = raw == null ? NaN : Number(raw);
-  return Number.isFinite(v) && v >= WIDTH_MIN ? v : WIDTH_MIN;
+  return Number.isFinite(v) && v >= MODAL_WIDTH_MIN ? v : MODAL_WIDTH_MIN;
 }
 
 const panelWidth = ref<number>(loadWidth());
 const viewportW = ref<number>(window.innerWidth);
-/** 实际渲染宽度 = min(内部值, 视口宽 − 48)：由 ConfirmModal 的 min()
- *  表达式钳制，此处同式计算供 aria-valuenow 与渲染一致。 */
+/** 实际渲染宽度 = min(内部值, 视口宽 − MODAL_VIEWPORT_MARGIN)：由
+ *  ConfirmModal 的 min() 表达式钳制，此处同式计算供 aria-valuenow 与渲染一致。 */
 const renderedWidth = computed(() =>
-  Math.min(panelWidth.value, Math.max(viewportW.value - WIDTH_VIEWPORT_MARGIN, 0)),
+  Math.min(panelWidth.value, Math.max(viewportW.value - MODAL_VIEWPORT_MARGIN, 0)),
 );
-/** 渲染上限（视口宽 − 48）：视口宽 < 608px 时小于 aria-valuemin=560，
- *  为如实暴露的退化区间（此时渲染宽度由 min() 钳制、拖拽不改变可见宽度）。 */
-const ariaMax = computed(() => Math.max(viewportW.value - WIDTH_VIEWPORT_MARGIN, 0));
+/** 渲染上限（视口宽 − MODAL_VIEWPORT_MARGIN）：视口宽 < 608px 时小于
+ *  aria-valuemin（MODAL_WIDTH_MIN），为如实暴露的退化区间（此时渲染宽度
+ *  由 min() 钳制、拖拽不改变可见宽度）。 */
+const ariaMax = computed(() => Math.max(viewportW.value - MODAL_VIEWPORT_MARGIN, 0));
 
 function setWidth(v: number): void {
-  const cap = Math.max(WIDTH_MIN, viewportW.value - WIDTH_VIEWPORT_MARGIN);
-  panelWidth.value = Math.round(Math.min(Math.max(v, WIDTH_MIN), cap));
+  const cap = Math.max(MODAL_WIDTH_MIN, viewportW.value - MODAL_VIEWPORT_MARGIN);
+  panelWidth.value = Math.round(Math.min(Math.max(v, MODAL_WIDTH_MIN), cap));
 }
 
 function persistWidth(): void {
@@ -708,7 +710,7 @@ function tryClose() {
         aria-orientation="vertical"
         aria-label="调整弹窗宽度"
         :aria-valuenow="renderedWidth"
-        aria-valuemin="560"
+        :aria-valuemin="MODAL_WIDTH_MIN"
         :aria-valuemax="ariaMax"
         tabindex="0"
         @pointerdown="onResizeDown"
