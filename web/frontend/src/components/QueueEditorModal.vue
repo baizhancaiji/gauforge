@@ -44,8 +44,9 @@ export function removeOldChkTaskRef(lines: string[], target: number): string[] {
  * 布局（m0-frontend-design §4.6 定稿，复用 ConfirmModal 弹层基础）：顶部队列名
  * 输入（创建默认 yyyymmddhhmmss 时间戳可改；创建态不渲染队列 id 字段——id
  * 保存后由后端生成，编辑/只读态只读展示真实 id，2026-09-27 计划外人为修正
- * 去除「保存后生成」占位注记）；中部成员列表（任务 id/文件名/title，「-」
- * 移除剩 1 禁用、拖动排序走 usePointerSort 指针跟手动效 --dur-drag）；「自动
+ * 去除「保存后生成」占位注记）；中部成员列表（任务 id/文件名，核验警告
+ * 徽标折叠显隐——3.6.0 起默认收起点徽标展开，「-」移除剩 1 禁用、拖动排序
+ * 走 usePointerSort 指针跟手动效 --dur-drag）；「自动
  * 跳过失败任务」toggle
  * 开关；底部「取消」/「保存」（primary，每视图至多一个）/「直接提交」
  * （secondary）。
@@ -54,7 +55,7 @@ export function removeOldChkTaskRef(lines: string[], target: number): string[] {
  * 「直接提交」= 保存 + submit 链式；submit 失败时队列保留 unsubmitted，展示
  * 原因引导队列页重试；提交响应 normalized=true 显「已自动规范化」中性注记。
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 
 import { client } from "@/api/client";
 import type { components } from "@/api/contract";
@@ -113,8 +114,9 @@ interface LinkState {
   dirty: boolean;
   /** 预览不可达（如输入解析失败）：不渲染可用勾选（禁用+提示） */
   available: boolean;
-  /** B9 G13 裁决⑤：成员输入的核验警告预显（任务级归属，打开时现算自
-   *  preview.warnings；available=false 时为空，改显占位提示） */
+  /** B9 G13 裁决⑤：成员输入的核验警告（任务级归属，打开时现算自
+   *  preview.warnings；available=false 时为空，不可用改显占位提示）。
+   *  呈现形态 3.6.0 起由常显预显改为徽标折叠（点击展开/收起），取数路径不变 */
   warnings: components["schemas"]["Warning"][];
 }
 const linkStates = ref<Map<number, LinkState>>(new Map());
@@ -146,8 +148,9 @@ const linkState = (i: number) => {
 /** 前驱是否为 crest 任务不可行——crest 不入队（B6 校验），勾选无需特判；
  *  单成员队列无前驱：首行不渲染勾选框。
  *  B9 G13 裁决⑤：同一并行取数路径扩展消费 warnings——创建态与编辑态
- *  （含仅成员可改的 submitted 态）打开时逐成员预显核验警告（复用既有
- *  preview 请求，不新增第二条请求路径）；只读/已提交完成态不预显。 */
+ *  （含仅成员可改的 submitted 态）打开时逐成员拉取核验警告（复用既有
+ *  preview 请求，不新增第二条请求路径；3.6.0 起由徽标折叠承载展示）；
+ *  只读/已提交完成态不取数不展示。 */
 async function loadLinkStates() {
   linkStates.value = new Map();
   depErrors.value = new Map();
@@ -362,6 +365,7 @@ watch(
     done.value = false;
     submitWarnings.value = [];
     busy.value = false;
+    for (const k of Object.keys(warnsOpen)) delete warnsOpen[Number(k)]; // 展开态不跨打开滞留
     if (props.mode === "create") {
       name.value = props.initialName ?? defaultQueueName();
       members.value = (props.initialMembers ?? []).map((m) => ({ ...m }));
@@ -396,6 +400,20 @@ watch(
   },
 );
 
+// ---------- 成员核验警告徽标折叠（B9 G13 裁决⑤呈现形态变更，3.6.0） ----------
+/** 成员警告展开态（按任务 id，重排随行携带——v-for 以 id 为 key；默认收起，
+ *  点徽标展开/再点收起；打开对话框时清空、移除成员时随删） */
+const warnsOpen = reactive<Record<number, boolean>>({});
+const memberWarnCount = (i: number) => linkState(i)?.warnings?.length ?? 0;
+/** 展开/收起后行高变化：nextTick 落 DOM 后重测前缀和（PendingView
+ *  watch(expanded) 同款——展开把下方条目挤开/收起紧贴由行 transform 过渡
+ *  自动补间，零新增动画代码） */
+async function toggleWarns(id: number) {
+  warnsOpen[id] = !warnsOpen[id];
+  await nextTick();
+  sort.measure();
+}
+
 function defaultQueueName(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, "0");
@@ -418,6 +436,7 @@ function removeAt(i: number) {
   if (members.value.length <= 1) return; // 至少保留 1 个（下限前置禁用）
   const m = members.value[i];
   if (memberOnly.value && m?.state === "running") return; // 在跑成员移除后端 409（前置禁用）
+  if (m) delete warnsOpen[m.id]; // 展开态随成员移除
   members.value.splice(i, 1);
 }
 
@@ -525,8 +544,8 @@ async function submitNow() {
     ? "已保存并提交 — 输入已自动规范化（换行/空行）"
     : "已保存并提交";
   submitWarnings.value = sub?.warnings ?? [];
-  // B9 G13 裁决⑥：提交可能规范化改写文本，打开时预显不再代表当前存储
-  // 文本——done 后重拉清空成员预显，最新核验由提交回执（含 task_id）承载
+  // B9 G13 裁决⑥：提交可能规范化改写文本，打开时预览不再代表当前存储
+  // 文本——done 后重拉清空成员警告数据，最新核验由提交回执（含 task_id）承载
   void loadLinkStates();
   emit("submitted");
 }
@@ -597,7 +616,22 @@ function tryClose() {
               <span v-if="canSort" class="m-drag mono" aria-hidden="true">⋮⋮</span>
               <span class="m-id mono">{{ fmtTaskId(m.id) }}</span>
               <span class="m-file mono" :title="m.filename">{{ m.filename ?? "—" }}</span>
-              <span class="m-title" :title="m.title ?? undefined">{{ m.title ?? "—" }}</span>
+              <!-- 警告徽标（3.6.0 徽标折叠：默认收起，点击行下展开清单再点
+                   收起；预览不可用显 ⚠ ?；pointerdown.stop 防拖拽误触，与
+                   onDown 的 closest("button") 门双保险，拖拽中指针被捕获
+                   不可点） -->
+              <button
+                v-if="!done && linksReady && linkState(i) && (memberWarnCount(i) > 0 || !linkState(i)?.available)"
+                class="warn-badge mono"
+                type="button"
+                :aria-expanded="warnsOpen[m.id] ? 'true' : 'false'"
+                :aria-label="linkState(i)?.available
+                  ? `${m.filename} 有 ${memberWarnCount(i)} 条核验警告`
+                  : `${m.filename} 输入预览不可用`"
+                :title="linkState(i)?.available ? '点击展开/收起核验警告' : '成员输入预览不可用（解析失败或形态锁定）'"
+                @pointerdown.stop
+                @click.stop="toggleWarns(m.id)"
+              >⚠ {{ linkState(i)?.available ? memberWarnCount(i) : "?" }}</button>
               <!-- 接续前置 chk（m4-plan §4.9 C5）：勾选=对前置成员写入
                    %oldchk=@task:<id> 只读接续行（保存时落盘，建队 DAG 校验）；
                    首成员无前驱不渲染；预览不可达（编辑态成员锁定/解析失败）
@@ -633,17 +667,22 @@ function tryClose() {
                 -
               </button>
             </div>
-            <!-- B9 G13 裁决⑤：该成员自己的核验警告预显（任务级归属，
+            <!-- B9 G13 裁决⑤核验警告（3.6.0 起徽标折叠承载，默认收起）：
+                 以 warnsOpen 为总闸的展开区（任务级归属，取数路径不变——
                  打开时现算自 preview.warnings，限高滚动）；预览取回失败仅
-                 该成员占位提示、不阻断其余成员；done 后成员区有意清空
-                 （提交回执承载最新核验），不显占位 -->
+                 该成员展开显占位提示、不阻断其余成员；done 后成员区有意
+                 清空（提交回执承载最新核验），不显占位 -->
             <div
-              v-if="!done && linksReady && linkState(i) && !linkState(i)?.available"
+              v-if="warnsOpen[m.id] && !done && linksReady && linkState(i) && !linkState(i)?.available"
               class="q-mem-warns q-mem-warns--empty mono"
             >
               成员输入预览不可用 — 无法核验
             </div>
-            <div v-else-if="linkState(i)?.warnings?.length" class="q-mem-warns" role="status">
+            <div
+              v-else-if="warnsOpen[m.id] && !done && linkState(i)?.warnings?.length"
+              class="q-mem-warns"
+              role="status"
+            >
               <p v-for="(w, j) in linkState(i)?.warnings ?? []" :key="`mw${i}-${j}`" class="q-warn mono">
                 ⚠ L{{ w.line }} {{ w.message }}
               </p>
@@ -799,7 +838,7 @@ function tryClose() {
   left: 0;
   width: 100%;
   display: flex;
-  flex-direction: column; /* 主行 + 警告预显区两行（B9 G13），前缀和量测按整行高 */
+  flex-direction: column; /* 主行 + 警告展开区（B9 G13 徽标折叠），前缀和量测按整行高 */
   align-items: flex-start;
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--border-hair);
@@ -821,7 +860,7 @@ function tryClose() {
   width: 100%;
   min-width: 0;
 }
-/* 成员核验警告预显区（B9 G13 裁决⑤）：琥珀档，限高滚动 */
+/* 成员核验警告展开区（B9 G13 裁决⑤，3.6.0 起徽标点击展开/收起）：琥珀档，限高滚动 */
 .q-mem-warns {
   margin-top: var(--space-1);
   width: 100%;
@@ -860,19 +899,25 @@ function tryClose() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  /* 弹窗宽度可调（§2.5）：可伸缩占位替代固定 150px——基准为内容宽、
-   * 与 .m-title 按 flex 比例分配行内剩余宽度；min-width: 0 防溢出撑破，
-   * 单行省略兜底保留，拖宽后长任务名显示宽度随弹窗增长 */
+  /* 弹窗宽度可调（§2.5）：基准为内容宽、独占行内剩余宽度（3.6.0 去
+   * title 列后唯一弹性项）；min-width: 0 防溢出撑破，单行省略兜底保留，
+   * 拖宽后长任务名显示宽度随弹窗增长 */
   flex: 1 1 auto;
   min-width: 0;
 }
-.m-title {
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
+/* 警告徽标（3.6.0 徽标折叠）：口径与候选页 .warn-badge 逐令牌一致，
+ * button 形态补重置；flex:none 防最坏「⚠ 99」在弹窗最小宽被压缩裁切 */
+.warn-badge {
+  display: inline-block;
+  font-size: var(--text-xs);
+  color: var(--warn);
+  background: none;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+  border-radius: var(--r-md);
+  padding: 0 var(--space-1);
   white-space: nowrap;
-  flex: 1;
-  min-width: 40px;
+  cursor: pointer;
+  flex: none;
 }
 .m-cause {
   font-size: var(--text-sm);
