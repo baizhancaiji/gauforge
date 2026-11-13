@@ -638,7 +638,7 @@ function tryClose() {
                  该成员占位提示、不阻断其余成员；done 后成员区有意清空
                  （提交回执承载最新核验），不显占位 -->
             <div
-              v-if="!done && linksReady && !linkState(i)?.available"
+              v-if="!done && linksReady && linkState(i) && !linkState(i)?.available"
               class="q-mem-warns q-mem-warns--empty mono"
             >
               成员输入预览不可用 — 无法核验
