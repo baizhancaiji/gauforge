@@ -306,6 +306,12 @@ export function usePointerSort(opts: PointerSortOptions) {
       isDropping.value = false;
       dragY.value = 0;
       dragEl = null;
+      // 提交重排后按新 DOM 顺序重测行高（变高行 splice 换序使按位缓存的
+      // rowHeights 与实际顺序倒置，不重测则错误几何无限期滞留；收进组合式
+      // 三消费方同受益——宿主既有 watch 重测与之同值双跑，无害）。flags 先
+      // 复位再重测：期间新 pointerdown 走 onDown 自带 measure，幂等无竞态；
+      // canvas 卸载时 measure 早退天然防关闭竞态
+      if (from !== to) void nextTick().then(() => measure());
     }, dragDurationMs());
   }
 
