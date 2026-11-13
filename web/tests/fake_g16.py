@@ -51,7 +51,8 @@ def _declared_chk(text: str) -> Path | None:
     """输入 Link0 区首个 %chk 声明值（剥引号，空值视同无声明）。
 
     仅扫 Link0 区（前导空行/! 注释行后的连续 % 行，G16 只识别 Link0
-    命令），与 parse_chk_line(link0_only=True) 同规则。"""
+    命令），与 parse_chk_line(link0_only=True) 同规则：首个命中即定
+    结果——空值视同无声明返回 None、不续扫后续声明行。"""
     lines = text.replace("\r\n", "\n").split("\n")
     i, n = 0, len(lines)
     while i < n and (not lines[i].strip() or lines[i].lstrip().startswith("!")):
@@ -60,8 +61,7 @@ def _declared_chk(text: str) -> Path | None:
         m = _CHK_RE.match(lines[i].strip())
         if m:
             raw = m.group(1).strip().strip('"').strip("'")
-            if raw:
-                return Path(raw)
+            return Path(raw) if raw else None  # 空值即停（不续扫）
         i += 1
     return None
 

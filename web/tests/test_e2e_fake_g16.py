@@ -23,6 +23,7 @@ import pytest
 
 from web.src import config
 from web.src.engine import Dispatcher
+from web.src.engine.workspace import parse_chk_line
 from web.src.hq.cli_gateway import CliGateway
 from web.src.hq.process import HqProcessManager
 from web.src.services.candidates import import_files
@@ -333,3 +334,22 @@ def test_fake_g16_ignores_non_link0_chk(tmp_path):
                    check=True, capture_output=True)
     assert (tmp_path / "late.log").is_file()
     assert not (tmp_path / "late.chk").exists()
+
+
+def test_fake_g16_empty_chk_stops_scan(tmp_path):
+    """fake_g16 `%chk=""` 空值即停（3.5.0 审查修复，与定位器口径同锚）：
+    Link0 区首个命中即定结果——空声明视同无声明、不续扫后续声明行（与
+    workspace.parse_chk_line 空值即 None 同规则），有效声明在后同样不产
+    chk。同文本 parse_chk_line(link0_only=True) 断言两侧同判。"""
+    inp = tmp_path / "empty.gjf"
+    inp.write_text(
+        '%chk=""\n%chk=real.chk\n\n#p HF/6-31G(d)\n\n水\n\n0 1\nO 0 0 0\n',
+        encoding="utf-8")
+    subprocess.run([sys.executable,
+                    str(Path(__file__).parent / "fake_g16.py"), str(inp)],
+                   check=True, capture_output=True)
+    assert (tmp_path / "empty.log").is_file()
+    assert not (tmp_path / "empty.chk").exists()
+    assert not (tmp_path / "real.chk").exists()
+    assert parse_chk_line(inp.read_text(encoding="utf-8"),
+                          link0_only=True) is None
