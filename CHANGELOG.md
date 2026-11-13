@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.5.0（2026-11-13T19:32+0800 发布，minor）
+
 ### 新增
 
 - 【scripts】新增 Windows 端一键启动器（scripts/deploy/windows/ start_gauforge.bat + start_gauforge.ps1，双击定位 WSL 部署包并缓存 launcher.json）：交互级探活（Windows 侧 curl 经完整链路调 /system/health 并真实导入探活输入再删除，自清洁不留候选）通过则不打扰健康实例，失败自动修复（reset-failed + stop 清崩溃循环 → systemd_install.sh → 15 秒复验），根治 Type=simple 下进程存活但 API 不可交互时 systemctl is-active 误报「已在运行」的假门控
