@@ -6,13 +6,14 @@
 
 ### 新增
 
-- 【web】历史导出扩展三范围 split button（导出 .out 主操作 + 导出 .chk / 全部导出下拉）：chk 经 execution_chk_asset 定位（failed 保全优先、正常执行按执行副本 %chk= 声明），scope=all 同执行两文件同包；条目归一 <stem>.<扩展> 平铺、冲突组按 (stem, 扩展) 加补零 id 前缀，缺漏按维度登记 _导出说明.txt；scope=out 保持内存打包零回归，chk/all 临时文件顺序写、chk 条目 ZIP_STORED 流式拷贝防 OOM，路由层 FileResponse 流式发送 + BackgroundTask 删临时文件、启动清扫兜底残留；包名三范围同名仅时间戳区分
+- 【web】扩展历史导出为三范围 split button（导出 .out 主操作 + 导出 .chk / 全部导出下拉）：chk 经 execution_chk_asset 定位（failed 保全优先、正常执行按执行副本 %chk= 声明），scope=all 同执行两文件同包；条目归一 <stem>.<扩展> 平铺、冲突组按 (stem, 扩展) 加补零 id 前缀，缺漏按维度登记 _导出说明.txt；scope=out 保持内存打包零回归，chk/all 临时文件顺序写、chk 条目 ZIP_STORED 流式拷贝防 OOM，路由层 FileResponse 流式发送 + BackgroundTask 删临时文件、启动清扫兜底残留；包名三范围同名仅时间戳区分
 
 ### 修复
 
-- 【web】断点续算注入改 %oldchk=@exec 槽整槽覆写：注入前剥离 Link0 区间全部旧 @exec 引用行（忽略大小写、trim 后全行匹配），续算链每级恰 1 条指向最新执行 id、不再随级数累积；用户明文 %oldchk= 行与 @task: 引用行不在剥离文法内原样保留（chained_ref 前置拒绝不变），L4 link0_directive_duplicate 黄警对「明文 + @exec」2 条共存形态照常产出
-- 【web】执行副本回退候选剥离物化明文依赖行：copy_execution_input 单点剥离物化器私有名法 %oldchk=dep(-exec)?-<n>.chk（大小写敏感口径、用户手写大写 dep 形态按用户槽保护、明文 %oldchk= 与 %chk= 行不受触碰），历史退回候选改经该单点取数（兑现 m2-plan §9 风险 5「不另写复制逻辑」）、队列移除分流零改动直接受益；无命中快路径原字节原样返回（回落分支逐字节不变），γ 循环（失败→退回→重提）不再逐轮累积悬空 dep 行
-- 【frontend】队列编辑「接续前置 chk」改 @task 槽整槽覆写：dirty 成员保存时清除该成员全部 %oldchk=@task: 引用行（忽略大小写、trim 后全行匹配）再按勾选态重写当前前驱，重排/换前驱遗留的陈旧引用随保存清除、取消勾选整槽清空（β 变体收敛为「用户明文 + 至多 1 条 @task」）；勾选初值判定复用 oldChkTaskRefTargets、LinkState.initTarget 字段退役；仅 dirty 成员产生写请求不变（不动勾选=零写），被清除引用的依赖边随保存消失由 DAG 校验兜底
+- 【web】改断点续算注入为 %oldchk=@exec 槽整槽覆写：注入前剥离 Link0 区间全部旧 @exec 引用行（忽略大小写、trim 后全行匹配），续算链每级恰 1 条指向最新执行 id、不再随级数累积；用户明文 %oldchk= 行与 @task: 引用行不在剥离文法内原样保留（chained_ref 前置拒绝不变），L4 link0_directive_duplicate 黄警对「明文 + @exec」2 条共存形态照常产出
+- 【web】剥离执行副本回退候选的物化明文依赖行：copy_execution_input 单点剥离物化器私有名法 %oldchk=dep(-exec)?-<n>.chk（大小写敏感口径、用户手写大写 dep 形态按用户槽保护、明文 %oldchk= 与 %chk= 行不受触碰），历史退回候选改经该单点取数（兑现 m2-plan §9 风险 5「不另写复制逻辑」）、队列移除分流零改动直接受益；无命中快路径原字节原样返回（回落分支逐字节不变），γ 循环（失败→退回→重提）不再逐轮累积悬空 dep 行
+- 【frontend】改队列编辑「接续前置 chk」为 @task 槽整槽覆写：dirty 成员保存时清除该成员全部 %oldchk=@task: 引用行（忽略大小写、trim 后全行匹配）再按勾选态重写当前前驱，重排/换前驱遗留的陈旧引用随保存清除、取消勾选整槽清空（β 变体收敛为「用户明文 + 至多 1 条 @task」）；勾选初值判定复用 oldChkTaskRefTargets、LinkState.initTarget 字段退役；仅 dirty 成员产生写请求不变（不动勾选=零写），被清除引用的依赖边随保存消失由 DAG 校验兜底
+- 【web】修复历史导出打包阶段读清竞态按缺登记：export_outputs 打包循环对 chk 条目写前存在性预检（采集定位后、写包前已被清理→按缺登记跳过）、拷贝中途 FileNotFoundError弃当前包重建（半条目已入档不可摘除，排除牺牲条目重写整包并登记 _导出说明.txt，不再 500），读清竞态口径从采集期扩展到打包期（chk-export-plan §5「按缺登记，不阻塞不重试」兑现）；_导出说明.txt 头文案 scope=out 恢复 3.6.0 原样「以下选中条目无输出文件」（判据 1 同输入包内容一致）、chk/all 维持「无对应导出文件」泛称；缺漏登记按执行合并口径覆盖打包期牺牲条目
 
 ## v3.6.0（2026-11-14T14:15+0800 发布，minor）
 
