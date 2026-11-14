@@ -30,11 +30,12 @@ export function oldChkTaskRefTargets(lines: string[]): number[] {
   return targets;
 }
 
-/** 移除指向 target 的 `%oldchk=@task:<target>` 行（精确撤销勾选写入）。 */
-export function removeOldChkTaskRef(lines: string[], target: number): string[] {
-  return lines.filter(
-    (l) => !new RegExp(`^%oldchk\\s*=\\s*@task:${target}$`, "i").exec(l.trim()),
-  );
+/** 移除全部 `%oldchk=@task:<n>` 引用行（@task 槽单槽覆写的前半——整槽
+ *  清除后按勾选态重写，不按目标精确匹配：陈旧引用——重排/换前驱/手写
+ *  非紧邻前序成员引用——一并清除，oldchk-duplicate-write-fix-plan §2.1；
+ *  忽略大小写、trim 后全行匹配，与 oldChkTaskRefTargets 同文法）。 */
+export function removeAllOldChkTaskRefs(lines: string[]): string[] {
+  return lines.filter((l) => !/^%oldchk\s*=\s*@task:\d+$/i.exec(l.trim()));
 }
 </script>
 
@@ -100,16 +101,15 @@ const submitWarnings = ref<components["schemas"]["Warning"][]>([]);
 
 // ---------- 依赖勾选（m4-plan §4.9 C5「接续前置 chk」） ----------
 /** per-member 勾选状态：打开对话框时拉取成员预览初始化。
- *  original=写盘前基线（DAG 校验失败回滚用）；initTarget=打开时已含的
- *  %oldchk=@task:<前驱> 引用目标（按加载时顺序判定，重排不重算——
- *  重排不改既有 id 引用，仅勾选动作过的成员按保存时位置写入）；
- *  dirty=本会话勾选动作标记（uncheck→重排→recheck 等序列以动作为准，
- *  不以「checked 与初值相等」判定——否则重排后复勾会跳过持久化，
- *  UI title 显示新前驱而文件引用残留旧前驱）。 */
+ *  original=写盘前基线（DAG 校验失败回滚用）；checked 按「输入已含指向
+ *  当前前驱的 @task 引用」判定（@task 槽为工作台托管槽，保存时单槽位
+ *  整槽覆写——陈旧引用不参与勾选初值，oldchk-duplicate-write-fix-plan
+ *  §2.1）；dirty=本会话勾选动作标记（uncheck→重排→recheck 等序列以
+ *  动作为准，不以「checked 与初值相等」判定——否则重排后复勾会跳过
+ *  持久化，UI title 显示新前驱而文件引用残留旧前驱）。 */
 interface LinkState {
   original: string[];
   baseline: string[];
-  initTarget: number | null;
   checked: boolean;
   dirty: boolean;
   /** 预览不可达（如输入解析失败）：不渲染可用勾选（禁用+提示） */
@@ -177,13 +177,11 @@ async function loadLinkStates() {
     const pv = previews[i];
     const lines = pv?.lines ?? null;
     const prevId = i > 0 ? ids[i - 1] : null;
-    const init = prevId != null && (lines ?? []).some((l) =>
-      new RegExp(`^%oldchk\\s*=\\s*@task:${prevId}$`, "i").exec(l.trim()),
-    );
+    const init = prevId != null
+      && oldChkTaskRefTargets(lines ?? []).includes(prevId);
     map.set(id, {
       original: [...(lines ?? [])],
       baseline: [...(lines ?? [])],
-      initTarget: init && prevId != null ? prevId : null,
       checked: init,
       dirty: false,
       available: lines != null,
@@ -207,9 +205,11 @@ function toggleLink(i: number) {
 }
 
 /** 勾选动作过的成员写入 Link0 引用行（先于建队——DAG 校验读输入文件，
- *  m4-plan §4.9 C5 落盘时序）。写入按保存时位置取前驱（重排后复勾落新
- *  前驱、纯重排不动既有引用）；内容与基线一致则不产生写请求。
- *  失败抛错由调用方汇总；成功则同步 baseline。 */
+ *  m4-plan §4.9 C5 落盘时序）。@task 槽单槽位整槽覆写（oldchk-duplicate-
+ *  write-fix-plan §2.1）：dirty 成员一律先整槽清除全部 @task 引用行，再按
+ *  勾选态重写当前前驱引用——明文 %oldchk= 行不在剥离文法内、原样保留；
+ *  仅 dirty 成员产生写请求（不动勾选=零写）。内容与基线一致则不产生
+ *  写请求；失败抛错由调用方汇总；成功则同步 baseline。 */
 async function persistLinkChanges(): Promise<void> {
   const ids = members.value.map((m) => m.id);
   for (let i = 0; i < members.value.length; i++) {
@@ -217,8 +217,7 @@ async function persistLinkChanges(): Promise<void> {
     const st = m ? linkStates.value.get(m.id) : undefined;
     if (!st?.available || !st.dirty) continue;
     const prevId = i > 0 ? ids[i - 1] : null;
-    let lines = [...st.baseline];
-    if (st.initTarget != null) lines = removeOldChkTaskRef(lines, st.initTarget);
+    let lines = removeAllOldChkTaskRefs(st.baseline);
     if (st.checked && prevId != null) lines.push(`%oldchk=@task:${prevId}`);
     if (JSON.stringify(lines) === JSON.stringify(st.baseline)) continue;
     const { error: e } = await client.PUT("/candidates/{id}/blocks/{section}", {

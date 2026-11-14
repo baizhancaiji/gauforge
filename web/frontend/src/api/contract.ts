@@ -255,7 +255,7 @@ export interface paths {
         get?: never;
         /**
          * 分块编辑保存（M2 实施；id 跨形态延续）
-         * @description section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑。 形态守卫（m2-plan §2.1）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节 （队列编辑框「接续前置 chk」写 %oldchk 依赖行，DAG 校验读输入）， 其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。 422 校验 reason 词表（按分节）：link0=must_be_key_value、empty_value、 nproc_not_positive_int、mem_value_invalid、cpu_list_invalid、 link0_line_too_long；route=route_must_start_with_hash、 route_line_link0_forbidden（G3 情形 1：% 行错置 route 节内）、 blank_line_in_route；title=title_too_long、link0_misplaced（G3 情形 2： % 行错置 title 节）、title_forbidden_char；charge_mult=must_be_single_line、 must_be_integer_pairs（多组电荷-多重度对同口径，自由格式分隔符）； 通用=empty_section。
+         * @description section ∈ link0/route/title/charge_mult/additional-<n>；molecule 不可编辑。 形态守卫（m2-plan §2.1）：候选与失败回退队列成员（unsubmitted 且 rollback_flag=true）全节可写；M4 C5 增 unsubmitted 队列成员限 link0 节 （队列编辑框「接续前置 chk」写 %oldchk 依赖行，DAG 校验读输入）， 其余节 409 QUEUE_MEMBER_LOCKED；其余形态 409。 %oldchk=@task: 为队列接续托管槽位、单槽覆写语义（oldchk 单槽修复 β 收敛）：队列编辑勾选保存时整槽清除该成员全部 @task 引用行（重排/ 换前驱遗留的陈旧引用一并清除，其对应 DAG 依赖边随保存消失、不可达/ 成环仍由建队校验兜底），再按勾选态重写当前前驱引用——Link0 至多 1 条；用户明文 %oldchk= 行不受触碰（用户明文 1 条 + 程序 1 条共存 为已裁定可接受形态，L4 link0_directive_duplicate 黄警照常产出）。 422 校验 reason 词表（按分节）：link0=must_be_key_value、empty_value、 nproc_not_positive_int、mem_value_invalid、cpu_list_invalid、 link0_line_too_long；route=route_must_start_with_hash、 route_line_link0_forbidden（G3 情形 1：% 行错置 route 节内）、 blank_line_in_route；title=title_too_long、link0_misplaced（G3 情形 2： % 行错置 title 节）、title_forbidden_char；charge_mult=must_be_single_line、 must_be_integer_pairs（多组电荷-多重度对同口径，自由格式分隔符）； 通用=empty_section。
          */
         put: operations["saveBlock"];
         post?: never;
@@ -626,7 +626,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 退回候选（新 id、带来源标记，M1 实施） */
+        /**
+         * 退回候选（新 id、带来源标记，M1 实施）
+         * @description 以 run/<id>/input.gjf 实际执行副本为源新建候选（缺失回落任务输入 副本）。物化明文依赖行剥离口径（oldchk 单槽修复 γ 收敛）：匹配 物化器私有名法 %oldchk=dep(-exec)?-<n>.chk 的行不入候选（dep 文件 落位 run 目录随保留期清理，回退候选携带必然悬空）；用户明文 %oldchk= 行与 %chk= 行不受触碰。取数经 copy_execution_input 单点， 与队列编辑移除分流（failed/skipped 成员移除新建候选）两路同口径； 无 dep 行命中时原字节逐位不变。
+         */
         post: operations["returnCandidate"];
         delete?: never;
         options?: never;
@@ -1282,7 +1285,7 @@ export interface components {
             /** @description formchk_ok=false 时的失败原因（无续跑资产 no_resume_asset/归档 archived/chk 损坏/探针超时）；探针成功为 null （无资产等探针未执行态恒返回对象、不返回 null probe） */
             reason: string | null;
         };
-        /** @description 单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加 %oldchk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加 %oldchk=@exec + route 追加 Guess=Read；freq=无注入、回落原样重跑）。 */
+        /** @description 单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加 %oldchk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加 %oldchk=@exec:<原执行id> + route 追加 Guess=Read；freq=无注入、回落原样 重跑）。%oldchk=@exec 为续算托管槽位、单槽覆写语义：注入前剥离 Link0 区间内全部旧 @exec 引用行（忽略大小写、trim 后全行匹配），续算链每级 恰 1 条指向最新执行 id、不随级数累积；用户明文 %oldchk= 行与 @task: 引用行不受触碰（@task: 引用经 chained_ref 前置拒绝续跑，两槽无交集）。 */
         ResumeInjection: {
             /**
              * @description link0_append=Link0 追加行（见 link0_lines）；route_rewrite=route 行整体改写（Opt=Restart，见 route_lines）；route_append=route 行追加关键词（Guess=Read，见 route_lines）
