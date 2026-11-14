@@ -19,6 +19,7 @@ from starlette import status
 from starlette.background import BackgroundTask
 
 from ..errors import err
+from ..models.models import Scope
 from ..mock import get_state
 from ..services import history as history_svc
 
@@ -27,6 +28,9 @@ router = APIRouter(tags=["history"])
 _STATES = ("succeeded", "failed", "skipped")
 _SORTS = ("submitted_desc", "finished_desc", "finished_asc",
           "filename_asc", "filename_desc")
+# scope 合法值单源：openapi enum → gen_models 生成 Scope（chk-export-plan
+# §2.1），路由校验由此派生，不另写元组副本
+_EXPORT_SCOPES = tuple(s.value for s in Scope)
 
 
 @router.get("/history")
@@ -65,7 +69,7 @@ def export_history_outputs(payload: dict) -> Response:
             for i in ids):
         raise err("INVALID_REQUEST", "ids 须为非空正整数数组", http=400)
     scope = payload.get("scope", "out")
-    if scope not in ("out", "chk", "all"):
+    if scope not in _EXPORT_SCOPES:
         raise err("INVALID_REQUEST", "scope 取值不合法", http=400)
     result = history_svc.export_outputs(ids, scope)
     stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")

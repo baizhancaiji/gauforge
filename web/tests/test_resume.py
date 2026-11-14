@@ -10,7 +10,6 @@ chk → 确认 422）、confirm 满员 409、新建任务身份与 resumed_from
 """
 from __future__ import annotations
 
-import re
 import stat
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +22,7 @@ from web.src.engine.materialize import probe_chk
 from web.src.errors import ApiError
 from web.src.services import history as history_svc
 from web.src.services.candidates import import_files
+from web.src.services.resume import _EXEC_REF_RE  # 私有名法单源复用，不复制文法副本
 from web.src.store import executions, seats, settings, tasks
 from web.src.routers.history import preview_resume, resume_from_checkpoint
 
@@ -134,8 +134,6 @@ def test_freq_falls_back_verbatim(tmp_path):
 
 # ---------------- δ 收敛：@exec 槽单槽覆写（oldchk-duplicate-write-fix-plan §2.2） ----------------
 
-_EXEC_LINE_RE = re.compile(r"^%oldchk\s*=\s*@exec(?::\d+)?$", re.IGNORECASE)
-
 
 def test_chained_resume_overwrites_stale_exec_refs(tmp_path):
     """链式续跑恰 1 条 @exec:<新eid>：源文本已含旧 @exec 引用（含大写手写
@@ -148,7 +146,7 @@ def test_chained_resume_overwrites_stale_exec_refs(tmp_path):
     new_text = (config.HOME_DIR / "inputs" / str(out["task_id"])
                 ).read_text(encoding="utf-8")
     execs = [ln for ln in new_text.splitlines()
-             if _EXEC_LINE_RE.fullmatch(ln.strip())]
+             if _EXEC_REF_RE.fullmatch(ln.strip())]
     assert execs == [f"%oldchk=@exec:{eid}"]  # 旧引用两条（含大写形）全剥
 
 
