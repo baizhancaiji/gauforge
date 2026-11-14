@@ -2,9 +2,11 @@
 
 > 状态：**已实施并验收（2026-11-14，版本随 unreleased 与 chk-export /
 > link1-multistep 批并窗，目标 3.7.0）**
-> 验收留痕：五提交（6d722b07 计划落盘 / e96dc103 T2 δ 续算 @exec 槽覆写 /
-> d466d432 T3 γ 回退剥离 dep 明文行 / d938a0ef T4 β 前端 @task 单槽覆写 /
-> 本进度同步提交）；五闸门全过（validate_progress / gen_changelog_md --check /
+> 验收留痕：五提交（6d722b07 计划落盘 / 6b147d47 T2 δ 续算 @exec 槽覆写 /
+> 033a0325 T3 γ 回退剥离 dep 明文行 / 5b1b1ce0 T4 β 前端 @task 单槽覆写 /
+> 本进度同步提交；2026-11-14 审查整改将三条实现提交 summary 改写为动词开头
+> （filter-branch 本地重写，本状态行哈希已同步，进度同步提交哈希 4689707a））；
+> 五闸门全过（validate_progress / gen_changelog_md --check /
 > check_tokens / check_contrast / audit_frontend_offline）+ 全量 pytest
 > 914 passed 0 skipped（3.6.0 冻结基线 893，本批新增 8 用例）。判据 1–3
 > 浏览器实测（隔离实例 127.0.0.1:8411、G16WEB_HOME=/tmp/g16web-oldchk、

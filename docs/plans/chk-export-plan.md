@@ -5,7 +5,8 @@
 > 计划落盘 / f94e6e5c feat(web) 后端 scope 化 / 14adeb60 feat(frontend)
 > split button / chore(progress) 本进度同步）；验收证据：全量 pytest
 > 906 passed（基线 3.6.0 冻结 893）；判据 2–5 API 层矩阵由
-> test_history_api.py 12 个 scope 扩展用例覆盖；判据 6 浏览器实测
+> test_history_api.py 13 个新增用例覆盖（12 个 scope 扩展 + 1 个 purge
+> 启动清扫；2026-11-14 审查整改修正计数留痕）；判据 6 浏览器实测
 > （隔离实例 + playwright 直连）：三 scope split 交互与下载落盘核对全过——
 > 包名 `gauforge-outputs-YYYYMMDD-HHMMSS.zip` 三 scope 同名仅时间戳区分、
 > chk 条目 ZIP_STORED / .out 条目 ZIP_DEFLATED、包内平铺无子目录、
