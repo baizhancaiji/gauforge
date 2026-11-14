@@ -4,7 +4,9 @@
  * 全宽表格（复选框/ID/任务/状态徽标/归因/提交/结束/耗时/资源/队列归属）
  * + 顶部状态筛选；表格多选与候选页同一交互套件（useMultiSelect：复选框、
  * Shift 锚点范围、Ctrl/Cmd 单选、Ctrl+A/Esc/方向键），勾选经工具条批量
- * 导出 .out（POST /history/export → ZIP blob 下载，跨页勾选整体参与）；
+ * 导出 .out（POST /history/export → ZIP blob 下载，跨页勾选整体参与；
+ * split button 三范围：主操作导出 .out，下拉导出 .chk / 全部导出，
+ * 2026-11-14 chk-export 计划 T3）；
  * 状态徽标与筛选下拉中文显示（taskStateLabel 单一来源，与队列页同纪律，
  * 2026-09-27 验收修正）；
  * 行点击（普通点击）→ 详情抽屉：终态冻结全字段以单行键值行呈现（dt 左/值右，
@@ -246,14 +248,19 @@ function onRowCheck(index: number, e: MouseEvent) {
 // ---------- 勾选批量导出（POST /history/export → ZIP blob 落盘） ----------
 const exporting = ref(false);
 const exportNote = ref<string | null>(null);
+// 导出 split button：主操作=导出 .out；「导出 .chk」「全部导出」藏于下拉
+// （与清理 split button 同模式，chk-export 计划 T3）
+const exportMenu = ref(false);
 
-async function exportSelected() {
-  // 跨页勾选集合整体参与（useMultiSelect 勾选跨页保留），按 id 升序打包
+async function exportSelected(scope: "out" | "chk" | "all" = "out") {
+  // 跨页勾选集合整体参与（useMultiSelect 勾选跨页保留），按 id 升序打包；
+  // 包名三范围同名仅时间戳区分（2026-11-14 裁决 3）
   const ids = [...checkedIds.value].map(Number).sort((a, b) => a - b);
   if (!ids.length) return;
+  exportMenu.value = false;
   exporting.value = true;
   exportNote.value = null;
-  const { data, error } = await exportOutputs(ids);
+  const { data, error } = await exportOutputs(ids, scope);
   exporting.value = false;
   if (error || !data) {
     const body = error as unknown as { error?: { message?: string } };
@@ -272,6 +279,27 @@ async function exportSelected() {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/** 导出范围下拉菜单外部点击 / Esc 关闭（监听随开合挂摘，与清理菜单同模式）。 */
+function dismissExportMenu() {
+  exportMenu.value = false;
+}
+function onExportMenuKeydown(e: KeyboardEvent) {
+  if (e.key === "Escape") dismissExportMenu();
+}
+watch(exportMenu, (open) => {
+  if (open) {
+    document.addEventListener("click", dismissExportMenu);
+    document.addEventListener("keydown", onExportMenuKeydown);
+  } else {
+    document.removeEventListener("click", dismissExportMenu);
+    document.removeEventListener("keydown", onExportMenuKeydown);
+  }
+});
+onBeforeUnmount(() => {
+  document.removeEventListener("click", dismissExportMenu);
+  document.removeEventListener("keydown", onExportMenuKeydown);
+});
 
 // ---------- 输入查看 / 输出预览（展示区拉伸贴底，内部滚动） ----------
 async function viewText(kind: "input" | "output") {
@@ -444,17 +472,53 @@ async function confirmCleanup() {
         </select>
       </label>
 
-      <!-- 勾选批量导出（与候选页多选同套件）：跨页勾选整体参与 -->
+      <!-- 勾选批量导出（split button，与清理 split button 同模式）：
+           主操作=导出 .out；「导出 .chk」「全部导出」藏于下拉 -->
       <span class="tb-divider" aria-hidden="true"></span>
       <span v-if="checkedIds.size" class="picked-count mono">已选 {{ checkedIds.size }}</span>
-      <button
-        class="btn btn--secondary"
-        type="button"
-        :disabled="!checkedIds.size || exporting"
-        @click="exportSelected"
-      >
-        {{ exporting ? "导出中 …" : "导出 .out" }}
-      </button>
+      <div class="export-split">
+        <button
+          class="btn btn--secondary export-main"
+          type="button"
+          :disabled="!checkedIds.size || exporting"
+          title="导出 .out — 打包选中条目的 G16 输出日志（ZIP）"
+          @click="exportSelected('out')"
+        >
+          {{ exporting ? "导出中 …" : "导出 .out" }}
+        </button>
+        <button
+          class="btn btn--secondary export-caret"
+          type="button"
+          :disabled="!checkedIds.size || exporting"
+          title="更多导出范围"
+          aria-haspopup="menu"
+          :aria-expanded="exportMenu"
+          aria-label="更多导出范围"
+          @click.stop="exportMenu = !exportMenu"
+        >
+          ▾
+        </button>
+        <div v-if="exportMenu" class="export-menu" role="menu">
+          <button
+            class="export-item"
+            type="button"
+            role="menuitem"
+            title="导出 .chk — 打包选中条目的 chk 资产（失败任务的保全 chk 一并纳入）"
+            @click="exportSelected('chk')"
+          >
+            导出 .chk
+          </button>
+          <button
+            class="export-item"
+            type="button"
+            role="menuitem"
+            title="全部导出 — .out 与 .chk 同包导出（ZIP）"
+            @click="exportSelected('all')"
+          >
+            全部导出
+          </button>
+        </div>
+      </div>
       <span v-if="exportNote" class="export-note mono" role="alert">{{ exportNote }}</span>
 
       <span class="spacer"></span>
@@ -812,7 +876,8 @@ async function confirmCleanup() {
   border-bottom-left-radius: 0;
   padding: 0 var(--space-2);
 }
-.cleanup-menu {
+.cleanup-menu,
+.export-menu {
   position: absolute;
   top: calc(100% + var(--space-1));
   right: 0;
@@ -824,7 +889,8 @@ async function confirmCleanup() {
   box-shadow: var(--shadow-pop);
   padding: var(--space-1) 0;
 }
-.cleanup-item {
+.cleanup-item,
+.export-item {
   display: block;
   width: 100%;
   text-align: left;
@@ -835,7 +901,8 @@ async function confirmCleanup() {
   border: none;
   cursor: pointer;
 }
-.cleanup-item:hover {
+.cleanup-item:hover,
+.export-item:hover {
   background: var(--row-hover);
 }
 /* 列表卡：flex 列，滚动包裹层吃剩余高度、局部滚动（§3 视口纪律） */
@@ -934,6 +1001,21 @@ tbody tr.row--checked:hover {
 .export-note {
   font-size: var(--text-sm);
   color: var(--danger);
+}
+/* 导出 split button：主按钮（导出 .out）+ 下拉箭头（导出 .chk / 全部导出
+   藏于菜单；结构与清理 split button 同款，菜单样式与 .cleanup-menu 单源） */
+.export-split {
+  position: relative;
+  display: inline-flex;
+}
+.export-main {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.export-caret {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding: 0 var(--space-2);
 }
 .file {
   color: var(--text-primary);

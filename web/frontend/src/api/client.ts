@@ -20,8 +20,12 @@ export function getText(
 /**
  * 历史批量导出（application/zip 二进制）：按 parseAs blob 取包，
  * 下载落盘与文件名生成由视图层处理（契约 schema 为 binary string，
- * 运行时 Blob 由调用方自断言）。
+ * 运行时 Blob 由调用方自断言）。scope 三范围透传（out 输出日志 /
+ * chk 资产 / all 全部；缺省 out 向后兼容）。
  */
-export function exportOutputs(ids: number[]) {
-  return client.POST("/history/export", { body: { ids }, parseAs: "blob" });
+export function exportOutputs(
+  ids: number[],
+  scope: "out" | "chk" | "all" = "out",
+) {
+  return client.POST("/history/export", { body: { ids, scope }, parseAs: "blob" });
 }
