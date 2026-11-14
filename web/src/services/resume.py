@@ -20,7 +20,8 @@ ineligible（no_resume_asset）。
   原选项 + Restart）；
 - 不含 Opt 但含 Freq → freq 行：无注入、回落原样重跑（弹窗明示；
   经 resume 链路新建任务保留 resumed_from 关联）；
-- 其余 → 单点行：Link0 追加 `%oldchk=@exec` + route 追加 `Guess=Read`；
+- 其余 → 单点行：Link0 追加 `%oldchk=@exec:<原执行id>` + route 追加
+  `Guess=Read`（opt/scf 两分支注入行同形，均带 eid）；
 - route 缺失/不可解析 → ineligible（unknown_kind）。
 
  ineligible 原因五态：no_resume_asset / chk_corrupted / probe_timeout /
@@ -33,6 +34,7 @@ unknown_kind / chained_ref（输入含 @task: 链内引用——注入前置检�
 from __future__ import annotations
 
 import difflib
+import re
 
 from pathlib import Path
 
@@ -51,6 +53,12 @@ from . import verify as verify_svc
 
 _INELIGIBLE_REASONS = ("no_resume_asset", "chk_corrupted", "probe_timeout",
                        "unknown_kind", "chained_ref")
+
+# @exec 槽行文法（oldchk-duplicate-write-fix-plan §2.2 剥离口径）：忽略大小
+# 写、每行 trim 后全行匹配——@exec 槽为程序托管槽，手写大写形（如
+# %OldChk=@Exec:5）经 blocks link0 编辑与载体校验可合法入库，敏感匹配将
+# 残留旧行致续算链不收敛；明文 %oldchk= 与 @task: 行不匹配本式、不受触碰。
+_EXEC_REF_RE = re.compile(r"^%oldchk\s*=\s*@exec(?::\d+)?$", re.IGNORECASE)
 
 
 def _load_source_row(execution_id: int) -> dict:
@@ -134,7 +142,13 @@ def _rewrite_route_line(route_line: str, kind: str) -> str:
 
 def _apply_injections(text: str, kind: str, source_eid: int) -> tuple[
         str, list[dict]]:
-    """按注入矩阵改写输入文本。返回 (改写后文本, 注入清单)。"""
+    """按注入矩阵改写输入文本。返回 (改写后文本, 注入清单)。
+
+    @exec 槽位单槽语义（oldchk-duplicate-write-fix-plan §2.2）：注入前先
+    剥离 Link0 区间内全部旧 `%oldchk=@exec(:<eid>)?` 行，再于块尾插入本次
+    注入行——续算链每级整槽覆写、恰 1 条 `@exec:<最新eid>`，不随级数累积；
+    明文 `%oldchk=`（用户槽）与 `@task:`（DAG 槽）行不在剥离文法内、原样
+    保留（@task: 引用经 _evaluate chained_ref 前置拒绝，两者无交集）。"""
     lines = text.replace("\r\n", "\n").split("\n")
     injections: list[dict] = []
     # Link0 区定位（与 workspace.resolve_link0 同规则）
@@ -145,6 +159,12 @@ def _apply_injections(text: str, kind: str, source_eid: int) -> tuple[
     while i < n and lines[i].lstrip().startswith("%"):
         i += 1
     if kind in ("opt", "scf"):
+        # @exec 槽整槽覆写：区间内旧引用行先剥离（含手写大写形态），块尾
+        # 插入本次注入行；明文与 @task: 行不动
+        block = [ln for ln in lines[start:i]
+                 if not _EXEC_REF_RE.fullmatch(ln.strip())]
+        lines[start:i] = block
+        i = start + len(block)
         lines.insert(i, f"%oldchk=@exec:{source_eid}")
         injections.append({"type": "link0_append",
                            "link0_lines": [f"%oldchk=@exec:{source_eid}"],

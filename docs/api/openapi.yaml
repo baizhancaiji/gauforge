@@ -723,7 +723,11 @@ components:
       description: >-
         单条注入改动（注入矩阵按 route 任务类型三分支：优化=Link0 追加
         %oldchk=@exec:<原执行id> + route 改写 Opt=Restart；非优化 SCF=Link0 追加
-        %oldchk=@exec + route 追加 Guess=Read；freq=无注入、回落原样重跑）。
+        %oldchk=@exec:<原执行id> + route 追加 Guess=Read；freq=无注入、回落原样
+        重跑）。%oldchk=@exec 为续算托管槽位、单槽覆写语义：注入前剥离 Link0
+        区间内全部旧 @exec 引用行（忽略大小写、trim 后全行匹配），续算链每级
+        恰 1 条指向最新执行 id、不随级数累积；用户明文 %oldchk= 行与 @task:
+        引用行不受触碰（@task: 引用经 chained_ref 前置拒绝续跑，两槽无交集）。
       required: [type]
       properties:
         type:

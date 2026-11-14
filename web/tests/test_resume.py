@@ -10,6 +10,7 @@ chk → 确认 422）、confirm 满员 409、新建任务身份与 resumed_from
 """
 from __future__ import annotations
 
+import re
 import stat
 from datetime import datetime
 from pathlib import Path
@@ -54,10 +55,14 @@ def _fake_g16(mode: str, tmp_path: Path) -> Path:
     return root
 
 
-def _mk_source(route_line: str, name: str = "src.gjf") -> tuple[int, int]:
-    """造源任务 + failed 终态执行（含 protected 保全 chk）。返回 (tid, eid)。"""
-    (out,) = import_files([(name, (f"%chk=own.chk\n{route_line}\n" + TAIL)
-                           .encode("utf-8"))], inputs_dir=config.HOME_DIR / "inputs")
+def _mk_source(route_line: str, name: str = "src.gjf",
+               link0_extra: str = "") -> tuple[int, int]:
+    """造源任务 + failed 终态执行（含 protected 保全 chk）。返回 (tid, eid)。
+
+    link0_extra：追加的 Link0 行文本（逐行自带换行，插入 %chk= 之后）。"""
+    (out,) = import_files([(name, (f"%chk=own.chk\n{link0_extra}{route_line}\n"
+                                   + TAIL).encode("utf-8"))],
+                          inputs_dir=config.HOME_DIR / "inputs")
     tid = out["id"]
     eid = executions().create(
         task_id=tid, filename=name,
@@ -125,6 +130,55 @@ def test_freq_falls_back_verbatim(tmp_path):
     new_text = (config.HOME_DIR / "inputs" / str(confirm["task_id"])
                 ).read_text(encoding="utf-8")
     assert "@exec" not in new_text  # 无注入：不建立 @exec 引用
+
+
+# ---------------- δ 收敛：@exec 槽单槽覆写（oldchk-duplicate-write-fix-plan §2.2） ----------------
+
+_EXEC_LINE_RE = re.compile(r"^%oldchk\s*=\s*@exec(?::\d+)?$", re.IGNORECASE)
+
+
+def test_chained_resume_overwrites_stale_exec_refs(tmp_path):
+    """链式续跑恰 1 条 @exec:<新eid>：源文本已含旧 @exec 引用（含大写手写
+    形态变体），注入后旧引用整槽剥除、新文本恰 1 条指向最新执行 id——
+    续算链不随级数累积（§4 判据 4）。"""
+    _set_g16("ok", tmp_path)
+    tid, eid = _mk_source("#p opt b3lyp/6-31g(d)",
+                          link0_extra="%oldchk=@exec:999\n%OldChk=@Exec:888\n")
+    out = resume_from_checkpoint(eid)
+    new_text = (config.HOME_DIR / "inputs" / str(out["task_id"])
+                ).read_text(encoding="utf-8")
+    execs = [ln for ln in new_text.splitlines()
+             if _EXEC_LINE_RE.fullmatch(ln.strip())]
+    assert execs == [f"%oldchk=@exec:{eid}"]  # 旧引用两条（含大写形）全剥
+
+
+def test_resume_keeps_plaintext_oldchk_with_l4_warning(tmp_path):
+    """含明文 fixture（§4 判据 4）：用户明文 %oldchk= 行保留，注入后
+    「明文 + @exec」2 条共存形态照常产出，L4 link0_directive_duplicate
+    黄警不受本修复影响（报障裁定可接受的共存形态）。"""
+    _set_g16("ok", tmp_path)
+    tid, eid = _mk_source("#p opt b3lyp/6-31g(d)",
+                          link0_extra="%oldchk=D1_DgpC_Monomer_Opt.chk\n")
+    out = resume_from_checkpoint(eid)
+    new_text = (config.HOME_DIR / "inputs" / str(out["task_id"])
+                ).read_text(encoding="utf-8")
+    assert "%oldchk=D1_DgpC_Monomer_Opt.chk" in new_text  # 明文行原样
+    oldchk_lines = [ln for ln in new_text.splitlines()
+                    if ln.strip().lower().startswith("%oldchk")]
+    assert len(oldchk_lines) == 2  # 明文 + @exec 共存
+    assert [w["kind"] for w in out["warnings"]].count(
+        "link0_directive_duplicate") == 1
+
+
+def test_resume_without_plaintext_has_no_oldchk_duplicate(tmp_path):
+    """无明文 fixture（§4 判据 4）：源仅陈旧 @exec 引用 → 注入覆写后单条，
+    warnings 零 %oldchk 重复项。"""
+    _set_g16("ok", tmp_path)
+    tid, eid = _mk_source("#p opt b3lyp/6-31g(d)",
+                          link0_extra="%oldchk=@exec:999\n")
+    out = resume_from_checkpoint(eid)
+    assert all(w["kind"] != "link0_directive_duplicate"
+               for w in out["warnings"])
 
 
 # ---------------- ineligible 五态与 HTTP 语义 ----------------
