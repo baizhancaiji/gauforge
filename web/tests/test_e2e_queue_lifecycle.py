@@ -196,6 +196,47 @@ def test_e2e_queue_full_lifecycle(tmp_path, monkeypatch):
         # 不可再提交（成功终态）
         r = client.post(f"/api/v1/queues/{qid}/submit")
         assert r.status_code == 409
+
+        # ---- γ 链路闭环（oldchk-duplicate-write-fix-plan §4 判据 6）：
+        # 移除 failed 成员 → 新候选（dep 行剥离）→ 复勾接续 → 提交 →
+        # run 副本恰 1 条本轮物化 dep 行，无跨轮累积
+        c2 = spawned[0]["id"]
+        run2 = tmp_path / "run" / str(e2b[-1]["id"]) / "input.gjf"
+        # 新候选内容 = 执行副本（m2 无 %oldchk：快路径逐字节不变）
+        assert (tmp_path / "inputs" / str(c2)).read_bytes() == \
+            run2.read_bytes()
+        # 修除 FAKE 失败注入（c2 本轮须成功，闭环队列不受回退干扰）
+        r = client.put(f"/api/v1/candidates/{c2}/blocks/route",
+                       json={"lines": ["#p hf/sto-3g"]})
+        assert r.status_code == 200, r.text
+        # 复勾接续（blocks link0 写入，同前端勾选落盘形态）：明文 + @task 两槽
+        p = import_files([("up.gjf", ("%chk=up.chk\n" + _inp(5)).encode())])[0]["id"]
+        r = client.put(f"/api/v1/candidates/{c2}/blocks/link0",
+                       json={"lines": ["%mem=1GB",
+                                       "%oldchk=D1_DgpC_Monomer_Opt.chk",
+                                       f"%oldchk=@task:{p}"]})
+        assert r.status_code == 200, r.text
+        oldchk = [ln for ln in (tmp_path / "inputs" / str(c2))
+                  .read_text(encoding="utf-8").splitlines()
+                  if ln.strip().lower().startswith("%oldchk")]
+        assert oldchk == ["%oldchk=D1_DgpC_Monomer_Opt.chk",
+                          f"%oldchk=@task:{p}"]  # 候选恰 2 条（1 明文 + 1 @task）
+        # 新队列（@task 引用须指向同队上游成员）提交 → 派发物化
+        r = client.post("/api/v1/queues", json={
+            "name": "复勾队", "member_ids": [p, c2], "skip_failed": False})
+        assert r.status_code == 201, r.text
+        qid2 = r.json()["id"]
+        r = client.post(f"/api/v1/queues/{qid2}/submit")
+        assert r.status_code == 200, r.text
+        run_until(lambda: queues().get(qid2)["state"] == "completed")
+        c2_eid = executions().list_by_task(c2)[-1]["id"]
+        run3 = (tmp_path / "run" / str(c2_eid) / "input.gjf").read_text(
+            encoding="utf-8")
+        dep_lines = [ln for ln in run3.splitlines()
+                     if ln.strip().lower().startswith("%oldchk=dep-")]
+        assert dep_lines == [f"%oldchk=dep-{p}.chk"]  # 恰 1 条本轮物化产物
+        assert "%oldchk=D1_DgpC_Monomer_Opt.chk" in run3  # 明文随行
+        assert "@task:" not in run3  # 物化零残留
     finally:
         mgr.stop()
 

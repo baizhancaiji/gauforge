@@ -600,6 +600,14 @@ def test_requeue_unknown_404():
 
 def test_return_candidate_from_failed(home):
     eid, tid = seed_terminal("failed", cause="program_error", with_run=True)
+    # 执行副本携带物化明文依赖行与用户明文行（γ 场景）：
+    # 回退候选剥离 dep 行、明文行保留（oldchk-duplicate-write-fix-plan §2.3）
+    (config.HOME_DIR / "run" / str(eid) / "input.gjf").write_text(
+        RUN_INPUT_TEXT.replace(
+            "%chk=w.chk\n",
+            "%chk=w.chk\n%oldchk=D1_DgpC_Monomer_Opt.chk\n"
+            "%oldchk=dep-exec-42.chk\n"),
+        encoding="utf-8")
     r = client.post(f"/api/v1/history/{eid}/return-candidate")
     assert r.status_code == 201
     body = r.json()
@@ -609,9 +617,10 @@ def test_return_candidate_from_failed(home):
     assert body["filename"] == "h2o.gjf" and body["title"] is not None
     assert_contract_schema(spec, "POST", "/history/{id}/return-candidate",
                            201, body)
-    # 内容源 = run/<id>/ 实际执行副本
+    # 内容源 = run/<id>/ 实际执行副本（dep 明文行剥离、用户明文行保留）
     assert (config.HOME_DIR / "inputs" / str(body["id"])
-            ).read_text(encoding="utf-8") == RUN_INPUT_TEXT
+            ).read_text(encoding="utf-8") == RUN_INPUT_TEXT.replace(
+        "%chk=w.chk\n", "%chk=w.chk\n%oldchk=D1_DgpC_Monomer_Opt.chk\n")
     ev = last_event("candidates.changed")
     assert ev == {"action": "created", "candidate_id": body["id"]}
     # 原任务形态不受影响（退回新建，不迁移）

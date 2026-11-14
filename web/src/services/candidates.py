@@ -248,19 +248,45 @@ def resolve_title(task_id: int, inputs_dir: Path | None = None) -> str | None:
     return parse_input(text)["blocks"]["title"]
 
 
+# 物化明文依赖行文法（oldchk-duplicate-write-fix-plan §2.3 剥离口径）：
+# 物化器私有名法 %oldchk=dep(-exec)?-<n>.chk，大小写敏感——物化器
+# _rewrite_line 前缀 casefold 恒产出小写 head，空格变体由 \s* 覆盖；大写
+# 变体不匹配属有意为之（用户手写大写 dep 形态按用户槽保护不剥离）。撞名
+# 边界留痕：用户手写小写 %oldchk=dep-<n>.chk（合法用户槽路径）与物化产物
+# 文法不可区分、会被一并剥离，不另设防。
+_DEP_OLDCHK_RE = re.compile(r"^%oldchk\s*=\s*dep(-exec)?-\d+\.chk$")
+
+
 def copy_execution_input(execution_id: int, task_id: int,
                          inputs_dir: Path | None = None) -> bytes:
     """以 run/<执行id>/input.gjf 实际执行副本为源读取输入（缺失回落任务
     输入副本，skipped 等无执行目录者）。
 
     历史退回候选与队列移除分流（m2-plan §2.2）共用同一复制源语义
-    （§9 风险 5：不另写复制逻辑）。
+    （§9 风险 5：不另写复制逻辑）。回退候选剥离物化明文依赖行（γ 收敛，
+    oldchk-duplicate-write-fix-plan §2.3）：匹配 dep 私有名法的 %oldchk
+    行不入候选——dep 文件落位 run 目录随保留期清理，回退候选携带必然悬空；
+    用户明文 %oldchk= 行与 %chk= 行不受触碰（两槽不对称，§2.5）。无命中
+    快路径原字节原样返回（不 decode/encode 往返，规避 BOM/CRLF 边差），
+    回落分支常态无 dep 行、逐字节不变判据经快路径成立。
     """
     src = config.HOME_DIR / "run" / str(execution_id) / "input.gjf"
     if not src.is_file():
         src = (inputs_dir if inputs_dir is not None
                else default_inputs_dir()) / str(task_id)
-    return src.read_bytes()
+    data = src.read_bytes()
+    if b"%oldchk" not in data:  # 快路径预筛：无 %oldchk 行必无 dep 行
+        return data
+    try:
+        lines = data.decode("utf-8").split("\n")
+    except UnicodeDecodeError:
+        # 非 UTF-8 副本按原字节返回（导入/物化两源恒 UTF-8，此分支仅防御
+        # 历史遗留数据，不因剥离引入新失败面）
+        return data
+    kept = [ln for ln in lines if not _DEP_OLDCHK_RE.fullmatch(ln.strip())]
+    if len(kept) == len(lines):
+        return data  # 无 dep 行命中：原字节原样
+    return "\n".join(kept).encode("utf-8")
 
 
 # ---------------- 分块编辑保存（M2 B2，m2-plan §2.1） ----------------

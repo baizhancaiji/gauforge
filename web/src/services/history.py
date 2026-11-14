@@ -287,17 +287,18 @@ def requeue(execution_id: int) -> dict:
 def return_candidate(execution_id: int) -> dict:
     """退回候选：新 id、带来源标记（编辑再提交入口）。
 
+    取数经 copy_execution_input 单点（m2-plan §9 风险 5「不另写复制逻辑」
+    兑现：与队列移除分流同源同口径，物化明文 dep 行随单点剥离，
+    oldchk-duplicate-write-fix-plan §2.3）；源不可读的 not_found("input")
+    语义保留在本侧（OSError 兜底不变）。
     事件（candidates.changed created）由路由层发（#8 模式）。
     """
     row = _terminal_row(execution_id)
     tid = row["task_id"]
     if tasks().get(tid) is None:
         raise not_found("task", tid)
-    src = _run_dir(execution_id) / "input.gjf"
-    if not src.is_file():
-        src = candidates_svc.default_inputs_dir() / str(tid)
     try:
-        data = src.read_bytes()
+        data = candidates_svc.copy_execution_input(execution_id, tid)
     except OSError:
         raise not_found("input", execution_id)
     origin = _ORIGIN_BY_STATE[row["state"]]

@@ -2810,6 +2810,14 @@ paths:
       tags: [history]
       operationId: returnCandidate
       summary: 退回候选（新 id、带来源标记，M1 实施）
+      description: >-
+        以 run/<id>/input.gjf 实际执行副本为源新建候选（缺失回落任务输入
+        副本）。物化明文依赖行剥离口径（oldchk 单槽修复 γ 收敛）：匹配
+        物化器私有名法 %oldchk=dep(-exec)?-<n>.chk 的行不入候选（dep 文件
+        落位 run 目录随保留期清理，回退候选携带必然悬空）；用户明文
+        %oldchk= 行与 %chk= 行不受触碰。取数经 copy_execution_input 单点，
+        与队列编辑移除分流（failed/skipped 成员移除新建候选）两路同口径；
+        无 dep 行命中时原字节逐位不变。
       parameters:
         - $ref: '#/components/parameters/ExecutionId'
       responses:
