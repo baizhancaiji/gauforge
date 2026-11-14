@@ -268,6 +268,8 @@ def test_history_export_missing_manifest_and_all_missing_404(home):
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     assert zf.namelist() == ["h2o.out", "_导出说明.txt"]
     note = zf.read("_导出说明.txt").decode("utf-8")
+    # scope=out 说明头维持 3.6.0 原样（判据 1 同输入包内容一致）
+    assert note.startswith("以下选中条目无输出文件，未包含在本次导出中：\n")
     assert f"执行 {skip}：无输出文件" in note
     assert f"执行 {gone}：无输出文件" in note
     r = client.post("/api/v1/history/export", json={"ids": [skip, gone]})
@@ -345,6 +347,8 @@ def test_history_export_chk_skipped_manifest_and_404(home):
     zf = zipfile.ZipFile(io.BytesIO(r.content))
     assert zf.namelist() == ["h2o.chk", "_导出说明.txt"]
     note = zf.read("_导出说明.txt").decode("utf-8")
+    # chk/all 说明头为「无对应导出文件」泛称（缺漏含 chk 维度）
+    assert note.startswith("以下选中条目无对应导出文件，未包含在本次导出中：\n")
     assert f"执行 {skip}：无 chk（任务未启动）" in note
     r = client.post("/api/v1/history/export",
                     json={"ids": [skip], "scope": "chk"})
@@ -510,6 +514,58 @@ def test_history_export_purge_tmp_startup(home):
     history_svc.purge_export_tmp()
     assert not stale.exists()
     assert keep.exists()
+
+
+def test_history_export_chk_vanish_before_write_registers_missing(
+        home, monkeypatch):
+    """打包期读清竞态①：采集定位后、写包前 chk 被清理——存在性预检命中，
+    按缺登记跳过（200 出包带说明），不再以 500 失败（chk-export-plan §5）。"""
+    import web.src.services.dependencies as dependencies_mod
+    eid, _ = seed_terminal("succeeded")
+    stale = config.HOME_DIR / "run" / str(eid) / "vanish.chk"
+    monkeypatch.setattr(dependencies_mod, "execution_chk_asset",
+                        lambda _eid: stale)  # 定位成功但文件已被清
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["_导出说明.txt"]
+    assert zf.testzip() is None
+    note = zf.read("_导出说明.txt").decode("utf-8")
+    assert f"执行 {eid}：无 chk 资产（已清理或从未产生）" in note
+
+
+def test_history_export_chk_vanish_mid_copy_rebuilds_package(
+        home, monkeypatch):
+    """打包期读清竞态②：拷贝中途条目被清理（FileNotFoundError）——半条目
+    已入档不可摘除，弃当前包重建（排除牺牲条目）并按缺登记，其余条目与
+    说明完整、包过 testzip。"""
+    orig_write = zipfile.ZipFile.write
+
+    def flaky(self, filename, *args, **kwargs):
+        if Path(filename).name == "vanish.chk":  # 模拟拷贝中途被清理
+            Path(filename).unlink()
+            raise FileNotFoundError(2, "模拟拷贝中途被清理")
+        return orig_write(self, filename, *args, **kwargs)
+
+    monkeypatch.setattr(zipfile.ZipFile, "write", flaky)
+    e1, _ = seed_terminal("succeeded", with_run=True)
+    rd = config.HOME_DIR / "run" / str(e1)
+    (rd / "input.gjf").write_text(
+        "%chk=vanish.chk\n\n#p HF/6-31G(d)\n\n运行副本\n\n0 1\nO 0 0 0\n",
+        encoding="utf-8")
+    (rd / "vanish.chk").write_bytes(b"VANISH")
+    e2, _ = seed_terminal("succeeded", filename="nh3.gjf", with_run=True)
+    _write_run_chk(e2, content=b"KEEP")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [e1, e2], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["nh3.chk", "_导出说明.txt"]
+    assert zf.read("nh3.chk") == b"KEEP"
+    assert zf.testzip() is None  # 弃包重建后的整包完整性
+    note = zf.read("_导出说明.txt").decode("utf-8")
+    assert f"执行 {e1}：无 chk 资产（已清理或从未产生）" in note
 
 
 def test_history_export_scope_out_explicit_memory_path(home):
