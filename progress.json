@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-14T01:14+0800",
+ "updated": "2026-11-14T14:07+0800",
  "latest_released_version": "3.5.0",
  "unreleased": [
   {
@@ -20,6 +20,13 @@
    "type": "added",
    "scope": "frontend",
    "summary": "队列成员核验警告改徽标折叠显隐（B9 G13 裁决⑤呈现形态变更、取数路径不变）：默认收起单行，行内琥珀徽标显警告数目、预览不可用显 ⚠ ?，点击行下展开警告清单（下方条目自动挤开）再点收起紧贴，aria-expanded/aria-label/title 随动可及性口径完整；成员行去 title 文案仅显文件名（长名省略号随弹窗拖宽伸缩），徽标样式令牌与候选页逐项一致（button 形态补重置），展开态随重排携带、随弹窗打开清空、随成员移除删除",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "frontend",
+   "summary": "补齐队列编辑弹窗两处缺失悬浮提示：「-」移除按钮常态无 title 易被好奇误触（补「移除该任务」，剩 1 个成员/在跑成员禁用态原提示保留）、拖宽手柄透明常态能力不可发现（补「拖动调整窗口宽度」，hover 右缘指示线与 col-resize 光标为既有行为）",
    "breaking": false,
    "migration": null
   }
