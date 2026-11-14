@@ -4,7 +4,9 @@
 
 ## Unreleased（未发布）
 
-_暂无条目。_
+### 新增
+
+- 【web】历史导出扩展三范围 split button（导出 .out 主操作 + 导出 .chk / 全部导出下拉）：chk 经 execution_chk_asset 定位（failed 保全优先、正常执行按执行副本 %chk= 声明），scope=all 同执行两文件同包；条目归一 <stem>.<扩展> 平铺、冲突组按 (stem, 扩展) 加补零 id 前缀，缺漏按维度登记 _导出说明.txt；scope=out 保持内存打包零回归，chk/all 临时文件顺序写、chk 条目 ZIP_STORED 流式拷贝防 OOM，路由层 FileResponse 流式发送 + BackgroundTask 删临时文件、启动清扫兜底残留；包名三范围同名仅时间戳区分
 
 ## v3.6.0（2026-11-14T14:15+0800 发布，minor）
 

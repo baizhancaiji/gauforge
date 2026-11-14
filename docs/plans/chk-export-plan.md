@@ -1,6 +1,20 @@
 # 历史 chk 导出（split button）· 实施计划（目标 3.7.0）
 
-> 状态：**待执行**
+> 状态：**已实施并验收（随 3.7.0 发布，验收留痕见本状态行与 progress.json
+> context v3.7.0 批段，2026-11-14）**——T1–T5 四提交实施完毕（d45039fd
+> 计划落盘 / f94e6e5c feat(web) 后端 scope 化 / 14adeb60 feat(frontend)
+> split button / chore(progress) 本进度同步）；验收证据：全量 pytest
+> 906 passed（基线 3.6.0 冻结 893）；判据 2–5 API 层矩阵由
+> test_history_api.py 12 个 scope 扩展用例覆盖；判据 6 浏览器实测
+> （隔离实例 + playwright 直连）：三 scope split 交互与下载落盘核对全过——
+> 包名 `gauforge-outputs-YYYYMMDD-HHMMSS.zip` 三 scope 同名仅时间戳区分、
+> chk 条目 ZIP_STORED / .out 条目 ZIP_DEFLATED、包内平铺无子目录、
+> failed 保全 chk 优先、skipped 登记文案三分口径逐字核对、临时包响应后
+> 即删（隔离工作区 tmp 目录零残留）；判据 7 闸门 validate_progress /
+> gen_changelog_md --check / audit_frontend_offline / check_tokens /
+> check_contrast 全绿，check_plan_status 属发布前口径（本批后仅余各
+> 待执行计划项，随各自批次回填）；判据 5 大文件路径经 ZipFile.write
+> 按路径流式拷贝实现与 testzip 完整性双证。
 > 排期口径：单人实施，任务粒度=一个可审查提交；规模标记 S（≤半天）/ M（约一天）。
 > 行号锚点为计划落盘时点（HEAD=5df5e779）实际行号，实施会使其漂移，**以符号名为准**。
 > 执行纪律：文档一提交 → 实现两提交（导出契约与后端、前端 split button）→
