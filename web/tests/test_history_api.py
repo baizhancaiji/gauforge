@@ -22,8 +22,10 @@ from __future__ import annotations
 
 import io
 import json
+import re
 import zipfile
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -288,6 +290,237 @@ def test_history_export_bad_body_400():
         r = client.post("/api/v1/history/export", json=body)
         assert r.status_code == 400, body
         assert r.json()["error"]["code"] == "INVALID_REQUEST"
+
+
+# ---------------- export scope 扩展（chk/全部；chk-export 计划 T2） ----------------
+
+def _write_run_chk(eid: int, name: str = "w.chk",
+                   content: bytes = b"CHK-DATA") -> None:
+    """在 run/<eid>/ 下落一个 chk 文件（默认名对齐 RUN_INPUT_TEXT 的
+    %chk=w.chk，resolve_chk 声明定位口径）。"""
+    d = config.HOME_DIR / "run" / str(eid)
+    d.mkdir(parents=True, exist_ok=True)
+    (d / name).write_bytes(content)
+
+
+def test_history_export_chk_scope_succeeded_asset(home):
+    """succeeded 保留期内：执行副本 %chk= 声明定位的自有 chk 入包。"""
+    eid, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(eid, content=b"CHK-BYTES-1")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "chk"})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("application/zip")
+    assert re.fullmatch(r"attachment; filename=gauforge-outputs-\d{8}-\d{6}\.zip",
+                        r.headers["content-disposition"])
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.chk"]
+    assert zf.read("h2o.chk") == b"CHK-BYTES-1"
+    assert zf.testzip() is None
+
+
+def test_history_export_chk_failed_protected_asset(home):
+    """failed：protected/ 保全 chk 优先于顶层 chk 入包。"""
+    eid, _ = seed_terminal("failed", cause="program_error", with_run=True)
+    prot = config.HOME_DIR / "run" / str(eid) / "protected"
+    prot.mkdir()
+    (prot / "keep.chk").write_bytes(b"PROTECTED")
+    _write_run_chk(eid)  # 顶层同名位也有 chk：判据 ① 保全优先
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.chk"]
+    assert zf.read("h2o.chk") == b"PROTECTED"
+
+
+def test_history_export_chk_skipped_manifest_and_404(home):
+    """skipped 未启动无 chk：多项时说明登记；chk scope 全缺 404。"""
+    ok, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(ok)
+    skip, _ = seed_terminal("skipped", cause="predecessor_failed")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [ok, skip], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.chk", "_导出说明.txt"]
+    note = zf.read("_导出说明.txt").decode("utf-8")
+    assert f"执行 {skip}：无 chk（任务未启动）" in note
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [skip], "scope": "chk"})
+    assert r.status_code == 404
+    assert r.json()["error"]["code"] == "NOT_FOUND"
+    assert len(r.json()["error"]["details"]["missing"]) == 1
+
+
+def test_history_export_chk_cleaned_manifest_and_404(home):
+    """succeeded 但 chk 已清理（顶层无 chk 资产）：多项时说明登记；全缺 404。"""
+    ok, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(ok)
+    cleaned, _ = seed_terminal("succeeded", filename="nh3.gjf", with_run=True)
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [ok, cleaned], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.chk", "_导出说明.txt"]
+    note = zf.read("_导出说明.txt").decode("utf-8")
+    assert f"执行 {cleaned}：无 chk 资产（已清理或从未产生）" in note
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [cleaned], "scope": "chk"})
+    assert r.status_code == 404
+    assert r.json()["error"]["code"] == "NOT_FOUND"
+
+
+def test_history_export_invalid_scope_400():
+    """scope 非法值（非 out/chk/all）→ 400 INVALID_REQUEST
+    （test_cleanup_invalid_scope_400 同型）。"""
+    for scope in ("bogus", "", "OUT", None, 1):
+        r = client.post("/api/v1/history/export",
+                        json={"ids": [1], "scope": scope})
+        assert r.status_code == 400, scope
+        assert r.json()["error"]["code"] == "INVALID_REQUEST"
+
+
+def test_history_export_scope_all_both_files_manifest_merged(home):
+    """scope=all：同执行 .out+.chk 两条目同 stem 不加前缀；skipped 缺失
+    说明按执行合并登记一条；包内平铺无子目录条目。"""
+    ok, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(ok, content=b"ALL-CHK")
+    skip, _ = seed_terminal("skipped", cause="predecessor_failed")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [ok, skip], "scope": "all"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    names = zf.namelist()
+    assert sorted(names) == ["_导出说明.txt", "h2o.chk", "h2o.out"]
+    assert not any("/" in n for n in names)  # 平铺：ZIP 根无子目录条目
+    assert zf.read("h2o.chk") == b"ALL-CHK"
+    note = zf.read("_导出说明.txt").decode("utf-8")
+    assert f"执行 {skip}：无输出文件（任务未产生输出或已清理），" \
+        f"无 chk（任务未启动）" in note
+    assert "无 chk 资产（" not in note  # skipped 不按已清理/未产生口径登记
+
+
+def test_history_export_scope_all_collision_prefix_by_ext(home):
+    """scope=all 冲突组按 (stem, 扩展) 分组：out 与 chk 各自成组、全加前缀；
+    无冲突组（nh3）不加。"""
+    e1, _ = seed_terminal("succeeded", with_run=True)
+    e2, _ = seed_terminal("succeeded", with_run=True)  # 同名 h2o.gjf
+    other, _ = seed_terminal("succeeded", filename="nh3.gjf", with_run=True)
+    for e in (e1, e2, other):
+        _write_run_chk(e)
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [e1, e2, other], "scope": "all"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert sorted(zf.namelist()) == sorted(
+        [f"{e1:03d}-h2o.out", f"{e2:03d}-h2o.out",
+         f"{e1:03d}-h2o.chk", f"{e2:03d}-h2o.chk",
+         "nh3.out", "nh3.chk"])
+
+
+def test_history_export_chk_reuse_materialized_dep_is_own(home):
+    """续用形态：执行副本被物化为 %chk=dep-<X>.chk，其 dep-<X>.chk 即本任务
+    自有 chk，按判据天然选中入包（不加 dep-* 过滤）。"""
+    eid, _ = seed_terminal("succeeded", with_run=True)
+    rd = config.HOME_DIR / "run" / str(eid)
+    (rd / "input.gjf").write_text(
+        "%chk=dep-3.chk\n\n#p HF/6-31G(d)\n\n运行副本\n\n0 1\nO 0 0 0\n",
+        encoding="utf-8")
+    (rd / "dep-3.chk").write_bytes(b"OWN-CHK")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.chk"]
+    assert zf.read("h2o.chk") == b"OWN-CHK"
+
+
+def test_history_export_chk_readonly_dep_not_exported(home):
+    """只读接续形态：%oldchk=dep-<X>.chk 为上游参考副本，未声明自有 %chk
+    时无自有 chk → dep-* 不入包、说明登记；单独导出 404。"""
+    ok, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(ok)
+    ro, _ = seed_terminal("succeeded", filename="nh3.gjf", with_run=True)
+    rd = config.HOME_DIR / "run" / str(ro)
+    (rd / "input.gjf").write_text(  # 只 %oldchk，无自有 %chk 声明
+        "%oldchk=dep-3.chk\n\n#p HF/6-31G(d)\n\n接续\n\n0 1\nN 0 0 0\n",
+        encoding="utf-8")
+    (rd / "dep-3.chk").write_bytes(b"UPSTREAM")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [ok, ro], "scope": "chk"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    names = zf.namelist()
+    assert sorted(names) == ["_导出说明.txt", "h2o.chk"]
+    assert "dep-3.chk" not in names
+    assert f"执行 {ro}：无 chk 资产（已清理或从未产生）" in \
+        zf.read("_导出说明.txt").decode("utf-8")
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [ro], "scope": "chk"})
+    assert r.status_code == 404
+
+
+def test_history_export_chk_entry_stored_out_deflated(home):
+    """chk 条目 ZIP_STORED（二进制压缩无收益）、.out 条目 ZIP_DEFLATED。"""
+    eid, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(eid)
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "all"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.getinfo("h2o.chk").compress_type == zipfile.ZIP_STORED
+    assert zf.getinfo("h2o.out").compress_type == zipfile.ZIP_DEFLATED
+
+
+def test_history_export_chk_tmpfile_lifecycle(home):
+    """scope=chk 走临时文件：服务层返回 HOME_DIR/tmp 下 export-*.zip 路径、
+    包过 testzip；HTTP 响应结束后 BackgroundTask 已删临时文件。"""
+    from web.src.services import history as history_svc
+    eid, _ = seed_terminal("succeeded", with_run=True)
+    _write_run_chk(eid, content=b"BIG-CHK" * 1024)
+    tmp_dir = config.HOME_DIR / "tmp"
+    assert not tmp_dir.exists()  # scope=out 路径不触 tmp
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "out"})
+    assert r.status_code == 200 and not tmp_dir.exists()
+    result = history_svc.export_outputs([eid], "chk")
+    assert isinstance(result, Path)
+    assert result.parent == tmp_dir
+    assert result.name.startswith("export-") and result.suffix == ".zip"
+    zf = zipfile.ZipFile(result)
+    assert zf.testzip() is None and zf.namelist() == ["h2o.chk"]
+    zf.close()
+    result.unlink()  # 服务层直调产物手动清，免干扰后续断言
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "chk"})
+    assert r.status_code == 200
+    assert list(tmp_dir.iterdir()) == []  # BackgroundTask 用后即删
+
+
+def test_history_export_purge_tmp_startup(home):
+    """启动清扫：HOME_DIR/tmp 下 export-*.zip 残留清掉、其他文件不动。"""
+    from web.src.services import history as history_svc
+    tmp_dir = config.HOME_DIR / "tmp"
+    tmp_dir.mkdir(parents=True)
+    stale = tmp_dir / "export-20261114-000000.zip"
+    stale.write_bytes(b"stale")
+    keep = tmp_dir / "unrelated.txt"
+    keep.write_text("keep", encoding="utf-8")
+    history_svc.purge_export_tmp()
+    assert not stale.exists()
+    assert keep.exists()
+
+
+def test_history_export_scope_out_explicit_memory_path(home):
+    """显式 scope=out 与缺省同走内存路径（判据 1：内存路径未动）。"""
+    eid, _ = seed_terminal("succeeded", with_run=True)
+    r = client.post("/api/v1/history/export",
+                    json={"ids": [eid], "scope": "out"})
+    assert r.status_code == 200
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    assert zf.namelist() == ["h2o.out"]
+    assert zf.read("h2o.out") == b" Gaussian log\n"
 
 
 # ---------------- archive（#29） ----------------

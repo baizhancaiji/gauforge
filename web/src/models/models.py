@@ -373,8 +373,18 @@ class HistoryEntry(Execution):
     )
 
 
+class Scope(Enum):
+    out = 'out'
+    chk = 'chk'
+    all = 'all'
+
+
 class HistoryExportRequest(BaseModel):
     ids: list[int] = Field(..., description='历史条目（终态执行）id 集合', min_length=1)
+    scope: Scope | None = Field(
+        'out',
+        description='导出范围——out 输出日志（缺省，向后兼容）/ chk 资产 / all 同执行两文件全部',
+    )
 
 
 class ResumeProbe(BaseModel):

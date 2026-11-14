@@ -667,13 +667,22 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * 批量导出选中条目的输出文件（ZIP；逐条 .out 命名）
-         * @description 按执行 id 集合打包 run/<id>/input.log（G16 输出）为 ZIP 下载：
-         *     条目内命名 <任务stem>.out（正规输出扩展），同一任务多次执行产生
-         *     同名冲突时全部改用「三位补零执行 id-<stem>.out」前缀区分；
-         *     无输出文件的条目（skipped/输出已缺）跳过并在包内 _导出说明.txt
-         *     逐条登记，选中条目全部无输出时 404。响应
+         * 批量导出选中条目为 ZIP（scope 三范围：out 输出 / chk 资产 / all 全部）
+         * @description 按执行 id 集合与 scope 打包选中条目为 ZIP 下载：
+         *     - scope=out（缺省）：条目 = run/<id>/input.log（G16 输出），内存打包；
+         *     - scope=chk：条目 = 执行 chk 资产（failed/异常终止取 protected/ 保全，
+         *       正常执行按执行副本 %chk= 声明定位、无声明回落 input.chk；skipped
+         *       无 chk），临时文件顺序写、chk 条目 ZIP_STORED 按路径流式拷贝；
+         *     - scope=all：同执行 .out 与 .chk 都入包。
+         *     条目内命名 <任务stem>.out / <任务stem>.chk；同一 (stem, 扩展) 冲突组
+         *     全部改用「三位补零执行 id-<stem>.<扩展>」前缀区分；包内平铺、全部
+         *     条目同级不建子目录；缺漏条目跳过并在包内 _导出说明.txt 按执行逐条
+         *     登记（scope=all 合并登记一条），所选 scope 采集全空时 404。
+         *     续用形态 %chk=@task:X 的执行副本被物化为 %chk=dep-<X>.chk，其
+         *     dep-<X>.chk 即该任务自有 chk（判据天然选中）；只读接续 %oldchk 的
+         *     dep-* 不满足判据、不导出。包名三 scope 同名（裁决：仅靠时间戳区分）：
          *     Content-Disposition: attachment; filename=gauforge-outputs-<时刻>.zip。
+         *     scope 取值非 out/chk/all → 400。
          */
         post: operations["exportHistoryOutputs"];
         delete?: never;
@@ -1259,6 +1268,12 @@ export interface components {
         HistoryExportRequest: {
             /** @description 历史条目（终态执行）id 集合 */
             ids: number[];
+            /**
+             * @description 导出范围——out 输出日志（缺省，向后兼容）/ chk 资产 / all 同执行两文件全部
+             * @default out
+             * @enum {string}
+             */
+            scope: "out" | "chk" | "all";
         };
         /** @description 断点续跑探针结果（对续跑资产 chk 跑 formchk 有效性探针，临时 目录执行，超时 120s 沿 finalize 同款兜底） */
         ResumeProbe: {
@@ -2874,7 +2889,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 输出文件 ZIP 包 */
+            /** @description 导出 ZIP 包（chk/all 为临时文件流式发送，响应结束即清理） */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -3,8 +3,11 @@
 
 - 历史条目 = executions 终态行（m1-plan §2.2 运行与历史同表）；wall_time_s
   按 started_at→finished_at 派生（契约标注 F 字段不落库）；
-- 批量导出：选中条目的 run/<id>/input.log（G16 输出）打包 ZIP，条目内以
-  <stem>.out 正规扩展命名（同任务多次执行同名冲突加补零 id 前缀）；
+- 批量导出（scope 三范围）：out=选中条目的 run/<id>/input.log（G16 输出，
+  全内存 BytesIO 打包）；chk=chk 资产（execution_chk_asset 定位，临时文件
+  顺序写、ZIP_STORED 按路径流式拷贝）；all=同执行两文件都入包。条目内以
+  <stem>.<扩展> 归一命名（同 (stem, 扩展) 冲突组全部加补零 id 前缀），
+  包内平铺不建子目录，包名仅靠时间戳区分；
 - 重新排队：仅 failed/skipped、且任务不归属任何队列（队列成员经队列
   重新提交，防止撕裂队列成员构成）；沿用原任务 id 建席（finished→
   seat_task），满员 409 与一般任务同待遇（roadmap §2.1）；
@@ -18,7 +21,10 @@
 """
 from __future__ import annotations
 
+import contextlib
 import io
+import os
+import tempfile
 import zipfile
 from collections import Counter
 from datetime import datetime
@@ -129,45 +135,115 @@ def load_output(execution_id: int) -> bytes:
         raise not_found("output", execution_id)
 
 
-def export_outputs(ids: list[int]) -> bytes:
-    """批量导出选中条目的输出文件（ZIP 字节）。
+def export_outputs(ids: list[int], scope: str = "out") -> bytes | Path:
+    """批量导出选中条目为 ZIP（内存字节或临时文件路径，按 scope 分路径）。
 
-    条目内容 = run/<id>/input.log（G16 输出），条目内命名 <stem>.out
-    （正规输出扩展）；同一任务多次执行产生同名冲突时，冲突组全部改用
-    「三位补零执行 id-<stem>.out」前缀区分。无输出文件的条目（skipped、
-    输出已缺、id 不存在/非终态）跳过，包内 _导出说明.txt 逐条登记；
-    选中条目全部无输出 → 404（openapi /history/export）。
+    scope=out（缺省）：条目内容 = run/<id>/input.log（G16 输出），全内存
+    BytesIO 打包（零回归原路径）；scope=chk：条目 = execution_chk_asset
+    定位的 chk 资产（① protected/ 保全优先，② 按执行副本 %chk= 声明定位、
+    无声明回落 input.chk）；scope=all：同执行 .out 与 .chk 都入包、说明按
+    执行合并登记一条。条目内命名 <stem>.<扩展>（stem 取任务 filename 去
+    扩展名）；同一 (stem, 扩展) 冲突组全部改用「三位补零执行 id-」前缀
+    区分（scope=all 同执行同 stem 不互冲突）。缺漏条目跳过并在包内
+    _导出说明.txt 逐条登记；所选 scope 采集全空 → 404（openapi
+    /history/export）。续用形态 %chk=@task:X 的执行副本被物化为
+    %chk=dep-<X>.chk 且其 dep-<X>.chk 即本任务自有 chk，②路径天然选中
+    （不加 dep-* 过滤）；只读接续 %oldchk 的 dep-* 不满足判据、不会被选中。
     """
-    picked: list[tuple[int, str, bytes]] = []  # (执行 id, 任务 stem, 内容)
-    missing: list[str] = []                    # 导出说明行
-    for eid in dict.fromkeys(ids):             # 去重保序
+    from .dependencies import execution_chk_asset  # 延迟导入防环（requeue 先例）
+    picked: list[tuple[int, str, str, object]] = []  # (执行 id, stem, 扩展, bytes|Path)
+    missing: list[str] = []                          # 导出说明行
+    want_out = scope in ("out", "all")
+    want_chk = scope in ("chk", "all")
+    for eid in dict.fromkeys(ids):                   # 去重保序
         row = executions().get(eid)
         if row is None or row["state"] not in _TERMINAL:
             missing.append(f"- 执行 {eid}：条目不存在或非终态")
             continue
-        try:
-            data = _run_dir(eid).joinpath("input.log").read_bytes()
-        except OSError:
-            missing.append(f"- 执行 {eid}：无输出文件（任务未产生输出或已清理）")
-            continue
         name = row["filename"]
-        picked.append((eid, name.rsplit(".", 1)[0] if "." in name else name,
-                       data))
+        stem = name.rsplit(".", 1)[0] if "." in name else name
+        out_data: bytes | None = None
+        if want_out:
+            try:
+                out_data = _run_dir(eid).joinpath("input.log").read_bytes()
+            except OSError:
+                out_data = None  # 读清竞态：按缺登记，不阻塞不重试
+        # skipped 未启动无 run 过程，无 chk（不查资产）；读清竞态按缺登记
+        chk_path = (execution_chk_asset(eid)
+                    if want_chk and row["state"] != "skipped" else None)
+        out_miss = want_out and out_data is None
+        chk_miss = want_chk and chk_path is None
+        if out_miss or chk_miss:
+            # 缺失描述按维度独立（scope=out 维持现状逐字文案），多维缺失
+            # 拼接为一条（scope=all 按执行合并登记）
+            line = "，".join(filter(None, [
+                "无输出文件（任务未产生输出或已清理）" if out_miss else None,
+                "无 chk（任务未启动）" if chk_miss and row["state"] == "skipped"
+                else None,
+                "无 chk 资产（已清理或从未产生）"
+                if chk_miss and row["state"] != "skipped" else None]))
+            missing.append(f"- 执行 {eid}：{line}")
+        if out_data is not None:
+            picked.append((eid, stem, "out", out_data))
+        if chk_path is not None:
+            picked.append((eid, stem, "chk", chk_path))
     if not picked:
-        raise err("NOT_FOUND", "选中条目均无输出文件",
+        raise err("NOT_FOUND", "选中条目均无可导出文件",
                   {"missing": missing}, http=404)
-    dup = {stem for stem, n in Counter(s for _, s, _ in picked).items()
+    dup = {key for key, n in Counter((s, e) for _, s, e, _ in picked).items()
            if n > 1}
-    buf = io.BytesIO()
-    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        for eid, stem, data in picked:
-            inner = f"{eid:03d}-{stem}.out" if stem in dup else f"{stem}.out"
-            zf.writestr(inner, data)
-        if missing:
-            zf.writestr("_导出说明.txt",
-                        "以下选中条目无输出文件，未包含在本次导出中：\n"
-                        + "\n".join(missing) + "\n")
-    return buf.getvalue()
+
+    def _inner(eid: int, stem: str, ext: str) -> str:
+        return (f"{eid:03d}-{stem}.{ext}" if (stem, ext) in dup
+                else f"{stem}.{ext}")
+
+    if scope == "out":  # 内存原路径（零回归）
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for eid, stem, ext, data in picked:
+                zf.writestr(_inner(eid, stem, ext), data)
+            if missing:
+                zf.writestr("_导出说明.txt", _export_manifest(missing))
+        return buf.getvalue()
+    # chk/all：临时文件顺序写（chk 可达数 GB，包内存峰值不可接受）
+    tmp_dir = config.HOME_DIR / config.EXPORT_TMP_SUBDIR
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    fd, raw = tempfile.mkstemp(prefix="export-", suffix=".zip", dir=tmp_dir)
+    os.close(fd)
+    tmp_path = Path(raw)
+    try:
+        with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            for eid, stem, ext, src in picked:
+                if isinstance(src, Path):
+                    # chk 按路径流式拷贝（zipfile 内部分块读写，不整文件载入
+                    # 内存），ZIP_STORED：二进制压缩无收益
+                    zf.write(src, _inner(eid, stem, ext),
+                             compress_type=zipfile.ZIP_STORED)
+                else:
+                    zf.writestr(_inner(eid, stem, ext), src)
+            if missing:
+                zf.writestr("_导出说明.txt", _export_manifest(missing))
+    except BaseException:
+        tmp_path.unlink(missing_ok=True)  # 磁盘满等失败：不留半成品
+        raise
+    return tmp_path
+
+
+def _export_manifest(missing: list[str]) -> str:
+    return ("以下选中条目无对应导出文件，未包含在本次导出中：\n"
+            + "\n".join(missing) + "\n")
+
+
+def purge_export_tmp() -> None:
+    """启动清扫导出临时包残留（BackgroundTask 删除为主，服务中断时
+    BackgroundTask 不执行，残留交本清扫兜底；只认 export-*.zip 形态）。"""
+    tmp_dir = config.HOME_DIR / config.EXPORT_TMP_SUBDIR
+    if not tmp_dir.is_dir():
+        return
+    for f in tmp_dir.iterdir():
+        if f.is_file() and f.name.startswith("export-") and f.suffix == ".zip":
+            with contextlib.suppress(OSError):
+                f.unlink()
 
 
 def archive(execution_id: int) -> None:

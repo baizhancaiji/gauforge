@@ -145,6 +145,10 @@ UI_PREF_KEYS: dict[str, frozenset[str]] = {
 # 注意三层 parent：CONTRACT_PATH=<仓库根>/docs/api/openapi.yaml。
 PROJECT_ROOT = CONTRACT_PATH.parent.parent.parent
 
+# 导出临时包子目录名（chk/全部导出临时文件打包落盘处，随请求结束删除、
+# 启动清扫兜底残留；与 .update-proxy 同为工作区持久化先例）。
+EXPORT_TMP_SUBDIR = "tmp"
+
 
 # ---------- 组合流精修模板（插波 3.2.0，m4-combo-template-deploy-plan §3.1） ----------
 # route 初始值单一来源（全小写，全部方案共用）：v7 迁移种子与 GET

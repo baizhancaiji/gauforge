@@ -7,12 +7,16 @@ requeue → pending.snapshot；return-candidate → candidates.changed(created)�
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter
 from fastapi import Response
+from fastapi.responses import FileResponse
 from starlette import status
+from starlette.background import BackgroundTask
 
 from ..errors import err
 from ..mock import get_state
@@ -49,18 +53,30 @@ def cleanup_transients(scope: str = "expired") -> dict:
 
 @router.post("/history/export")
 def export_history_outputs(payload: dict) -> Response:
-    """批量导出选中条目输出为 ZIP（openapi /history/export；前端 blob 下载）。"""
+    """批量导出选中条目为 ZIP（openapi /history/export；前端 blob 下载）。
+
+    scope=out（缺省）走内存路径整包回发；scope=chk/all 服务层落临时文件，
+    经 FileResponse 分块流式发送、BackgroundTask 删临时文件（失败残留由
+    启动清扫兜底）。包名三 scope 同名，仅时间戳区分（2026-11-14 裁决 3）。
+    """
     ids = payload.get("ids")
     if not isinstance(ids, list) or not ids or not all(
             isinstance(i, int) and not isinstance(i, bool) and i > 0
             for i in ids):
         raise err("INVALID_REQUEST", "ids 须为非空正整数数组", http=400)
-    data = history_svc.export_outputs(ids)
+    scope = payload.get("scope", "out")
+    if scope not in ("out", "chk", "all"):
+        raise err("INVALID_REQUEST", "scope 取值不合法", http=400)
+    result = history_svc.export_outputs(ids, scope)
     stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
-    return Response(
-        content=data, media_type="application/zip",
-        headers={"Content-Disposition":
-                 f"attachment; filename=gauforge-outputs-{stamp}.zip"})
+    headers = {"Content-Disposition":
+               f"attachment; filename=gauforge-outputs-{stamp}.zip"}
+    if isinstance(result, Path):  # chk/all 临时文件路径：流式发送 + 用后即删
+        return FileResponse(result, media_type="application/zip",
+                            headers=headers,
+                            background=BackgroundTask(os.unlink, result))
+    return Response(content=result, media_type="application/zip",
+                    headers=headers)
 
 
 @router.get("/history/{id}")

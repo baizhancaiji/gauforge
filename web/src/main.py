@@ -118,6 +118,8 @@ def build_app() -> FastAPI:
         # 更新域（v2.1.0）：启动恢复 update-state/.update-check（§3.4）+
         # 自动检查调度（30s 轮询式；到点触发与启动补查同口径，只发现不安装）；
         # 代理配置先一次性搬迁到工作区（部署目录旧位置遗留清理）
+        from .services import history as history_svc
+        history_svc.purge_export_tmp()  # 导出临时包残留兜底清扫（chk-export 计划）
         from .services import update as update_svc
         update_svc.migrate_proxy_to_workspace()
         update_svc.get_service().recover_from_disk()
