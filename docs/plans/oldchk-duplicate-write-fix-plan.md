@@ -1,6 +1,26 @@
 # 程序写入 %oldchk 重复累积修复（单槽位覆写） · 实施计划（目标 3.7.0）
 
-> 状态：**待执行**
+> 状态：**已实施并验收（2026-11-14，版本随 unreleased 与 chk-export /
+> link1-multistep 批并窗，目标 3.7.0）**
+> 验收留痕：五提交（6d722b07 计划落盘 / e96dc103 T2 δ 续算 @exec 槽覆写 /
+> d466d432 T3 γ 回退剥离 dep 明文行 / d938a0ef T4 β 前端 @task 单槽覆写 /
+> 本进度同步提交）；五闸门全过（validate_progress / gen_changelog_md --check /
+> check_tokens / check_contrast / audit_frontend_offline）+ 全量 pytest
+> 914 passed 0 skipped（3.6.0 冻结基线 893，本批新增 8 用例）。判据 1–3
+> 浏览器实测（隔离实例 127.0.0.1:8411、G16WEB_HOME=/tmp/g16web-oldchk、
+> G16WEB_ENGINE=0、本批 dist 构建产物、playwright-core 直连 chromium
+> headless）：26/26 PASS、console 零错误——判据 1 报障场景重演（勾选保存
+> 恰 2 条 → 提交 → 删除队列同 id 退回输入不动 → 重建不动勾选保存零 PUT
+> 且仍恰 2 条 → 复勾同前驱仍恰 2 条）、判据 2 β 收敛（重排换前驱勾选保存
+> 恰 1 条 @task:<C>、旧 @task:<A> 清、明文行与 %chk=@task: 续用行原样）、
+> 判据 3 取消勾选（@task 槽清空、明文行原样）；判据 4–6 pytest 承载
+> （test_resume 3 新用例 δ 收敛与 L4 共存形态 / test_candidates_copy 5 直测
+> 剥离与快路径逐字节 / test_history_api 退回剥离扩展 / test_e2e_queue_
+> lifecycle γ 链路闭环：复勾接续→提交→run 副本恰 1 条本轮物化 dep 行）；
+> 判据 8 check_plan_status 属发布前口径（本批不发布不占）。脚本与截图留痕
+> /tmp/g16-oldchk-walkthrough/（临时产物不入库）。实测注记：β 场景前置须
+> 被引用前驱声明 %chk（既有 DAG 声明前置，CHK_SOURCE_MISSING 拒绝与回滚
+> 为既有形态守卫，非本批回归）。
 > 排期口径：单人实施，任务粒度=一个可审查提交；规模标记 S（≤半天）/ M（约一天）。
 > 行号锚点为计划落盘时点（HEAD=5df5e779）实际行号前端**以符号名为准**。
 > 执行纪律：文档一提交 → 实现三提交（后端续算单槽、后端回退剥离、前端 @task 单槽，
