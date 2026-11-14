@@ -18,12 +18,16 @@ export interface MemberRow {
  * 连续 % 行，keyword 大小写不敏感；此处仅识别 `%oldchk=@task:<id>` 精确形态
  * （勾选只承载 %oldchk 只读形态，续用形态 `%chk=@task:id` 无前端生成入口）。
  */
+/** `%oldchk=@task:<n>` 引用行文法单源（忽略大小写、trim 后全行匹配）——
+ *  解析与整槽清除共用一常量，不各写一份正则。 */
+const OLDCHK_TASK_REF_RE = /^%oldchk\s*=\s*@task:(\d+)$/i;
+
 export function oldChkTaskRefTargets(lines: string[]): number[] {
   const targets: number[] = [];
   let i = 0;
   while (i < lines.length && (!lines[i].trim() || lines[i].trimStart().startsWith("!"))) i++;
   while (i < lines.length && lines[i].trimStart().startsWith("%")) {
-    const m = /^%oldchk\s*=\s*@task:(\d+)$/i.exec(lines[i].trim());
+    const m = OLDCHK_TASK_REF_RE.exec(lines[i].trim());
     if (m) targets.push(Number(m[1]));
     i++;
   }
@@ -33,9 +37,10 @@ export function oldChkTaskRefTargets(lines: string[]): number[] {
 /** 移除全部 `%oldchk=@task:<n>` 引用行（@task 槽单槽覆写的前半——整槽
  *  清除后按勾选态重写，不按目标精确匹配：陈旧引用——重排/换前驱/手写
  *  非紧邻前序成员引用——一并清除，oldchk-duplicate-write-fix-plan §2.1；
- *  忽略大小写、trim 后全行匹配，与 oldChkTaskRefTargets 同文法）。 */
+ *  忽略大小写、trim 后全行匹配，与 oldChkTaskRefTargets 共用
+ *  OLDCHK_TASK_REF_RE）。 */
 export function removeAllOldChkTaskRefs(lines: string[]): string[] {
-  return lines.filter((l) => !/^%oldchk\s*=\s*@task:\d+$/i.exec(l.trim()));
+  return lines.filter((l) => !OLDCHK_TASK_REF_RE.exec(l.trim()));
 }
 </script>
 

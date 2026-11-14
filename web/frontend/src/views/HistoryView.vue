@@ -17,7 +17,7 @@
  * （统计回显）。批量导出走工具条（单条导出入口已移除）。
  * 归档管理视图承载 archived=true（独立路由 /archive，决策点 10），仅保留查看动作。
  */
-import { computed, nextTick, onBeforeUnmount, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, ref, watch, type Ref } from "vue";
 import { useRoute } from "vue-router";
 
 import { client, exportOutputs, getText } from "@/api/client";
@@ -280,26 +280,32 @@ async function exportSelected(scope: "out" | "chk" | "all" = "out") {
   URL.revokeObjectURL(url);
 }
 
-/** 导出范围下拉菜单外部点击 / Esc 关闭（监听随开合挂摘，与清理菜单同模式）。 */
+/** 下拉菜单外部点击 / Esc 关闭（监听随开合挂摘，卸载兜底）——导出与清理
+ *  两个 split button 下拉共用（chk-export-plan §2.2 复用清理菜单模式）。 */
+function useMenuDismiss(open: Ref<boolean>, dismiss: () => void) {
+  const onKeydown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") dismiss();
+  };
+  watch(open, (v) => {
+    if (v) {
+      document.addEventListener("click", dismiss);
+      document.addEventListener("keydown", onKeydown);
+    } else {
+      document.removeEventListener("click", dismiss);
+      document.removeEventListener("keydown", onKeydown);
+    }
+  });
+  onBeforeUnmount(() => {
+    document.removeEventListener("click", dismiss);
+    document.removeEventListener("keydown", onKeydown);
+  });
+}
+
+/** 导出范围下拉：外部点击 / Esc 关闭（共用 useMenuDismiss）。 */
 function dismissExportMenu() {
   exportMenu.value = false;
 }
-function onExportMenuKeydown(e: KeyboardEvent) {
-  if (e.key === "Escape") dismissExportMenu();
-}
-watch(exportMenu, (open) => {
-  if (open) {
-    document.addEventListener("click", dismissExportMenu);
-    document.addEventListener("keydown", onExportMenuKeydown);
-  } else {
-    document.removeEventListener("click", dismissExportMenu);
-    document.removeEventListener("keydown", onExportMenuKeydown);
-  }
-});
-onBeforeUnmount(() => {
-  document.removeEventListener("click", dismissExportMenu);
-  document.removeEventListener("keydown", onExportMenuKeydown);
-});
+useMenuDismiss(exportMenu, dismissExportMenu);
 
 // ---------- 输入查看 / 输出预览（展示区拉伸贴底，内部滚动） ----------
 async function viewText(kind: "input" | "output") {
@@ -412,26 +418,11 @@ function openCleanup(scope: "expired" | "all") {
   cleanupOpen.value = true;
 }
 
-/** 下拉菜单外部点击 / Esc 关闭（监听随开合挂摘，卸载兜底）。 */
+/** 清理下拉：外部点击 / Esc 关闭（共用 useMenuDismiss）。 */
 function dismissMenu() {
   cleanupMenu.value = false;
 }
-function onMenuKeydown(e: KeyboardEvent) {
-  if (e.key === "Escape") dismissMenu();
-}
-watch(cleanupMenu, (open) => {
-  if (open) {
-    document.addEventListener("click", dismissMenu);
-    document.addEventListener("keydown", onMenuKeydown);
-  } else {
-    document.removeEventListener("click", dismissMenu);
-    document.removeEventListener("keydown", onMenuKeydown);
-  }
-});
-onBeforeUnmount(() => {
-  document.removeEventListener("click", dismissMenu);
-  document.removeEventListener("keydown", onMenuKeydown);
-});
+useMenuDismiss(cleanupMenu, dismissMenu);
 
 async function confirmCleanup() {
   cleanupLoading.value = true;
