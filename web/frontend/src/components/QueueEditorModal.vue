@@ -661,7 +661,7 @@ function tryClose() {
                 class="btn btn--ghost m-remove"
                 type="button"
                 :disabled="members.length <= 1 || done || (memberOnly && m.state === 'running')"
-                :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : undefined)"
+                :title="members.length <= 1 ? '队列至少保留 1 个成员' : (memberOnly && m.state === 'running' ? '在跑成员不可移除' : '移除该任务')"
                 @click="removeAt(i)"
               >
                 -
@@ -741,13 +741,16 @@ function tryClose() {
     </template>
     <!-- 拖宽手柄（§2.5）：经 ConfirmModal 具名插槽渲染为 .modal 直接子元素
          （.body 是滚动容器，绝对定位置其中会被裁剪）；只读/完成态同样
-         显示可操作（宽度属本地视图偏好，与队列状态无关） -->
+         显示可操作（宽度属本地视图偏好，与队列状态无关）；title 提示
+         拖宽能力（手柄透明常态仅 hover 显指示线，无文案则能力不可发现，
+         2026-11-14 人工测试反馈） -->
     <template #resize-handle>
       <div
         class="q-resize-handle"
         role="separator"
         aria-orientation="vertical"
         aria-label="调整弹窗宽度"
+        title="拖动调整窗口宽度"
         :aria-valuenow="renderedWidth"
         :aria-valuemin="MODAL_WIDTH_MIN"
         :aria-valuemax="ariaMax"
