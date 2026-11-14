@@ -1,36 +1,7 @@
 {
- "updated": "2026-11-14T14:07+0800",
- "latest_released_version": "3.5.0",
- "unreleased": [
-  {
-   "type": "fixed",
-   "scope": "frontend",
-   "summary": "修复队列编辑与待执行页拖拽排序变高行错位与滞留（3.4.0 A-12 变高行扩展引入、拖拽期几何未跟上）：拖拽期让位/落点分带/夹取/落定目标四处 y 定位由拖前前缀和改为交换后布局前缀和（rowHeights 移除 from 插入 to，等高行与原前缀和逐位相等零行为变化），含核验警告的长行上拖不再钻入邻行行盒被盖、短行上拖不再留大空隙、短行下拖落定不再落进让位高行盒重叠；拖拽提交重排后 nextTick 自动重测行高（收进排序组合式，队列编辑/待执行席位/成员子表三消费方同受益、与宿主既有 watch 重测同值双跑），错位不再滞留至下次点击才自愈",
-   "breaking": false,
-   "migration": null
-  },
-  {
-   "type": "fixed",
-   "scope": "frontend",
-   "summary": "修复只读态队列编辑弹窗成员行恒显「成员输入预览不可用 — 无法核验」占位：占位分支补 linkState 存在性前置（只读/完成态 loadLinkStates 提前返回置 linksReady 而 linkStates 为空 Map，旧条件恒真违背完成态不预显注释意图），预览取数本就只发生创建/编辑/仅成员可改三态",
-   "breaking": false,
-   "migration": null
-  },
-  {
-   "type": "added",
-   "scope": "frontend",
-   "summary": "队列成员核验警告改徽标折叠显隐（B9 G13 裁决⑤呈现形态变更、取数路径不变）：默认收起单行，行内琥珀徽标显警告数目、预览不可用显 ⚠ ?，点击行下展开警告清单（下方条目自动挤开）再点收起紧贴，aria-expanded/aria-label/title 随动可及性口径完整；成员行去 title 文案仅显文件名（长名省略号随弹窗拖宽伸缩），徽标样式令牌与候选页逐项一致（button 形态补重置），展开态随重排携带、随弹窗打开清空、随成员移除删除",
-   "breaking": false,
-   "migration": null
-  },
-  {
-   "type": "fixed",
-   "scope": "frontend",
-   "summary": "补齐队列编辑弹窗两处缺失悬浮提示：「-」移除按钮常态无 title 易被好奇误触（补「移除该任务」，剩 1 个成员/在跑成员禁用态原提示保留）、拖宽手柄透明常态能力不可发现（补「拖动调整窗口宽度」，hover 右缘指示线与 col-resize 光标为既有行为）",
-   "breaking": false,
-   "migration": null
-  }
- ],
+ "updated": "2026-11-14T14:15+0800",
+ "latest_released_version": "3.6.0",
+ "unreleased": [],
  "in_progress": null,
  "next_steps": [
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
@@ -40,5 +11,5 @@
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "队列编辑拖拽修复批次（queue-editor-drag-sort-fix-plan.md，目标 3.6.0）六提交实施完毕：T0 计划落盘 / T1 拖拽期几何改交换后布局（八处接线）/ T2 落定提交后自动重测 / T3a 只读占位存在性前置 / T3b 警告徽标折叠+行只显文件名 / T5 本进度同步；双根因（让位数学用拖前前缀和+提交重排后不重测）修复，浏览器实测绿集合判据 2–11 全过（红 49/34/58px 全归零，数值与复跑口径留痕计划文档状态行），全量 pytest 893 passed、六闸门全过；memberOnly 弹窗预览 404 为既有 _readable_row 形态守卫口径（候选/失败回退/unsubmitted 成员可读）非本批回归，徽标以 ⚠ ? 如实呈现；版本随 unreleased 与 link1-multistep-plan 并窗冻结（默认 3.6.0）。v3.5.0 已冻结（chk 物化修复批收口，审查修复批三提交随批入库）：chk 资产定位统一按实际执行副本 Link0 %chk= 声明（resolve_chk 下沉 workspace 单一事实来源，修复上游自定义名产物物化必败误报「已被清理」、@exec: 自定义名在保留期误判无 chk 资产、提交时反向误拒 CHK_SOURCE_MISSING 三处同根因缺陷）+ 静态校验补声明前置（创建/导入成队/PATCH/提交四时点 422 CHK_SOURCE_MISSING，导入成队校验失败回落候选不成队）+ %chk=\"\" 空值判空回落 + 物化文案两形态如实区分；前端队列编辑弹窗宽度可调与任务名自适应截断（playwright 视觉实测九项）；Windows 一键启动器（交互级探活与自动修复）；全量 pytest 893 passed、四前端闸门全过；含 added 判 minor，tag v3.5.0 本地未推送，GitHub Release 由用户手动发布。审查修复批（2026-11-13，chk 批次 code-review 两轴发现落地）三提交收口：fake_g16 空值声明即停对齐 parse_chk_line 口径（补 Link0 空声明在前边角用例，先证红后转绿）、workspace _link0_span 拆行层消除 resolve_link0/parse_chk_line/parse_link0_refs 三处同文本重复 split（原文本入口薄封装零调用方随删）、前端弹窗宽度常量 560/48 收敛 src/constants.ts 单一来源（ConfirmModal min() 表达式改 CSS v-bind 引常量、aria-valuemin 模板硬编码改常量绑定，四闸门全过、playwright 复测与 T6 基线同型零视觉变化，留痕 /tmp/g16-review-fix-walkthrough/）；六提交 summary 动词开头改写（08539289 不变、余七提交哈希更新）与计划文档哈希引用同步修正已随改写批完成；candidates.py 导入成队宽捕获回落经定夺不收窄（spec §2.2 字面宽回落语义、candidates.py 注释已留痕）；全量 pytest 893 passed。chk 物化修复批次（chk-materialize-fix-plan.md，目标 3.5.0）T0–T7 实施完毕待发布：chk 资产定位统一按实际执行副本 Link0 %chk= 声明（resolve_chk 下沉 workspace 单一事实来源），静态校验补声明前置（四时点 422 CHK_SOURCE_MISSING、导入成队回落不成队），%chk=\"\" 判空回落，前端弹窗宽度可调与任务名自适应截断（playwright 视觉实测九项通过，截图与量测留痕 /tmp/g16-t6-walkthrough/）；全量 pytest 892 passed，四闸门（build/audit_frontend_offline/check_tokens/check_contrast）全过。发布前闸门：check_plan_status 定点 / validate_progress / gen_changelog_md --check / 全量 pytest。未发布未打 tag，GitHub Release 由用户手动发布。v3.4.1 已冻结（面⑧ R2 复扫词典扩面）：用户实测真实 QST2 输入（opt=(qst2,calcfc,noeigentest,maxstep=15)）误报 NoEigenTest 非官方选项，根因为词典提取面不达手册正文句式；新增成对动词/等价/Use-to/option 指称/one-of 枚举等八类句式规则、面⑤逗号枚举标题承接、表格行与页首句手工补录、裸关键词面（tda/nosymmetry/notestmo/fopt/popt），词典 1345→1419；B6 误拒翻案 9 项（td=NoIVOGuess、geom=NoKeepConstants/NoGIC、opt=NoMicro、guess=NoTranslate、geom=NoCrowd、scf=NoInCore/NoVarAcc、ept=D2、output=RawMatrixElement）；CVL 真实语料 190 文件对照实测：route 词典通道警告 5→0（全部为 noeigentest 类）、无新增误报。发布前闸门：check_plan_status / validate_progress / gen_changelog_md --check / 全量 pytest 873 passed；本版本仅含 fixed（patch），GitHub Release 由用户手动发布（暂不发布、未推送远端）。v3.4.0 已冻结（输入勘误缺口补齐 B1–B9 收口）：13 项缺口 C1–C3/G0–G11 全通道收口（Geom 检查点豁免档、括号形态、route 拼写/重复/选项/子选项、Link0 错位/值域/缺省补全、节排序/必需空行、电荷行注释、词典 387→1345）+ G12 导入/提交/队列警告渲染与 G13 提交前核验预显（warning_count 现算契约、限高滚动、逐 kind 中文文案固化）；B1–B9 六份独立审查全部通过（无 P0/P1/P2），Link0 缺省补全收窄与徽标列钉宽两随批用户裁决落地（非阻断警告通道不改变任何阻断语义；B9 前部分 migration 见各条）；tag v3.4.0 与工作分支随本次发布推送远端，Release 由用户手动发布、部署包附件手动上传。v3.3.0 已冻结（词典面⑤选项面）：extract_keywords.py 增 Options 章节 #### 选项规则提取与章节外核实白名单，词典 387→1164 词，scf=xqc/yqc 等 777 个 KW=OPT 选项写法不再误报拼写警告；mini-KB 选项提取断言与 14 项回归清单入库，tag v3.3.0 已推送远端，Release 已由用户手动发布（本机 GitHub 直连不可用，未做远端附件复核）。v3.2.0 已冻结（m4-combo 插波收口）：组合流精修模板配置（契约+存储+校验服务+前端弹窗与方案选择，enforce 拼写拦截）、crest/xtb 部署链（setup_deps.sh/打包接线/deployment.md §6）、Link0/route 全小写收口（后端注入行+前端文案）、契约模型再生字节幂等与拼写豁免按 token 粒度等审查整改随版发布；附录 A1–A24/D1–D5/E1–E5 走查留痕与四轮独立审查整改闭环（RG1–RG6）；tag v3.2.0 已推送远端、部署包附件已手动上传。v3.1.0 已冻结（M4 收口，37 条变更随版发布，tag 已推送远端、部署包附件已手动上传）；v3.0.2 已发布（更新域事故链四项修复与发布流程收口，附件已手动上传）；M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）。"
+ "context": "v3.6.0 已冻结（队列编辑拖拽排序变高行错位修复与警告徽标化批）：拖拽期几何改交换后布局根治让位错位、落定提交后自动重测消除滞留（红集合 49/34/58px 全归零），只读态恒显占位修正，成员核验警告改徽标折叠显隐且行只显文件名，补移除按钮常态与拖宽手柄两处悬浮提示；浏览器实测绿集合判据 2–11 全过（数值留痕计划状态行）、六闸门全过、全量 pytest 893 passed 0 skipped，含 added 判 minor；tag v3.6.0 本地未推送，GitHub Release 由用户手动发布。队列编辑拖拽修复批次（queue-editor-drag-sort-fix-plan.md，目标 3.6.0）六提交实施完毕：T0 计划落盘 / T1 拖拽期几何改交换后布局（八处接线）/ T2 落定提交后自动重测 / T3a 只读占位存在性前置 / T3b 警告徽标折叠+行只显文件名 / T5 本进度同步；双根因（让位数学用拖前前缀和+提交重排后不重测）修复，浏览器实测绿集合判据 2–11 全过（红 49/34/58px 全归零，数值与复跑口径留痕计划文档状态行），全量 pytest 893 passed、六闸门全过；memberOnly 弹窗预览 404 为既有 _readable_row 形态守卫口径（候选/失败回退/unsubmitted 成员可读）非本批回归，徽标以 ⚠ ? 如实呈现；版本随 unreleased 与 link1-multistep-plan 并窗冻结（默认 3.6.0）。v3.5.0 已冻结（chk 物化修复批收口，审查修复批三提交随批入库）：chk 资产定位统一按实际执行副本 Link0 %chk= 声明（resolve_chk 下沉 workspace 单一事实来源，修复上游自定义名产物物化必败误报「已被清理」、@exec: 自定义名在保留期误判无 chk 资产、提交时反向误拒 CHK_SOURCE_MISSING 三处同根因缺陷）+ 静态校验补声明前置（创建/导入成队/PATCH/提交四时点 422 CHK_SOURCE_MISSING，导入成队校验失败回落候选不成队）+ %chk=\"\" 空值判空回落 + 物化文案两形态如实区分；前端队列编辑弹窗宽度可调与任务名自适应截断（playwright 视觉实测九项）；Windows 一键启动器（交互级探活与自动修复）；全量 pytest 893 passed、四前端闸门全过；含 added 判 minor，tag v3.5.0 本地未推送，GitHub Release 由用户手动发布。审查修复批（2026-11-13，chk 批次 code-review 两轴发现落地）三提交收口：fake_g16 空值声明即停对齐 parse_chk_line 口径（补 Link0 空声明在前边角用例，先证红后转绿）、workspace _link0_span 拆行层消除 resolve_link0/parse_chk_line/parse_link0_refs 三处同文本重复 split（原文本入口薄封装零调用方随删）、前端弹窗宽度常量 560/48 收敛 src/constants.ts 单一来源（ConfirmModal min() 表达式改 CSS v-bind 引常量、aria-valuemin 模板硬编码改常量绑定，四闸门全过、playwright 复测与 T6 基线同型零视觉变化，留痕 /tmp/g16-review-fix-walkthrough/）；六提交 summary 动词开头改写（08539289 不变、余七提交哈希更新）与计划文档哈希引用同步修正已随改写批完成；candidates.py 导入成队宽捕获回落经定夺不收窄（spec §2.2 字面宽回落语义、candidates.py 注释已留痕）；全量 pytest 893 passed。chk 物化修复批次（chk-materialize-fix-plan.md，目标 3.5.0）T0–T7 实施完毕待发布：chk 资产定位统一按实际执行副本 Link0 %chk= 声明（resolve_chk 下沉 workspace 单一事实来源），静态校验补声明前置（四时点 422 CHK_SOURCE_MISSING、导入成队回落不成队），%chk=\"\" 判空回落，前端弹窗宽度可调与任务名自适应截断（playwright 视觉实测九项通过，截图与量测留痕 /tmp/g16-t6-walkthrough/）；全量 pytest 892 passed，四闸门（build/audit_frontend_offline/check_tokens/check_contrast）全过。发布前闸门：check_plan_status 定点 / validate_progress / gen_changelog_md --check / 全量 pytest。未发布未打 tag，GitHub Release 由用户手动发布。v3.4.1 已冻结（面⑧ R2 复扫词典扩面）：用户实测真实 QST2 输入（opt=(qst2,calcfc,noeigentest,maxstep=15)）误报 NoEigenTest 非官方选项，根因为词典提取面不达手册正文句式；新增成对动词/等价/Use-to/option 指称/one-of 枚举等八类句式规则、面⑤逗号枚举标题承接、表格行与页首句手工补录、裸关键词面（tda/nosymmetry/notestmo/fopt/popt），词典 1345→1419；B6 误拒翻案 9 项（td=NoIVOGuess、geom=NoKeepConstants/NoGIC、opt=NoMicro、guess=NoTranslate、geom=NoCrowd、scf=NoInCore/NoVarAcc、ept=D2、output=RawMatrixElement）；CVL 真实语料 190 文件对照实测：route 词典通道警告 5→0（全部为 noeigentest 类）、无新增误报。发布前闸门：check_plan_status / validate_progress / gen_changelog_md --check / 全量 pytest 873 passed；本版本仅含 fixed（patch），GitHub Release 由用户手动发布（暂不发布、未推送远端）。v3.4.0 已冻结（输入勘误缺口补齐 B1–B9 收口）：13 项缺口 C1–C3/G0–G11 全通道收口（Geom 检查点豁免档、括号形态、route 拼写/重复/选项/子选项、Link0 错位/值域/缺省补全、节排序/必需空行、电荷行注释、词典 387→1345）+ G12 导入/提交/队列警告渲染与 G13 提交前核验预显（warning_count 现算契约、限高滚动、逐 kind 中文文案固化）；B1–B9 六份独立审查全部通过（无 P0/P1/P2），Link0 缺省补全收窄与徽标列钉宽两随批用户裁决落地（非阻断警告通道不改变任何阻断语义；B9 前部分 migration 见各条）；tag v3.4.0 与工作分支随本次发布推送远端，Release 由用户手动发布、部署包附件手动上传。v3.3.0 已冻结（词典面⑤选项面）：extract_keywords.py 增 Options 章节 #### 选项规则提取与章节外核实白名单，词典 387→1164 词，scf=xqc/yqc 等 777 个 KW=OPT 选项写法不再误报拼写警告；mini-KB 选项提取断言与 14 项回归清单入库，tag v3.3.0 已推送远端，Release 已由用户手动发布（本机 GitHub 直连不可用，未做远端附件复核）。v3.2.0 已冻结（m4-combo 插波收口）：组合流精修模板配置（契约+存储+校验服务+前端弹窗与方案选择，enforce 拼写拦截）、crest/xtb 部署链（setup_deps.sh/打包接线/deployment.md §6）、Link0/route 全小写收口（后端注入行+前端文案）、契约模型再生字节幂等与拼写豁免按 token 粒度等审查整改随版发布；附录 A1–A24/D1–D5/E1–E5 走查留痕与四轮独立审查整改闭环（RG1–RG6）；tag v3.2.0 已推送远端、部署包附件已手动上传。v3.1.0 已冻结（M4 收口，37 条变更随版发布，tag 已推送远端、部署包附件已手动上传）；v3.0.2 已发布（更新域事故链四项修复与发布流程收口，附件已手动上传）；M0–M3 均已发布（M3=v2.2.0，README 版本表述已同步）。"
 }
