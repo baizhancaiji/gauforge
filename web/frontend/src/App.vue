@@ -16,7 +16,8 @@ const nav = [
   { path: "/pending", page: "03", label: "待执行", en: "PENDING" },
   { path: "/executions", page: "04", label: "执行中", en: "EXECUTIONS" },
   { path: "/history", page: "05", label: "历史", en: "HISTORY" },
-  { path: "/settings", page: "06", label: "设置", en: "SETTINGS" },
+  { path: "/toolbox", page: "06", label: "工具箱", en: "TOOLBOX" },
+  { path: "/settings", page: "07", label: "设置", en: "SETTINGS" },
 ];
 
 const pageLabel = computed(() => route.meta.title ?? "");

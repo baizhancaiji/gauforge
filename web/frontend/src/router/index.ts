@@ -43,10 +43,17 @@ const router = createRouter({
       meta: { page: "05", title: "归档", en: "ARCHIVE", archived: true },
     },
     {
+      // 工具箱（3.8.0 工具箱 C9：page 06，设置顺延 07）
+      path: "/toolbox",
+      name: "toolbox",
+      component: () => import("@/views/ToolboxView.vue"),
+      meta: { page: "06", title: "工具箱", en: "TOOLBOX" },
+    },
+    {
       path: "/settings",
       name: "settings",
       component: () => import("@/views/SettingsView.vue"),
-      meta: { page: "06", title: "设置", en: "SETTINGS" },
+      meta: { page: "07", title: "设置", en: "SETTINGS" },
     },
   ],
 });
