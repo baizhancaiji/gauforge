@@ -29,3 +29,31 @@ export function exportOutputs(
 ) {
   return client.POST("/history/export", { body: { ids, scope }, parseAs: "blob" });
 }
+
+/**
+ * 批量 fchk 导出作业四方法（3.8.0 工具箱 C10）：创建（202 轮询承载，
+ * 不设同步快速路径）/ 状态轮询（1s 间隔普通 GET）/ ZIP 下载（blob，
+ * 落盘命名由视图层处理）/ 取消。作业 id 为服务端 uuid4 hex。
+ */
+export function createFchkExportJob(ids: number[]) {
+  return client.POST("/history/export/fchk", { body: { ids } });
+}
+
+export function getFchkExportJob(jobId: string) {
+  return client.GET("/history/export/fchk/{job_id}", {
+    params: { path: { job_id: jobId } },
+  });
+}
+
+export function downloadFchkExportJob(jobId: string) {
+  return client.GET("/history/export/fchk/{job_id}/download", {
+    params: { path: { job_id: jobId } },
+    parseAs: "blob",
+  });
+}
+
+export function cancelFchkExportJob(jobId: string) {
+  return client.POST("/history/export/fchk/{job_id}/cancel", {
+    params: { path: { job_id: jobId } },
+  });
+}

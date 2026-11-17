@@ -20,7 +20,15 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch, type Ref } from "vue";
 import { useRoute } from "vue-router";
 
-import { client, exportOutputs, getText } from "@/api/client";
+import {
+  cancelFchkExportJob,
+  client,
+  createFchkExportJob,
+  downloadFchkExportJob,
+  exportOutputs,
+  getFchkExportJob,
+  getText,
+} from "@/api/client";
 import type { components } from "@/api/contract";
 import AnalysisPanel from "@/components/analysis/AnalysisPanel.vue";
 import ChkToolPanel from "@/components/ChkToolPanel.vue";
@@ -309,6 +317,120 @@ function dismissExportMenu() {
 }
 useMenuDismiss(exportMenu, dismissExportMenu);
 
+// ---------- 批量 fchk 导出作业（3.8.0 工具箱 C10）：发起 → 1s 轮询 →
+// done 自动下载（保留重复下载按钮）；取消在 queued 即时 / running 当前
+// 条目结束 / packing 写入间隙生效；组件卸载停轮询、作业继续 ---------- */
+type FchkSnapshot = components["schemas"]["FchkExportJob"];
+const fchkSnapshot = ref<FchkSnapshot | null>(null);
+const fchkJobId = ref<string | null>(null);
+const fchkJobNote = ref<string | null>(null);
+const fchkCancelling = ref(false);
+const FCHK_ACTIVE_STATES = ["queued", "running", "packing"];
+let fchkTimer: number | null = null;
+
+function stopFchkPoll() {
+  if (fchkTimer != null) {
+    clearInterval(fchkTimer);
+    fchkTimer = null;
+  }
+}
+onBeforeUnmount(stopFchkPoll);
+
+function stamp(): string {
+  const t = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${t.getFullYear()}${p(t.getMonth() + 1)}${p(t.getDate())}` +
+    `-${p(t.getHours())}${p(t.getMinutes())}${p(t.getSeconds())}`;
+}
+
+/** 发起批量 fchk 导出（409 活动作业经 details.active_job_id 附着继续轮询）。 */
+async function startFchkExport() {
+  const ids = [...checkedIds.value].map(Number).sort((a, b) => a - b);
+  if (!ids.length) return;
+  exportMenu.value = false;
+  fchkJobNote.value = null;
+  const { data, error } = await createFchkExportJob(ids);
+  if (error || !data) {
+    const body = error as unknown as {
+      error?: { message?: string; details?: { active_job_id?: string } };
+    };
+    const active = body?.error?.details?.active_job_id;
+    if (active) {
+      fchkJobNote.value = "已有批量 fchk 导出在进行中 — 已附着该作业继续轮询";
+      attachFchkJob(active);
+      return;
+    }
+    fchkJobNote.value = body?.error?.message ?? "发起失败";
+    return;
+  }
+  attachFchkJob(data.job_id);
+}
+
+function attachFchkJob(jobId: string) {
+  stopFchkPoll();
+  fchkJobId.value = jobId;
+  void pollFchkOnce();
+  fchkTimer = window.setInterval(() => void pollFchkOnce(), 1000);
+}
+
+async function pollFchkOnce() {
+  if (!fchkJobId.value) return;
+  const { data, error } = await getFchkExportJob(fchkJobId.value);
+  if (error || !data) {
+    stopFchkPoll();
+    fchkSnapshot.value = null;
+    fchkJobNote.value = "作业不存在或已过期（服务重启后作业消亡）";
+    return;
+  }
+  fchkSnapshot.value = data;
+  if (data.state === "done") {
+    stopFchkPoll();
+    await downloadFchkZip();
+  } else if (data.state === "failed" || data.state === "cancelled") {
+    stopFchkPoll();
+    if (data.state === "failed") {
+      fchkJobNote.value = data.error?.message ?? "作业失败";
+    } else {
+      fchkJobNote.value = "已取消 — 作业私有临时文件已清理，已转换的 fchk 保留";
+    }
+  }
+}
+
+async function downloadFchkZip() {
+  if (!fchkJobId.value) return;
+  const { data, error } = await downloadFchkExportJob(fchkJobId.value);
+  if (error || !data) {
+    fchkJobNote.value = "下载失败";
+    return;
+  }
+  const url = URL.createObjectURL(data as unknown as Blob);
+  const a = document.createElement("a");
+  a.download = `gauforge-fchk-${stamp()}.zip`;
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function cancelFchkJob() {
+  if (!fchkJobId.value) return;
+  fchkCancelling.value = true;
+  const { data, error } = await cancelFchkExportJob(fchkJobId.value);
+  fchkCancelling.value = false;
+  if (error || !data) {
+    const body = error as unknown as { error?: { message?: string } };
+    fchkJobNote.value = body?.error?.message ?? "取消失败";
+    return;
+  }
+  fchkJobNote.value = data.state === "cancelled"
+    ? "已取消 — 作业私有临时文件已清理"
+    : "正在取消（当前条目 / 打包间隙结束后生效）";
+}
+
+const FCHK_STATE_LABEL: Record<string, string> = {
+  queued: "排队中", running: "转换中", packing: "打包中",
+  done: "已完成", failed: "失败", cancelled: "已取消", expired: "已过期",
+};
+
 // ---------- 输入查看 / 输出预览（展示区拉伸贴底，内部滚动） ----------
 async function viewText(kind: "input" | "output") {
   const e = selected.value;
@@ -510,9 +632,47 @@ async function confirmCleanup() {
           >
             全部导出
           </button>
+          <button
+            class="export-item"
+            type="button"
+            role="menuitem"
+            title="导出 .fchk — 选中条目按需 formchk 转换并打包（异步作业，已有 fchk 直接复用）"
+            @click="startFchkExport"
+          >
+            导出 .fchk
+          </button>
         </div>
       </div>
       <span v-if="exportNote" class="export-note mono" role="alert">{{ exportNote }}</span>
+      <!-- 批量 fchk 导出作业注记（C10：processed/total + 复用/转换/失败/
+           缺失计数 + 已用时 + 取消 / 重复下载按钮） -->
+      <div v-if="fchkSnapshot" class="fchk-job mono" role="status">
+        <span class="fchk-state" :class="{ 'fchk-state--done': fchkSnapshot.state === 'done' }">
+          fchk 导出 — {{ FCHK_STATE_LABEL[fchkSnapshot.state] ?? fchkSnapshot.state }}
+          {{ fchkSnapshot.processed }}/{{ fchkSnapshot.total }}
+        </span>
+        <span>复用 {{ fchkSnapshot.reused }} · 转换 {{ fchkSnapshot.converted }} ·
+          失败 {{ fchkSnapshot.failed }} · 缺失 {{ fchkSnapshot.missing }}</span>
+        <span>已用时 {{ fchkSnapshot.elapsed_s }}s</span>
+        <button
+          v-if="FCHK_ACTIVE_STATES.includes(fchkSnapshot.state)"
+          class="btn btn--ghost"
+          type="button"
+          :disabled="fchkCancelling"
+          @click="cancelFchkJob"
+        >
+          {{ fchkCancelling ? "取消中 …" : "取消" }}
+        </button>
+        <button
+          v-if="fchkSnapshot.state === 'done'"
+          class="btn btn--ghost"
+          type="button"
+          @click="downloadFchkZip"
+        >
+          下载
+        </button>
+        <span v-if="fchkJobNote">{{ fchkJobNote }}</span>
+      </div>
 
       <span class="spacer"></span>
       <RouterLink v-if="!archived" class="btn btn--secondary" to="/archive">归档管理</RouterLink>
@@ -1007,6 +1167,22 @@ tbody tr.row--checked:hover {
 .export-note {
   font-size: var(--text-sm);
   color: var(--danger);
+}
+
+/* 批量 fchk 导出作业注记（C10） */
+.fchk-job {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.fchk-state {
+  color: var(--text-primary);
+}
+.fchk-state--done {
+  color: var(--state-succeeded);
 }
 /* 导出 split button：主按钮（导出 .out）+ 下拉箭头（导出 .chk / 全部导出
    藏于菜单；结构与清理 split button 同款，菜单样式与 .cleanup-menu 单源） */
