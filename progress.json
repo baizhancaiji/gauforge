@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T21:28+0800",
+ "updated": "2026-11-17T21:48+0800",
  "latest_released_version": "3.7.0",
  "unreleased": [
   {"type": "added", "scope": "specs", "summary": "补交 G16 原生工具集成评估文档（五工具实测与四工具链定稿，状态行指向实施计划）", "breaking": false, "migration": null},
@@ -11,7 +11,8 @@
  {"type": "added", "scope": "web", "summary": "工具箱三端点随 B15：freqmem 内存校验（白名单先拦、锚点判定、对照 %mem 总量口径结论）、历史带入预填（执行记录 resources 判声明来源、零值守卫不猜数）、solname 溶剂速查 184 条（realpath 缓存键、NSolv/逐 id 交叉核对防御）", "breaking": false, "migration": null},
   {"type": "added", "scope": "web", "summary": "提交链每核内存下限黄警随 B16：%mem×核数失衡非阻断提示（与组合流模板保存闸 reason 同名同一规则两域承载，常量单源上移 link0_rules）、记账值声明优先缺省回落、warnings 词表 13→14、测试夹具统一 8GB 口径", "breaking": false, "migration": null},
   {"type": "added", "scope": "web", "summary": "批量 fchk 导出作业随 B17：四端点异步作业（创建分类扫描/状态轮询/下载/取消）、单工作线程串行转换复用 ensure_fchk、总预算与 TTL 惰性清扫、取消三级生效并清理作业私有临时文件、打包复用 history helper 参数化扩展（scope 三范围零回归）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "frontend", "summary": "历史详情新增 chk 工具区与导出 cube 区块随 C8：体检三态徽标报告与原文折叠、转换幂等命中与前置体检闸 409 明示、六 kind × 三档位 cube 生成下载（MO 越界回显、α/β 闭壳层明示、细档体积提示）、异常态文案指引工具区，playwright 真机视觉实测双主题过", "breaking": false, "migration": null}
+  {"type": "added", "scope": "frontend", "summary": "历史详情新增 chk 工具区与导出 cube 区块随 C8：体检三态徽标报告与原文折叠、转换幂等命中与前置体检闸 409 明示、六 kind × 三档位 cube 生成下载（MO 越界回显、α/β 闭壳层明示、细档体积提示）、异常态文案指引工具区，playwright 真机视觉实测双主题过", "breaking": false, "migration": null},
+  {"type": "added", "scope": "frontend", "summary": "工具箱视图与导航随 C9：freqmem 校验表单（手输与历史带入预填、结果卡总量口径结论）、SCRF 溶剂速查（搜索过滤与点击复制含兜底）、路由 page 06 工具箱设置顺延 07，playwright 真机视觉实测双主题过", "breaking": false, "migration": null}
  ],
  "in_progress": {"task": "G16 原生工具箱（toolbox-plan，目标版本 3.8.0）", "note": "开工：3.7.0 冻结闸门已过（tag v3.7.0 本地落位、hq 在位、真机工具在案），按 §6 提交序列自提交 1/2 文档立项起步，A6 契约 diff 随后"},
  "next_steps": [
