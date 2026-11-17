@@ -18,17 +18,19 @@ from web.src.parse.keywords import (
     check_route_spelling,
 )
 from web.src.parse.link0_rules import check_link0_lines
+from web.src.services.verify import _route_skipped_warning
 
 _CJK = re.compile(r"[\u4e00-\u9fff]")
 
-# openapi Warning.kind 权威词表（12 kind，扩容须同步本清单）
+# openapi Warning.kind 权威词表（13 kind，扩容须同步本清单；
+# 3.8.0 工具箱 B14 增 route_check_skipped）
 KIND_VOCABULARY = frozenset((
     "keyword_spell", "route_duplicate", "route_option_unknown",
     "molecule_unterminated", "variables_unterminated",
     "link0_value_invalid", "link0_line_too_long",
     "link0_directive_unknown", "link0_directive_duplicate",
     "title_forbidden_char", "atom_label_unknown",
-    "molecule_multiple_charge_pairs",
+    "molecule_multiple_charge_pairs", "route_check_skipped",
 ))
 
 
@@ -78,6 +80,11 @@ CASES = [
     ("link0_directive_duplicate",
      lambda: check_link0_lines(["%mem=1GB", "%mem=2GB"]),
      ("重复出现",)),
+    # 3.8.0 工具箱 B14：提交链 testrt 降级黄警（纯函数构造器模板，
+    # 五类原因共用「route 语法校验跳过（<原因>）：」起始句式）
+    ("route_check_skipped",
+     lambda: [_route_skipped_warning(3, "testrt 工具缺失")],
+     ("route 语法校验跳过",)),
 ]
 
 

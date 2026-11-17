@@ -41,6 +41,22 @@ def _isolated_db(tmp_path, monkeypatch):
     store.reset_db()
 
 
+@pytest.fixture(autouse=True)
+def _controlled_testrt(tmp_path, monkeypatch):
+    """受控 testrt（3.8.0 工具箱 B14）：提交链 testrt 权威校验步经
+    verify._testrt_path 定位缝注入受控假脚本（退出 0、无输出）——覆盖
+    全部提交路径用例（test_submit_verify / test_e2e_fake_g16 /
+    test_e2e_queue_lifecycle 与 queues/pending 域提交用例），测试一律不
+    真调 ~/g16，消除对真机在位的隐式依赖。testrt 行为差异用例
+    （test_verify_route）在用例层覆写本缝（monkeypatch.setattr
+    verify._testrt_path 指向自造脚本）。"""
+    from web.src.services import verify
+    fake = tmp_path / "testrt-controlled"
+    fake.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    fake.chmod(0o755)
+    monkeypatch.setattr(verify, "_testrt_path", lambda: fake)
+
+
 def pytest_sessionfinish(session, exitstatus) -> None:
     """会话收尾兜底：强停一切仍存活的 HqProcessManager。
 
