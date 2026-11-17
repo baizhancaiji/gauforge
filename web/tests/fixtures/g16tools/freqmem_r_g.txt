@@ -1,0 +1,2 @@
+ NAtoms=3 NBasis=25 closed-shell frequencies with up to G functions:  
+ Minimum of 23.69 megawords per thread.
