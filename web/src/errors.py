@@ -49,6 +49,7 @@ _RESOURCE_LABELS = {
     "workspace_file": "工作区文件",
     "cube": "cube 文件",
     "fchk": "fchk 文件",
+    "export_job": "导出作业",
 }
 
 

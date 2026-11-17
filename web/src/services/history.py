@@ -239,32 +239,51 @@ def _append_missing(missing: list[str], eid: int, dim: str) -> None:
     missing.append(f"{prefix}{dim}")
 
 
+class PackCancelled(Exception):
+    """打包期取消信号（B17 批量 fchk 作业经 cancelled_check 在条目写入
+    间隙注入；调用方捕获后清理作业私有临时文件）。"""
+
+
 def _pack_entries(zf: zipfile.ZipFile,
                   entries: list[tuple[int, str, str, bytes | Path]],
-                  inner, missing: list[str], scope: str) \
+                  inner, missing: list[str], scope: str, *,
+                  compress_type: int = zipfile.ZIP_STORED,
+                  casualty_text: str = "无 chk 资产（已清理或从未产生）",
+                  manifest_head: str | None = None,
+                  cancelled_check=None) \
         -> tuple[int, str, str] | None:
     """逐条目写包（导出两路径共用）：bytes 源 writestr（内存，恒成功）；
     Path 源写前存在性预检 + 拷贝期 FileNotFoundError 捕获——预检命中按缺
     登记跳过，拷贝中途命中返回牺牲条目（半条目已入档不可摘除，由调用方
     弃包重建），其余 OSError（磁盘满等环境性失败）原样抛出按 500。
-    全部条目写完且缺漏非空时补 _导出说明.txt。"""
+    全部条目写完且缺漏非空时补 _导出说明.txt。
+    B17 批量 fchk 作业复用（toolbox-plan §4.7）：compress_type 参数化
+    （fchk 条目 ZIP_DEFLATED 文本可压缩）、casualty_text 与 manifest_head
+    按维度参数化（不复用 chk 资产文案）、cancelled_check 在条目写入间隙
+    探测取消（命中抛 PackCancelled，zip 句柄随 with 关闭）。"""
     for eid, stem, ext, src in entries:
+        if cancelled_check is not None and cancelled_check():
+            raise PackCancelled()
         if isinstance(src, Path):
             if not src.is_file():  # 采集定位后、写包前已被清理：按缺登记
-                _append_missing(missing, eid,
-                                "无 chk 资产（已清理或从未产生）")
+                _append_missing(missing, eid, casualty_text)
                 continue
             try:
-                # chk 按路径流式拷贝（zipfile 内部分块读写，不整文件载入
-                # 内存），ZIP_STORED：二进制压缩无收益
+                # Path 源按路径流式拷贝（zipfile 内部分块读写，不整文件
+                # 载入内存）；压缩类型参数化（chk 二进制 ZIP_STORED 无收益、
+                # fchk 文本 ZIP_DEFLATED）
                 zf.write(src, inner(eid, stem, ext),
-                         compress_type=zipfile.ZIP_STORED)
+                         compress_type=compress_type)
             except FileNotFoundError:
                 return (eid, stem, ext)  # 拷贝中途被清理（读清竞态）
         else:
             zf.writestr(inner(eid, stem, ext), src)
     if missing:
-        zf.writestr("_导出说明.txt", _export_manifest(missing, scope))
+        head = manifest_head if manifest_head is not None \
+            else _export_manifest(missing, scope)
+        zf.writestr("_导出说明.txt", head + "\n".join(missing) + "\n"
+                    if manifest_head is not None
+                    else head)
     return None
 
 
@@ -278,12 +297,17 @@ def _export_manifest(missing: list[str], scope: str) -> str:
 
 def purge_export_tmp() -> None:
     """启动清扫导出临时包残留（BackgroundTask 删除为主，服务中断时
-    BackgroundTask 不执行，残留交本清扫兜底；只认 export-*.zip 形态）。"""
+    BackgroundTask 不执行，残留交本清扫兜底；认 export-*.zip 与
+    fchk-export-*.zip / fchk-export-*.zip.part 两族形态——B17 批量
+    fchk 作业包同样随进程重启清扫）。"""
     tmp_dir = config.HOME_DIR / config.EXPORT_TMP_SUBDIR
     if not tmp_dir.is_dir():
         return
     for f in tmp_dir.iterdir():
-        if f.is_file() and f.name.startswith("export-") and f.suffix == ".zip":
+        if not f.is_file():
+            continue
+        if (f.name.startswith("export-") and f.suffix == ".zip") or \
+                f.name.startswith("fchk-export-"):
             with contextlib.suppress(OSError):
                 f.unlink()
 

@@ -83,6 +83,46 @@ def export_history_outputs(payload: dict) -> Response:
                     headers=headers)
 
 
+# ---------------- 批量 fchk 导出作业（3.8.0 工具箱 B17） ----------------
+# 四端点声明统一前置在 /history/{id} 二段路由之前（沿 /history/cleanup、
+# /history/export 前置先例；toolbox-plan §2.1：FastAPI 首个全匹配生效，
+# {id} 段正则接受任意值不回落后声明路由，静态段前置属确定性落位）。
+
+@router.post("/history/export/fchk", status_code=202)
+def create_fchk_export_job(payload: dict) -> dict:
+    """创建批量 fchk 导出作业（异步：创建时扫描分类，单工作线程串行
+    转换缺失项；同刻仅一个活动作业，重复创建 409）。"""
+    from ..services import fchk_export as fchk_export_svc
+    return fchk_export_svc.create_job(payload.get("ids"))
+
+
+@router.get("/history/export/fchk/{job_id}")
+def get_fchk_export_job(job_id: str) -> dict:
+    """作业状态快照（前端 1s 轮询；TTL 惰性清扫）。"""
+    from ..services import fchk_export as fchk_export_svc
+    return fchk_export_svc.get_job(job_id)
+
+
+@router.get("/history/export/fchk/{job_id}/download")
+def download_fchk_export_job(job_id: str) -> Response:
+    """下载作业 ZIP（仅 done 可下载；FileResponse 流式发送，支持重复
+    下载直至 TTL 过期）。"""
+    from ..services import fchk_export as fchk_export_svc
+    path = fchk_export_svc.get_job_zip(job_id)
+    stamp = datetime.now().astimezone().strftime("%Y%m%d-%H%M%S")
+    headers = {"Content-Disposition":
+               f"attachment; filename=gauforge-fchk-{stamp}.zip"}
+    return FileResponse(path, media_type="application/zip", headers=headers)
+
+
+@router.post("/history/export/fchk/{job_id}/cancel", status_code=202)
+def cancel_fchk_export_job(job_id: str) -> dict:
+    """取消作业（queued 即时生效、running 于当前条目结束后生效、packing
+    于条目写入间隙生效；done/failed/expired 409）。"""
+    from ..services import fchk_export as fchk_export_svc
+    return fchk_export_svc.cancel_job(job_id)
+
+
 @router.get("/history/{id}")
 def get_history_entry(id: int) -> dict:
     return history_svc.get_entry(id)
