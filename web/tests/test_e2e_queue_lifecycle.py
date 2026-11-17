@@ -30,7 +30,7 @@ from web.src.store import executions, queues, seats, settings, tasks
 HQ = shutil.which("hq")
 client = TestClient(app)
 
-BASE = "%mem=1GB\n#p hf/sto-3g\n\nt{}\n\n0 1\nO 0 0 0\n\n"
+BASE = "%mem=8GB\n#p hf/sto-3g\n\nt{}\n\n0 1\nO 0 0 0\n\n"
 
 
 def _inp(n: int, *, fail: bool = False, crlf: bool = False) -> str:
@@ -212,7 +212,7 @@ def test_e2e_queue_full_lifecycle(tmp_path, monkeypatch):
         # 复勾接续（blocks link0 写入，同前端勾选落盘形态）：明文 + @task 两槽
         p = import_files([("up.gjf", ("%chk=up.chk\n" + _inp(5)).encode())])[0]["id"]
         r = client.put(f"/api/v1/candidates/{c2}/blocks/link0",
-                       json={"lines": ["%mem=1GB",
+                       json={"lines": ["%mem=8GB",
                                        "%oldchk=D1_DgpC_Monomer_Opt.chk",
                                        f"%oldchk=@task:{p}"]})
         assert r.status_code == 200, r.text

@@ -79,6 +79,6 @@ def test_run_copy_without_oldchk_fast_path_bytes_unchanged(tmp_path,
     _set_home(tmp_path, monkeypatch)
     run_d = tmp_path / "run" / "10"
     run_d.mkdir(parents=True)
-    raw = b"%mem=1GB\xff\xfe\n#p hf/sto-3g\n\nt\n\n0 1\nO\n"
+    raw = b"%mem=8GB\xff\xfe\n#p hf/sto-3g\n\nt\n\n0 1\nO\n"
     (run_d / "input.gjf").write_bytes(raw)
     assert copy_execution_input(10, 99) == raw

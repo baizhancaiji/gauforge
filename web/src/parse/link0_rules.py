@@ -162,6 +162,13 @@ def cpu_list_count(raw: str) -> int | None:
     return total or None
 
 
+# 每核内存下限 GB（提交链黄警与组合流模板保存闸同一规则两域承载，
+# 3.8.0 工具箱 B16 自 services/combo_templates.py 上移单源：
+# mem×核数失衡即提示——提交链为非阻断黄警 mem_below_per_core_floor、
+# 组合流保存闸为阻断 reason 同名词条）
+PER_CORE_MEM_GB_FLOOR = 1.0
+
+
 def mem_to_gb(raw: str) -> float | None:
     """G16 %mem 值 → GB 浮点（官方值域单位集）；无法识别返回 None。
 

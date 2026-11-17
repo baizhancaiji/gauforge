@@ -8,7 +8,7 @@ from web.src.parse.blocks import parse_input
 GOLDEN_DIR = Path.home() / "g16" / "tests" / "com"
 
 WATER = """%chk=/tmp/water.chk
-%mem=1GB
+%mem=8GB
 %nprocshared=4
 
 #p B3LYP/6-31G(d) opt freq
@@ -34,7 +34,7 @@ RC 1.0
 def test_five_section_split_with_variables_constants():
     r = parse_input(WATER)
     b = r["blocks"]
-    assert b["link0"] == {"lines": ["%chk=/tmp/water.chk", "%mem=1GB",
+    assert b["link0"] == {"lines": ["%chk=/tmp/water.chk", "%mem=8GB",
                                     "%nprocshared=4"], "missing": []}
     assert b["route"] == "#p B3LYP/6-31G(d) opt freq"
     assert b["title"] == "水分子优化\n两行标题"
@@ -90,7 +90,7 @@ def test_multistep_link1_rejected():
 
 
 def test_crlf_normalization():
-    r = parse_input("%mem=1GB\r\n\r\n#p hf/sto-3g\r\n\r\nt\r\n\r\n0 1\r\n"
+    r = parse_input("%mem=8GB\r\n\r\n#p hf/sto-3g\r\n\r\nt\r\n\r\n0 1\r\n"
                     "O\r\nH 1 0.96\r\nH 1 0.96 2 1.0\r\n")
     assert r["parse_errors"] == []
     assert r["blocks"]["charge_mult"] == "0 1"
@@ -198,7 +198,7 @@ def test_title_missing_message_names_allcheck_only():
 
 def test_bad_files_tolerated_no_exception():
     # 空文件 / 乱文本：不抛异常，route/title 容错 + parse_errors 标注
-    for text in ("", "just one line\n", "%mem=1GB\n", "! 只有一句注释\n"):
+    for text in ("", "just one line\n", "%mem=8GB\n", "! 只有一句注释\n"):
         r = parse_input(text)
         assert set(r["blocks"]) == {"link0", "route", "title", "charge_mult",
                                     "molecule", "additional_sections"}
@@ -662,7 +662,7 @@ def test_g7_bare_abbreviations_spell_near_neighbor():
 def test_g3_link0_into_route_text_blocked():
     """情形 1：route 后无空行直接跟 % 行 → 被吞入 route 文本，记
     parse_errors（G16 必然误读）。"""
-    r = parse_input("%mem=1GB\n\n#p hf/sto-3g\n%chk=/tmp/x.chk\n\nt\n\n"
+    r = parse_input("%mem=8GB\n\n#p hf/sto-3g\n%chk=/tmp/x.chk\n\nt\n\n"
                     "0 1\nO 0 0 0\n\n")
     e = next(e for e in r["parse_errors"] if e["section"] == "route"
              and "Link 0" in e["message"])
@@ -673,7 +673,7 @@ def test_g3_link0_into_route_text_blocked():
 def test_g3_link0_as_title_first_line_blocked():
     """情形 2：route 后有空行再跟 % 行 → 成 title 首行，记 parse_errors
     （title 形态合法但几乎必为用户错误）。"""
-    r = parse_input("%mem=1GB\n\n#p hf/sto-3g\n\n%chk=/tmp/x.chk\n\n"
+    r = parse_input("%mem=8GB\n\n#p hf/sto-3g\n\n%chk=/tmp/x.chk\n\n"
                     "0 1\nO 0 0 0\n\n")
     e = next(e for e in r["parse_errors"] if e["section"] == "title")
     assert "Link 0" in e["message"]
@@ -773,7 +773,7 @@ def test_g5_link0_directive_grammar_and_duplicates():
     unknown = parse_input("%foobar=1\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
     kinds = [w["kind"] for w in unknown["warnings"]]
     assert "link0_directive_unknown" in kinds
-    dup = parse_input("%mem=1GB\n%mem=2GB\n\n#p hf/sto-3g\n\nt\n\n0 1\n"
+    dup = parse_input("%mem=8GB\n%mem=2GB\n\n#p hf/sto-3g\n\nt\n\n0 1\n"
                       "O 0 0 0\n\n")
     kinds2 = [w["kind"] for w in dup["warnings"]]
     assert "link0_directive_duplicate" in kinds2
@@ -927,7 +927,7 @@ def test_file_warnings_invariant_under_default_completion_missing_both():
 
 def test_file_warnings_invariant_under_default_completion_complete():
     """Link0 齐全（注入 0 行）：警告列表逐字段全等。"""
-    text = ("%mem=1GB\n%nprocshared=4\n\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\n"
+    text = ("%mem=8GB\n%nprocshared=4\n\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\n"
             "Variables:\nR 0.9\n")
     from web.src.engine.workspace import resolve_link0
     before = _file_warnings_of(text)

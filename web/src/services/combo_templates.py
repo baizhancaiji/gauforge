@@ -30,10 +30,8 @@ from ..engine.workspace import _cpu_list_count
 from ..errors import validation_failed
 from ..parse.keywords import (check_route_duplicates, check_route_options,
                               load_keywords, token_in_dict, tokenize_route)
+from ..parse.link0_rules import PER_CORE_MEM_GB_FLOOR
 from .dependencies import parse_link0_refs
-
-# 每核内存下限 GB（§0.4 口径 3）
-PER_CORE_MEM_GB_FLOOR = 1.0
 
 # 拼写校验 mode（enforce/warn；见模块 docstring 切换纪律——3.4.0 起为
 # warn，enforce 恢复另批裁决，决策点 12）

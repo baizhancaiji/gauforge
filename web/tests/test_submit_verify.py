@@ -24,7 +24,7 @@ from web.src.routers.candidates import submit_candidate
 from web.src.routers.queues import submit_queue
 
 CLEAN = (  # 规范形态：link0 后无空行、节末恰一空行、文件末尾恰一空行
-    "%mem=1GB\n"
+    "%mem=8GB\n"
     "%nprocshared=4\n"
     "#p opt freq b3lyp/6-31g(d)\n"
     "\n"
@@ -101,25 +101,25 @@ def test_lone_cr_normalized(ind):
 # ---------------- 空行规约 ----------------
 
 def test_blank_after_link0_removed():
-    r = verify_and_normalize("%mem=1GB\n\n\n#p opt\n\nt\n\n0 1\nO\n\n")
+    r = verify_and_normalize("%mem=8GB\n\n\n#p opt\n\nt\n\n0 1\nO\n\n")
     assert r["changed"] is True
-    assert r["text"].startswith("%mem=1GB\n#p opt\n")  # Link0 之后不加空行
+    assert r["text"].startswith("%mem=8GB\n#p opt\n")  # Link0 之后不加空行
 
 
 def test_extra_blank_runs_collapsed():
     r = verify_and_normalize(
-        "%mem=1GB\n#p opt\n\n\n\nt\n\n\n\n0 1\nO\n\n\n\nVariables:\nR1 1.0\n\n\n\n")
-    assert r["text"] == "%mem=1GB\n#p opt\n\nt\n\n0 1\nO\n\nVariables:\nR1 1.0\n\n"
+        "%mem=8GB\n#p opt\n\n\n\nt\n\n\n\n0 1\nO\n\n\n\nVariables:\nR1 1.0\n\n\n\n")
+    assert r["text"] == "%mem=8GB\n#p opt\n\nt\n\n0 1\nO\n\nVariables:\nR1 1.0\n\n"
 
 
 def test_missing_final_blank_added():
-    r = verify_and_normalize("%mem=1GB\n#p opt\n\nt\n\n0 1\nO\n")
+    r = verify_and_normalize("%mem=8GB\n#p opt\n\nt\n\n0 1\nO\n")
     assert r["text"].endswith("O\n\n")  # 文件末节 + 文件末尾恰一空行
     assert r["changed"] is True
 
 
 def test_variables_constants_separation_kept():
-    text = ("%mem=1GB\n#p opt\n\nt\n\n0 1\nO\nH 1 R1\n\n\nVariables:\n"
+    text = ("%mem=8GB\n#p opt\n\nt\n\n0 1\nO\nH 1 R1\n\n\nVariables:\n"
             "R1 0.96\n\n\n\nConstants:\nR1 0.95\n\n")
     r = verify_and_normalize(text)
     assert "Variables:\nR1 0.96\n\nConstants:\nR1 0.95\n\n" in r["text"]
@@ -143,7 +143,7 @@ def test_clean_sample_zero_change(ind):
 # （约 800 字符行缓冲截断），报 End of file in ZSymb；结构交界须恰双空行。
 
 QST2_DOUBLE = (  # 多结构规范形态：结构交界恰双空行，其余节末恰一空行
-    "%mem=1GB\n"
+    "%mem=8GB\n"
     "#p opt=(qst2,calcfc) freq b3lyp/6-31g(d)\n"
     "\n"
     "qst2 示例\n"
@@ -186,7 +186,7 @@ def test_qst2_double_blank_idempotent():
 
 
 def test_qst3_all_structure_gaps_double():
-    text = ("%mem=1GB\n#p opt=(qst3) b3lyp/6-31g(d)\n\nt\n\n"
+    text = ("%mem=8GB\n#p opt=(qst3) b3lyp/6-31g(d)\n\nt\n\n"
             "0 1\nO 0.0 0.0 0.0\nH 0.96 0.0 0.0\nH 0.0 0.96 0.0\n\n"
             "0 1\nO 0.0 0.0 0.0\nH -0.96 0.0 0.0\nH 0.0 0.96 0.0\n\n"
             "0 1\nO 0.0 0.0 0.0\nH 0.0 0.0 0.96\nH 0.96 0.0 0.0\n\n")
@@ -205,7 +205,7 @@ def test_non_qst_gap_stays_single():
 
 def test_qst2_with_variables_sections():
     """结构交界双空行不波及 Variables 区：变量区分隔保持单空行。"""
-    text = ("%mem=1GB\n#p opt=qst2\n\nt\n\n"
+    text = ("%mem=8GB\n#p opt=qst2\n\nt\n\n"
             "0 1\nO\nH 1 R1\n\n\n"
             "0 1\nO\nH -1 R1\n\n\n"
             "Variables:\nR1 0.96\n\n")
@@ -262,7 +262,7 @@ def test_pure_eof_unterminated_normalized_on_submit(ind):
     为缺 title 而非 route 未终止（与预览/导入通道差异的实证）。样例为
     B2 之前入库的历史文件形态——绕过导入校验直接落盘建行（「不回溯
     改写已存文件」口径）。"""
-    mol_eof = ("%mem=1GB\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n"
+    mol_eof = ("%mem=8GB\n\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n"
                "H 0 0 0.96\n")  # 原子行直达 EOF（G9 警告级形态）
     tid = tasks().create_candidate("eof.gjf", "imported")
     (ind / str(tid)).write_text(mol_eof, encoding="utf-8")
@@ -274,7 +274,7 @@ def test_pure_eof_unterminated_normalized_on_submit(ind):
     assert parse_input(_file(ind, tid).decode())["warnings"] == []
     # route 直达 EOF、后无其他内容：未终止经规范化消除，缺节仍拒
     # （错误归类=缺 title，非 route 未终止）
-    route_eof = "%mem=1GB\n#p hf/sto-3g\n"
+    route_eof = "%mem=8GB\n#p hf/sto-3g\n"
     tid2 = tasks().create_candidate("routeeof.gjf", "imported")
     (ind / str(tid2)).write_text(route_eof, encoding="utf-8")
     assert any(e["section"] == "route" for e in
@@ -346,7 +346,7 @@ def test_requeue_verifies_and_flags(ind):
 # ---------------- 写回后重解析结构不变 ----------------
 
 def test_normalized_write_keeps_structure(ind):
-    messy = ("%mem=1GB\r\n\r\n\r\n#p opt\r\n\r\nt\r\n\r\n0 1\r\nO\r\nH 1 R1\r\n"
+    messy = ("%mem=8GB\r\n\r\n\r\n#p opt\r\n\r\nt\r\n\r\n0 1\r\nO\r\nH 1 R1\r\n"
              "\r\nVariables:\r\nR1 0.96\r\n")
     tid = _mk(ind, messy)
     before = _mask(parse_input(messy)["blocks"])
@@ -378,7 +378,7 @@ def test_golden_samples_normalize_without_damage():
 # ---------------- G1：提交通道 warnings（B3） ----------------
 
 SPELL_CLEAN = (  # 拼错关键字（opf 近邻 opt）但结构规范
-    "%mem=1GB\n"
+    "%mem=8GB\n"
     "%nprocshared=4\n"
     "#p optt freq b3lyp/6-31g(d)\n"
     "\n"

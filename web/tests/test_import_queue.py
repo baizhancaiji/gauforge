@@ -17,7 +17,7 @@ from web.src.main import app
 from web.src.mock import get_state
 from web.src.store import queues, tasks
 
-DATA = "%mem=1GB\n%nprocshared=4\n#p opt\n\nt{}\n\n0 1\nO 0 0 0\n\n"
+DATA = "%mem=8GB\n%nprocshared=4\n#p opt\n\nt{}\n\n0 1\nO 0 0 0\n\n"
 
 client = TestClient(app)
 
@@ -98,7 +98,7 @@ def test_folder_queue_dag_rejected_falls_back():
     """导入成队前 DAG 校验失败 → 回落候选、不成队（3.5.0：成队前补
     validate_queue_members；成员携带 @exec 在载体校验先拒，现状直接建队
     绕过全部 DAG 校验——修复前红）。"""
-    bad = ("%mem=1GB\n%nprocshared=4\n%chk=@exec:999999\n#p opt\n\n"
+    bad = ("%mem=8GB\n%nprocshared=4\n%chk=@exec:999999\n#p opt\n\n"
            "坏载体\n\n0 1\nO 0 0 0\n\n")
     r = client.post(
         "/api/v1/candidates",

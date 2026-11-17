@@ -52,11 +52,11 @@ def install_testrt(monkeypatch, script: str) -> Path:
     return fake
 
 
-SIMPLE_ROUTE = "%mem=1GB\n%nprocshared=4\n#p hf/sto-3g\n\n水\n\n0 1\nO 0 0 0\n"
+SIMPLE_ROUTE = "%mem=8GB\n%nprocshared=4\n#p hf/sto-3g\n\n水\n\n0 1\nO 0 0 0\n"
 
 
 def _wrap(route_body: str) -> str:
-    return f"%mem=1GB\n%nprocshared=4\n{route_body}\n\n水\n\n0 1\nO 0 0 0\n\n"
+    return f"%mem=8GB\n%nprocshared=4\n{route_body}\n\n水\n\n0 1\nO 0 0 0\n\n"
 
 
 # ---------------- 三支判定 ----------------
@@ -225,7 +225,7 @@ def test_route_line_number_multiline_link0(monkeypatch):
     警告行号按规范化后文本计算，与拼写警同口径）。"""
     monkeypatch.setattr(verify_svc, "_testrt_path",
                         lambda: Path("/nonexistent/testrt"))
-    text = ("%mem=1GB\n%nprocshared=4\n#p @mols.dat\n\n水\n\n0 1\n"
+    text = ("%mem=8GB\n%nprocshared=4\n#p @mols.dat\n\n水\n\n0 1\n"
             "O 0 0 0\n\n")
     tid = _mk(text)
     (w,) = verify_and_store(tid)["warnings"]

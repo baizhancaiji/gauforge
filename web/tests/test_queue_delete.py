@@ -17,7 +17,7 @@ from web.src.services.candidates import import_files
 from web.src.services.pending import append_queue, snapshot
 from web.src.store import executions, queues, tasks
 
-INPUT = "%mem=1GB\n%nprocshared=4\n#p opt\n\nt#\n\n0 1\nO 0 0 0\n\n"
+INPUT = "%mem=8GB\n%nprocshared=4\n#p opt\n\nt#\n\n0 1\nO 0 0 0\n\n"
 
 
 def _inp(n: int = 0) -> str:

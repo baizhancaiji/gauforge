@@ -16,7 +16,7 @@ from web.src.store import queues, tasks
 
 SAMPLE = (
     "%chk=/tmp/w.chk\n"
-    "%mem=1GB\n"
+    "%mem=8GB\n"
     "%nprocshared=4\n"
     "\n"
     "#p opt freq b3lyp/6-31g(d)\n"
@@ -39,7 +39,7 @@ SAMPLE = (
 SAMPLE_VC = (  # Variables + Constants 分隔 + gen 触发附加节（B2 起末附加节
     # 须以空行终止——官方 Section Ordering 表 Gen 行全 yes，导入校验拒收
     # 无终止空行形态；样例按官方规范补终止空行）
-    "%mem=1GB\n"
+    "%mem=8GB\n"
     "%nprocshared=4\n"
     "\n"
     "#p hf/sto-3g gen\n"
@@ -378,7 +378,7 @@ def test_spell_official_forms_not_flagged(ind):
 
 def test_spell_warning_absolute_line_offset(ind):
     """G0：route 不在文件首行时，拼写警告行号为全文件绝对行号（1 起）。"""
-    tid = _mk(ind, "%mem=1GB\n\n#p opt freq oppt\n\nt\n\n0 1\nO\n\n")
+    tid = _mk(ind, "%mem=8GB\n\n#p opt freq oppt\n\nt\n\n0 1\nO\n\n")
     assert parse_input(_file_text(ind, tid))["blocks"]["route"] \
         .splitlines()[0] == "#p opt freq oppt"  # route 首行 = 全文件第 3 行
     r = save_block(tid, "route", ["#p opt freq oppt"], inputs_dir=ind)
@@ -421,7 +421,7 @@ def test_golden_inputs_edit_roundtrip(ind):
                 == before["title"]
         else:
             r = save_block(tid, "link0",
-                           before["link0"]["lines"] or ["%mem=1GB"],
+                           before["link0"]["lines"] or ["%mem=8GB"],
                            inputs_dir=ind)
         assert isinstance(r["warnings"], list)
         checked += 1

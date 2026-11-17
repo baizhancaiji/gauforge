@@ -539,7 +539,7 @@ def test_extract_molecule_block_aligned_with_parse_input_b2():
     规则与 parse_input 保持同构——G4/G9 只增检测不改扫描，电荷/坐标提取
     结果不受影响；附加节触发词（gen）在场时坐标行止于终止空行，附加节
     内容不混入。"""
-    text = ("%mem=1GB\n\n#p hf/sto-3g gen\n\nt\n\n0 1\nO 0 0 0\n"
+    text = ("%mem=8GB\n\n#p hf/sto-3g gen\n\nt\n\n0 1\nO 0 0 0\n"
             "H 0 0 0.96\nH 0 0.96 -0.24\n\nH 0\nS 3 1.0\n****\n\n")
     cm, coords = wf_svc._extract_molecule_block(text)
     assert cm == "0 1"

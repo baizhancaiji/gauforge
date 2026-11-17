@@ -31,9 +31,10 @@ import tempfile
 from pathlib import Path
 
 from ..errors import ApiError, err, not_found
-from ..engine.workspace import g16_env
+from ..engine.workspace import g16_env, resolve_link0
 from ..parse.blocks import parse_input, split_lines, verify_and_normalize
 from ..parse.keywords import tokenize_route
+from ..parse.link0_rules import PER_CORE_MEM_GB_FLOOR
 from ..store import settings
 from .candidates import default_inputs_dir, file_warnings
 
@@ -171,6 +172,59 @@ def _route_start_line(lines: list[str]) -> int:
     return 1  # 防御（不可达：parse_errors 已拦 route 缺失）
 
 
+# ---------------- 每核内存下限黄警（3.8.0 工具箱 B16，§2.4） ----------------
+
+def _mem_floor_warning(line: int, mem_gb: float, cores: int,
+                       task_id: int | None = None) -> dict:
+    """每核内存下限黄警构造器（纯函数，B16）——warnings 通道
+    mem_below_per_core_floor（与组合流模板保存闸错误 reason 同名——
+    同一规则两域承载；组合流保存闸阻断、提交链非阻断黄警）。Warning
+    schema 必填字段钉死：keyword="%mem"、line = %mem 声明行绝对行号
+    （无 %mem 声明取 Link0 区首行，无 Link0 取 1——避免 line=0 前端
+    渲染 L0）。message 携带核算内存值/核数/下限并指引工具箱 freqmem
+    精确校验入口。"""
+    return {"line": line, "keyword": "%mem",
+            "kind": "mem_below_per_core_floor",
+            "message": f"每核内存低于下限：声明 {mem_gb:g}GB / {cores} 核"
+                       f"（下限 {cores * PER_CORE_MEM_GB_FLOOR:g}GB/核，"
+                       f"按每线程需求合计）。提交不阻断；freq 任务精确"
+                       f"内存需求请用工具箱 freqmem 校验",
+            **({"task_id": task_id} if task_id is not None else {})}
+
+
+def _mem_decl_line(lines: list[str]) -> int:
+    """%mem 声明行绝对行号（1 起）；无 %mem 声明取 Link0 区首行，
+    无 Link0 取 1（§2.4 必填字段钉死口径）。"""
+    start = 0
+    while start < len(lines) and not lines[start].strip():
+        start += 1  # 前导空行跳过（Link0 区起点）
+    if start >= len(lines) or not lines[start].lstrip().startswith("%"):
+        return 1  # 无 Link0
+    for i in range(start, len(lines)):
+        if not lines[i].lstrip().startswith("%"):
+            break  # Link0 区结束
+        if lines[i].strip().casefold().startswith("%mem="):
+            return i + 1
+    return start + 1  # Link0 区首行（无 %mem 声明）
+
+
+def _check_mem_floor(text: str, task_id: int) -> list[dict]:
+    """提交链每核内存下限黄警（B16）：resolve_link0 记账值（声明优先、
+    缺省回落——与 dispatcher 注入实况一致）做纯算术校验，mem × 核数
+    失衡即追加非阻断黄警（fail-open 恒不阻断）。相等不触发（严格小于）。
+    纯算术零子进程零 g16 依赖（hermetic，§9——g16_root 空目录不影响
+    触发）。"""
+    resolved = resolve_link0(text,
+                             int(settings().get("link0_default_nproc")),
+                             float(settings().get("link0_default_mem_gb")))
+    mem_gb = float(resolved["mem_gb"]["value"])
+    cores = int(resolved["nproc"]["value"])
+    if cores <= 0 or mem_gb >= cores * PER_CORE_MEM_GB_FLOOR:
+        return []  # 相等不触发（严格小于）；防御 cores 非正
+    return [_mem_floor_warning(_mem_decl_line(split_lines(text)),
+                               mem_gb, cores, task_id)]
+
+
 def verify_and_store(task_id: int) -> dict:
     """对 inputs/<id> 执行提交前核验（G1 改造），返回
     {"normalized": bool, "warnings": list}。
@@ -202,8 +256,9 @@ def verify_and_store(task_id: int) -> dict:
                    "parse_errors": parsed["parse_errors"]}, http=422)
     lines = split_lines(result["text"])
     warnings = file_warnings(parsed, parsed["blocks"]["route"], lines)
+    warnings += _check_mem_floor(result["text"], task_id)  # B16 每核下限
     warnings += _check_route(parsed["blocks"]["route"],
-                             _route_start_line(lines), task_id)  # B14
+                             _route_start_line(lines), task_id)  # B14 testrt
     if result["changed"]:
         before = parse_input(text)
         if _mask(before["blocks"]) != _mask(parsed["blocks"]):

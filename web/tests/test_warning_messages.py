@@ -18,12 +18,13 @@ from web.src.parse.keywords import (
     check_route_spelling,
 )
 from web.src.parse.link0_rules import check_link0_lines
-from web.src.services.verify import _route_skipped_warning
+from web.src.services.verify import (_mem_floor_warning,
+                                     _route_skipped_warning)
 
 _CJK = re.compile(r"[\u4e00-\u9fff]")
 
-# openapi Warning.kind 权威词表（13 kind，扩容须同步本清单；
-# 3.8.0 工具箱 B14 增 route_check_skipped）
+# openapi Warning.kind 权威词表（14 kind，扩容须同步本清单；
+# 3.8.0 工具箱 B14 增 route_check_skipped、B16 增 mem_below_per_core_floor）
 KIND_VOCABULARY = frozenset((
     "keyword_spell", "route_duplicate", "route_option_unknown",
     "molecule_unterminated", "variables_unterminated",
@@ -31,6 +32,7 @@ KIND_VOCABULARY = frozenset((
     "link0_directive_unknown", "link0_directive_duplicate",
     "title_forbidden_char", "atom_label_unknown",
     "molecule_multiple_charge_pairs", "route_check_skipped",
+    "mem_below_per_core_floor",
 ))
 
 
@@ -41,7 +43,7 @@ def _parse_warnings(text: str) -> list[dict]:
 def _file(route: str, *, title: str = "t", charge: str = "0 1",
           molecule: str = "O 0 0 0", tail: str = "\n") -> str:
     """最小合法输入样板（Link0 齐全，杜绝无关警告干扰按 kind 过滤）。"""
-    return (f"%mem=1GB\n%nprocshared=4\n\n{route}\n\n{title}\n\n"
+    return (f"%mem=8GB\n%nprocshared=4\n\n{route}\n\n{title}\n\n"
             f"{charge}\n{molecule}\n{tail}")
 
 
@@ -78,13 +80,17 @@ CASES = [
     ("link0_directive_unknown", lambda: check_link0_lines(["%foobar=1"]),
      ("官方指令集外",)),
     ("link0_directive_duplicate",
-     lambda: check_link0_lines(["%mem=1GB", "%mem=2GB"]),
+     lambda: check_link0_lines(["%mem=8GB", "%mem=2GB"]),
      ("重复出现",)),
     # 3.8.0 工具箱 B14：提交链 testrt 降级黄警（纯函数构造器模板，
     # 五类原因共用「route 语法校验跳过（<原因>）：」起始句式）
     ("route_check_skipped",
      lambda: [_route_skipped_warning(3, "testrt 工具缺失")],
      ("route 语法校验跳过",)),
+    # 3.8.0 工具箱 B16：提交链每核内存下限黄警（纯函数构造器模板）
+    ("mem_below_per_core_floor",
+     lambda: [_mem_floor_warning(1, 2.0, 8)],
+     ("每核内存低于下限",)),
 ]
 
 

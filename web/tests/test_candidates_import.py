@@ -17,7 +17,7 @@ from web.src.store import tasks
 
 VALID_TEXT = (
     "%chk=/tmp/water.chk\n"
-    "%mem=1GB\n%nprocshared=4\n"
+    "%mem=8GB\n%nprocshared=4\n"
     "\n#p B3LYP/6-31G(d) opt freq\n\n"
     "水分子优化\n\n0 1\nO\nH 1 R1\nH 1 R2 2 A2\n\n"
     "Variables:\nR1 0.96\nR2 0.96\nA2 109.47\n")

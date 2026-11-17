@@ -78,7 +78,7 @@ def test_queue_response_carries_member_details(tmp_path, monkeypatch):
     (tmp_path / "inputs").mkdir()
     monkeypatch.setattr(config, "HOME_DIR", tmp_path)
     from web.src.services.candidates import import_files
-    data = (b"%mem=1GB\n%nprocshared=4\n#p opt\n\nh2o title\n\n0 1\n"
+    data = (b"%mem=8GB\n%nprocshared=4\n#p opt\n\nh2o title\n\n0 1\n"
             b"O\nH 1 0.96\nH 1 0.96 2 1.0\n")
     out = import_files([("h2o.gjf", data), ("h2o-2.gjf", data)],
                        inputs_dir=tmp_path / "inputs")
@@ -124,7 +124,7 @@ def test_error_structure_member_range():
 def test_candidate_detail_against_schema(tmp_path):
     # M1 起候选走 store 数据源：用例内播种（契约校验不变，#14 全量切换）
     from web.src.services.candidates import import_files
-    sample = (b"%mem=1GB\nnprocplaceholder\n\n#p hf/sto-3g\n\nt\n\n0 1\n"
+    sample = (b"%mem=8GB\nnprocplaceholder\n\n#p hf/sto-3g\n\nt\n\n0 1\n"
               b"O\nH 1 0.96\nH 1 0.96 2 1.0\n").replace(b"nprocplaceholder",
                                                           b"%nprocshared=4")
     out = import_files([("h2o.gjf", sample)],
@@ -160,7 +160,7 @@ def test_404_for_missing_execution_schema():
 # ---------------- M2 契约回归（#12：PUT blocks / PATCH member_ids /
 # 提交响应 normalized / 提交核验） ----------------
 
-SAMPLE = ("%mem=1GB\n%nprocshared=4\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
+SAMPLE = ("%mem=8GB\n%nprocshared=4\n#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\n\n")
 
 
 def _seed_candidate(tmp_path, monkeypatch) -> int:
@@ -188,7 +188,7 @@ def test_preview_carries_route_spell_and_duplicate_warnings(tmp_path,
     from web.src.services.candidates import import_files
     monkeypatch.setattr(config, "HOME_DIR", tmp_path)
     (tmp_path / "inputs").mkdir()
-    sample = ("%mem=1GB\n%nprocshared=4\n#p optt mp2 mp2\n\nt\n\n"
+    sample = ("%mem=8GB\n%nprocshared=4\n#p optt mp2 mp2\n\nt\n\n"
               "0 1\nO 0 0 0\n\n")
     cid = import_files([("h2o.gjf", sample.encode("utf-8"))],
                        inputs_dir=tmp_path / "inputs")[0]["id"]
