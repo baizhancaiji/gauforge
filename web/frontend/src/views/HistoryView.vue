@@ -23,7 +23,9 @@ import { useRoute } from "vue-router";
 import { client, exportOutputs, getText } from "@/api/client";
 import type { components } from "@/api/contract";
 import AnalysisPanel from "@/components/analysis/AnalysisPanel.vue";
+import ChkToolPanel from "@/components/ChkToolPanel.vue";
 import ConfirmModal from "@/components/ConfirmModal.vue";
+import CubeExportPanel from "@/components/CubeExportPanel.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import ResumeDialog from "@/components/ResumeDialog.vue";
 import StateChip from "@/components/StateChip.vue";
@@ -720,6 +722,19 @@ async function confirmCleanup() {
         <p v-if="actionNote" class="note mono" :class="actionNote.ok ? 'note--ok' : 'note--bad'">
           {{ actionNote.msg }}
         </p>
+
+        <!-- chk 工具区 + 导出 cube 区块（3.8.0 工具箱 C8：仅终态条目
+             渲染，skipped 无执行目录不展示入口；归档条目同口径提供） -->
+        <ChkToolPanel
+          :execution-id="selected.id"
+          :entry-state="selected.state"
+          :filename="selected.filename"
+        />
+        <CubeExportPanel
+          :execution-id="selected.id"
+          :entry-state="selected.state"
+          :filename="selected.filename"
+        />
 
         <div class="actions">
           <button class="btn btn--secondary" type="button" @click="viewText('input')">输入</button>

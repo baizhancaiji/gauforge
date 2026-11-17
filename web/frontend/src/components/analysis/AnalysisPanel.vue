@@ -287,7 +287,7 @@ function switchTab(t: (typeof tabs.value)[number]) {
     <!-- 异常终态：本执行分析区置灰 + 不可分析原因注记（仅原文查看/导出） -->
     <div v-if="entryState !== 'succeeded' && mode === 'execution'" class="ana-off">
       <p class="mono">
-        异常结束的执行不进入解析管道 — 分析不可用，仅可查看 / 导出原文
+        异常结束的执行不进入解析管道 — 分析不可用，仅可查看 / 导出原文；chk 转换与 cube 导出见上方工具区
       </p>
     </div>
 
