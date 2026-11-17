@@ -9,6 +9,7 @@
 - 【specs】补交 G16 原生工具集成评估文档（五工具实测与四工具链定稿，状态行指向实施计划）
 - 【plans】立项 G16 原生工具箱执行计划（3.8.0，十新端点契约/六后端/三前端/走查与发布序列，link1 互涉义务登记）
 - 【api】工具箱契约 diff：十新端点与批量 fchk 作业、错误码全集 35→40、cube kind 六种与档位扩展、warnings 词表 +2、mapping 孤儿收口与分节重排、生成物随批再生
+- 【web】新增 chk 工具域三端点：chkchk 体检三态 verdict（锚点分流 unreadable/corrupted）、手动 formchk 转换（幂等命中、前置体检闸、原子落盘）与 fchk 下载（RFC 5987 双文件名）；chk 资产 realpath containment 越界 409、临时目录快照隔离调用，finalize 自动物化共用原子 helper 与锚点校验强化
 
 ## v3.7.0（2026-11-17T16:29+0800 发布，minor）
 
