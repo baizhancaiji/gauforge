@@ -127,7 +127,10 @@ async function generate() {
 </script>
 
 <template>
-  <section v-if="entryState === 'succeeded' || entryState === 'failed'" class="cubeexp">
+  <section
+    v-if="entryState === 'succeeded' || entryState === 'failed' || entryState === 'skipped'"
+    class="cubeexp"
+  >
     <header class="ce-head">
       <span class="ce-title">导出 cube</span>
       <span class="ce-sub mono">供 PyMOL / VMD / Chemcraft 等外部软件</span>
