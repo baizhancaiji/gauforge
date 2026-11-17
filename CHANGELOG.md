@@ -13,6 +13,7 @@
 - 【web】扩展 cube 服务（工具箱 B13）：kind 扩 Alpha/Beta（开壳层三级源 fail-closed 预校验）、npts 档位 -2/-3/-4 与 40–120 并存、MO 上界自旋块总口径三级源（failed 直读 analysis.json 零补写、fchk 头锚点回落）、POST/GET 门槛分列（failed 条目 fchk 在场可出 cube、GET 不要求 fchk）、GET 改 FileResponse 流式发送
 - 【web】新增提交链 testrt 权威校验（工具箱 B14）：route 语法错 422 ROUTE_SYNTAX_INVALID 拦截并回显报错原文，! 注释/@file 合法形态分流不误拒，工具缺失/超时等五类降级黄警 route_check_skipped 不阻断（warnings 词表 12→13），测试受控注入不真调真机
 - 【web】工具箱三端点随 B15：freqmem 内存校验（白名单先拦、锚点判定、对照 %mem 总量口径结论）、历史带入预填（执行记录 resources 判声明来源、零值守卫不猜数）、solname 溶剂速查 184 条（realpath 缓存键、NSolv/逐 id 交叉核对防御）
+- 【web】提交链每核内存下限黄警随 B16：%mem×核数失衡非阻断提示（与组合流模板保存闸 reason 同名同一规则两域承载，常量单源上移 link0_rules）、记账值声明优先缺省回落、warnings 词表 13→14、测试夹具统一 8GB 口径
 
 ## v3.7.0（2026-11-17T16:29+0800 发布，minor）
 
