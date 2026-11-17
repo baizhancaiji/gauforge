@@ -187,6 +187,12 @@ def test_import_parse_reason_aligned():
 # - CREST_EXECUTABLE_MISSING / WORKFLOW_STATE_INVALID：组合流提交对话框的
 #   前置检查定制文案（m4-plan §4.9 C7——crest_root 不可用引导设置页、
 #   来源候选形态失效引导重选；409 满员沿用 PENDING_CAPACITY_FULL 既有文案）
+# - CHK_ASSET_UNAVAILABLE / FCHK_GENERATION_FAILED / NOT_FOUND：历史详情
+#   chk 工具区与 cube 导出块的错误态分文案（toolbox-plan §2.2 C8——409 无
+#   chk 资产、转换失败可重试、404 条目或产物不存在；C8 批次漏登随查补记）
+# - VALIDATION_FAILED / G16_TOOL_UNAVAILABLE / G16_TOOL_FAILED：工具箱
+#   freqmem 校验与溶剂加载的错误态定制文案（toolbox-plan §2.4 C9——
+#   freqmem 拒绝原文回显、工具缺失引导设置页、执行失败提示）
 FRONTEND_CODE_BRANCHES = {
     "PENDING_CAPACITY_FULL",
     "SEAT_WINDOW_LOCKED",
@@ -201,6 +207,12 @@ FRONTEND_CODE_BRANCHES = {
     "CUBE_EXECUTABLE_MISSING",
     "WORKSPACE_PATH_OUTSIDE",
     "QUEUE_STATE_CONFLICT",
+    "CHK_ASSET_UNAVAILABLE",
+    "FCHK_GENERATION_FAILED",
+    "NOT_FOUND",
+    "VALIDATION_FAILED",
+    "G16_TOOL_UNAVAILABLE",
+    "G16_TOOL_FAILED",
 }
 
 
