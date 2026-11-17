@@ -48,8 +48,9 @@ def generate_cube(id: int, payload: dict) -> dict:
 
 @router.get("/history/{id}/analysis/cube/{cube_id}")
 def download_cube(id: int, cube_id: str) -> Response:
-    return Response(content=cube_svc.load(id, cube_id),
-                    media_type="chemical/x-cube")
+    """cube 文件流（B13：FileResponse 流式发送，大 cube 不整文件入内存）。"""
+    return FileResponse(cube_svc.load(id, cube_id),
+                        media_type="chemical/x-cube")
 
 
 @router.post("/history/{id}/analysis/chkchk")

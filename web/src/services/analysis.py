@@ -39,6 +39,39 @@ def terminal_succeeded(execution_id: int) -> dict:
     return row
 
 
+def _cube_state_gate(execution_id: int) -> dict:
+    """cube 域状态门槛公共判定（3.8.0 工具箱 B13，POST/GET 分列语义的
+    共享前段）：不存在/非终态（running/staged）404；skipped 409
+    ANALYSIS_UNAVAILABLE（details.state=skipped，「未运行条目无执行
+    产物」）；succeeded/failed 放行由调用方续判。"""
+    row = executions().get(execution_id)
+    if row is None or row["state"] not in ("succeeded", "failed", "skipped"):
+        raise not_found("history", execution_id)
+    if row["state"] == "skipped":
+        raise err("ANALYSIS_UNAVAILABLE", "未运行条目无执行产物",
+                  {"state": "skipped"}, http=409)
+    return row
+
+
+def terminal_with_fchk(execution_id: int) -> dict:
+    """cube POST 门槛（B13）：终态 succeeded/failed 且 run/<id>/input.fchk
+    在场——failed 条目经工具箱手动转换落盘后出 cube（评估价值链
+    chk→fchk→cube）；fchk 缺失 502 CUBE_GENERATION_FAILED（details 引导
+    先执行 chk 转换，文案中性、succeeded/failed 条目同形）。"""
+    row = _cube_state_gate(execution_id)
+    if not (run_dir(execution_id) / "input.fchk").is_file():
+        raise err("CUBE_GENERATION_FAILED",
+                  "fchk 缺失，请先执行 chk 转换后再生成 cube",
+                  {"reason": "fchk_missing", "fchk": "input.fchk"}, http=502)
+    return row
+
+
+def terminal_for_download(execution_id: int) -> dict:
+    """cube GET 门槛（B13）：终态 succeeded/failed；只校验状态，不要求
+    fchk 在场（cube 已生成后 fchk 被清理不应阻断下载）。"""
+    return _cube_state_gate(execution_id)
+
+
 def run_dir(execution_id: int) -> Path:
     return config.HOME_DIR / "run" / str(execution_id)
 
