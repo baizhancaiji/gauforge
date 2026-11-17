@@ -1,0 +1,13 @@
+ Checkpoint file /home/keepoux/g16web/run/1/h2o_opt2.chk:
+ Title:  water opt
+ Route:  #p opt b3lyp/6-31g(d)
+ Version:  ES64L-G16RevA.03
+ NAtoms=      3 ICharg=     0 Multip=     1
+ Atomic coordinates present.
+ AO basis is present.
+ MO coefficients present.
+ This checkpoint is from a job which completed successfully.
+ Internal force constants may be present.
+ An OT bucket is present. The stored data is from a(n) Optimization job.
+   Total number of points stored =         3.
+   Number of statistics per point=         2.

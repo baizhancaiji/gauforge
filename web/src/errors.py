@@ -48,6 +48,7 @@ _RESOURCE_LABELS = {
     "combo_template": "组合流模板",
     "workspace_file": "工作区文件",
     "cube": "cube 文件",
+    "fchk": "fchk 文件",
 }
 
 

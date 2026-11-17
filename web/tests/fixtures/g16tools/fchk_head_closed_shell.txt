@@ -1,0 +1,20 @@
+water opt+freq pop=reg                                                  
+Freq      RB3LYP                                                      6-31G(d)            
+Number of atoms                            I                3
+Info1-9                                    I   N=           9
+          12          12        1002           0           0         100
+           6          18        -502
+Full Title                                 C   N=           2
+water opt+freq pop=reg  
+Route                                      C   N=           3
+#p opt freq b3lyp/6-31g(d) pop=reg  
+Charge                                     I                0
+Multiplicity                               I                1
+Number of electrons                        I               10
+Number of alpha electrons                  I                5
+Number of beta electrons                   I                5
+Number of basis functions                  I               19
+Number of independent functions            I               19
+Number of point charges in /Mol/           I                0
+Number of translation vectors              I                0
+Atomic numbers                             I   N=           3

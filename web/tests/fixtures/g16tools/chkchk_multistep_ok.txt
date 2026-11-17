@@ -1,0 +1,9 @@
+ Checkpoint file mols.chk:
+ Title:  Link1 multistep job
+ Route:  #p hf/sto-3g
+ Version:  ES64L-G16RevC.01
+ NAtoms=      3 ICharg=     0 Multip=     1
+ Atomic coordinates present.
+ AO basis is present.
+ MO coefficients present.
+ This checkpoint is from a step within a multi-step job which completed successfully.

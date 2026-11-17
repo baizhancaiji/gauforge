@@ -19,13 +19,15 @@ formchk、保全快照、异常收尸、过期/全量清理。
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from ..parse import results as results_parse  # 常量单一来源（无循环依赖）
-from .workspace import resolve_chk  # 3.5.0 下沉单一事实来源（模块级名字保留）
+from .workspace import g16_env, resolve_chk  # 3.5.0 下沉单一事实来源（模块级名字保留）
 
 # 保全边界：仅 chk（修订定稿：rwf/Gau-* 即终收尸，不再保全）
 PROTECT_SUFFIX = ".chk"
@@ -39,6 +41,78 @@ _PROTECTED_DIR = "protected"
 ANALYSIS_NAME = "analysis.json"
 # 解析超时预算与 workspace-out 同款 60s（单一来源：parse/results）
 ANALYSIS_TIMEOUT_S = results_parse.PARSE_TIMEOUT_S
+
+# 自动物化 formchk 超时（M1 既有口径；手动转换 300s 放宽由 chktools 传参）
+FORMCHK_TIMEOUT_S = 120
+# fchk 头部锚点（幂等命中/产物有效性判据，toolbox-plan §2.1——半成品
+# （超时/被杀留下的非空无锚点文件）不判命中，风险 16）
+_FCHK_HEAD_ANCHORS = ("Number of atoms", "Number of basis functions")
+
+
+class FormchkError(RuntimeError):
+    """formchk 失败领域异常（B12 原子落盘 helper）。
+
+    reason ∈ nonzero（非零退出）/ empty（产物空）/ no_anchor（产物头部
+    锚点缺失）/ timeout（超时）/ startup（OSError 启动失败）；调用方分域
+    映射——自动物化记日志返回 None（不阻断终态管线），手动转换映射 502
+    FCHK_GENERATION_FAILED。
+    """
+
+    def __init__(self, reason: str, stderr_tail: str = ""):
+        super().__init__(reason)
+        self.reason = reason
+        self.stderr_tail = stderr_tail
+
+
+def fchk_head_valid(path: Path) -> bool:
+    """fchk 头部锚点有效性：非空且 Number of atoms / Number of basis
+    functions 在位（幂等命中判据与产物校验共用单点）。"""
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace")[:4096]
+    except OSError:
+        return False
+    if not head.strip():
+        return False
+    return all(a in head for a in _FCHK_HEAD_ANCHORS)
+
+
+def formchk_atomic(chk: Path, out: Path, g16_root: Path, scratch: Path, *,
+                   timeout_s: int = FORMCHK_TIMEOUT_S) -> None:
+    """formchk 原子落盘（B12 共用 helper，toolbox-plan §2.1 风险 16）：
+    写入同目录唯一临时文件（tempfile.mkstemp 形态，非固定名），成功后
+    os.replace 到目标名；失败/超时删除临时文件，不留半成品。
+
+    成功前校验产物头部锚点（fchk_head_valid）；失败抛 FormchkError。
+    scratch 为子进程 cwd 与 GAUSS_SCRDIR（损坏输入 core dump 隔离，
+    沿 materialize 探针范式）。"""
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp_name = tempfile.mkstemp(dir=str(out.parent),
+                                    prefix=f".{out.name}.", suffix=".tmp")
+    os.close(fd)
+    tmp = Path(tmp_name)
+    try:
+        proc = subprocess.run(
+            [str(g16_root / "formchk"), str(chk), str(tmp)],
+            cwd=str(scratch), env=g16_env(g16_root, scratch),
+            capture_output=True, timeout=timeout_s)
+        if proc.returncode != 0:
+            tail = proc.stderr.decode(errors="replace").strip()[-400:]
+            raise FormchkError("nonzero", tail)
+        if not (tmp.is_file() and tmp.stat().st_size > 0):
+            raise FormchkError("empty")
+        if not fchk_head_valid(tmp):
+            raise FormchkError("no_anchor")
+        os.replace(tmp, out)
+    except subprocess.TimeoutExpired as exc:
+        raise FormchkError("timeout") from exc
+    except OSError as exc:
+        raise FormchkError("startup") from exc
+    finally:
+        if tmp.exists():
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
 
 
 def write_analysis(run_dir: Path, *,
@@ -76,27 +150,21 @@ def make_fchk(run_dir: Path, g16_root: Path) -> Path | None:
     """succeeded 后 formchk：chk → run/<id>/input.fchk。
 
     chk 缺失/进程失败/非零退出均记日志返回 None，不阻断终态管线。
+    B12 起经 formchk_atomic 原子落盘（失败/超时无半成品残留，产物
+    头部锚点校验共用），产物名与自动物化语义不变。
     """
-    from .workspace import g16_env
     chk = resolve_chk(run_dir)
     if not chk.is_file():
         print(f"[finalize] formchk 跳过：chk 不存在 {chk}", file=sys.stderr)
         return None
     out = run_dir / "input.fchk"
     try:
-        proc = subprocess.run(
-            [str(g16_root / "formchk"), str(chk), str(out)],
-            cwd=str(run_dir), env=g16_env(g16_root, run_dir),
-            capture_output=True, timeout=120)
-    except (OSError, subprocess.SubprocessError) as exc:
-        print(f"[finalize] formchk 失败：{exc}", file=sys.stderr)
-        return None
-    if proc.returncode != 0:
-        tail = proc.stderr.decode(errors="replace").strip()[:200]
-        print(f"[finalize] formchk 非零退出 {proc.returncode}：{tail}",
+        formchk_atomic(chk, out, g16_root, run_dir)
+    except FormchkError as exc:
+        print(f"[finalize] formchk 失败：{exc.reason} {exc.stderr_tail}",
               file=sys.stderr)
         return None
-    return out if out.is_file() else None
+    return out
 
 
 def protect_transient(run_dir: Path) -> dict:

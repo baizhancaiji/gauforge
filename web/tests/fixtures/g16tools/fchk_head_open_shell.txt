@@ -1,0 +1,25 @@
+OH radical doublet pop=reg                                              
+SP        UB3LYP                                                      6-31G(d)            
+Number of atoms                            I                2
+Info1-9                                    I   N=           9
+          11          11           0           0           0         110
+           1          18        -502
+Full Title                                 C   N=           3
+OH radical doublet pop=reg          
+Route                                      C   N=           3
+#p ub3lyp/6-31g(d) pop=reg          
+Charge                                     I                0
+Multiplicity                               I                2
+Number of electrons                        I                9
+Number of alpha electrons                  I                5
+Number of beta electrons                   I                4
+Number of basis functions                  I               17
+Number of independent functions            I               17
+Number of point charges in /Mol/           I                0
+Number of translation vectors              I                0
+Atomic numbers                             I   N=           2
+...
+Alpha Orbital Energies                     R   N=          17
+ -1.92126764E+01 -1.01068877E+00 -4.68892803E-01 -4.04432116E-01 -3.29370646E-01
+Beta Orbital Energies                      R   N=          17
+ -1.91880394E+01 -9.40518377E-01 -4.42659737E-01 -3.02393380E-01 -1.54048466E-01

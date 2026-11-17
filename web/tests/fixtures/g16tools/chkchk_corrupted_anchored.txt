@@ -1,0 +1,22 @@
+ Checkpoint file syn.chk:
+ No title or route information found.
+ NAtoms=      0 ICharg=     0 Multip=     0
+ FileIO operation on non-existent file.
+ FileIO: IOper= 2 IFilNo(1)=  -998 Len=         200 IPos=           0 Q=         26463296
+
+
+ dumping /fiocom/, unit = 1 NFiles =     1 SizExt =     32768 WInBlk =       512
+                   defal = F LstWrd =       65536 FType=2 FMxFil=10000
+
+ Number              0
+ Base            40448
+ End             65536
+ End1            65536
+ Wr Pntr         40448
+ Rd Pntr         40448
+ Length          25088
+ Int.Num             1
+ FileIO operation on non-existent file.
+ FileIO: IOper= 2 IFilNo(1)=  -998 Len=         200 IPos=           0 Q=         26463296
+ Error termination in NtrErr:
+ NtrErr Called from FileIO.

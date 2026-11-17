@@ -824,6 +824,14 @@ fixture fchk 自持造数，不依赖 B12 先落）——C8 同时消费两者�
    134 + `NAtoms=` 锚点 → corrupted。补造该形态 fixture 并留痕锚点行
    （NAtoms、present. 行），核验项以「锚点分流」收敛，不再假设
    corrupted 不可达。
+   —— **2026-11-17 B12 实测留痕**：截断反例（`h2o_opt2.chk` 截
+   8KB）退出 134、stdout 仅 `Illegal range for read` / `NtrErr` 错误
+   行无任何锚点 → unreadable；badroute 类形态经「头部 16KB 完好 +
+   中部 16KB 乱数」合成损坏复现（exit 134、stdout 含 `NAtoms=` 锚点
+   行）→ corrupted——锚点分流收敛。三形态 fixtures 已入库
+   `web/tests/fixtures/g16tools/`（chkchk_healthy /
+   chkchk_unreadable_truncated / chkchk_corrupted_anchored，真机输出
+   原样；多步成功行样例按 §0.5 锚点原文组合——真机无多步 chk 在案）。
 3. cubegen `-2/-3/-4` 负数位置参数的档位语义（评估 §4.3 据 .hlp
    断言的实测确认）；记录三档产物体积（萘/水基线 123MB/22.7MB）
    供 D5 大体系对照。

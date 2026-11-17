@@ -131,13 +131,16 @@ def test_parse_chk_line_link0_only_ignores_extra_section():
 
 def test_make_fchk_converts(home):
     root = home / "g16"
-    make_formchk(root, 'cp "$1" "$2"\n')
+    # B12 起 formchk_atomic 产物头部锚点校验（fchk_head_valid）：
+    # 假 formchk 产合法头（裸拷贝 chk 的无锚点产物按半成品拒绝）
+    make_formchk(root, 'printf "Gaussian\\n Number of atoms I 3\\n'
+                       ' Number of basis functions I 19\\n" > "$2"\n')
     rd = home / "run" / "3"
     write_input(rd, "%chk=my.chk\n\n#p\n\nt\n\n0 1\nO\n")
     (rd / "my.chk").write_bytes(b"CHKDATA")
     out = finalize.make_fchk(rd, root)
     assert out == rd / "input.fchk"
-    assert out.read_bytes() == b"CHKDATA"
+    assert b"Number of basis functions" in out.read_bytes()
 
 
 def test_make_fchk_nonzero_exit_not_blocking(home):
@@ -318,7 +321,9 @@ def seed_dispatch(disp: Dispatcher) -> tuple[int, Path]:
 
 def test_dispatcher_succeeded_runs_formchk(home):
     root = home / "g16"
-    make_formchk(root, 'cp "$1" "$2"\n')
+    # B12 起产物头部锚点校验：假 formchk 产合法头（同 test_make_fchk_converts）
+    make_formchk(root, 'printf "Gaussian\\n Number of atoms I 3\\n'
+                       ' Number of basis functions I 19\\n" > "$2"\n')
     disp = Dispatcher(FakeGateway(cpus=8))
     eid, rd = seed_dispatch(disp)
     (rd / "w.chk").write_bytes(b"CHK")
@@ -326,7 +331,8 @@ def test_dispatcher_succeeded_runs_formchk(home):
     disp.tick()
     e = executions().get(eid)
     assert e["state"] == "succeeded"
-    assert (rd / "input.fchk").read_bytes() == b"CHK"
+    assert (rd / "input.fchk").is_file()
+    assert b"Number of atoms" in (rd / "input.fchk").read_bytes()
     assert e["chk_snapshot"] is None  # 正常结束无保全快照
     assert not (rd / "protected").exists()
 
