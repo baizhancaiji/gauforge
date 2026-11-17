@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-17T22:52+0800",
+ "updated": "2026-11-17T22:59+0800",
  "latest_released_version": "3.7.0",
  "unreleased": [
   {"type": "added", "scope": "specs", "summary": "补交 G16 原生工具集成评估文档（五工具实测与四工具链定稿，状态行指向实施计划）", "breaking": false, "migration": null},
@@ -14,7 +14,8 @@
   {"type": "added", "scope": "frontend", "summary": "历史详情新增 chk 工具区与导出 cube 区块随 C8：体检三态徽标报告与原文折叠、转换幂等命中与前置体检闸 409 明示、六 kind × 三档位 cube 生成下载（MO 越界回显、α/β 闭壳层明示、细档体积提示）、异常态文案指引工具区，playwright 真机视觉实测双主题过", "breaking": false, "migration": null},
   {"type": "added", "scope": "frontend", "summary": "工具箱视图与导航随 C9：freqmem 校验表单（手输与历史带入预填、结果卡总量口径结论）、SCRF 溶剂速查（搜索过滤与点击复制含兜底）、路由 page 06 工具箱设置顺延 07，playwright 真机视觉实测双主题过", "breaking": false, "migration": null},
   {"type": "added", "scope": "frontend", "summary": "历史页批量 fchk 导出随 C10：导出下拉增「导出 .fchk」异步作业入口、进度注记（processed/total 与复用/转换/失败/缺失计数、已用时、取消与重复下载按钮）、409 活动作业附着轮询、done 自动下载 ZIP，playwright 真机混合批次实测过", "breaking": false, "migration": null},
-  {"type": "fixed", "scope": "frontend", "summary": "补 skipped 条目 cube 导出域 409 明示入口（D5 走查项 8 缺口：区块对 skipped 渲染、生成出「未运行条目无执行产物」提示；chk 工具域不渲染口径不变）", "breaking": false, "migration": null}
+  {"type": "fixed", "scope": "frontend", "summary": "补 skipped 条目 cube 导出域 409 明示入口（D5 走查项 8 缺口：区块对 skipped 渲染、生成出「未运行条目无执行产物」提示；chk 工具域不渲染口径不变）", "breaking": false, "migration": null},
+  {"type": "added", "scope": "plans", "summary": "登记 D5 工具箱走查记录：§7.2 十二项路径真机逐条对账、随查随修一处（skipped cube 409 明示入口）、roadmap 化学层定位对照核验", "breaking": false, "migration": null}
  ],
  "in_progress": {"task": "G16 原生工具箱（toolbox-plan，目标版本 3.8.0）", "note": "开工：3.7.0 冻结闸门已过（tag v3.7.0 本地落位、hq 在位、真机工具在案），按 §6 提交序列自提交 1/2 文档立项起步，A6 契约 diff 随后"},
  "next_steps": [
