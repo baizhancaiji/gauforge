@@ -119,11 +119,13 @@ def test_non_succeeded_409(home):
 
 
 def test_kinds_match_contract_enum():
-    """KINDS 与契约 CubeRequest.kind 枚举同源（漂移守卫）。"""
+    """实现 KINDS ⊆ 契约 CubeRequest.kind 枚举（漂移守卫；契约先行——
+    3.8.0 工具箱 A6 契约扩 Alpha/Beta 六种，实现随 B13 追平后两侧相等）。"""
     import yaml
     raw = yaml.safe_load(config.CONTRACT_PATH.read_text(encoding="utf-8"))
     kind = raw["components"]["schemas"]["CubeRequest"]["properties"]["kind"]
-    assert kind["enum"] == list(cube_svc.KINDS)
+    assert set(cube_svc.KINDS) <= set(kind["enum"])
+    assert "Alpha" in kind["enum"] and "Beta" in kind["enum"]
 
 
 # ---------------- 执行面（502/503） ----------------

@@ -694,6 +694,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/history/export/fchk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 创建批量 fchk 导出作业（异步：创建时扫描分类，后台单工作线程 串行转换缺失项，前端轮询状态；同一时刻仅一个活动作业）
+         * @description 按执行 id 集合发起异步 fchk 导出作业（3.8.0 工具箱 T6/B17）。 创建时一次扫描分类：非终态/不存在 → missing（「条目不存在或非终态」）； run/<id>/input.fchk 有效成品 → reused（不查 chk 资产、不跑工具）； 其余终态条目经 chk 资产（containment 校验）→ 转换候选（execution 时 逐条复用单条转换核心：幂等命中、前置体检闸、原子落盘、单项超时 体检 120s + formchk 300s）；skipped 或无 chk 资产 → missing（「未 运行无执行产物」/「无 chk 资产（已清理或从未产生）」）。归档条目 同口径放行。创建时全部条目均无有效 fchk 且无转换候选 → 404 NOT_FOUND（details.missing）。作业状态机 queued→running→packing→ done；running/packing 异常或无任何成功条目（不出包）→ failed； 取消在 queued/running/packing 生效 → cancelled；done 超过 TTL （30 分钟）惰性转 expired。总预算 900s（转换阶段墙钟），剩余预算 不足单项最坏 420s 预留时停止转换、未处理候选记 missing（「超出批量 转换时间预算」）。转换串行（避免与 G16 派发争抢 CPU）；同一时刻仅 一个活动作业，重复创建 409 TASK_STATE_CONFLICT （details.active_job_id）。作业表进程内（单进程部署前提），服务重启 后作业 id 一律 404、临时包由启动清扫删除，已转换 input.fchk 持久 保留可重新导出。状态轮询用 1s 间隔普通 GET，不新增 SSE 事件 （sse.md 零变更）。ids 非空正整数数组否则 400 INVALID_REQUEST； 元素数上限 500（更大批次分批发起）。
+         */
+        post: operations["createFchkExportJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/export/fchk/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 批量 fchk 导出作业状态快照（前端 1s 轮询；TTL 惰性清扫—— done 超时转 expired，expired 记录随后移除） */
+        get: operations["getFchkExportJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/export/fchk/{job_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 下载批量 fchk 导出 ZIP（仅 done 可下载；FileResponse 流式发送， 支持重复下载直至 TTL 过期） */
+        get: operations["downloadFchkExportJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/export/fchk/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 取消批量 fchk 导出作业（queued/running/packing 接受——queued 即时生效、running 于当前条目结束后生效、packing 于条目写入间隙生效； done/failed/expired 409）
+         * @description 取消后统一清理作业私有临时文件（.zip.part 与已生成 ZIP），转 cancelled；已落盘 input.fchk 为持久分析产物不随取消删除（可重新 发起复用）。cancelled/failed 记录不设 TTL、随进程重启消亡。
+         */
+        post: operations["cancelFchkExportJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/history/{id}/analysis": {
         parameters: {
             query?: never;
@@ -771,7 +845,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 生成 cube（幂等：同参数返回既有 cube_id；白名单/上界越界 422， 生成失败 502、cubegen 缺失 503，M3） */
+        /**
+         * 生成 cube（幂等：同参数返回既有 cube_id；白名单/上界越界 422， 生成失败 502、cubegen 缺失 503；3.8.0 门槛放宽至终态 succeeded/failed 且 run/<id>/input.fchk 在场——failed 条目经工具箱手动转换落盘后出 cube，fchk 缺失 502 引导先转换）
+         * @description 状态门槛（3.8.0 B13，POST/GET 分列）：succeeded/failed 终态且 fchk 在场可生成（failed 条目评估价值链 chk→fchk→cube）；skipped 409 ANALYSIS_UNAVAILABLE（details.state=skipped，「未运行条目无执行 产物」）；非终态（running/staged）404。fchk 缺失 502 CUBE_GENERATION_FAILED（details 注明「fchk 缺失，请先执行 chk 转换后再生成 cube」，succeeded/failed 条目同形）。M3 既有语义保留： MO/Potential/Density/Spin 四 kind、40–120 npts、幂等命中、 CUBE_EXECUTABLE_MISSING 503；failed 条目 analysis 读取直读不触发 惰性重建（不向 failed 执行目录补写 analysis.json）。
+         */
         post: operations["generateCube"];
         delete?: never;
         options?: never;
@@ -786,10 +863,51 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** cube 文件流（chemical/x-cube；前端 3Dmol 直接 fetch，M3） */
+        /** cube 文件流（chemical/x-cube；FileResponse 流式发送，大 cube 不整文件入内存；3.8.0 门槛放宽至终态 succeeded/failed 且 cube 在场—— 只校验 cube 文件存在性、不要求 fchk 在场） */
         get: operations["downloadCube"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/chkchk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * chk 体检（chkchk 工具；三态 verdict + 最小锚点提取 + stdout 原文透传；体检动作恒 200——损坏是有效结论，进程层失败才 502/503）
+         * @description 对终态执行（succeeded/failed）的 chk 资产执行 G16 chkchk 体检 （3.8.0 工具箱 B12）。取数经 execution_chk_asset（failed/异常终止 保全 protected/ 优先、正常执行按执行副本 %chk= 声明定位），调用前 源 chk 复制进独立临时目录快照（防读清竞态 + core dump 隔离）。 verdict 三态按「非零退出 + stdout 锚点行」分流：ok=退出 0（锚点行 缺失字段以 null 呈现、raw 恒透传兜底）；corrupted=非零退出且有锚点 行（badroute 类，细节可提取、明示 chk 损坏/不完整）；unreadable= 非零退出且无任何锚点行（截断类，完全不可读）。归档条目同口径提供。 错误语义：state ∉ {succeeded, failed}（含 skipped）404 not_found； 无 chk 资产 409 CHK_ASSET_UNAVAILABLE（details.reason=cleaned/ undeclared）；资产 realpath 越出 run/<id> 409（reason=path_outside， 绝对路径/.. 越界一律不读取）；chkchk 可执行缺失 503 G16_TOOL_UNAVAILABLE（details.tool=chkchk）；启动失败/超时 502 G16_TOOL_FAILED（details.tool=chkchk）。
+         */
+        post: operations["checkChk"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/fchk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** fchk 下载（application/octet-stream 文件流，FileResponse 流式 发送；终态且 input.fchk 在场即可，不查 chk 资产——顶层 chk 被保留期 清理后 fchk 仍可下载；缺失 404） */
+        get: operations["downloadFchk"];
+        put?: never;
+        /**
+         * 手动转换为 fchk（formchk；幂等优先——input.fchk 有效成品直接 命中不跑工具；需现转时前置体检闸 verdict≠ok 拒绝）
+         * @description 对终态执行手动执行 formchk 转换，产物落 run/<id>/input.fchk （默认格式 -3，与 M1 自动物化同款；原子落盘——同目录唯一临时文件 成功后 os.replace，失败/超时删除临时文件不留半成品；超时 300s 较 自动物化 120s 放宽）（3.8.0 工具箱 B12）。幂等优先：input.fchk 存在、非空且头部锚点有效（Number of atoms / Number of basis functions 等）→ {generated: false}，不跑体检、不查 chk 资产、 不跑 formchk；半成品（超时/被杀留下的非空无锚点文件）不判命中。 需现转时服务端内部先跑体检（前置闸）：verdict≠ok 409 CHK_ASSET_UNAVAILABLE（details.verdict 区分 corrupted/unreadable， 明示「chk 损坏/不完整，不执行转换」）。错误语义：state ∉ {succeeded, failed}（含 skipped）404；无 chk 资产/越界 409 CHK_ASSET_UNAVAILABLE（同体检端点）；formchk 可执行缺失 503 G16_TOOL_UNAVAILABLE（details.tool=formchk）；非零退出/超时/产物空 502 FCHK_GENERATION_FAILED（details 携带 stderr 尾部）。
+         */
+        post: operations["convertFchk"];
         delete?: never;
         options?: never;
         head?: never;
@@ -927,6 +1045,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/toolbox/freqmem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * freq 任务内存估算校验（freqmem 工具；有效性判定=锚点解析—— 非法参数退出码恒 0 不可作判据；对照 %mem 算术在后端单点完成）
+         * @description 调 G16 freqmem（num-atoms num-basis r/u 角动量字母）估算 freq 计算 每线程内存需求（3.8.0 工具箱 B15）。载荷校验：num_atoms/num_basis 正整数且 ≤100000（防御上限）；nproc 正整数且 ≤256（缺省视为 1， 单线程口径）；basis_type 白名单 p/d/f/g/h/i（全数真机实测确认， s 恒被拒）——白名单外 422 VALIDATION_FAILED 自有中文提示 （「角动量字母仅支持 p/d/f/g/h/i」，不调 freqmem）；白名单内但 freqmem 仍输出 Unrecognized/usage 行 422（details 携带 freqmem 原文错误行，防御路径与白名单拦截分列）。有效性判定=锚点解析： 输出含 Minimum of N.NN megawords per thread. → 成功。 minimum_gb = minimum_mw × 8 / 1024（1 MW = 8 MiB；GB 按 1024 基底， 与 link0_default_mem_gb 口径一致）。载荷携带 compare_mem_gb 时返回 verdict：sufficient = declared ≥ minimum_gb × nproc（每线程需求× 核数的总量口径，缺省 nproc=1）、delta_gb = declared − minimum_gb × nproc（负值=缺口）。错误语义：freqmem 可执行缺失 503 G16_TOOL_UNAVAILABLE（details.tool=freqmem）；启动失败/超时 502 G16_TOOL_FAILED。
+         */
+        post: operations["checkFreqmem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolbox/freqmem-prefill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * freqmem 校验历史带入预填（仅 succeeded；三源取 analysis.json 概览，资源值取执行记录 resources 判声明来源）
+         * @description 从 succeeded 执行提取 freqmem 校验表单预填值（3.8.0 工具箱 B15）： num_atoms=summary.natom、num_basis=summary.nbasis、shell 按 summary.homos 元素数（1→r、≥2→u）。资源预填取执行记录 resources （dispatcher 落库的 {value, defaulted}）——suggested_compare_mem_gb =mem_gb.value、suggested_nproc=nproc.value；来源 suggested_*_source =declared（defaulted=false）/ default（defaulted=true 或声明不可解析 回落缺省）；不从 run/<id>/input.gjf 执行副本反推（物化文本缺省行 已注入，反推恒判 declared）。错误语义：非终态（running/staged） 404 not_found；终态非 succeeded（failed/skipped）409 ANALYSIS_UNAVAILABLE；analysis.json 缺失且重建失败 409（复用 load_analysis 既有语义）；零值/缺失守卫（natom 0/缺失、nbasis 0、 homos 空）409（details 注明缺失维度）——不猜数。
+         */
+        get: operations["getFreqmemPrefill"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/toolbox/solvents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * SCRF 溶剂速查表（solname 工具懒加载 + 进程内缓存；184 条 全量返回不分页）
+         * @description 解析 G16 solname 输出为溶剂速查数据（3.8.0 工具箱 B15）。 name 取 JN=1 全名行（每溶剂恒恰一条）；aliases 收 JN=2/3/4 别名/缩写行（0–3 条，同为 G16 可接受的 scrf 溶剂写法）；未识别 JN 值的行忽略（前向兼容）。交叉核对判据：JN=1 条目行数 = 头行 NSolv 且每个溶剂 id 恰有一条 JN=1 行，任一不满足 502 G16_TOOL_FAILED（防御解析缺陷）。懒加载 + 进程内缓存：首次请求调 solname，缓存键 = g16_root expanduser().resolve() 后 realpath （符号链接换目标同样失效）；调用失败不缓存（下次请求重试）；无 启动时调用（g16 缺失不炸启动）。错误语义：solname 可执行缺失 503 G16_TOOL_UNAVAILABLE（details.tool=solname）；启动失败/超时/ 核对失败 502 G16_TOOL_FAILED。
+         */
+        get: operations["listSolvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/events": {
         parameters: {
             query?: never;
@@ -1014,7 +1192,7 @@ export interface components {
         EffectKind: "immediate" | "immediate_retroactive" | "new_submissions" | "on_restart";
         ErrorBody: {
             error: {
-                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，35 码 + 三张 reason 词表） */
+                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，40 码 + 三张 reason 词表） */
                 code: string;
                 message: string;
                 /** @description 错误附加信息（如越界值、逐字段错误数组） */
@@ -1584,16 +1762,16 @@ export interface components {
             frequencies: components["schemas"]["FrequenciesResponse"];
             orbitals: components["schemas"]["OrbitalsResponse"];
         };
-        /** @description cube 生成请求（kind 为类别名、服务端合成 cubegen 实参—— MO=<orbital> 与 <kind>=SCF；幂等：同参数命中已生成文件直接返回） */
+        /** @description cube 生成请求（kind 为类别名、服务端合成 cubegen 实参—— MO=<orbital> 与 <kind>=SCF；幂等：同参数（含 npts 原值，-3 与 80 天然不同 id）命中已生成文件直接返回。3.8.0 工具箱 B13 扩展： kind 六种、npts 档位、状态门槛放宽至终态（POST 且 fchk 在场）） */
         CubeRequest: {
             /**
-             * @description 白名单外 422；MO 时 orbital 必填
+             * @description 白名单外 422；MO 时 orbital 必填。Alpha/Beta（3.8.0）实参 Alpha=SCF / Beta=SCF，仅开壳层体系可生成——服务端按三级源 （analysis.json homos → fchk 头锚点）判定，闭壳层 422 （reason=closed_shell，α/β 密度要求开壳层体系；cubegen 侧闭壳层 α/β 不报错、会静默产出半密度 cube，故预校验 fail-closed）、 不可判定 422（reason=shell_unknown）
              * @enum {string}
              */
-            kind: "MO" | "Potential" | "Density" | "Spin";
-            /** @description kind=MO 必填且 1≤orbital≤nmo（越界 422） */
+            kind: "MO" | "Potential" | "Density" | "Spin" | "Alpha" | "Beta";
+            /** @description kind=MO 必填且 1≤orbital≤MO 总数（闭壳层=nbasis、开壳层= 2×nbasis 自旋块总口径；越界 422 details.errors[].max；上界三级源 analysis.json → fchk 头锚点 → 422 reason=mo_upper_unknown） */
             orbital?: number | null;
-            /** @description 40–120 整数（默认 80；越界 422） */
+            /** @description -2/-3/-4（G16 原生粗/中/细档位，直透 cubegen 位置参数；细档 -4 体积显著——水 22.7MB、萘 123MB 量级）或 40–120 整数 （既有语义零变更；默认 80）；其余值 422 */
             npts?: number | null;
         };
         /** @description 空间占用统计（M3.7，只读；entries 按总占用降序、默认截断前 50 条；纯拉取式无定时器，超阈仅警告不自动清理） */
@@ -1637,7 +1815,7 @@ export interface components {
             line: number;
             /** @description 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串 */
             keyword: string;
-            /** @description 警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容） */
+            /** @description 警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs、 route_check_skipped、mem_below_per_core_floor；后续批次按 输入勘误计划 §4 继续扩容。3.8.0 工具箱波扩两词： route_check_skipped=提交链 testrt 校验降级（工具缺失/调用失败/ 校验超时/异常退出/包含文件写法五类原因，显式不静默）； mem_below_per_core_floor=提交链每核内存下限黄警（%mem×核数失衡 纯算术校验，与组合流模板保存闸 reason 同名——同一规则两域承载， 提示 freq 任务精确需求走工具箱 freqmem 校验）） */
             kind: string;
             /** @description 可直接展示的中文说明 */
             message: string;
@@ -1762,6 +1940,155 @@ export interface components {
             normalized: boolean;
             /** @description 可选；提交核验的非阻断警告（route 拼写近邻/重复关键字）。行内 提交与历史重新排队为该任务输入的警告；队列提交逐成员收集并在 条目 task_id 填成员任务 id（单任务提交不填 task_id）。警告不阻断 提交。 */
             warnings?: components["schemas"]["Warning"][];
+        };
+        /** @description chk 体检报告（verdict 三态判定 + 最小锚点提取 + stdout 原文透传；未识别行忽略的前向兼容——提取器不因版本差异新行失败） */
+        ChkCheckResponse: {
+            /**
+             * @description ok=退出 0（锚点行缺失字段以 null 呈现、raw 恒透传兜底）； corrupted=非零退出且 stdout 有锚点行（badroute 类——细节可提取、 明示 chk 损坏/不完整）；unreadable=非零退出且无任何锚点行 （截断类——完全不可读）
+             * @enum {string}
+             */
+            verdict: "ok" | "corrupted" | "unreadable";
+            /** @description 最小结构提取（锚点锁本机实测格式；字段缺失为 null， 前端以「—」呈现；体检损坏态 verdict≠ok 时可为部分提取） */
+            report: {
+                /** @description Version: 行（G16 版本号） */
+                version?: string | null;
+                /** @description NAtoms= 行原子数 */
+                natom?: number | null;
+                /** @description NAtoms= 行电荷 */
+                icharg?: number | null;
+                /** @description NAtoms= 行自旋多重度 */
+                multip?: number | null;
+                /** @description Atomic coordinates present. 行在场 */
+                has_coords: boolean;
+                /** @description AO basis is present. 行在场 */
+                has_basis: boolean;
+                /** @description MO coefficients present. 行在场 */
+                has_mo: boolean;
+                /** @description 作业完成状态行在场（单步 This checkpoint is from a job which completed successfully. 与多步 …from a step within a multi-step job which completed successfully. 两形态 均识别） */
+                job_ok: boolean;
+            };
+            /** @description chkchk stdout 原文全文透传（版本差异原样透传、不做 兼容性断言；前端可折叠原文展示） */
+            raw: string;
+        };
+        /** @description 手动 formchk 转换结果（幂等优先：有效成品直接命中） */
+        FchkConvertResponse: {
+            /** @description true=本次现转（formchk 原子落盘）；false=input.fchk 已是有效成品、幂等命中（不跑体检、不查 chk 资产、不跑 formchk） */
+            generated: boolean;
+            /** @description 产物文件名（恒 "input.fchk"，落 run/<id>/ 内） */
+            fchk: string;
+        };
+        /** @description freqmem 校验请求（四位置参数 + 可选对照与核数） */
+        FreqmemCheckRequest: {
+            /** @description 原子数（正整数，≤100000 防御上限） */
+            num_atoms: number;
+            /** @description 基函数数（正整数，≤100000 防御上限） */
+            num_basis: number;
+            /**
+             * @description 闭壳层 r / 开壳层 u（freqmem 第三参大小写不敏感， 契约统一小写）
+             * @enum {string}
+             */
+            shell: "r" | "u";
+            /**
+             * @description 基组角动量层级白名单（全数真机实测确认；s 恒被拒）
+             * @enum {string}
+             */
+            basis_type: "p" | "d" | "f" | "g" | "h" | "i";
+            /** @description 可选；对照 %mem 声明总量（GB，正数；携带时响应附 verdict） */
+            compare_mem_gb?: number | null;
+            /** @description 可选；核数（正整数 ≤256，缺省视为 1 单线程口径） */
+            nproc?: number | null;
+        };
+        /** @description freqmem 估算结果（每线程需求 + 可选对照 verdict；单位换算 与判断在后端单点完成，前端不做算术） */
+        FreqmemCheckResponse: {
+            /** @description 每线程内存需求（megawords，freqmem 锚点行原值） */
+            minimum_mw: number;
+            /** @description 每线程内存需求换算 GB（minimum_mw × 8 / 1024；1 MW = 8 MiB，GB 按 1024 基底） */
+            minimum_gb: number;
+            /** @description 恒 true（freqmem 估算为每线程口径；对照按总量口径 ×nproc 在 verdict 完成） */
+            per_thread: boolean;
+            /** @description basis_type 回显 */
+            basis_type_echo: string;
+            /** @description 对照结论（仅载荷携带 compare_mem_gb 时返回，否则 null） */
+            verdict?: {
+                /** @description 核数回显（载荷值或缺省 1） */
+                nproc: number;
+                /** @description 对照 %mem 声明总量（GB） */
+                declared_mem_gb: number;
+                /** @description declared ≥ minimum_gb × nproc（总量口径） */
+                sufficient: boolean;
+                /** @description declared − minimum_gb × nproc（负值=缺口） */
+                delta_gb: number;
+            } | null;
+        };
+        /** @description freqmem 校验历史带入预填值（仅 succeeded 执行；资源值取 执行记录 resources 不回读执行副本） */
+        FreqmemPrefillResponse: {
+            /** @description summary.natom */
+            num_atoms: number;
+            /** @description summary.nbasis */
+            num_basis: number;
+            /**
+             * @description 按 summary.homos 元素数（1→r、≥2→u）
+             * @enum {string}
+             */
+            shell: "r" | "u";
+            /** @description 执行记录 resources.mem_gb.value（对照 %mem 预填） */
+            suggested_compare_mem_gb: number;
+            /**
+             * @description declared=任务明文声明；default=缺省回落或声明不可解析 回落（dispatcher 记账口径）
+             * @enum {string}
+             */
+            suggested_mem_source: "declared" | "default";
+            /** @description 执行记录 resources.nproc.value */
+            suggested_nproc: number;
+            /**
+             * @description 同 suggested_mem_source 口径
+             * @enum {string}
+             */
+            suggested_nproc_source: "declared" | "default";
+        };
+        /** @description SCRF 溶剂速查表（solname 解析；name=JN=1 全名行、 aliases=JN=2/3/4 别名行） */
+        SolventsResponse: {
+            /** @description 溶剂数（实测 184） */
+            count: number;
+            solvents: {
+                /** @description solname 条目行 I= 溶剂编号 */
+                id: number;
+                /** @description 全名（每溶剂恰一条 JN=1 行） */
+                name: string;
+                /** @description 别名/缩写（0–3 条；同为 G16 可接受的 scrf 溶剂写法，速查搜索须覆盖） */
+                aliases: string[];
+            }[];
+        };
+        /** @description 批量 fchk 导出作业创建请求（服务端去重保序） */
+        FchkExportRequest: {
+            /** @description 历史条目（执行）id 集合（正整数；元素数上限 500， 更大批次由分批发起承载） */
+            ids: number[];
+        };
+        /** @description 批量 fchk 导出作业快照（前端 1s 轮询；state 词表为响应 内文本） */
+        FchkExportJob: {
+            job_id: string;
+            /** @description queued|running|packing|done|failed|cancelled|expired （queued/running/packing 可转 cancelled；running/packing 异常或 无任何成功条目转 failed；done 超 TTL 转 expired） */
+            state: string;
+            /** @description 去重后的选中执行数 */
+            total: number;
+            /** @description 已处理数（= reused + converted + failed + missing） */
+            processed: number;
+            /** @description 已有有效 fchk 直接复用数（零转换） */
+            reused: number;
+            /** @description 本次转换成功数 */
+            converted: number;
+            /** @description 条目级失败数（verdict≠ok/chk 越界/工具缺失/非零退出/ 超时——只记数不使作业失败） */
+            failed: number;
+            /** @description 缺失/不可转换数（非终态/不存在/skipped/无 chk 资产/ 超出总预算——包内 _导出说明.txt 逐条登记） */
+            missing: number;
+            /** @description 当前正在转换的执行 id（无进行中条目为 null） */
+            current_eid: number | null;
+            /** @description 作业已用时（秒） */
+            elapsed_s: number;
+            /** @description 作业级失败说明（failed 态非 null；条目级失败不入此 字段） */
+            error?: {
+                message: string;
+            } | null;
         };
     };
     responses: {
@@ -2905,6 +3232,115 @@ export interface operations {
             404: components["responses"]["Error"];
         };
     };
+    createFchkExportJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FchkExportRequest"];
+            };
+        };
+        responses: {
+            /** @description 作业已受理 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description 作业标识（uuid4 hex，不可猜） */
+                        job_id: string;
+                        /** @description 作业状态（恒 queued） */
+                        state: string;
+                        /** @description 去重后的选中执行数 */
+                        total: number;
+                    };
+                };
+            };
+            400: components["responses"]["Error"];
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    getFchkExportJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 作业快照 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FchkExportJob"];
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    downloadFchkExportJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 导出 ZIP 包（条目 <stem>.fchk 平铺、同一 stem 冲突组 「三位补零执行 id-」前缀、缺漏 _导出说明.txt 按 fchk 维度登记； fchk 条目 ZIP_DEFLATED；响应头 Content-Disposition 为 attachment、filename=gauforge-fchk-<时刻>.zip） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    cancelFchkExportJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 取消已受理 */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        job_id: string;
+                        /** @description 作业状态（取消即时生效时 cancelled，否则 既有活动态、于条目/写入间隙结束后转 cancelled） */
+                        state: string;
+                    };
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
     getAnalysisOverview: {
         parameters: {
             query?: never;
@@ -3026,7 +3462,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        /** @description 参数摘要哈希；产物落 run/<id>/cubes/<cube_id>.cube */
+                        /** @description 参数摘要哈希（含 npts 原值——档位幂等区分）； 产物落 run/<id>/cubes/<cube_id>.cube */
                         cube_id: string;
                     };
                 };
@@ -3061,6 +3497,81 @@ export interface operations {
             };
             404: components["responses"]["Error"];
             409: components["responses"]["Error"];
+        };
+    };
+    checkChk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 体检报告（verdict 三态） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChkCheckResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            502: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    downloadFchk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description fchk 文件流（响应头 Content-Disposition 为 attachment—— filename 恒附带 ASCII 清洗名 fallback + filename* 为 UTF-8 编码的 quote(stem 加 ".fchk" 后缀) 中文 stem 原样保留 （RFC 5987）；清洗为空回落 execution-<id>.fchk） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            404: components["responses"]["Error"];
+        };
+    };
+    convertFchk: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 转换结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FchkConvertResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            502: components["responses"]["Error"];
+            503: components["responses"]["Error"];
         };
     };
     analyzeWorkspaceOut: {
@@ -3271,6 +3782,79 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorBody"];
                 };
             };
+        };
+    };
+    checkFreqmem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FreqmemCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description 估算结果（含可选对照 verdict） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreqmemCheckResponse"];
+                };
+            };
+            422: components["responses"]["Error"];
+            502: components["responses"]["Error"];
+            503: components["responses"]["Error"];
+        };
+    };
+    getFreqmemPrefill: {
+        parameters: {
+            query: {
+                execution_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 预填值 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreqmemPrefillResponse"];
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+        };
+    };
+    listSolvents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 溶剂列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SolventsResponse"];
+                };
+            };
+            502: components["responses"]["Error"];
+            503: components["responses"]["Error"];
         };
     };
     sseEvents: {

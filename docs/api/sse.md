@@ -3,6 +3,9 @@
 > 状态：契约定稿。依据 [m0-plan.md](../plans/m0-plan.md) §3。REST 契约见
 > [openapi.yaml](openapi.yaml)；界面元素映射见 [mapping.md](mapping.md)。
 > 本文档为 SSE 事件唯一事实来源，变更一律走文档 diff（roadmap §4）。
+> 3.8.0 工具箱波 A6 零变更确认（2026-11-17）：本波十新端点全部为请求-响应型
+> 操作，不新增事件、不新增事件字段——批量 fchk 导出作业进度以前端 1s 间隔
+> 普通 GET 轮询承载（不入事件流），本文档零 diff。
 
 ## 1. 端点、帧格式与公共约定
 

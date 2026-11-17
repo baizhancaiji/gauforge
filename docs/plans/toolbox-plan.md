@@ -813,6 +813,12 @@ fixture fchk 自持造数，不依赖 B12 先落）——C8 同时消费两者�
    保留；`@file`/`@file/N` 分流不调 testrt，合法提交零 422。若实测
    testrt 拒绝合并单行，送检形态切换为整段原样（保留换行）并以本项
    留痕为切换依据。
+   —— **2026-11-17 A6 实测留痕（本机 ES64L-G16RevC.01）**：合并单行
+   `#p b3lyp/6-31g(d) opt freq scrf=(solvent=water)` exit 0（正常展开）；
+   截断后 `#p hf/sto-3g` exit 0；原文带 `!`（`#p hf/sto-3g ! FAKE:
+   exit=1`）exit 134 QPErr——截断必要性证实；引号值
+   `#p external="RunTink Amber" hf/sto-3g` exit 0（回显原文）。**合并
+   单行送检策略成立，不切换整段模式**。
 2. chkchk 损坏形态可达性收敛：截断反例已实测落 unreadable（退出
    134、stdout 仅错误行无任何锚点，§0.5）；badroute 类复核记录为
    134 + `NAtoms=` 锚点 → corrupted。补造该形态 fixture 并留痕锚点行
@@ -821,18 +827,42 @@ fixture fchk 自持造数，不依赖 B12 先落）——C8 同时消费两者�
 3. cubegen `-2/-3/-4` 负数位置参数的档位语义（评估 §4.3 据 .hlp
    断言的实测确认）；记录三档产物体积（萘/水基线 123MB/22.7MB）
    供 D5 大体系对照。
+   —— **2026-11-17 A6 实测留痕**（水 `h2o_optfreq_popreg.fchk`，
+   Density=SCF）：`-2` exit 0、393KB；`-3` exit 0、3.0MB；`-4` exit 0、
+   22.75MB（与评估水基线 22.7MB 一致）；正整数 `80` exit 0、6.7MB。
+   负数位置参数被 cubegen 解析为档位而非选项，产物合法。
 4. cubegen 对闭壳层 fchk 出 `Alpha=SCF`/`Beta=SCF` 的实际行为：
    实测为退出 0、`ElSum from orbitals` 为 `Density=SCF` 的一半（萘
    24.947 vs 49.89，水同），即产出半密度 cube——确认预校验必须
    fail-closed 422，不依赖 cubegen 失败兜底；同时留痕开壳层 OH
    α/β 正常形态与 `MO=18..34` beta 轨道行为供 MO 上界核验。
+   —— **2026-11-17 A6 复测留痕**：水 `Alpha=SCF` exit 0
+   （ElSum=4.0027）、`Beta=SCF` exit 0、`Density=SCF` ElSum=8.0054
+   ——α 恰为全密度之半，fail-closed 必要性再证。开壳层 OH：
+   `Alpha=SCF`/`Beta=SCF` exit 0 正常形态；`MO=17`/`MO=34` exit 0
+   （18–34 为 beta 轨道段）、`MO=35` exit 134（SIGABRT，无产物）
+   ——MO 上界须服务端预校验。
 5. freqmem `h`/`i` 角动量字母接受度留痕确认（§0.5 补充实测已定案
    接受——basis_type 白名单终值 `p/d/f/g/h/i`，A 批复测留痕即可）。
+   —— **2026-11-17 A6 复测留痕**（`freqmem 3 25 r <字母>`）：
+   p=3.30 / d=3.30 / f=7.40 / g=23.69 / h=66.30 / i=158.80 MW，
+   全部 exit 0 且 `Minimum of N.NN megawords per thread.` 锚点在位；
+   `s` 恒拒（`Unrecognized basis type "S"`，退出 0 但无锚点——
+   锚点判定必要性再证）。
 6. fchk 头锚点行名实测（`Number of atoms`、`Number of basis
    functions`、`Multiplicity`、`Number of alpha electrons`、
    `Number of beta electrons`、`Alpha Orbital Energies`、`Beta Orbital
    Energies` 数组段名与维度语义，据 `~/g16/doc/formchk.txt` 对照）；
    闭壳层（水）与开壳层（OH）各留一份头锚点样本。
+   —— **2026-11-17 A6 实测留痕**：水
+   `~/g16/tests/h2o_optfreq_popreg.fchk`（闭壳层）`Multiplicity=1`、
+   α/β 电子数 5=5、仅 `Alpha Orbital Energies R N=19`（无 Beta 段）；
+   OH `~/g16/tests/oh_doublet_popreg.fchk`（开壳层）`Multiplicity=2`、
+   α=5≠β=4、`Alpha Orbital Energies R N=17` 与 `Beta Orbital Energies
+   R N=17` 两段并存；`Number of atoms I` / `Number of basis functions
+   I` 标量锚点在位。与 `~/g16/doc/formchk.txt`（'Multiplicity' /
+   'Number of alpha electrons' / 'Number of beta electrons' /
+   'Alpha Orbital Energies' / 'Beta Orbital Energies' 章节名）对照一致。
 7. 批量 fchk 转换耗时基线：金标准 chk（水/萘/OH）开工时逐一
    核实在案（`~/g16/tests` 现存样本以 .out 为主，chk 在案性未
    确认），缺失者登记「真机样本另造」并留痕；各跑一次 formchk，

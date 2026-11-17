@@ -11,6 +11,7 @@
 | 导入文件/文件夹（文件选择与拖拽） | POST /api/v1/candidates（files[]/mode，M1） | `candidates.changed(created)` ×N |
 | 导入勾选「保存为队列」（M2，队列名=文件夹名） | POST /api/v1/candidates（queue_from_folder/folder_name，M2） | `candidates.changed(created)` ×N → `candidates.changed(moved_out)` ×N → `queues.changed(created)`（越界或依赖校验未通过时回落，仅 `created` ×N；3.5.0） |
 | 候选列表（id/文件名/title/来源标记/失败归因） | GET /api/v1/candidates | `candidates.changed` → 重拉当前页 |
+| 候选单条直读（列表行单条形态；行内提交确认框打开时按 id 直取） | GET /api/v1/candidates/{id} | — |
 | 行点击 → 右侧只读预览（分块 + 原子数/分子式） | GET /api/v1/candidates/{id}/preview | — |
 | 行内「提交」确认框完整输入 | GET /api/v1/candidates/{id}/input | — |
 | 确认框 Link0 黄色警告 | preview 响应 `blocks.link0.missing` | — |
@@ -72,11 +73,24 @@
 | 详情「分析」区 · 频率与 IR tab（频率表+虚频标红+IR 棒图联动，M3） | GET /api/v1/history/{id}/analysis/frequencies | 同上 |
 | 详情「分析」区 · 轨道与静电势 tab（清单选择→等值面渲染；异常条目整区置灰+原因注记=409 语义 UI 承载，M3） | GET /api/v1/history/{id}/analysis/orbitals | 同上 |
 | 轨道面板 cube 生成与拉取（isoval 档位、正负双色、静电势色彩映射；M3） | POST /api/v1/history/{id}/analysis/cube；GET /api/v1/history/{id}/analysis/cube/{cube_id} | — |
+| 详情「chk 工具」区 · 体检按钮（verdict 徽标报告 + 可折叠原文；损坏明示；3.8.0） | POST /api/v1/history/{id}/analysis/chkchk | — |
+| 详情「chk 工具」区 · 转换为 fchk 并下载（幂等命中/前置体检闸 409 明示；3.8.0） | POST /api/v1/history/{id}/analysis/fchk | — |
+| 详情「chk 工具」区 · fchk 下载入口（常显；RFC 5987 中文名；3.8.0） | GET /api/v1/history/{id}/analysis/fchk | — |
+| 详情「导出 cube」区块（六 kind × 档位 -2/-3/-4；工具箱导出域供外部软件，与轨道面板预览分工；3.8.0） | POST /api/v1/history/{id}/analysis/cube；GET /api/v1/history/{id}/analysis/cube/{cube_id} | — |
+| 勾选批量导出 fchk（异步作业：发起/进度轮询/下载/取消；进度注记计数与已用时；3.8.0） | POST /api/v1/history/export/fchk；GET /api/v1/history/export/fchk/{job_id}；GET /api/v1/history/export/fchk/{job_id}/download；POST /api/v1/history/export/fchk/{job_id}/cancel | —（轮询不属 SSE，1s 间隔 GET） |
 | 分析区头部「.out 打开」入口（工作区 .out/.log 只读分析，复用同组图表；越界 400 内联提示；M3） | POST /api/v1/analysis/workspace-out | — |
 | 归档详情分析区（复用历史详情分析组件，可见性同 succeeded 条目，M3） | GET /api/v1/history/{id}/analysis 等（同上四端点） | — |
 | 清理区占用面板（总占用读数+前 N 大明细+超阈琥珀警示条，M3.7） | GET /api/v1/storage/usage | `history.appended` → 重拉 |
 
-## 06 设置
+## 06 工具箱（3.8.0）
+
+| 界面元素 | 端点 | 事件（SSE） |
+|---|---|---|
+| freqmem 校验表单（四参数手输 + 可选 nproc/对照 %mem；结果卡按总量口径出充足/不足结论） | POST /api/v1/toolbox/freqmem | — |
+| 「从历史带入」选择器（仅 g16 succeeded 条目；选中预填三参数与资源值并标注来源） | GET /api/v1/toolbox/freqmem-prefill | — |
+| 溶剂速查表（搜索过滤 + 两列名称/别名 + 点击复制；184 条全量） | GET /api/v1/toolbox/solvents | — |
+
+## 07 设置
 
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
@@ -88,8 +102,9 @@
 | 更新卡「立即更新」（三守卫置灰：running/进行中/源码形态，v2.1.0） | POST /api/v1/update/apply | `update.phase`/`update.progress` |
 | 更新卡代理通道切换（直连/默认代理/自定义 URL，读写工作区 .update-proxy，v2.1.0） | PUT /api/v1/update/proxy | — |
 | 队列/历史/归档页排序规则持久化（跨重启/更新/断联不回默认，键 `queues.sort`/`history.sort`/`archive.sort`） | GET·PUT /api/v1/ui-preferences | — |
+| 设置页「重启服务」（运行级变更保存后琥珀提示条的重启动作，二次确认） | POST /api/v1/system/restart | —（进程自终止致 SSE 断连，重连走 `system.snapshot(server_restarted)` 重建） |
 
-## 07 工作流（M4）
+## 08 工作流（M4）
 
 | 界面元素 | 端点 | 事件（SSE） |
 |---|---|---|
@@ -97,6 +112,8 @@
 | 组合流进度面板（状态/精修队列/refine_queue_pending 满员提示；SSE 驱动刷新后拉取） | GET /api/v1/workflows/{id} | `task.status`/`history.appended`/`queue.status` → 拉取 |
 | 页面刷新后找回组合流（进度面板恢复） | GET /api/v1/workflows?limit=20 | — |
 | 工作流能量表（crest ensemble 行 + 精修 g16 行跨容器聚合，相对 kJ/mol 增量刷新） | GET /api/v1/workflows/{id}（energy_summary） | `history.appended` → 增量刷新 |
+| 组合流对话框精修模板选择（5 套方案与初始值，打开时拉取；插波 3.2.0） | GET /api/v1/combo-templates | — |
+| 组合流模板管理弹窗（模板编辑/保存/设为默认，全量替换语义；插波 3.2.0） | PUT /api/v1/combo-templates/{templateId} | — |
 
 ## 系统级（跨页）
 
@@ -110,12 +127,16 @@
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 55 个操作均已在上表被至少一个界面元素引用：
-candidates(8 个操作) · queues(7) · pending(4) · executions(3) · history(18)
+全部 67 个操作均已在上表被至少一个界面元素引用：
+candidates(8 个操作) · queues(7) · pending(4) · executions(3) · history(25)
 · settings(2) · system/events(3) · update(4) · ui-prefs(2) · storage(1)
-· workflow(3)。
+· workflow(3) · combo-templates(2) · toolbox(3)。
 —— 由 A5 walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
 计划 D3；ui-prefs(2) 为视图偏好持久化域；history/export 为历史批量导出；history
 分析域 7 操作 + storage(1) 为 M3 波 A1 增补——契约预告，实施随 m3-plan B3/B4/B12；
-queues energy-summary(1) + history resume(2) + workflow(3) 为 M4 波 A4 增补，
-实施随 m4-plan B9–B11）。
+queues energy-summary(1) + history resume(2) + workflow(3) + combo-templates(2)
+为 M4 波增补，实施随 m4-plan B9–B11；history 分析域 chk 工具三端点 + 批量 fchk
+导出四端点（history 25 = 18 + 7）与 toolbox(3) 为 3.8.0 工具箱波 A6 增补
+（openapi 57→67），实施随 toolbox-plan B12/B15/B17；A6 同批补齐既有未入表操作
+四行（GET /candidates/{id}、GET·PUT combo-templates、POST /system/restart——
+原孤儿清单自报 55 已过期）并分节重排 06 工具箱 / 07 设置 / 08 工作流）。

@@ -93,7 +93,7 @@ class EffectKind(Enum):
 class Error(BaseModel):
     code: str = Field(
         ...,
-        description='SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，35 码 + 三张 reason 词表）',
+        description='SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，40 码 + 三张 reason 词表）',
     )
     message: str
     details: dict[str, Any] | None = Field(
@@ -680,14 +680,23 @@ class Kind(Enum):
     Potential = 'Potential'
     Density = 'Density'
     Spin = 'Spin'
+    Alpha = 'Alpha'
+    Beta = 'Beta'
 
 
 class CubeRequest(BaseModel):
-    kind: Kind = Field(..., description='白名单外 422；MO 时 orbital 必填')
-    orbital: int | None = Field(
-        None, description='kind=MO 必填且 1≤orbital≤nmo（越界 422）'
+    kind: Kind = Field(
+        ...,
+        description='白名单外 422；MO 时 orbital 必填。Alpha/Beta（3.8.0）实参 Alpha=SCF / Beta=SCF，仅开壳层体系可生成——服务端按三级源 （analysis.json homos → fchk 头锚点）判定，闭壳层 422 （reason=closed_shell，α/β 密度要求开壳层体系；cubegen 侧闭壳层 α/β 不报错、会静默产出半密度 cube，故预校验 fail-closed）、 不可判定 422（reason=shell_unknown）',
     )
-    npts: int | None = Field(None, description='40–120 整数（默认 80；越界 422）')
+    orbital: int | None = Field(
+        None,
+        description='kind=MO 必填且 1≤orbital≤MO 总数（闭壳层=nbasis、开壳层= 2×nbasis 自旋块总口径；越界 422 details.errors[].max；上界三级源 analysis.json → fchk 头锚点 → 422 reason=mo_upper_unknown）',
+    )
+    npts: int | None = Field(
+        None,
+        description='-2/-3/-4（G16 原生粗/中/细档位，直透 cubegen 位置参数；细档 -4 体积显著——水 22.7MB、萘 123MB 量级）或 40–120 整数 （既有语义零变更；默认 80）；其余值 422',
+    )
 
 
 class Entry(BaseModel):
@@ -741,7 +750,7 @@ class Warning(BaseModel):
     )
     kind: str = Field(
         ...,
-        description='警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs；后续批次按 输入勘误计划 §4 继续扩容）',
+        description='警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs、 route_check_skipped、mem_below_per_core_floor；后续批次按 输入勘误计划 §4 继续扩容。3.8.0 工具箱波扩两词： route_check_skipped=提交链 testrt 校验降级（工具缺失/调用失败/ 校验超时/异常退出/包含文件写法五类原因，显式不静默）； mem_below_per_core_floor=提交链每核内存下限黄警（%mem×核数失衡 纯算术校验，与组合流模板保存闸 reason 同名——同一规则两域承载， 提示 freq 任务精确需求走工具箱 freqmem 校验））',
     )
     message: str = Field(..., description='可直接展示的中文说明')
     suggestion: str | None = Field(None, description='可选；仅拼写/选项近邻类警告提供')
@@ -916,6 +925,193 @@ class SubmitResponse(BaseModel):
     warnings: list[Warning] | None = Field(
         None,
         description='可选；提交核验的非阻断警告（route 拼写近邻/重复关键字）。行内 提交与历史重新排队为该任务输入的警告；队列提交逐成员收集并在 条目 task_id 填成员任务 id（单任务提交不填 task_id）。警告不阻断 提交。',
+    )
+
+
+class Verdict(Enum):
+    ok = 'ok'
+    corrupted = 'corrupted'
+    unreadable = 'unreadable'
+
+
+class Report(BaseModel):
+    version: str | None = Field(None, description='Version: 行（G16 版本号）')
+    natom: int | None = Field(None, description='NAtoms= 行原子数')
+    icharg: int | None = Field(None, description='NAtoms= 行电荷')
+    multip: int | None = Field(None, description='NAtoms= 行自旋多重度')
+    has_coords: bool = Field(..., description='Atomic coordinates present. 行在场')
+    has_basis: bool = Field(..., description='AO basis is present. 行在场')
+    has_mo: bool = Field(..., description='MO coefficients present. 行在场')
+    job_ok: bool = Field(
+        ...,
+        description='作业完成状态行在场（单步 This checkpoint is from a job which completed successfully. 与多步 …from a step within a multi-step job which completed successfully. 两形态 均识别）',
+    )
+
+
+class ChkCheckResponse(BaseModel):
+    verdict: Verdict = Field(
+        ...,
+        description='ok=退出 0（锚点行缺失字段以 null 呈现、raw 恒透传兜底）； corrupted=非零退出且 stdout 有锚点行（badroute 类——细节可提取、 明示 chk 损坏/不完整）；unreadable=非零退出且无任何锚点行 （截断类——完全不可读）',
+    )
+    report: Report = Field(
+        ...,
+        description='最小结构提取（锚点锁本机实测格式；字段缺失为 null， 前端以「—」呈现；体检损坏态 verdict≠ok 时可为部分提取）',
+    )
+    raw: str = Field(
+        ...,
+        description='chkchk stdout 原文全文透传（版本差异原样透传、不做 兼容性断言；前端可折叠原文展示）',
+    )
+
+
+class FchkConvertResponse(BaseModel):
+    generated: bool = Field(
+        ...,
+        description='true=本次现转（formchk 原子落盘）；false=input.fchk 已是有效成品、幂等命中（不跑体检、不查 chk 资产、不跑 formchk）',
+    )
+    fchk: str = Field(..., description='产物文件名（恒 "input.fchk"，落 run/<id>/ 内）')
+
+
+class Shell(Enum):
+    r = 'r'
+    u = 'u'
+
+
+class BasisType(Enum):
+    p = 'p'
+    d = 'd'
+    f = 'f'
+    g = 'g'
+    h = 'h'
+    i = 'i'
+
+
+class FreqmemCheckRequest(BaseModel):
+    num_atoms: int = Field(..., description='原子数（正整数，≤100000 防御上限）')
+    num_basis: int = Field(..., description='基函数数（正整数，≤100000 防御上限）')
+    shell: Shell = Field(
+        ...,
+        description='闭壳层 r / 开壳层 u（freqmem 第三参大小写不敏感， 契约统一小写）',
+    )
+    basis_type: BasisType = Field(
+        ..., description='基组角动量层级白名单（全数真机实测确认；s 恒被拒）'
+    )
+    compare_mem_gb: float | None = Field(
+        None, description='可选；对照 %mem 声明总量（GB，正数；携带时响应附 verdict）'
+    )
+    nproc: int | None = Field(
+        None, description='可选；核数（正整数 ≤256，缺省视为 1 单线程口径）'
+    )
+
+
+class Verdict1(BaseModel):
+    nproc: int = Field(..., description='核数回显（载荷值或缺省 1）')
+    declared_mem_gb: float = Field(..., description='对照 %mem 声明总量（GB）')
+    sufficient: bool = Field(
+        ..., description='declared ≥ minimum_gb × nproc（总量口径）'
+    )
+    delta_gb: float = Field(
+        ..., description='declared − minimum_gb × nproc（负值=缺口）'
+    )
+
+
+class FreqmemCheckResponse(BaseModel):
+    minimum_mw: float = Field(
+        ..., description='每线程内存需求（megawords，freqmem 锚点行原值）'
+    )
+    minimum_gb: float = Field(
+        ...,
+        description='每线程内存需求换算 GB（minimum_mw × 8 / 1024；1 MW = 8 MiB，GB 按 1024 基底）',
+    )
+    per_thread: bool = Field(
+        ...,
+        description='恒 true（freqmem 估算为每线程口径；对照按总量口径 ×nproc 在 verdict 完成）',
+    )
+    basis_type_echo: str = Field(..., description='basis_type 回显')
+    verdict: Verdict1 | None = Field(
+        None, description='对照结论（仅载荷携带 compare_mem_gb 时返回，否则 null）'
+    )
+
+
+class SuggestedMemSource(Enum):
+    declared = 'declared'
+    default = 'default'
+
+
+class SuggestedNprocSource(Enum):
+    declared = 'declared'
+    default = 'default'
+
+
+class FreqmemPrefillResponse(BaseModel):
+    num_atoms: int = Field(..., description='summary.natom')
+    num_basis: int = Field(..., description='summary.nbasis')
+    shell: Shell = Field(..., description='按 summary.homos 元素数（1→r、≥2→u）')
+    suggested_compare_mem_gb: float = Field(
+        ..., description='执行记录 resources.mem_gb.value（对照 %mem 预填）'
+    )
+    suggested_mem_source: SuggestedMemSource = Field(
+        ...,
+        description='declared=任务明文声明；default=缺省回落或声明不可解析 回落（dispatcher 记账口径）',
+    )
+    suggested_nproc: int = Field(..., description='执行记录 resources.nproc.value')
+    suggested_nproc_source: SuggestedNprocSource = Field(
+        ..., description='同 suggested_mem_source 口径'
+    )
+
+
+class Solvent(BaseModel):
+    id: int = Field(..., description='solname 条目行 I= 溶剂编号')
+    name: str = Field(..., description='全名（每溶剂恰一条 JN=1 行）')
+    aliases: list[str] = Field(
+        ...,
+        description='别名/缩写（0–3 条；同为 G16 可接受的 scrf 溶剂写法，速查搜索须覆盖）',
+    )
+
+
+class SolventsResponse(BaseModel):
+    count: int = Field(..., description='溶剂数（实测 184）')
+    solvents: list[Solvent]
+
+
+class FchkExportRequest(BaseModel):
+    ids: list[int] = Field(
+        ...,
+        description='历史条目（执行）id 集合（正整数；元素数上限 500， 更大批次由分批发起承载）',
+        max_length=500,
+        min_length=1,
+    )
+
+
+class Error1(BaseModel):
+    message: str
+
+
+class FchkExportJob(BaseModel):
+    job_id: str
+    state: str = Field(
+        ...,
+        description='queued|running|packing|done|failed|cancelled|expired （queued/running/packing 可转 cancelled；running/packing 异常或 无任何成功条目转 failed；done 超 TTL 转 expired）',
+    )
+    total: int = Field(..., description='去重后的选中执行数')
+    processed: int = Field(
+        ..., description='已处理数（= reused + converted + failed + missing）'
+    )
+    reused: int = Field(..., description='已有有效 fchk 直接复用数（零转换）')
+    converted: int = Field(..., description='本次转换成功数')
+    failed: int = Field(
+        ...,
+        description='条目级失败数（verdict≠ok/chk 越界/工具缺失/非零退出/ 超时——只记数不使作业失败）',
+    )
+    missing: int = Field(
+        ...,
+        description='缺失/不可转换数（非终态/不存在/skipped/无 chk 资产/ 超出总预算——包内 _导出说明.txt 逐条登记）',
+    )
+    current_eid: int = Field(
+        ..., description='当前正在转换的执行 id（无进行中条目为 null）'
+    )
+    elapsed_s: int = Field(..., description='作业已用时（秒）')
+    error: Error1 | None = Field(
+        None, description='作业级失败说明（failed 态非 null；条目级失败不入此 字段）'
     )
 
 
