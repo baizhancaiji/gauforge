@@ -39,13 +39,25 @@ WSL2 已启用 systemd 时（`systemctl --user status` 可验证；未启用则 
 - 服务以部署目录 `.venv/bin/python -m web.src.main` 直启（与 `uv run` 等效，SIGTERM 直达服务优雅退出），`PATH` 预置 `.venv/bin` 保证内核 `hq` 可发现；日志进 journald：`journalctl --user -u gauforge -f`。
 - **停 WebUI 不杀计算任务的语义保持**：unit 用 `KillMode=process`，停/重启只作用于 WebUI 主进程，HQ server/worker 不受影响，重启后由引擎对账接管。
 - WebUI 重启按钮、更新自动重启与 `stop_all.sh` 在托管下自动委托 `systemctl --user`（进程环境含 `G16WEB_SERVICE_UNIT` 即判定为托管），不会与 `Restart=on-failure` 抢杀；委托失败自动回退原手动路径。
-- 免登录自启需 linger：安装脚本自动尝试，失败时按提示执行 `sudo loginctl enable-linger <用户名>`。
+- 免登录自启需 linger：安装脚本自动尝试、强制验证（`loginctl show-user --property=Linger` 读回 `yes`），失败时醒目告警并按提示执行 `sudo loginctl enable-linger <用户名>`（不阻断本次启动）。
 - 自定义工作区（`G16WEB_HOME`）在安装时写入 unit；卸载：`./systemd_install.sh --remove`（不动工作区数据）。
+
+**服务死亡两层机制与常驻保障（关闭终端/闲置不丢服务与任务的前提）**
+
+WSL2 托管服务曾出现「无终端后服务死亡、关闭运行过安装脚本的终端即连同在跑任务一并死亡」——根因是两层宿主，均不归 `KillMode`/`Restart` 管：
+
+1. **WSL distro 空闲断电（主因）**：WSL 只认 `wsl.exe` 会话引用，systemd 服务在跑不算存活依据；最后一个终端关闭后 distro 按 `.wslconfig` `[general] instanceIdleTimeout`（官方默认 15000ms）自动关机，journal 留痕 `Reached target poweroff.target`。修复 = **keepalive 计划任务**（见 §2.2），登录时后台执行 `wsl.exe -d <发行版> -u root --exec /usr/bin/sleep infinity` 恒持会话引用，distro 永不满足空闲判定——版本无关，Win10/Win11 通吃；`.wslconfig` 写 `instanceIdleTimeout=-1` 亦可禁用（属用户全局配置、需 `wsl --shutdown` 生效，不随包分发）。
+2. **用户管理器随会话终止（次因）**：未开 linger 时，最后一个会话关闭后 logind 在 `UserStopDelaySec` 宽限到期后停用户管理器，system 级按 control-group 收割**整个用户 cgroup 树**——`KillMode=process` 只挡单元级停启、挡不住整树收割，HQ server/worker 与在跑任务一并被杀。宽限默认值有版本域：上游 systemd ≤249 默认 infinity（层 2 不发生）、≥250 默认 10s，发行版可 backport/drop-in 覆盖，具体机器以 `systemctl --version` 与 logind 配置取证为准。修复 = **linger**：`loginctl enable-linger <用户>` 使用户管理器不随会话终止，且随 distro 启动自启 unit（免终端自启）。
+
+两层缺一不可；`systemd_install.sh` 已强制验证并告警，启动器（§2.2）探活通过与修复流程两处均会自愈补齐。**诊断判据**：怀疑层 1 时回溯历史 boot 找 `Reached target poweroff.target`（`sudo journalctl --list-boots` 后逐 boot `grep -i poweroff`）；怀疑层 2 时核对 `loginctl show-user --property=Linger`（应为 `yes`）与 systemd 版本域。
 
 ### 2.2 Windows 一键启动（systemd 托管配套）
 
-Windows 侧双击 `start_gauforge.bat`（仓库 `scripts/deploy/windows/`，bat 与
-`start_gauforge.ps1` 放同目录，或拷到 `%LOCALAPPDATA%\GauForge\` 供桌面快捷方式调用）：
+Windows 侧双击 `start_gauforge.bat`（部署包顶层 `windows/` 目录三件套：
+`start_gauforge.bat` + `start_gauforge.ps1` + `install_keepalive.ps1` 同目录；
+bat 与 ps1 亦可拷到 `%LOCALAPPDATA%\GauForge\` 供桌面快捷方式调用——**须三
+文件同目录**，启动器自愈按「启动器同目录 → 部署包顶层 `windows\`」顺序查找
+安装器）：
 
 - 首次运行自动发现 WSL 内部署包（顶层含 `systemd_install.sh` 与 `VERSION`），
   发行版与部署目录记入 `%LOCALAPPDATA%\GauForge\launcher.json`，此后双击直达；
@@ -54,10 +66,31 @@ Windows 侧双击 `start_gauforge.bat`（仓库 `scripts/deploy/windows/`，bat 
   `inputs/` 副本均不留）——「页面能打开但 API 不可交互」的挂死形态按服务已死处理；
 - 探活通过则只提示不重启；失败自动修复：清崩溃循环（`reset-failed` + `stop`）
   → 执行 `systemd_install.sh`（幂等）→ 15 秒内复验探活；
+- **常驻自愈两步在探活通过分支与修复流程两处接线（幂等）**：① linger 未启用
+  → WSL 内 `loginctl enable-linger` 并读回验证，失败提示 sudo 命令不打断主流程；
+  ② keepalive 计划任务缺失 → 调用 `install_keepalive.ps1` 注册（发行版复用
+  launcher.json 口径），在但 State≠Running（`wsl --shutdown` 后 State=Ready
+  仅进程死亡的形态）→ `Start-ScheduledTask` 复跑，Running 则跳过；
 - 复验仍失败时给出排障指引：`journalctl --user -u gauforge -n 50 --no-pager`、
   WSL 内 curl 自测、`wsl --shutdown` 后重开（处理 WSL2 localhost 转发断链）。
+- **keepalive 安装**（可独立执行）：
+  `powershell -ExecutionPolicy Bypass -File install_keepalive.ps1 [-Distro <名称>] [-Elevated]`；
+  默认 Interactive 普通权限即可注册（登录触发语义下注销即停、下次登录自动拉起），
+  `-Elevated` 管理员窗口注册 S4U 免密任务（注销后续跑）；`-Remove` 卸载。
+- **`wsl --shutdown` 后恢复口径**：人工 shutdown 或排障会杀掉 keepalive 的
+  sleep 进程，但任务注册不随之消失（State=Ready）——重开 WSL 后双击
+  `start_gauforge.bat`（探活分支自愈复跑），或手动
+  `Start-ScheduledTask -TaskName 'GauForge WSL KeepAlive'` 即恢复。
 - 注意：不要用 Git Bash 直接打开 `systemd_install.sh`——那是在 Windows 的 MSYS
   环境执行，没有 WSL 与 systemctl，必然失败；一键入口是 bat。
+
+**可用资源软限制语义（3.9.0 起）**：设置页「可用资源」（核数 + 内存 GB）是
+WebUI 提交校验的**权威口径**（声明超过即 422 拒绝提交），同时作为 worker
+软限制传 HQ——worker 侧取 `min(设置值, 机器探测值)`（clamp 防虚报容量），
+**随 worker 重建生效**（服务重启 / watchdog 重起 server 后；复用在线 worker
+不重启），校验侧即时生效（新提交）。停等记账池随软限制由全量探测值缩为
+min(设置值, 探测值)，并发吞吐行为相应变化属「为 Gaussian 计算分配资源」的
+预期语义；调高设置值即回全量口径。
 
 ## 3. 工作区与 G16 接入
 
