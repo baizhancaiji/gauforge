@@ -306,6 +306,10 @@ async function copyName(s: Solvent) {
             aria-label="搜索溶剂"
           >
           <p class="fm-hint mono">{{ filteredSolvents.length }} / {{ solvents.length }} 条</p>
+          <p v-if="copied" class="fm-note mono note--ok" role="status">已复制 {{ copied }}</p>
+          <p v-else-if="copyFailed" class="fm-note mono note--bad" role="alert">
+            复制失败 — 已选中文本，请按 Ctrl+C 手动复制
+          </p>
           <div class="sv-table-wrap">
             <table class="sv-table">
               <thead>
@@ -328,10 +332,6 @@ async function copyName(s: Solvent) {
               </tbody>
             </table>
           </div>
-          <p v-if="copied" class="fm-note mono note--ok" role="status">已复制 {{ copied }}</p>
-          <p v-else-if="copyFailed" class="fm-note mono note--bad" role="alert">
-            复制失败 — 已选中文本，请按 Ctrl+C 手动复制
-          </p>
         </template>
         <template v-else>
           <button
