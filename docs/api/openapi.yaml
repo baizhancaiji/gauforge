@@ -65,7 +65,8 @@
 #     工作区、路径为空、后缀不符三态同码。§2.3 路径守卫：resolve 后须为
 #     workspace_root 子孙且后缀 ∈ {.out,.log}；M3）
 #   - CUBE_GENERATION_FAILED — 502：cubegen 非零退出/超时 120s（details 携带
-#     stderr 尾部；fchk 产物缺失亦走此码、details 注明；M3）
+#     stderr 尾部；fchk 产物缺失亦走此码、details 注明；M3）；批量形态
+#     details.kind 归属 failing kind（3.8.0 修订批）
 #   - CUBE_EXECUTABLE_MISSING — 503：g16_root/cubegen 探测失败（显式不静默；M3）
 #   - DEPENDENCY_UNREACHABLE — 422：Link0 符号引用不可达（@task:id 非同队列现存
 #     成员——跨队列/引用已移除成员/自引用，M4；前向引用——引用目标位于本成员
@@ -120,7 +121,11 @@
 #   CHK_ASSET_UNAVAILABLE details.reason ∈ cleaned/undeclared/path_outside
 #   （+ verdict ∈ corrupted/unreadable）；VALIDATION_FAILED 新 reason ∈
 #   shell_unknown/closed_shell/mo_upper_unknown（cube α/β 与 MO 上界
-#   fail-closed）；freqmem 白名单/值域拒绝沿用 details.errors[].reason
+#   fail-closed）+ data_missing（3.8.0 修订批：cube fchk 数据段预校验
+#   fail-closed，details.section 携带缺失段名原文、details.kind 归属；
+#   单端点 details 沿单端点既有形态，批量前置校验 422 走
+#   details.kind_errors[] 分键——文法 422 仍走 errors[]，两键同响应
+#   互斥）；freqmem 白名单/值域拒绝沿用 details.errors[].reason
 #   type/range/whitelist 形态；批量 fchk 作业快照 state 词表
 #   queued|running|packing|done|failed|cancelled|expired 为响应内文本。
 #
@@ -1444,6 +1449,46 @@ components:
             -2/-3/-4（G16 原生粗/中/细档位，直透 cubegen 位置参数；细档
             -4 体积显著——水 22.7MB、萘 123MB 量级）或 40–120 整数
             （既有语义零变更；默认 80）；其余值 422
+
+    CubeBatchRequest:
+      type: object
+      description: >-
+        cube 批量生成请求（3.8.0 修订批 A7，R3）：kinds 为类别名数组
+        （长度 1–6、不得重复），服务端逐 kind 串行执行既有单 kind 生成链
+        （幂等命中零子进程），多类型产出打包为单个 ZIP 返回。恰选 1 类
+        前端路由到单 kind 端点直下 .cube，本端点对长度 1 的合法请求同样
+        受理（契约测试钉死）。
+      required: [kinds]
+      properties:
+        kinds:
+          type: array
+          items:
+            type: string
+            enum: [MO, Potential, Density, Spin, Alpha, Beta]
+          minItems: 1
+          maxItems: 6
+          description: >-
+            非空数组、元素 ∈ 六 kind 白名单、不得重复；空数组/超 6/重复/
+            未知 kind/kinds 非数组/元素类型错 422 VALIDATION_FAILED
+            details.errors[]（文法 422 词形）。打包类型段按规范序
+            MO、Potential、Density、Spin、Alpha、Beta 排列
+        orbital:
+          type: integer
+          nullable: true
+          description: >-
+            仅 kinds 含 MO 时接受：必填且 1≤orbital≤MO 总数（上界三级源
+            与单端点同口径——succeeded 闭壳 nmo/开壳 2×nbasis、failed 直读
+            降级 fchk 头锚点、两源皆不可得 422 mo_upper_unknown）；缺失或
+            越界 422 details.errors[]；不含 MO 而携带 422
+            details.errors[].reason=unexpected（沿单端点既有码型）；
+            succeeded 条目无 MO 表（blocks.orbitals=false）时文法步 422
+            ANALYSIS_PARSE_FAILED（details {"block": "orbitals"}）透传
+        npts:
+          type: integer
+          nullable: true
+          description: >-
+            同单端点域：-2/-3/-4 档位或 40–120 整数（默认 80）；单值作用于
+            全部选中类型；越域 422 details.errors[]
 
     StorageUsage:
       type: object
@@ -3468,7 +3513,16 @@ paths:
         转换后再生成 cube」，succeeded/failed 条目同形）。M3 既有语义保留：
         MO/Potential/Density/Spin 四 kind、40–120 npts、幂等命中、
         CUBE_EXECUTABLE_MISSING 503；failed 条目 analysis 读取直读不触发
-        惰性重建（不向 failed 执行目录补写 analysis.json）。
+        惰性重建（不向 failed 执行目录补写 analysis.json）。3.8.0 修订批
+        （R4）：幂等命中之后、cubegen 之前插入 fchk 数据段预校验——按 kind
+        必需段映射（MO=Alpha MO coefficients，开壳层另需 Beta MO
+        coefficients、shell 不可判定时仅验 Alpha；Potential/Density=Total
+        SCF Density；Spin=Spin SCF Density；Alpha/Beta=Total SCF Density +
+        Spin SCF Density），缺段 422 VALIDATION_FAILED
+        details.reason=data_missing + details.section（段名原文）+
+        details.kind；幂等命中不重查（曾成功即曾通过）。校验顺序仅在既有
+        链尾部追加一闸，其余语义零漂移（缺段形态由 502 裸错改 422
+        data_missing 为唯一有意例外）。
       parameters:
         - $ref: '#/components/parameters/ExecutionId'
       requestBody:
@@ -3526,6 +3580,78 @@ paths:
         '404':
           $ref: '#/components/responses/Error'
         '409':
+          $ref: '#/components/responses/Error'
+
+  /history/{id}/analysis/cube/batch:
+    post:
+      tags: [history]
+      operationId: generateCubeBatch
+      summary: 批量生成 cube 并打包 ZIP（3.8.0 修订批 A7；逐 kind 串行生成、
+        幂等命中零子进程；文法 422 走 details.errors[]、前置校验 422 走
+        details.kind_errors[] 逐 kind；生成失败 502 fail-fast 携带 failing
+        kind 与 stderr_tail、cubegen 缺失 503）
+      description: >-
+        多类型（含全选六类）一次请求打包单个 ZIP（3.8.0 修订批 A7/B18，
+        R3/R4/R5）。判定链五步：① 终态门槛与单端点同口径——skipped 409
+        ANALYSIS_UNAVAILABLE（details.state=skipped）、非终态 404；
+        ② kinds 文法校验 422 VALIDATION_FAILED（details.errors[] 字段词形，
+        与单端点参数校验同形：kinds 非空数组/长度 1–6/不得重复/元素白名单/
+        含 MO 时 orbital 必填且上界校验/不含 MO 带 orbital unexpected/npts
+        域；MO 上界三级源不可得 mo_upper_unknown 与 succeeded 无 MO 表
+        ANALYSIS_PARSE_FAILED 属本步沿单端点 details 形态透传）；
+        ③ fchk 在场闸 502 CUBE_GENERATION_FAILED（引导先转换；先于 shell/
+        段校验——α/β + fchk 缺失同组合按 502 钉死，与单端点 shell 判定
+        先行的 422 为有意分歧，不以批量口径回改单端点）；
+        ④ 前置全量校验 422 VALIDATION_FAILED（details.kind_errors[] 逐
+        kind 罗列 {kind, reason, section?}，reason 词域 closed_shell/
+        shell_unknown/data_missing——α/β 开壳层 fail-closed 与 fchk 数据段
+        预校验按 kind 映射：MO=Alpha MO coefficients（开壳层另需 Beta MO
+        coefficients；shell 不可判定时仅验 Alpha 段）、Potential/Density=
+        Total SCF Density、Spin=Spin SCF Density、Alpha/Beta=Total SCF
+        Density + Spin SCF Density；缺段 details.section 携带段名原文；
+        任一 kind 失败即整批拒绝、零生成零子进程；与步骤②文法 422 分键
+        承载，两键同响应互斥）；
+        ⑤ 逐 kind 串行生成（幂等命中直接复用——同参数同 cube_id，批量
+        不新增维度）→ 任一 kind 生成失败 fail-fast 502
+        CUBE_GENERATION_FAILED（details 携带 failing kind、kind_arg、npts、
+        stderr_tail；已生成类留存幂等缓存，重试只补缺失类）；cubegen 可
+        执行缺失 503 CUBE_EXECUTABLE_MISSING（生成阶段首类子进程调用即
+        失败、零产物）。打包：临时目录写 ZIP（条目平铺无目录层级，逐
+        kind <stem>-<Kind>[-<n>]-<档位>.cube，档位段 coarse/medium/fine
+        （-2/-3/-4 映射）或 40–120 无符号数值本身；stem 与 fchk 下载端点
+        同源——执行记录 filename stem）→ FileResponse 流式发送 +
+        BackgroundTask 删临时包；Content-Disposition 恒附带 RFC 5987
+        filename*（中文 stem 原样保留）与白名单清洗 ASCII fallback（清洗
+        为空回落 execution-<id>，沿 fchk 下载先例）；包名
+        <stem>-<类型段>-<档位>.zip，类型段按 KINDS 规范序逐类罗列、六类
+        全选为 all、不含 MO 轨道号（同 stem 同档位不同轨道号批量包落同名
+        后导出覆盖先导出，低频场景已知限制）。
+      parameters:
+        - $ref: '#/components/parameters/ExecutionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CubeBatchRequest'
+      responses:
+        '200':
+          description: 多类型 cube ZIP 包（application/zip；条目与包名公式
+            见 description）
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '502':
+          $ref: '#/components/responses/Error'
+        '503':
           $ref: '#/components/responses/Error'
 
   /history/{id}/analysis/chkchk:

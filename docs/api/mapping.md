@@ -89,6 +89,7 @@
 | freqmem 校验表单（四参数手输 + 可选 nproc/对照 %mem；结果卡按总量口径出充足/不足结论） | POST /api/v1/toolbox/freqmem | — |
 | 「从历史带入」选择器（仅 g16 succeeded 条目；选中预填三参数与资源值并标注来源） | GET /api/v1/toolbox/freqmem-prefill | — |
 | 溶剂速查表（搜索过滤 + 两列名称/别名 + 点击复制；184 条全量） | GET /api/v1/toolbox/solvents | — |
+| 历史抽屉转换面板 cube 多选批量导出（勾选 ≥2 类一次打包 ZIP；恰选 1 类走单 kind 端点直下 .cube；3.8.0 修订批） | POST /api/v1/history/{id}/analysis/cube/batch | — |
 
 ## 07 设置
 
@@ -127,8 +128,8 @@
 
 ## 端点覆盖对照（无孤儿检查）
 
-全部 67 个操作均已在上表被至少一个界面元素引用：
-candidates(8 个操作) · queues(7) · pending(4) · executions(3) · history(25)
+全部 68 个操作均已在上表被至少一个界面元素引用：
+candidates(8 个操作) · queues(7) · pending(4) · executions(3) · history(26)
 · settings(2) · system/events(3) · update(4) · ui-prefs(2) · storage(1)
 · workflow(3) · combo-templates(2) · toolbox(3)。
 —— 由 A5 walkthrough 逐条核对（update(4) 为 v2.1.0 功能更新契约预告，端点实施见实施
@@ -139,4 +140,6 @@ queues energy-summary(1) + history resume(2) + workflow(3) + combo-templates(2)
 导出四端点（history 25 = 18 + 7）与 toolbox(3) 为 3.8.0 工具箱波 A6 增补
 （openapi 57→67），实施随 toolbox-plan B12/B15/B17；A6 同批补齐既有未入表操作
 四行（GET /candidates/{id}、GET·PUT combo-templates、POST /system/restart——
-原孤儿清单自报 55 已过期）并分节重排 06 工具箱 / 07 设置 / 08 工作流）。
+原孤儿清单自报 55 已过期）并分节重排 06 工具箱 / 07 设置 / 08 工作流；
+history 批量 cube 导出端点（history 26 = 25 + 1）为 3.8.0 修订批 A7 增补
+（openapi 67→68），实施随 toolbox-revision-plan B18）。

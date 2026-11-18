@@ -699,6 +699,23 @@ class CubeRequest(BaseModel):
     )
 
 
+class CubeBatchRequest(BaseModel):
+    kinds: list[Kind] = Field(
+        ...,
+        description='非空数组、元素 ∈ 六 kind 白名单、不得重复；空数组/超 6/重复/ 未知 kind/kinds 非数组/元素类型错 422 VALIDATION_FAILED details.errors[]（文法 422 词形）。打包类型段按规范序 MO、Potential、Density、Spin、Alpha、Beta 排列',
+        max_length=6,
+        min_length=1,
+    )
+    orbital: int | None = Field(
+        None,
+        description='仅 kinds 含 MO 时接受：必填且 1≤orbital≤MO 总数（上界三级源 与单端点同口径——succeeded 闭壳 nmo/开壳 2×nbasis、failed 直读 降级 fchk 头锚点、两源皆不可得 422 mo_upper_unknown）；缺失或 越界 422 details.errors[]；不含 MO 而携带 422 details.errors[].reason=unexpected（沿单端点既有码型）； succeeded 条目无 MO 表（blocks.orbitals=false）时文法步 422 ANALYSIS_PARSE_FAILED（details {"block": "orbitals"}）透传',
+    )
+    npts: int | None = Field(
+        None,
+        description='同单端点域：-2/-3/-4 档位或 40–120 整数（默认 80）；单值作用于 全部选中类型；越域 422 details.errors[]',
+    )
+
+
 class Entry(BaseModel):
     execution_id: int
     task_id: int

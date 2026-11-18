@@ -847,7 +847,7 @@ export interface paths {
         put?: never;
         /**
          * 生成 cube（幂等：同参数返回既有 cube_id；白名单/上界越界 422， 生成失败 502、cubegen 缺失 503；3.8.0 门槛放宽至终态 succeeded/failed 且 run/<id>/input.fchk 在场——failed 条目经工具箱手动转换落盘后出 cube，fchk 缺失 502 引导先转换）
-         * @description 状态门槛（3.8.0 B13，POST/GET 分列）：succeeded/failed 终态且 fchk 在场可生成（failed 条目评估价值链 chk→fchk→cube）；skipped 409 ANALYSIS_UNAVAILABLE（details.state=skipped，「未运行条目无执行 产物」）；非终态（running/staged）404。fchk 缺失 502 CUBE_GENERATION_FAILED（details 注明「fchk 缺失，请先执行 chk 转换后再生成 cube」，succeeded/failed 条目同形）。M3 既有语义保留： MO/Potential/Density/Spin 四 kind、40–120 npts、幂等命中、 CUBE_EXECUTABLE_MISSING 503；failed 条目 analysis 读取直读不触发 惰性重建（不向 failed 执行目录补写 analysis.json）。
+         * @description 状态门槛（3.8.0 B13，POST/GET 分列）：succeeded/failed 终态且 fchk 在场可生成（failed 条目评估价值链 chk→fchk→cube）；skipped 409 ANALYSIS_UNAVAILABLE（details.state=skipped，「未运行条目无执行 产物」）；非终态（running/staged）404。fchk 缺失 502 CUBE_GENERATION_FAILED（details 注明「fchk 缺失，请先执行 chk 转换后再生成 cube」，succeeded/failed 条目同形）。M3 既有语义保留： MO/Potential/Density/Spin 四 kind、40–120 npts、幂等命中、 CUBE_EXECUTABLE_MISSING 503；failed 条目 analysis 读取直读不触发 惰性重建（不向 failed 执行目录补写 analysis.json）。3.8.0 修订批 （R4）：幂等命中之后、cubegen 之前插入 fchk 数据段预校验——按 kind 必需段映射（MO=Alpha MO coefficients，开壳层另需 Beta MO coefficients、shell 不可判定时仅验 Alpha；Potential/Density=Total SCF Density；Spin=Spin SCF Density；Alpha/Beta=Total SCF Density + Spin SCF Density），缺段 422 VALIDATION_FAILED details.reason=data_missing + details.section（段名原文）+ details.kind；幂等命中不重查（曾成功即曾通过）。校验顺序仅在既有 链尾部追加一闸，其余语义零漂移（缺段形态由 502 裸错改 422 data_missing 为唯一有意例外）。
          */
         post: operations["generateCube"];
         delete?: never;
@@ -867,6 +867,26 @@ export interface paths {
         get: operations["downloadCube"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/history/{id}/analysis/cube/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 批量生成 cube 并打包 ZIP（3.8.0 修订批 A7；逐 kind 串行生成、 幂等命中零子进程；文法 422 走 details.errors[]、前置校验 422 走 details.kind_errors[] 逐 kind；生成失败 502 fail-fast 携带 failing kind 与 stderr_tail、cubegen 缺失 503）
+         * @description 多类型（含全选六类）一次请求打包单个 ZIP（3.8.0 修订批 A7/B18， R3/R4/R5）。判定链五步：① 终态门槛与单端点同口径——skipped 409 ANALYSIS_UNAVAILABLE（details.state=skipped）、非终态 404； ② kinds 文法校验 422 VALIDATION_FAILED（details.errors[] 字段词形， 与单端点参数校验同形：kinds 非空数组/长度 1–6/不得重复/元素白名单/ 含 MO 时 orbital 必填且上界校验/不含 MO 带 orbital unexpected/npts 域；MO 上界三级源不可得 mo_upper_unknown 与 succeeded 无 MO 表 ANALYSIS_PARSE_FAILED 属本步沿单端点 details 形态透传）； ③ fchk 在场闸 502 CUBE_GENERATION_FAILED（引导先转换；先于 shell/ 段校验——α/β + fchk 缺失同组合按 502 钉死，与单端点 shell 判定 先行的 422 为有意分歧，不以批量口径回改单端点）； ④ 前置全量校验 422 VALIDATION_FAILED（details.kind_errors[] 逐 kind 罗列 {kind, reason, section?}，reason 词域 closed_shell/ shell_unknown/data_missing——α/β 开壳层 fail-closed 与 fchk 数据段 预校验按 kind 映射：MO=Alpha MO coefficients（开壳层另需 Beta MO coefficients；shell 不可判定时仅验 Alpha 段）、Potential/Density= Total SCF Density、Spin=Spin SCF Density、Alpha/Beta=Total SCF Density + Spin SCF Density；缺段 details.section 携带段名原文； 任一 kind 失败即整批拒绝、零生成零子进程；与步骤②文法 422 分键 承载，两键同响应互斥）； ⑤ 逐 kind 串行生成（幂等命中直接复用——同参数同 cube_id，批量 不新增维度）→ 任一 kind 生成失败 fail-fast 502 CUBE_GENERATION_FAILED（details 携带 failing kind、kind_arg、npts、 stderr_tail；已生成类留存幂等缓存，重试只补缺失类）；cubegen 可 执行缺失 503 CUBE_EXECUTABLE_MISSING（生成阶段首类子进程调用即 失败、零产物）。打包：临时目录写 ZIP（条目平铺无目录层级，逐 kind <stem>-<Kind>[-<n>]-<档位>.cube，档位段 coarse/medium/fine （-2/-3/-4 映射）或 40–120 无符号数值本身；stem 与 fchk 下载端点 同源——执行记录 filename stem）→ FileResponse 流式发送 + BackgroundTask 删临时包；Content-Disposition 恒附带 RFC 5987 filename*（中文 stem 原样保留）与白名单清洗 ASCII fallback（清洗 为空回落 execution-<id>，沿 fchk 下载先例）；包名 <stem>-<类型段>-<档位>.zip，类型段按 KINDS 规范序逐类罗列、六类 全选为 all、不含 MO 轨道号（同 stem 同档位不同轨道号批量包落同名 后导出覆盖先导出，低频场景已知限制）。
+         */
+        post: operations["generateCubeBatch"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1772,6 +1792,15 @@ export interface components {
             /** @description kind=MO 必填且 1≤orbital≤MO 总数（闭壳层=nbasis、开壳层= 2×nbasis 自旋块总口径；越界 422 details.errors[].max；上界三级源 analysis.json → fchk 头锚点 → 422 reason=mo_upper_unknown） */
             orbital?: number | null;
             /** @description -2/-3/-4（G16 原生粗/中/细档位，直透 cubegen 位置参数；细档 -4 体积显著——水 22.7MB、萘 123MB 量级）或 40–120 整数 （既有语义零变更；默认 80）；其余值 422 */
+            npts?: number | null;
+        };
+        /** @description cube 批量生成请求（3.8.0 修订批 A7，R3）：kinds 为类别名数组 （长度 1–6、不得重复），服务端逐 kind 串行执行既有单 kind 生成链 （幂等命中零子进程），多类型产出打包为单个 ZIP 返回。恰选 1 类 前端路由到单 kind 端点直下 .cube，本端点对长度 1 的合法请求同样 受理（契约测试钉死）。 */
+        CubeBatchRequest: {
+            /** @description 非空数组、元素 ∈ 六 kind 白名单、不得重复；空数组/超 6/重复/ 未知 kind/kinds 非数组/元素类型错 422 VALIDATION_FAILED details.errors[]（文法 422 词形）。打包类型段按规范序 MO、Potential、Density、Spin、Alpha、Beta 排列 */
+            kinds: ("MO" | "Potential" | "Density" | "Spin" | "Alpha" | "Beta")[];
+            /** @description 仅 kinds 含 MO 时接受：必填且 1≤orbital≤MO 总数（上界三级源 与单端点同口径——succeeded 闭壳 nmo/开壳 2×nbasis、failed 直读 降级 fchk 头锚点、两源皆不可得 422 mo_upper_unknown）；缺失或 越界 422 details.errors[]；不含 MO 而携带 422 details.errors[].reason=unexpected（沿单端点既有码型）； succeeded 条目无 MO 表（blocks.orbitals=false）时文法步 422 ANALYSIS_PARSE_FAILED（details {"block": "orbitals"}）透传 */
+            orbital?: number | null;
+            /** @description 同单端点域：-2/-3/-4 档位或 40–120 整数（默认 80）；单值作用于 全部选中类型；越域 422 details.errors[] */
             npts?: number | null;
         };
         /** @description 空间占用统计（M3.7，只读；entries 按总占用降序、默认截断前 50 条；纯拉取式无定时器，超阈仅警告不自动清理） */
@@ -3497,6 +3526,37 @@ export interface operations {
             };
             404: components["responses"]["Error"];
             409: components["responses"]["Error"];
+        };
+    };
+    generateCubeBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ExecutionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CubeBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description 多类型 cube ZIP 包（application/zip；条目与包名公式 见 description） */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            404: components["responses"]["Error"];
+            409: components["responses"]["Error"];
+            422: components["responses"]["Error"];
+            502: components["responses"]["Error"];
+            503: components["responses"]["Error"];
         };
     };
     checkChk: {
