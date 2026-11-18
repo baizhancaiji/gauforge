@@ -312,3 +312,68 @@ def test_spawn_ts_none_on_reuse(hq_env):
     second = HqProcessManager(HQ, hq_env["ws"])
     assert second.start() is False
     assert second.server_spawn_ts is None  # 复用不记账（S3 判据③语义）
+
+
+# ---------------- worker 软限制传递（3.9.0 资源校验波 C4） ----------------
+
+def _worker_spawn_args(tmp_path, monkeypatch, cpus=None):
+    """ensure_worker 离线驱动（沿 spawn_ts 沙箱手法）：gateway 假件首探
+    空、spawn 后在线；返回 spawn 捕获的 args。"""
+    import web.src.hq.process as process_mod
+
+    pm = _mgr_with_dir(tmp_path)
+    captured: dict[str, list[str]] = {}
+    online = {"flag": False}
+
+    class _Gw:
+        def __init__(self, hq_path, server_dir):
+            pass
+
+        def workers(self):
+            return [{"id": 1, "online": online["flag"]}]
+
+    monkeypatch.setattr(process_mod, "CliGateway", _Gw)
+
+    def spawn(name, args):
+        captured["args"] = args
+        online["flag"] = True
+        return object()
+
+    monkeypatch.setattr(pm, "_spawn", spawn)
+    monkeypatch.setattr(pm, "_ensure_watchdog", lambda: None)
+    pm.ensure_worker() if cpus is None else pm.ensure_worker(cpus=cpus)
+    return captured["args"]
+
+
+def test_worker_spawn_carries_soft_limits(tmp_path, monkeypatch):
+    """未显式传 cpus：读可用资源设置并 clamp 机器探测值 → spawn args 含
+    --cpus <min(设置, 探测)> 与 --resource mem=sum(<MiB>)（软限制声明，
+    内建内存资源名 mem、CLI 数值域 MiB）。"""
+    from web.src.store import settings
+    settings().set("available_cpu_cores", 4)
+    settings().set("available_mem_gb", 8)
+    import web.src.hq.process as process_mod
+    monkeypatch.setattr(process_mod, "_available_resources", lambda: (8, 16.0))
+    args = _worker_spawn_args(tmp_path, monkeypatch)
+    assert args[-4:] == ["--cpus", "4", "--resource", "mem=sum(8192)"]
+
+
+def test_worker_spawn_clamps_to_probe(tmp_path, monkeypatch):
+    """clamp 分支：设置值超机器探测值 → worker 侧取探测值（HQ 对 worker
+    资源声明不校验硬件上限，不 clamp 将虚报容量诱发调度超卖；设置值
+    本身仍是提交校验权威口径）。"""
+    from web.src.store import settings
+    settings().set("available_cpu_cores", 256)
+    settings().set("available_mem_gb", 1024)
+    import web.src.hq.process as process_mod
+    monkeypatch.setattr(process_mod, "_available_resources", lambda: (8, 16.0))
+    args = _worker_spawn_args(tmp_path, monkeypatch)
+    assert args[-4:] == ["--cpus", "8", "--resource", "mem=sum(16384)"]
+
+
+def test_worker_spawn_explicit_cpus_keeps_legacy_semantics(
+        tmp_path, monkeypatch):
+    """显式 cpus 入参（测试约束）语义保留：仅 --cpus、不传内存软限制。"""
+    args = _worker_spawn_args(tmp_path, monkeypatch, cpus=1)
+    assert args[-2:] == ["--cpus", "1"]
+    assert "--resource" not in args

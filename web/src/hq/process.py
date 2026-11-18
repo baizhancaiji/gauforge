@@ -17,6 +17,8 @@ import weakref
 from datetime import datetime, timezone
 from pathlib import Path
 
+from ..config import _available_resources
+from ..store import settings
 from .cli_gateway import CliGateway
 from .gateway import GatewayError
 
@@ -133,10 +135,18 @@ class HqProcessManager:
                       wait_timeout: float = 10.0) -> int:
         """保证至少一个在线 worker，返回其 id。
 
-        默认不传 --cpus：worker 资源取启动探测（roadmap §8.6「worker
-        资源 = 启动探测 + --resource 声明」），mem 由 HQ 自动上报——
-        停等记账的「worker 总资源」依赖真实探测值；cpus 参数仅供测试
-        显式约束。
+        软限制传递（3.9.0 资源校验波 C4）：未显式传 cpus 时读可用资源
+        设置并 clamp 机器探测值（N = min(设置核数, 可用逻辑核数)、
+        mem MiB = min(设置 GB, 物理内存总量 GB) × 1024）——HQ 对 worker
+        资源声明不校验硬件上限（descriptor.rs 仅查重名/空值等，超物理
+        声明被静默接受），不 clamp 将以虚报容量登记、诱发调度超卖；
+        手工声明同名资源时 HQ 自动探测跳过同名项（hwdetect has_resource
+        前置判据），`--resource "mem=sum(<MiB>)"` 不与探测冲突（内建
+        内存资源名 mem，CLI 数值域 MiB）。clamp 只影响 worker 侧上限，
+        可用资源设置值仍是提交校验权威口径（软限制声明，deployment.md
+        §2.2）。显式 cpus 入参（测试约束）语义保留：仅约束核数、不传
+        内存软限制。生效时机 = worker 重建时（服务重启 / watchdog 重起
+        server 后；复用在线 worker 不重启），校验侧即时（new_submissions）。
         """
         gw = CliGateway(self.hq_path, str(self.server_dir))
         online = [w for w in gw.workers() if w["online"]]
@@ -145,6 +155,14 @@ class HqProcessManager:
                     "--work-dir", str(self.server_dir / "worker")]
             if cpus is not None:
                 args += ["--cpus", str(cpus)]
+            else:
+                probe_cores, probe_mem_gb = _available_resources()
+                cores = max(1, min(int(settings().get("available_cpu_cores")),
+                                   probe_cores))
+                mem_mib = int(max(1.0, min(float(settings().get("available_mem_gb")),
+                                           probe_mem_gb)) * 1024)
+                args += ["--cpus", str(cores),
+                         "--resource", f"mem=sum({mem_mib})"]
             self._worker_procs.append(self._spawn("worker", args))
             self._wait_alive(
                 lambda: any(w["online"] for w in gw.workers()),
