@@ -1,11 +1,13 @@
 # G16 原生工具箱 · 执行计划
 
-> 状态：**已实施并验收**（2026-11-17 全批次落库，D5 走查 §7.2 十二项逐条
+> 状态：**已实施并验收（3.8.0）**（2026-11-17 全批次落库，D5 走查 §7.2 十二项逐条
 > 对账通过，验收留痕见 [toolbox-acceptance.md](toolbox-acceptance.md)；
 > 2026-11-18 经用户裁决**撤销 3.8.0 冻结**——tag v3.8.0 删除、发布提交
 > 3eb396b0 回退（分支未推送，无远端影响），走查修订批见
-> [toolbox-revision-plan.md](toolbox-revision-plan.md)，修订落地后随 3.8.0
-> 重新冻结发布。需求输入 = [g16-native-tools-assessment.md](../specs/g16-native-tools-assessment.md)
+> [toolbox-revision-plan.md](toolbox-revision-plan.md)（修订走查留痕见
+> [toolbox-revision-acceptance.md](toolbox-revision-acceptance.md)），修订批
+> 已随 3.8.0 重新冻结发布（2026-11-18，tag v3.8.0 重打）。需求输入 =
+> [g16-native-tools-assessment.md](../specs/g16-native-tools-assessment.md)
 > （2026-11-14 评估定稿）；经 grill 拷问逐项定案，全部决策已关闭（§8 决策记录），
 > 本计划无开放决策点）。
 > 目标版本 **3.8.0**；**开工闸门 = 3.7.0 冻结发布**（unreleased 现存 oldchk

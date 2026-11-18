@@ -1,6 +1,9 @@
 # G16 原生工具集成评估（WebUI 工具箱）
 
-> 状态：已立项，实施计划见 [toolbox-plan.md](../plans/toolbox-plan.md)（2026-11-17）。
+> 状态：已实施，计划见 [toolbox-plan.md](../plans/toolbox-plan.md)（随 3.8.0
+> 冻结发布，2026-11-18 重冻结；验收留痕见
+> [toolbox-acceptance.md](../plans/toolbox-acceptance.md) 与
+> [toolbox-revision-acceptance.md](../plans/toolbox-revision-acceptance.md)）。
 > 本文档是需求与工具评估，不是实施计划；以本文档为需求输入的实施计划已落
 > `docs/plans/`。
 

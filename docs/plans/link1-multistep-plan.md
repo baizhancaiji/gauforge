@@ -121,11 +121,12 @@
   `candidates.py` `_validate_one` 由 `stage_violations` 映射（candidates.py:108
   既有 multistep 判定随 B4 反转时一并接此映射），B1 契约同步补该条目可选
   字段与用例。
-- 登记同步点：`docs/api/openapi.yaml` 两处「35 码」注释（:16 文件头错误码
-  全集、:222 `ErrorBody.code` 描述）同步为 37 码；
-  `web/tests/test_error_codes.py` 的 `CONTRACT_CODES`、:22「35 码」注释与
-  :4 docstring「29 码」残留必须同步增补，否则 B4 新增 `err()` 调用会被
-  `test_impl_codes_subset_of_contract` 判越界。
+- 登记同步点：`docs/api/openapi.yaml` 两处错误码计数注释（:16 文件头
+  全集、`ErrorBody.code` 描述）同步为 42 码（基线已随 3.8.0 工具箱波
+  先行 40 码——A6 批已把「35 码」改至「40 码」，2026-11-17 D6 同步）；
+  `web/tests/test_error_codes.py` 的 `CONTRACT_CODES`（工具箱 A6 批已
+  增至 40 码）与 docstring 计数注释残留必须同步增补，否则 B4 新增
+  `err()` 调用会被 `test_impl_codes_subset_of_contract` 判越界。
 - `INPUT_MULTISTEP_UNSUPPORTED` 的 deprecated 标注同时落文件头错误码清单
   （:39-40）与导入 reason 词表（:83 一带）；保留一个版本后连同
   `CONTRACT_CODES` 条目一并移除。
@@ -184,7 +185,7 @@
 
 | # | 工作项 | 涉及文件 | 规模 | 验收判据 |
 |---|---|---|---|---|
-| B1 | 契约 diff：`InputPreview` +`stages[]`/`blocks` 语义（§3.1 契约同构约束）、`Execution.progress` +`stage`、候选列表项 +`multistep` 标记（§3.4）、错误码三词表（§3.2；含 35→37 码与 `test_error_codes` 同步）、`Warning.kind` 词表说明扩容（12→15，§3.2 三新 kind；description 级词表非 enum，生成物零影响）、读 chk 类关键字封闭词表定稿（逐词附官方手册页出处；对照清单覆盖隐含读 chk 族：`Opt=Restart`、`IRC=Restart/Read`、`Freq=ReadFC/ReadFCHT`、`Polar=Check`、`Guess=Check` 等。S3/B3 校验依据）、`PUT blocks` +`stage` 参数（越界 422）、analysis 域四端点 +`stage` 查询参数（§3.5，越界 422）、`analysis.json` 分段数组 + `fchk_stage` 注记（落 walkthrough.md，内部形态不写入 OpenAPI schema）；sse.md 事件枚举表 `execution.progress` 行载荷字段列同步；契约生成物随本批入库（`web/scripts/gen_models.py` 与 `npm run gen:types` 重跑） | `docs/api/openapi.yaml`、`docs/api/sse.md`、`docs/api/walkthrough.md`（M0 拒绝决议行改判）、`web/src/models/models.py`（重生成）、`web/frontend/src/api/contract.ts`（重生成）、`web/tests/test_error_codes.py`、`web/tests/test_contract_rest.py` | M | `test_openapi_ssot`/`test_contract_sse`/`test_contract_rest`/`test_error_codes` 全绿，`Warning.kind` 词表与 §3.2 一致；`web/scripts/gen_models.py` 与 `npm run gen:types` 重跑零 diff；`INPUT_MULTISTEP_UNSUPPORTED` 带 deprecated 标注；封闭词表成文（逐词附出处）；候选列表 `multistep` 标记、PUT `stage` 与 analysis `stage` 越界 422 成文；`InputPreview` 单步/多步两形态契约用例通过（拒绝两者皆空/皆满）；导入 `details.errors[]` 条目可选 `stage`/`line` 字段成文并有契约用例（§3.2 映射口径） |
+| B1 | 契约 diff：`InputPreview` +`stages[]`/`blocks` 语义（§3.1 契约同构约束）、`Execution.progress` +`stage`、候选列表项 +`multistep` 标记（§3.4）、错误码三词表（§3.2；含 40→42 码与 `test_error_codes` 同步（基线已随 3.8.0 工具箱波先行 35→40，2026-11-17 D6 同步））、`Warning.kind` 词表说明扩容（14→17，§3.2 三新 kind；基线已随 3.8.0 工具箱波先行 12→14——B14 route_check_skipped 与 B16 mem_below_per_core_floor，2026-11-17 D6 同步；description 级词表非 enum，生成物零影响）、读 chk 类关键字封闭词表定稿（逐词附官方手册页出处；对照清单覆盖隐含读 chk 族：`Opt=Restart`、`IRC=Restart/Read`、`Freq=ReadFC/ReadFCHT`、`Polar=Check`、`Guess=Check` 等。S3/B3 校验依据）、`PUT blocks` +`stage` 参数（越界 422）、analysis 域四端点 +`stage` 查询参数（§3.5，越界 422）、`analysis.json` 分段数组 + `fchk_stage` 注记（落 walkthrough.md，内部形态不写入 OpenAPI schema）；sse.md 事件枚举表 `execution.progress` 行载荷字段列同步；契约生成物随本批入库（`web/scripts/gen_models.py` 与 `npm run gen:types` 重跑） | `docs/api/openapi.yaml`、`docs/api/sse.md`、`docs/api/walkthrough.md`（M0 拒绝决议行改判）、`web/src/models/models.py`（重生成）、`web/frontend/src/api/contract.ts`（重生成）、`web/tests/test_error_codes.py`、`web/tests/test_contract_rest.py` | M | `test_openapi_ssot`/`test_contract_sse`/`test_contract_rest`/`test_error_codes` 全绿，`Warning.kind` 词表与 §3.2 一致；`web/scripts/gen_models.py` 与 `npm run gen:types` 重跑零 diff；`INPUT_MULTISTEP_UNSUPPORTED` 带 deprecated 标注；封闭词表成文（逐词附出处）；候选列表 `multistep` 标记、PUT `stage` 与 analysis `stage` 越界 422 成文；`InputPreview` 单步/多步两形态契约用例通过（拒绝两者皆空/皆满）；导入 `details.errors[]` 条目可选 `stage`/`line` 字段成文并有契约用例（§3.2 映射口径） |
 
 ### L1 输入侧放行（19–28 人日）
 
@@ -232,7 +233,7 @@
   多步内 `@task:`/`@exec:` 符号引用拒绝（含段 1 `%chk=@exec:` 收紧用例；`parse_link0_refs` 扩为逐段 Link0 区扫描后跨段引用命中；route 后误置 `%` 行不由该函数命中）、组合流多步候选拒绝、多步 requeue 整文件重跑、多步断点续跑判定
   ineligible（零注入）、PUT `stage` 与 analysis `stage` 越界 422、
   cclib 切段对账、resolve_chk 末段（含末段无声明回落）、每段注入、`fchk_stage`/非归属段 cube 置灰、`defaulted` 任一段注入即 true、
-  契约三件套（openapi/sse/rest）+ `test_error_codes` 37 码 +
+  契约三件套（openapi/sse/rest）+ `test_error_codes` 42 码（工具箱波先行 40）+
   `web/scripts/gen_models.py`/`npm run gen:types` 重跑零 diff。
 - **端到端**：`test_e2e_fake_g16` 扩多段链路（fake `stages=2`，含段失败形态：
   段 2 失败 → 段 1 保全 + 执行 failed）。
@@ -285,7 +286,7 @@
 6. **契约再生**：改 `openapi.yaml` 后必须重跑 `web/scripts/gen_models.py` 与
    `npm run gen:types` 并把产物随 B1 入库；否则 `test_openapi_ssot` 的
    模型零 diff 断言与前端类型不同步。`test_error_codes` 的
-   `CONTRACT_CODES`、:22「35 码」注释与 :4「29 码」docstring 残留同批更新为 37 码。
+   `CONTRACT_CODES`、:22「40 码」注释与 :4「40 码」docstring 残留同批更新为 42 码（基线已随 3.8.0 工具箱波先行——openapi 两处与 docstring 计数注释已由工具箱 A6 批改至 40，2026-11-17 D6 同步）。
 7. **progress 整对象替换**：前端 `events.ts` 对 `execution.progress` 是整对象
    替换（`stores/events.ts` 现有分支），多步事件必须每条都带 `stage`；
    否则段切换那条之后的普通进度事件会把段号清空。

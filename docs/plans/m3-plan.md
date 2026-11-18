@@ -267,6 +267,16 @@ Result:
 - **准入**：仅 `succeeded` 执行进入解析管道（roadmap M3.2）。双保险：执行
   状态机判定（第一道）+ cclib `metadata.success`（第二道，false 即
   degraded）。异常结束执行永不解析，历史详情仅原文查看/导出（M1 已有能力）。
+  **3.8.0 规则修订**（toolbox-plan §6 D6 回填）：解析管道准入口径不变，
+  但**工具箱 chk/fchk/cube 导出域除外**——failed 条目经 chk 体检/手动
+  formchk 转换落盘后，fchk 下载与 cube 生成同链可用（3.7.0 chk 导出批
+  为先例）；`AnalysisPanel.vue` 异常态文案随修订批 C11 同口径（「分析
+  不可用，仅可查看/导出原文；chk 转换与 cube 导出见「转换」面板（终态
+  条目可用）」），见
+  [toolbox-plan.md](toolbox-plan.md) §2.1/§2.2、
+  [toolbox-acceptance.md](toolbox-acceptance.md) 走查项 1/3/8、
+  [toolbox-revision-acceptance.md](toolbox-revision-acceptance.md)
+  走查项 2/3/8。
 - **时机**：finalize 管线内、formchk 之后追加解析步（同链异步、失败不阻断
   终态落库——沿用 formchk「失败记日志不阻断」先例）。产物
   `run/<执行id>/analysis.json`（Result 全集 + 各块数据），`result_ref` 置位

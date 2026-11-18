@@ -1,30 +1,8 @@
 {
- "updated": "2026-11-18T19:41+0800",
- "latest_released_version": "3.7.0",
- "unreleased": [
-  {"type": "added", "scope": "specs", "summary": "补交 G16 原生工具集成评估文档（五工具实测与四工具链定稿，状态行指向实施计划）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "plans", "summary": "立项 G16 原生工具箱执行计划（3.8.0，十新端点契约/六后端/三前端/走查与发布序列，link1 互涉义务登记）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "api", "summary": "工具箱契约 diff：十新端点与批量 fchk 作业、错误码全集 35→40、cube kind 六种与档位扩展、warnings 词表 +2、mapping 孤儿收口与分节重排、生成物随批再生", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "新增 chk 工具域三端点：chkchk 体检三态 verdict（锚点分流 unreadable/corrupted）、手动 formchk 转换（幂等命中、前置体检闸、原子落盘）与 fchk 下载（RFC 5987 双文件名）；chk 资产 realpath containment 越界 409、临时目录快照隔离调用，finalize 自动物化共用原子 helper 与锚点校验强化", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "扩展 cube 服务（工具箱 B13）：kind 扩 Alpha/Beta（开壳层三级源 fail-closed 预校验）、npts 档位 -2/-3/-4 与 40–120 并存、MO 上界自旋块总口径三级源（failed 直读 analysis.json 零补写、fchk 头锚点回落）、POST/GET 门槛分列（failed 条目 fchk 在场可出 cube、GET 不要求 fchk）、GET 改 FileResponse 流式发送", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "新增提交链 testrt 权威校验（工具箱 B14）：route 语法错 422 ROUTE_SYNTAX_INVALID 拦截并回显报错原文，! 注释/@file 合法形态分流不误拒，工具缺失/超时等五类降级黄警 route_check_skipped 不阻断（warnings 词表 12→13），测试受控注入不真调真机", "breaking": false, "migration": null},
- {"type": "added", "scope": "web", "summary": "工具箱三端点随 B15：freqmem 内存校验（白名单先拦、锚点判定、对照 %mem 总量口径结论）、历史带入预填（执行记录 resources 判声明来源、零值守卫不猜数）、solname 溶剂速查 184 条（realpath 缓存键、NSolv/逐 id 交叉核对防御）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "提交链每核内存下限黄警随 B16：%mem×核数失衡非阻断提示（与组合流模板保存闸 reason 同名同一规则两域承载，常量单源上移 link0_rules）、记账值声明优先缺省回落、warnings 词表 13→14、测试夹具统一 8GB 口径", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "批量 fchk 导出作业随 B17：四端点异步作业（创建分类扫描/状态轮询/下载/取消）、单工作线程串行转换复用 ensure_fchk、总预算与 TTL 惰性清扫、取消三级生效并清理作业私有临时文件、打包复用 history helper 参数化扩展（scope 三范围零回归）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "frontend", "summary": "历史详情新增 chk 工具区与导出 cube 区块随 C8：体检三态徽标报告与原文折叠、转换幂等命中与前置体检闸 409 明示、六 kind × 三档位 cube 生成下载（MO 越界回显、α/β 闭壳层明示、细档体积提示）、异常态文案指引工具区，playwright 真机视觉实测双主题过", "breaking": false, "migration": null},
-  {"type": "added", "scope": "frontend", "summary": "工具箱视图与导航随 C9：freqmem 校验表单（手输与历史带入预填、结果卡总量口径结论）、SCRF 溶剂速查（搜索过滤与点击复制含兜底）、路由 page 06 工具箱设置顺延 07，playwright 真机视觉实测双主题过", "breaking": false, "migration": null},
-  {"type": "added", "scope": "frontend", "summary": "历史页批量 fchk 导出随 C10：导出下拉增「导出 .fchk」异步作业入口、进度注记（processed/total 与复用/转换/失败/缺失计数、已用时、取消与重复下载按钮）、409 活动作业附着轮询、done 自动下载 ZIP，playwright 真机混合批次实测过", "breaking": false, "migration": null},
-  {"type": "fixed", "scope": "frontend", "summary": "补 skipped 条目 cube 导出域 409 明示入口（D5 走查项 8 缺口：区块对 skipped 渲染、生成出「未运行条目无执行产物」提示；chk 工具域不渲染口径不变）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "plans", "summary": "登记 D5 工具箱走查记录：§7.2 十二项路径真机逐条对账、随查随修一处（skipped cube 409 明示入口）、roadmap 化学层定位对照核验", "breaking": false, "migration": null},
-  {"type": "added", "scope": "plans", "summary": "立项工具箱走查修订计划（3.8.0 重冻结前修订批，六任务 A7/B18/C11/D7/D8，走查反馈 R1–R6 六项修复）", "breaking": false, "migration": null},
-  {"type": "added", "scope": "api", "summary": "工具箱修订批契约 diff：cube 批量导出端点一枚（多类型一次打包 ZIP、判定链五步）、VALIDATION_FAILED 批量 422 双词形分键（errors[]/kind_errors[]）、data_missing reason 登记、mapping 67→68、sse.md 零变更确认、生成物随批再生", "breaking": false, "migration": null},
-  {"type": "added", "scope": "web", "summary": "新增 cube 批量导出端点随 B18：历史详情多类型（含全选）一次打包 ZIP 下载，逐类串行生成、幂等命中复用、fail-fast 502 携带 failing kind", "breaking": false, "migration": null},
-  {"type": "fixed", "scope": "web", "summary": "修复 cube 生成裸报错随 B18：前置 fchk 数据段预校验在异常终止任务缺密度/MO 数据段时按 kind 明示不可生成原因（422 data_missing 携带缺失段名），不再裸报 cubegen 非零退出", "breaking": false, "migration": null},
-  {"type": "changed", "scope": "frontend", "summary": "新增历史抽屉「转换」面板并修订导出交互随 C11：与「分析」三态互斥、chk 工具与 cube 导出移入面板、「下载 fchk」升主按钮、「全部导出」更名「导出 .out 和 .chk」、cube 类型多选与全选（恰选 1 类直下、多类型收 ZIP）、文件名档位英文化（全选包名 all）、异常态文案与既有文案内部词清洗", "breaking": false, "migration": null},
-  {"type": "fixed", "scope": "frontend", "summary": "补充 cube 生成失败提示随 C11：502 呈现 failing kind 与工具输出尾部摘录，422 前置校验按 kind 逐项罗列明示不可生成原因", "breaking": false, "migration": null},
-  {"type": "added", "scope": "plans", "summary": "登记 D7 工具箱修订走查记录：§7.2 十项路径真机逐条对账、038 预校验与批量全选真机基线留痕、零随查随修", "breaking": false, "migration": null}
- ],
- "in_progress": {"task": "G16 工具箱走查修订（toolbox-revision-plan，随 3.8.0 重冻结）", "note": "开工：3.8.0 冻结撤销已完成（tag 删、3eb396b0 回退、簿记回滚），hq 与真机资产在位核查通过，按 §6 提交序列自提交 1 立项起步，A7 契约 diff 随后"},
+ "updated": "2026-11-18T20:05+0800",
+ "latest_released_version": "3.8.0",
+ "unreleased": [],
+ "in_progress": null,
  "next_steps": [
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
   "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
@@ -33,5 +11,5 @@
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "v3.7.0 已冻结（历史 chk 导出三范围 split button 与 %oldchk 单槽覆写修复批，审查整改批随批入库）：chk 导出 scope=out/chk/all 三范围（failed 保全优先、正常执行按执行副本 %chk= 声明定位、chk 条目临时文件顺序写 + ZIP_STORED 流式拷贝防 OOM、读清竞态口径从采集期扩展到打包期按缺登记不阻塞、说明头文案 scope=out 恢复 3.6.0 原样与 chk/all 泛称分列、包名三范围同名仅时间戳区分）；%oldchk 三根因单槽位收敛（δ 续算注入剥离 Link0 区旧 @exec 引用行整槽覆写、γ 执行副本回退经 copy_execution_input 单点剥离物化 dep 明文行、β 前端接续勾选 @task 槽整槽覆写随保存清陈旧引用，L4 黄警与用户明文行共存形态不动）；审查整改批落地打包期读清竞态按缺登记（写前预检 + 拷贝中途弃包重建）、内部消重四项、summary 动词开头改写留痕；隔离实例浏览器实测 26/26 与三 scope 下载落盘核对全过、全量 pytest 916 passed 0 skipped（含整改批打包竞态两用例）、发布前闸门（check_plan_status 定点 / validate_progress / gen_changelog_md --check / 前端三闸门）全过；含 added（chk/all 导出范围）判 minor；tag v3.7.0 本地未推送，GitHub Release 由用户手动发布；实施与验收细节见 oldchk-duplicate-write-fix-plan.md / chk-export-plan.md 状态行留痕。v3.6.0 及更早批次叙述已按 AGENTS §5.3 快照口径修剪（冷数据见 CHANGELOG.jsonl）。"
+ "context": "v3.8.0 已冻结（G16 原生工具箱波 + 走查修订批：评估与计划立项、契约 diff 十新端点与错误码全集 35→40、chk 工具域三端点、cube 六 kind×档位扩展、testrt 权威校验阻断、freqmem/预填/溶剂速查、每核下限黄警、批量 fchk 作业、C8–C10 前端三块、D5 走查十二项对账；修订批 R1–R6——批量 cube 导出端点与fchk 数据段预校验（data_missing 422 明示替代裸报错）、抽屉「转换」面板三态互斥与「下载 fchk」升主按钮、类型多选全选批量 ZIP、档位英文化（全选 all）、「全部导出」更名「导出 .out 和 .chk」、D7 走查十项真机对账）：发布前闸门全过——全量 pytest 1037 passed 0 skipped（hq 在位 e2e 未跳过）、validate_progress、gen_changelog_md --check、前端三闸门（离线/令牌/对比度）、npm build（vue-tsc 零错误）；定点计划校验 toolbox-plan/toolbox-revision-plan/评估文档均已回填终态，全量扫描仅 link1-multistep 未来批次计划 FAIL，按 AGENTS §5.2 定点口径放行（正文留痕，同原 3.8.0 冻结处置）；含 added（批量端点）判 minor，无 breaking；tag v3.8.0 本地未推送，GitHub Release 由用户手动发布；实施与验收细节见 toolbox-plan.md / toolbox-revision-plan.md 状态行与两份 acceptance 留痕。v3.7.0 及更早批次叙述已按 AGENTS §5.3 快照口径修剪（冷数据见 CHANGELOG.jsonl）。"
 }
