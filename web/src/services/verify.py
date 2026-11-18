@@ -35,7 +35,7 @@ from ..engine.workspace import g16_env, resolve_link0
 from ..parse.blocks import parse_input, split_lines, verify_and_normalize
 from ..parse.keywords import tokenize_route
 from ..parse.link0_rules import PER_CORE_MEM_GB_FLOOR
-from ..store import settings
+from ..store import settings, tasks
 from .candidates import default_inputs_dir, file_warnings
 
 log = logging.getLogger(__name__)
@@ -225,16 +225,62 @@ def _check_mem_floor(text: str, task_id: int) -> list[dict]:
                                mem_gb, cores, task_id)]
 
 
+def _check_resource_overcommit(text: str, task_id: int) -> None:
+    """提交链声明资源阻断（资源校验波 C2，权威阻断）：resolve_link0
+    记账值（声明优先、缺省回落——与派发记账/_check_mem_floor 完全同源，
+    含 %cpu proc-list 推导与缺省注入）比可用资源设置值，任一维度严格
+    大于即 422 RESOURCE_OVERCOMMIT（恰好等于放行）；raise 即不写盘
+    （失败不写盘原则）。层 b 不触发——只比配置总量、不扣减在跑占用
+    （resident-resource-plan §4.5，「声明 ≤ 总量但 > 当前空闲」交既有
+    队列窗口停等与 HQ 排队自持）。message 前缀任务名（多成员批量提交
+    首个超限即中止，details.task_id 前端不透出，逐条可辨）；缺省注入
+    时加注指引调设置。调用点在解析校验 ③④ 之后——结构合法才谈资源。"""
+    resolved = resolve_link0(text,
+                             int(settings().get("link0_default_nproc")),
+                             float(settings().get("link0_default_mem_gb")))
+    nproc = int(resolved["nproc"]["value"])
+    mem_gb = float(resolved["mem_gb"]["value"])
+    avail_cores = int(settings().get("available_cpu_cores"))
+    avail_mem = float(settings().get("available_mem_gb"))
+    exceeded: list[str] = []
+    if nproc > avail_cores:
+        exceeded.append("nproc")
+    if mem_gb > avail_mem:
+        exceeded.append("mem_gb")
+    if not exceeded:
+        return
+    dims: list[str] = []
+    if "nproc" in exceeded:
+        dims.append(f"核数 {nproc} > 可用 {avail_cores}")
+    if "mem_gb" in exceeded:
+        dims.append(f"内存 {mem_gb:g} GB > 可用 {avail_mem:g} GB")
+    note = "（按缺省值补齐）" if (resolved["nproc"]["defaulted"]
+                                   or resolved["mem_gb"]["defaulted"]) else ""
+    row = tasks().get(task_id)
+    task_name = row["filename"] if row is not None else str(task_id)
+    raise err("RESOURCE_OVERCOMMIT",
+              f"任务 {task_name}：声明资源超过可用资源 — "
+              f"{' / '.join(dims)}{note}；请修改输入 %nprocshared/%mem 声明，"
+              f"或在设置页调整可用资源",
+              {"task_id": task_id,
+               "declared": {"nproc": nproc, "mem_gb": mem_gb},
+               "available": {"cpu_cores": avail_cores, "mem_gb": avail_mem},
+               "exceeded": exceeded}, http=422)
+
+
 def verify_and_store(task_id: int) -> dict:
     """对 inputs/<id> 执行提交前核验（G1 改造），返回
     {"normalized": bool, "warnings": list}。
 
     ①② 规范化有变化 → 原子写回；③ 解析失败 → 422 INPUT_PARSE_FAILED；
-    ④ 多步 → 422 INPUT_MULTISTEP_UNSUPPORTED；规范化致结构变化 →
+    ④ 多步 → 422 INPUT_MULTISTEP_UNSUPPORTED；⑤ 声明资源超可用 →
+    422 RESOURCE_OVERCOMMIT（资源校验波 C2——warnings 收集与写回之前，
+    raise 即不写盘）；规范化致结构变化 →
     500 拒绝（不落盘，m2-plan §9 风险 11 防线）。warnings 为规范化后文本
-    的非阻断警告（拼写/重复关键字 B3 + testrt 降级黄警 B14——不改变任何
-    阻断语义）。调用方须知：返回值为 dict（恒真值）——真值判断一律取
-    ["normalized"]。
+    的非阻断警告（拼写/重复关键字 B3 + testrt 降级黄警 B14 + 声明资源
+    琥珀警告经 file_warnings 单点（资源校验波 C3——对提交链结构性不可
+    达：超限已 422）——不改变任何阻断语义）。调用方须知：返回值为 dict
+    （恒真值）——真值判断一律取 ["normalized"]。
     """
     path = default_inputs_dir() / str(task_id)
     try:
@@ -255,6 +301,7 @@ def verify_and_store(task_id: int) -> dict:
                    "line": first["line"],
                    "parse_errors": parsed["parse_errors"]}, http=422)
     lines = split_lines(result["text"])
+    _check_resource_overcommit(result["text"], task_id)  # C2 资源阻断（先于 warnings 收集与写回）
     warnings = file_warnings(parsed, parsed["blocks"]["route"], lines)
     warnings += _check_mem_floor(result["text"], task_id)  # B16 每核下限
     warnings += _check_route(parsed["blocks"]["route"],

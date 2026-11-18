@@ -1,9 +1,9 @@
 """错误码全集一致性闸门（B7，m2-plan §2.6/§5 test_error_codes）。
 
 - 静态：web/src 全部 err("…")/ApiError("…") 码 ⊆ openapi.yaml 文件头全集
-  （40 码，SSOT 载体；v2.1.0 更新域增补 5 码 + M3 波 A1 分析/存储域 5 码
-  + M4 波 A4 依赖/续跑/工作流域 6 码 + 3.8.0 工具箱波 A6 G16 工具域 5 码），
-  私有码零残留；
+  （41 码，SSOT 载体；v2.1.0 更新域增补 5 码 + M3 波 A1 分析/存储域 5 码
+  + M4 波 A4 依赖/续跑/工作流域 6 码 + 3.8.0 工具箱波 A6 G16 工具域 5 码
+  + 3.9.0 资源校验波提交阻断 1 码），私有码零残留；
 - 行为：席位/设置/导入域替换项逐条断言（§2.6 映射表）。
 """
 from __future__ import annotations
@@ -20,8 +20,9 @@ from web.src.errors import ApiError
 from web.src.services import pending
 from web.src.store import executions, queues, seats, tasks
 
-# openapi.yaml 文件头错误码全集（40 码，SSOT；与契约文件头同步维护；
-# M4 波 A4 增补依赖/续跑/工作流域 6 码；3.8.0 工具箱波 A6 增补 G16 工具域 5 码）
+# openapi.yaml 文件头错误码全集（41 码，SSOT；与契约文件头同步维护；
+# M4 波 A4 增补依赖/续跑/工作流域 6 码；3.8.0 工具箱波 A6 增补 G16 工具域
+# 5 码；3.9.0 资源校验波增补提交链声明资源阻断 1 码）
 CONTRACT_CODES = {
     "INVALID_REQUEST", "NOT_FOUND", "VALIDATION_FAILED", "INTERNAL_ERROR",
     "QUEUE_MEMBER_RANGE", "QUEUE_STATE_CONFLICT", "PENDING_CAPACITY_FULL",
@@ -39,6 +40,7 @@ CONTRACT_CODES = {
     "CREST_EXECUTABLE_MISSING",
     "ROUTE_SYNTAX_INVALID", "CHK_ASSET_UNAVAILABLE",
     "G16_TOOL_UNAVAILABLE", "G16_TOOL_FAILED", "FCHK_GENERATION_FAILED",
+    "RESOURCE_OVERCOMMIT",
 }
 RETIRED_CODES = ("SEAT_MEMBER_LAST", "SEAT_MEMBER_EXECUTED")
 

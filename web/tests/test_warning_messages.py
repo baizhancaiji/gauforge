@@ -18,13 +18,15 @@ from web.src.parse.keywords import (
     check_route_spelling,
 )
 from web.src.parse.link0_rules import check_link0_lines
+from web.src.services.candidates import _resource_over_warnings
 from web.src.services.verify import (_mem_floor_warning,
                                      _route_skipped_warning)
 
 _CJK = re.compile(r"[\u4e00-\u9fff]")
 
-# openapi Warning.kind 权威词表（14 kind，扩容须同步本清单；
-# 3.8.0 工具箱 B14 增 route_check_skipped、B16 增 mem_below_per_core_floor）
+# openapi Warning.kind 权威词表（15 kind，扩容须同步本清单；
+# 3.8.0 工具箱 B14 增 route_check_skipped、B16 增 mem_below_per_core_floor；
+# 3.9.0 资源校验波增 resource_over_available）
 KIND_VOCABULARY = frozenset((
     "keyword_spell", "route_duplicate", "route_option_unknown",
     "molecule_unterminated", "variables_unterminated",
@@ -32,7 +34,7 @@ KIND_VOCABULARY = frozenset((
     "link0_directive_unknown", "link0_directive_duplicate",
     "title_forbidden_char", "atom_label_unknown",
     "molecule_multiple_charge_pairs", "route_check_skipped",
-    "mem_below_per_core_floor",
+    "mem_below_per_core_floor", "resource_over_available",
 ))
 
 
@@ -45,6 +47,18 @@ def _file(route: str, *, title: str = "t", charge: str = "0 1",
     """最小合法输入样板（Link0 齐全，杜绝无关警告干扰按 kind 过滤）。"""
     return (f"%mem=8GB\n%nprocshared=4\n\n{route}\n\n{title}\n\n"
             f"{charge}\n{molecule}\n{tail}")
+
+
+def _resource_over_sample() -> list[dict]:
+    """resource_over_available 样例（3.9.0 资源校验波）：沙箱收紧可用
+    资源后经 _resource_over_warnings 纯函数构造——与机器默认探测值无关，
+    超限双维度齐验。"""
+    from web.src.store import settings
+    settings().set("available_cpu_cores", 10)
+    settings().set("available_mem_gb", 24)
+    return _resource_over_warnings(
+        "%mem=128GB\n%nprocshared=32\n#p opt\n\nt\n\n0 1\nO 0 0 0\n\n"
+        .splitlines())
 
 
 # (kind, 产警告调用, message 必含模板短语) —— 模板短语即随批留痕的文案清单
@@ -91,6 +105,10 @@ CASES = [
     ("mem_below_per_core_floor",
      lambda: [_mem_floor_warning(1, 2.0, 8)],
      ("每核内存低于下限",)),
+    # 3.9.0 资源校验波：声明资源超可用琥珀警告（纯函数样例——沙箱设置
+    # 收紧可用资源后经 _resource_over_warnings 构造，机器默认值无关）
+    ("resource_over_available", _resource_over_sample,
+     ("声明资源超过可用资源",)),
 ]
 
 

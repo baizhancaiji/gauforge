@@ -37,6 +37,12 @@ def _isolated_db(tmp_path, monkeypatch):
     # 协程醒来即空转，防止长用例（>30s，如 e2e）里真实触发检查（触网/写
     # 伴生文件）；清表用例自行回落默认值，调度器方法保持真实语义可测。
     store.settings().set("update_check_interval", "never")
+    # 可用资源（3.9.0 资源校验波 C2）在测试环境预置宽松上限：既有用例
+    # 大量大声明输入（16 核 / 128GB 等）写于无资源阻断时代，按机器探测
+    # 默认值（×75%）会遭遇 422 RESOURCE_OVERCOMMIT 误拦；资源域用例
+    # （test_resource_check）自行收紧到目标值，语义保持真实可测。
+    store.settings().set("available_cpu_cores", 256)
+    store.settings().set("available_mem_gb", 1024)
     yield
     store.reset_db()
 

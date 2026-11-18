@@ -27,6 +27,7 @@ from pathlib import Path
 
 from .. import config
 from ..engine.workspace import _cpu_list_count
+from ..engine.workspace import resolve_link0
 from ..errors import ApiError, err, not_found, validation_failed
 from ..parse.blocks import (is_editable_section, parse_charge_tokens,
                             parse_input, reassemble, scan_spans, split_lines)
@@ -34,7 +35,7 @@ from ..parse.keywords import (check_route_duplicates, check_route_options,
                               check_route_spelling)
 from ..parse.link0_rules import (LINE_LENGTH_CAP, MEM_VALUE_RE,
                                  _NO_EQ_DIRECTIVES, directive_head)
-from ..store import executions, get_db, tasks
+from ..store import executions, get_db, settings, tasks
 
 log = logging.getLogger(__name__)
 
@@ -60,12 +61,75 @@ def _route_warnings(route_text: str, lines: list[str]) -> list[dict]:
             + check_route_options(route_text, line_offset=offset))
 
 
+def _resource_decl_lines(lines: list[str]) -> dict[str, int]:
+    """Link0 %nproc 系/%mem 声明行绝对行号（1 起；verify._mem_decl_line
+    同法扩展核数行——核数声明 %nproc 系优先、%cpu 次之，与 resolve_link0
+    记账优先序一致）：前导空行跳过取 Link0 区起点，区间内按前缀匹配；
+    无声明回落 Link0 区首行，无 Link0 取 1（line 必填口径——前端不渲染
+    L0）。"""
+    start = 0
+    while start < len(lines) and not lines[start].strip():
+        start += 1
+    if start >= len(lines) or not lines[start].lstrip().startswith("%"):
+        return {"nproc": 1, "mem": 1}
+    fallback = start + 1
+    found: dict[str, int] = {}
+    for i in range(start, len(lines)):
+        if not lines[i].lstrip().startswith("%"):
+            break  # Link0 区结束
+        head = lines[i].strip().casefold()
+        if "nproc" not in found and head.startswith("%nproc"):
+            found["nproc"] = i + 1
+        if "cpu" not in found and head.startswith("%cpu="):
+            found["cpu"] = i + 1
+        if "mem" not in found and head.startswith("%mem="):
+            found["mem"] = i + 1
+    return {"nproc": found.get("nproc") or found.get("cpu") or fallback,
+            "mem": found.get("mem") or fallback}
+
+
+def _resource_over_warnings(lines: list[str]) -> list[dict]:
+    """声明资源超可用琥珀警告（资源校验波 C3，非阻断——分块编辑保存
+    放行、提交链 422 RESOURCE_OVERCOMMIT 权威阻断）：resolve_link0 记账
+    值（声明优先、缺省回落——与派发记账/提交链阻断/每核下限黄警同源）
+    比可用资源设置值，任一维度严格大于即产出 resource_over_available；
+    导入/预览/分块保存/列表徽标四通道同走 file_warnings 单点自然覆盖。
+    缺省注入时 message 加注，指引调设置而非改输入。line 取超限维度声明
+    行（核数优先）。"""
+    resolved = resolve_link0("\n".join(lines),
+                             int(settings().get("link0_default_nproc")),
+                             float(settings().get("link0_default_mem_gb")))
+    nproc = int(resolved["nproc"]["value"])
+    mem_gb = float(resolved["mem_gb"]["value"])
+    avail_cores = int(settings().get("available_cpu_cores"))
+    avail_mem = float(settings().get("available_mem_gb"))
+    over_cores = nproc > avail_cores
+    over_mem = mem_gb > avail_mem
+    if not over_cores and not over_mem:
+        return []
+    dims: list[str] = []
+    if over_cores:
+        dims.append(f"核数 {nproc} > 可用 {avail_cores}")
+    if over_mem:
+        dims.append(f"内存 {mem_gb:g} GB > 可用 {avail_mem:g} GB")
+    note = "（按缺省值补齐）" if (resolved["nproc"]["defaulted"]
+                                   or resolved["mem_gb"]["defaulted"]) else ""
+    decl = _resource_decl_lines(lines)
+    return [{"line": decl["nproc"] if over_cores else decl["mem"],
+             "keyword": "%nproc" if over_cores else "%mem",
+             "kind": "resource_over_available",
+             "message": f"声明资源超过可用资源（{' / '.join(dims)}）{note}"
+                        f"— 提交将被拒绝，请调整声明或设置页可用资源"}]
+
+
 def file_warnings(parsed: dict, route_text: str, lines: list[str]) -> list[dict]:
-    """全文件非阻断警告全集（G0/G1/G2/G5/G8 统一口径）：parse_input 产出
-    （分子说明/变量区 EOF、Link 0 值域与指令、title 禁用字符、原子标签、
-    多组电荷对）+ route 拼写/重复/子选项（parse_input 不产拼写通道）。公共
-    API（审查整改 R5：预览路由跨模块消费，去私有名）。"""
-    return parsed["warnings"] + _route_warnings(route_text, lines)
+    """全文件非阻断警告全集（G0/G1/G2/G5/G8 + 资源校验波 C3 统一口径）：
+    parse_input 产出（分子说明/变量区 EOF、Link 0 值域与指令、title 禁用
+    字符、原子标签、多组电荷对）+ route 拼写/重复/子选项（parse_input 不
+    产拼写通道）+ 声明资源超可用琥珀警告。公共 API（审查整改 R5：预览
+    路由跨模块消费，去私有名）。"""
+    return (parsed["warnings"] + _route_warnings(route_text, lines)
+            + _resource_over_warnings(lines))
 
 
 def warning_count(candidate_id: int) -> int:
