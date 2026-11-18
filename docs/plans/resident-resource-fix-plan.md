@@ -1,7 +1,20 @@
 # 服务常驻与资源校验修复计划（含分子节终止空行容错与随报 UI 补丁）· 执行计划
 
-> 状态：**执行计划**（2026-11-18 定稿，待实施；实施完毕回填「已实施并验收」，
-> 注明验收留痕与发布版本；版本锚：**3.9.0 独立窗口**）。
+> 状态：**已实施并验收**（2026-11-18 实施完毕，版本锚 3.9.0 随下个 minor 冻结。
+> 统一序列 P1→I1→V1→V2→V3→V4→V5→D1→D2→P2…P5 共 13 提交全部落库：P1 60303aaf、
+> I1 60cce7f2、V1 d2d99308、V2 0ad5064f、V3 94303eb9、V4 95e3c501、V5 db2b9d3e、
+> D1 b6b21383、D2 9fbaebf6、P2 7278fcc2、P3 0fa0dbc0、P4 909b2984、P5 306d0bab。
+> 验收留痕：全量 pytest 1062 passed 0 skipped（target/release/hq 在位防 e2e
+> 静默跳过），各提交三闸门全绿（validate_progress / gen_changelog_md --check /
+> bash -n），前端批次另过 vue-tsc/vite build 与 check_tokens / check_contrast /
+> audit_frontend_offline；前端 V4/D1/D2 经 playwright 浏览器视觉实测（亮/暗
+> 两主题截图留痕仓库根：v4-amber-link0-*.png、v4-submit-422-error.png、
+> d1-copied-visible-*.png、d2-downloading-button.png、v2-settings-*.png），
+> V5 另经隔离实例真机冒烟读回 worker clamp 值（cpus=2 / mem=4096MiB =
+> min(设置值, 探测值)，真 HQ 二进制接受软限制参数）；各实现提交先红后绿
+> 在提交内完成（红态实测记录见各提交闸门报告）；域 A 部署机红测以
+> 2026-11-18 止血取证替代（§1.2 注记），§6.1.2 完整绿测协议待用户在部署机
+> 执行回贴。变更登记见 V6（chore(progress) 汇总随 3.9.0 unreleased 行）。）
 
 ## 0. 总览与需求裁决
 
