@@ -22,6 +22,7 @@
 - 【plans】立项工具箱走查修订计划（3.8.0 重冻结前修订批，六任务 A7/B18/C11/D7/D8，走查反馈 R1–R6 六项修复）
 - 【api】工具箱修订批契约 diff：cube 批量导出端点一枚（多类型一次打包 ZIP、判定链五步）、VALIDATION_FAILED 批量 422 双词形分键（errors[]/kind_errors[]）、data_missing reason 登记、mapping 67→68、sse.md 零变更确认、生成物随批再生
 - 【web】新增 cube 批量导出端点随 B18：历史详情多类型（含全选）一次打包 ZIP 下载，逐类串行生成、幂等命中复用、fail-fast 502 携带 failing kind
+- 【plans】登记 D7 工具箱修订走查记录：§7.2 十项路径真机逐条对账、038 预校验与批量全选真机基线留痕、零随查随修
 
 ### 变更
 

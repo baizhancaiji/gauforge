@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-18T19:16+0800",
+ "updated": "2026-11-18T19:41+0800",
  "latest_released_version": "3.7.0",
  "unreleased": [
   {"type": "added", "scope": "specs", "summary": "补交 G16 原生工具集成评估文档（五工具实测与四工具链定稿，状态行指向实施计划）", "breaking": false, "migration": null},
@@ -21,7 +21,8 @@
   {"type": "added", "scope": "web", "summary": "新增 cube 批量导出端点随 B18：历史详情多类型（含全选）一次打包 ZIP 下载，逐类串行生成、幂等命中复用、fail-fast 502 携带 failing kind", "breaking": false, "migration": null},
   {"type": "fixed", "scope": "web", "summary": "修复 cube 生成裸报错随 B18：前置 fchk 数据段预校验在异常终止任务缺密度/MO 数据段时按 kind 明示不可生成原因（422 data_missing 携带缺失段名），不再裸报 cubegen 非零退出", "breaking": false, "migration": null},
   {"type": "changed", "scope": "frontend", "summary": "新增历史抽屉「转换」面板并修订导出交互随 C11：与「分析」三态互斥、chk 工具与 cube 导出移入面板、「下载 fchk」升主按钮、「全部导出」更名「导出 .out 和 .chk」、cube 类型多选与全选（恰选 1 类直下、多类型收 ZIP）、文件名档位英文化（全选包名 all）、异常态文案与既有文案内部词清洗", "breaking": false, "migration": null},
-  {"type": "fixed", "scope": "frontend", "summary": "补充 cube 生成失败提示随 C11：502 呈现 failing kind 与工具输出尾部摘录，422 前置校验按 kind 逐项罗列明示不可生成原因", "breaking": false, "migration": null}
+  {"type": "fixed", "scope": "frontend", "summary": "补充 cube 生成失败提示随 C11：502 呈现 failing kind 与工具输出尾部摘录，422 前置校验按 kind 逐项罗列明示不可生成原因", "breaking": false, "migration": null},
+  {"type": "added", "scope": "plans", "summary": "登记 D7 工具箱修订走查记录：§7.2 十项路径真机逐条对账、038 预校验与批量全选真机基线留痕、零随查随修", "breaking": false, "migration": null}
  ],
  "in_progress": {"task": "G16 工具箱走查修订（toolbox-revision-plan，随 3.8.0 重冻结）", "note": "开工：3.8.0 冻结撤销已完成（tag 删、3eb396b0 回退、簿记回滚），hq 与真机资产在位核查通过，按 §6 提交序列自提交 1 立项起步，A7 契约 diff 随后"},
  "next_steps": [
