@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 
-import type { paths } from "./contract";
+import type { components, paths } from "./contract";
 
 /** 同源 API client（openapi-fetch）——类型由 docs/api/openapi.yaml 生成，杜绝手写漂移。 */
 export const client = createClient<paths>({ baseUrl: "/api/v1" });
@@ -37,6 +37,22 @@ export function exportOutputs(
  */
 export function createFchkExportJob(ids: number[]) {
   return client.POST("/history/export/fchk", { body: { ids } });
+}
+
+/**
+ * cube 批量导出（3.8.0 修订批 C11）：多类型一次请求收单个 ZIP（blob，
+ * 落盘命名由面板层与服务端同公式计算）。恰选 1 类走单 kind 端点直下
+ * .cube，不入此方法（契约对长度 1 的受理性由后端测试钉死）。
+ */
+export function generateCubeBatch(
+  id: number,
+  body: components["schemas"]["CubeBatchRequest"],
+) {
+  return client.POST("/history/{id}/analysis/cube/batch", {
+    params: { path: { id } },
+    body,
+    parseAs: "blob",
+  });
 }
 
 export function getFchkExportJob(jobId: string) {

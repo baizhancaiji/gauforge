@@ -5,8 +5,8 @@
  * + 顶部状态筛选；表格多选与候选页同一交互套件（useMultiSelect：复选框、
  * Shift 锚点范围、Ctrl/Cmd 单选、Ctrl+A/Esc/方向键），勾选经工具条批量
  * 导出 .out（POST /history/export → ZIP blob 下载，跨页勾选整体参与；
- * split button 三范围：主操作导出 .out，下拉导出 .chk / 全部导出，
- * 2026-11-14 chk-export 计划 T3）；
+ * split button 三范围：主操作导出 .out，下拉导出 .chk / 导出 .out 和 .chk
+ * （修订批 R6 由「全部导出」更名），2026-11-14 chk-export 计划 T3）；
  * 状态徽标与筛选下拉中文显示（taskStateLabel 单一来源，与队列页同纪律，
  * 2026-09-27 验收修正）；
  * 行点击（普通点击）→ 详情抽屉：终态冻结全字段以单行键值行呈现（dt 左/值右，
@@ -156,6 +156,7 @@ async function open(e: HistoryEntry) {
   selected.value = e;
   textView.value = null;
   anaOpen.value = false;
+  convOpen.value = false;
   actionNote.value = null;
   const { data } = await client.GET("/history/{id}", { params: { path: { id: e.id } } });
   if (data) selected.value = data;
@@ -258,7 +259,7 @@ function onRowCheck(index: number, e: MouseEvent) {
 // ---------- 勾选批量导出（POST /history/export → ZIP blob 落盘） ----------
 const exporting = ref(false);
 const exportNote = ref<string | null>(null);
-// 导出 split button：主操作=导出 .out；「导出 .chk」「全部导出」藏于下拉
+// 导出 split button：主操作=导出 .out；「导出 .chk」「导出 .out 和 .chk」藏于下拉
 // （与清理 split button 同模式，chk-export 计划 T3）
 const exportMenu = ref(false);
 
@@ -435,7 +436,8 @@ const FCHK_STATE_LABEL: Record<string, string> = {
 async function viewText(kind: "input" | "output") {
   const e = selected.value;
   if (!e) return;
-  anaOpen.value = false; // 与分析板块互斥：开一边关另一边
+  anaOpen.value = false; // 三态互斥：开一边关其余（分析/转换/预览）
+  convOpen.value = false;
   textView.value = { kind, content: "", error: null };
   // 两端点契约均为 text/plain，经 getText 统一按文本取（封装动机见 api/client.ts）
   const res =
@@ -456,10 +458,29 @@ async function viewText(kind: "input" | "output") {
   textViewEl.value?.scrollIntoView({ block: "end" });
 }
 
-/** 分析板块开合（与预览互斥）：展开时收起预览。 */
+/** 分析板块开合（三态互斥）：展开时收起转换面板与预览。 */
 function toggleAna() {
   anaOpen.value = !anaOpen.value;
-  if (anaOpen.value) textView.value = null;
+  if (anaOpen.value) {
+    textView.value = null;
+    convOpen.value = false;
+  }
+}
+
+// ---------- 转换面板（3.8.0 修订批 R1）：chk 工具区 + 导出 cube 区块
+// 迁入转换展示区，与「分析」按钮同级同款、三态互斥；仅终态条目渲染
+// （skipped 条目面板内 cube 域 409 明示入口保留） ----------
+const convOpen = ref(false);
+const showConv = computed(() =>
+  ["succeeded", "failed", "skipped"].includes(selected.value?.state ?? ""),
+);
+
+function toggleConv() {
+  convOpen.value = !convOpen.value;
+  if (convOpen.value) {
+    anaOpen.value = false;
+    textView.value = null;
+  }
 }
 
 // ---------- 归档（冻结后唯一可变操作） ----------
@@ -588,7 +609,8 @@ async function confirmCleanup() {
       </label>
 
       <!-- 勾选批量导出（split button，与清理 split button 同模式）：
-           主操作=导出 .out；「导出 .chk」「全部导出」藏于下拉 -->
+           主操作=导出 .out；「导出 .chk」「导出 .out 和 .chk」藏于下拉
+           （修订批 R6：「全部导出」更名——scope=all 实为 out+chk） -->
       <span class="tb-divider" aria-hidden="true"></span>
       <span v-if="checkedIds.size" class="picked-count mono">已选 {{ checkedIds.size }}</span>
       <div class="export-split">
@@ -627,10 +649,10 @@ async function confirmCleanup() {
             class="export-item"
             type="button"
             role="menuitem"
-            title="全部导出 — .out 与 .chk 同包导出（ZIP）"
+            title="导出 .out 和 .chk — 同包导出（ZIP）"
             @click="exportSelected('all')"
           >
-            全部导出
+            导出 .out 和 .chk
           </button>
           <button
             class="export-item"
@@ -883,22 +905,21 @@ async function confirmCleanup() {
           {{ actionNote.msg }}
         </p>
 
-        <!-- chk 工具区 + 导出 cube 区块（3.8.0 工具箱 C8：仅终态条目
-             渲染，skipped 无执行目录不展示入口；归档条目同口径提供） -->
-        <ChkToolPanel
-          :execution-id="selected.id"
-          :entry-state="selected.state"
-          :filename="selected.filename"
-        />
-        <CubeExportPanel
-          :execution-id="selected.id"
-          :entry-state="selected.state"
-          :filename="selected.filename"
-        />
-
         <div class="actions">
           <button class="btn btn--secondary" type="button" @click="viewText('input')">输入</button>
           <button class="btn btn--secondary" type="button" @click="viewText('output')">输出</button>
+          <!-- 转换面板开关（修订批 R1：与「分析」同级同款，三态互斥；
+               仅终态条目渲染，skipped 面板内 cube 域 409 明示入口保留） -->
+          <button
+            v-if="showConv"
+            class="btn btn--secondary ana-toggle"
+            :class="{ 'ana-toggle--on': convOpen }"
+            type="button"
+            :aria-expanded="convOpen"
+            @click="toggleConv"
+          >
+            转换
+          </button>
           <button
             class="btn btn--secondary ana-toggle"
             :class="{ 'ana-toggle--on': anaOpen }"
@@ -950,12 +971,27 @@ async function confirmCleanup() {
           <button class="btn btn--ghost" type="button" @click="selected = null">关闭</button>
         </div>
 
-        <!-- 展示区（输入/输出预览与分析互斥，同占动作行以下剩余高度：
-             上游字段放得下时拉伸贴抽屉下缘，放不下保底 300px 依赖抽屉滚动） -->
+        <!-- 展示区（转换 / 分析 / 输入输出预览三态互斥，同占动作行以下
+             剩余高度：上游字段放得下时拉伸贴抽屉下缘，放不下保底 300px
+             依赖抽屉滚动） -->
         <div v-if="anaOpen" class="sub-region">
           <!-- 分析区（M3.1：内嵌历史详情，不单列页面；异常条目由组件内置置灰态；
                惰性挂载——首次展开才发起概览请求） -->
           <AnalysisPanel :key="selected.id" :execution-id="selected.id" :entry-state="selected.state" />
+        </div>
+        <div v-else-if="convOpen" class="sub-region">
+          <!-- 转换面板（修订批 R1：chk 工具区在上、导出 cube 在下纵向
+               排列；组件内部实现零改动） -->
+          <ChkToolPanel
+            :execution-id="selected.id"
+            :entry-state="selected.state"
+            :filename="selected.filename"
+          />
+          <CubeExportPanel
+            :execution-id="selected.id"
+            :entry-state="selected.state"
+            :filename="selected.filename"
+          />
         </div>
         <div v-else-if="textView" ref="textViewEl" class="text-view">
           <header class="tv-head">
@@ -1184,8 +1220,9 @@ tbody tr.row--checked:hover {
 .fchk-state--done {
   color: var(--state-succeeded);
 }
-/* 导出 split button：主按钮（导出 .out）+ 下拉箭头（导出 .chk / 全部导出
-   藏于菜单；结构与清理 split button 同款，菜单样式与 .cleanup-menu 单源） */
+/* 导出 split button：主按钮（导出 .out）+ 下拉箭头（导出 .chk /
+   导出 .out 和 .chk 藏于菜单；结构与清理 split button 同款，菜单样式与
+   .cleanup-menu 单源） */
 .export-split {
   position: relative;
   display: inline-flex;

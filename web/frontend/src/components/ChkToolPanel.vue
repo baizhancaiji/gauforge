@@ -1,14 +1,16 @@
 <script setup lang="ts">
 /**
- * chk 工具区（3.8.0 工具箱 C8，toolbox-plan §2.1/§4.8）：
- * 「chk 体检」按钮 → verdict 徽标报告（在场项 ✓/✗ + 版本/NAtoms 行 +
- * 可折叠原文）；「转换为 fchk 并下载」内嵌体检闸（409 损坏态明示）；
- * 「下载 fchk」入口常显（缺失以 404 提示）。
+ * chk 工具区（3.8.0 工具箱 C8，toolbox-plan §2.1/§4.8；3.8.0 修订批
+ * R2 按钮主次调换）：「chk 体检」→ verdict 徽标报告（在场项 ✓/✗ +
+ * 版本/NAtoms 行 + 可折叠原文）；正常结束条目的 fchk 已在任务完成时
+ * 自动生成——「下载 fchk」升为第一主操作（primary，缺失以 404 提示
+ * 引导先转换）；「转换为 fchk 并下载」降为次操作（fchk 缺失或需重转
+ * 时使用，内嵌体检闸 409 损坏态明示）。
  *
  * 对象口径（契约）：仅终态（succeeded/failed）展示入口——skipped 无执行
  * 目录（404），不渲染；归档条目同口径提供。错误态按契约区分：
  * 409 无 chk 资产（已清理/未声明/越界）/ 体检损坏拒转换（details.verdict）、
- * 503 g16_root 工具缺失、502 工具失败、404 fchk 缺失。
+ * 503 G16 安装目录工具缺失、502 工具失败、404 fchk 缺失。
  */
 import { ref } from "vue";
 
@@ -64,7 +66,7 @@ function errText(e: unknown, fallback: string): string {
     return "无 chk 资产 — 检查点文件已被保留期清理或移除";
   }
   if (code === "G16_TOOL_UNAVAILABLE") {
-    return `G16 工具 ${body?.error?.details?.tool ?? ""}不可用 — 请检查 g16_root 设置`;
+    return `G16 工具 ${body?.error?.details?.tool ?? ""}不可用 — 请检查设置中的 G16 安装目录`;
   }
   if (code === "G16_TOOL_FAILED") return "G16 工具执行失败（启动失败或超时）";
   if (code === "FCHK_GENERATION_FAILED") return "formchk 转换失败（详见服务端日志；半成品已丢弃，可重试）";
@@ -144,16 +146,21 @@ function mark(v: boolean | null): string {
         {{ checking ? "体检中 …" : "chk 体检" }}
       </button>
       <button
+        class="btn btn--primary"
+        type="button"
+        title="fchk 已生成时可直接下载；缺失时请先执行转换"
+        @click="downloadFchk"
+      >
+        下载 fchk
+      </button>
+      <button
         class="btn btn--secondary"
         type="button"
         :disabled="converting"
-        title="input.fchk 已存在时直接下载（幂等）"
+        title="fchk 缺失或需重转时使用；此前已生成过则直接下载"
         @click="convert"
       >
         {{ converting ? "转换中 …" : "转换为 fchk 并下载" }}
-      </button>
-      <button class="btn btn--ghost" type="button" @click="downloadFchk">
-        下载 fchk
       </button>
     </div>
     <p v-if="note" class="ct-note mono" :class="`note--${note.kind}`" role="alert">
