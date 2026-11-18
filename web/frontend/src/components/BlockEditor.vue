@@ -36,9 +36,10 @@ const loading = ref(false);
 const parseErrors = computed(() => preview.value?.parse_errors ?? []);
 
 // ---------- 逐块 warnings 详情（B9 G13：现算自 preview.warnings，不落库） ----------
-// kind→块归属映射（openapi Warning.kind 词表 12 kind 全覆盖；词表扩容须
+// kind→块归属映射（openapi Warning.kind 词表 15 kind 全覆盖；词表扩容须
 // 同步本表——新 kind 在此缺席将不渲染，契约变更即提醒点）。
 // variables_unterminated 产出自变量/常数区，展示归 MOLECULE 块（VARS/CONSTS 读数所在）。
+// resource_over_available 产出自 Link0 资源声明（3.9.0 资源校验波），展示归 LINK0 块。
 const KIND_SECTION: Record<string, string> = {
   keyword_spell: "route",
   route_duplicate: "route",
@@ -48,6 +49,7 @@ const KIND_SECTION: Record<string, string> = {
   atom_label_unknown: "molecule",
   molecule_unterminated: "molecule",
   variables_unterminated: "molecule",
+  resource_over_available: "link0",
 };
 const allWarnings = computed<Warning[]>(() => preview.value?.warnings ?? []);
 function warningsFor(section: string): Warning[] {

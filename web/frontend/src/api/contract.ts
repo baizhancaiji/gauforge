@@ -1212,7 +1212,7 @@ export interface components {
         EffectKind: "immediate" | "immediate_retroactive" | "new_submissions" | "on_restart";
         ErrorBody: {
             error: {
-                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，40 码 + 三张 reason 词表） */
+                /** @description SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，41 码 + 三张 reason 词表） */
                 code: string;
                 message: string;
                 /** @description 错误附加信息（如越界值、逐字段错误数组） */
@@ -1844,7 +1844,7 @@ export interface components {
             line: number;
             /** @description 警告对应的关键字/指令/选项/原子标签/字符；无单一载体时为空串 */
             keyword: string;
-            /** @description 警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs、 route_check_skipped、mem_below_per_core_floor；后续批次按 输入勘误计划 §4 继续扩容。3.8.0 工具箱波扩两词： route_check_skipped=提交链 testrt 校验降级（工具缺失/调用失败/ 校验超时/异常退出/包含文件写法五类原因，显式不静默）； mem_below_per_core_floor=提交链每核内存下限黄警（%mem×核数失衡 纯算术校验，与组合流模板保存闸 reason 同名——同一规则两域承载， 提示 freq 任务精确需求走工具箱 freqmem 校验）） */
+            /** @description 警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs、 route_check_skipped、mem_below_per_core_floor、 resource_over_available；后续批次按 输入勘误计划 §4 继续扩容。3.8.0 工具箱波扩两词： route_check_skipped=提交链 testrt 校验降级（工具缺失/调用失败/ 校验超时/异常退出/包含文件写法五类原因，显式不静默）； mem_below_per_core_floor=提交链每核内存下限黄警（%mem×核数失衡 纯算术校验，与组合流模板保存闸 reason 同名——同一规则两域承载， 提示 freq 任务精确需求走工具箱 freqmem 校验）。 3.9.0 资源校验波扩一词：resource_over_available=声明资源超过 可用资源的琥珀警告（核数/内存逐维列出声明值与可用值——导入/ 预览/分块保存/列表徽标通道非阻断知情，提交链以 422 RESOURCE_OVERCOMMIT 权威阻断；声明值为缺省注入时加注，指引 调整设置页可用资源）） */
             kind: string;
             /** @description 可直接展示的中文说明 */
             message: string;
@@ -1900,7 +1900,7 @@ export interface components {
             env_var?: string | null;
             description?: string;
         };
-        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 ——A1 决策点 5 定稿；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6）；M4 增组合流引擎定位 crest_root（默认 ~/opt/crest-3.0.2）与 xtb_root（默认 ~/opt/xtb-6.7.1），均为目录型 string， effect=new_submissions（新提交生效通则；可执行探测缺失时组合流提交即拒 503 CREST_EXECUTABLE_MISSING） */
+        /** @description GET/PUT /settings 响应（两级分组）。运行级参数含自动检查更新周期 update_check_interval（string 四值枚举 daily/weekly/monthly/never，默认 weekly，经 SettingItem.range.enum 表达，v2.1.0 起；凌晨 1:00 锚定、只发现不安装） 与空间占用告警阈值 disk_usage_warn_gb（integer GB，0=禁用告警，默认 50 ——A1 决策点 5 定稿；只读告警不涉执行语义、保存即生效，M3 波 A1 起——超阈仅 警告不自动清理，m3-plan §2.6）；M4 增组合流引擎定位 crest_root（默认 ~/opt/crest-3.0.2）与 xtb_root（默认 ~/opt/xtb-6.7.1），均为目录型 string， effect=new_submissions（新提交生效通则；可执行探测缺失时组合流提交即拒 503 CREST_EXECUTABLE_MISSING）；3.9.0 增可用资源两键 available_cpu_cores （integer 1–256）与 available_mem_gb（number GB 1–1024）——为 Gaussian 计算分配的计算资源，effect=new_submissions；WebUI 提交校验权威口径， 并作为 worker 软限制传 HQ（设置值超机器探测值时 worker 侧取探测值， 两口径差异属软限制语义，deployment.md §2.2 明示） */
         SettingsResponse: {
             startup: components["schemas"]["SettingItem"][];
             runtime: components["schemas"]["SettingItem"][];
