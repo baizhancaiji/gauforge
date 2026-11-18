@@ -55,16 +55,31 @@ case "$url" in
   *) cp "$FAKE_ASSET" "$out" ;;
 esac
 """
-# 委托语义测试用：调用记录进 SYSTEMCTL_LOG；is-active 恒非活跃（走全新安装
-# 分支），其余子命令一律成功。首参可能是 --user，故按参数遍历匹配子命令。
+# 委托语义测试用：调用记录进 SYSTEMCTL_LOG；is-active 默认非活跃（走全新
+# 安装分支），SYSTEMCTL_ACTIVE=1 时返回活跃（REFRESH=1 分支沙箱），其余
+# 子命令一律成功。首参可能是 --user，故按参数遍历匹配子命令。
 FAKE_SYSTEMCTL = """#!/bin/bash
 [ -n "${SYSTEMCTL_LOG:-}" ] && printf '%s\\n' "$*" >> "$SYSTEMCTL_LOG"
 for a in "$@"; do
-  [ "$a" = "is-active" ] && exit 1
+  if [ "$a" = "is-active" ]; then
+    [ "${SYSTEMCTL_ACTIVE:-0}" = "1" ] && exit 0
+    exit 1
+  fi
 done
 exit 0
 """
-FAKE_LOGINCTL = "#!/bin/sh\nexit 1\n"  # 沙箱内必走 linger 提示分支，不触真机
+# 按 LOGINCTL_MODE 分档（服务常驻修复域 A）：默认 fail（enable-linger/show-user
+# 均失败 → 走降级告警分支，不触真机）；ok（enable-linger 成功 + show-user
+# Linger 读回 yes → 强制验证通过）。调用记录进 LOGINCTL_LOG。
+FAKE_LOGINCTL = """#!/bin/bash
+[ -n "${LOGINCTL_LOG:-}" ] && printf '%s\\n' "$*" >> "$LOGINCTL_LOG"
+mode="${LOGINCTL_MODE:-fail}"
+case "$1" in
+  enable-linger) [ "$mode" = "ok" ] && exit 0 || exit 1 ;;
+  show-user) [ "$mode" = "ok" ] && { echo yes; exit 0; } || exit 1 ;;
+  *) exit 1 ;;
+esac
+"""
 
 
 def _write(path: Path, text: str, mode: int | None = None) -> None:
@@ -327,6 +342,69 @@ def test_systemd_install_generates_unit(tmp_path):
     assert "is-active --quiet gauforge.service" in calls
     assert "enable --now gauforge.service" in calls
     assert "daemon-reload" in calls
+
+
+# ---------------- systemd_install.sh linger 强验证（服务常驻修复域 A） ----------------
+
+def _run_systemd_install(tmp_path, extra_env: dict | None = None):
+    """systemd_install.sh 沙箱执行（沿 test_systemd_install_generates_unit）。"""
+    deploy = tmp_path / "deploy"
+    _seed_old_deploy(deploy)
+    shutil.copyfile(SCRIPTS_DIR / "systemd_install.sh",
+                    deploy / "systemd_install.sh")
+    real_py = subprocess.run(["bash", "-c", "command -v python3"],
+                             capture_output=True, text=True).stdout.strip()
+    _write(deploy / ".venv" / "bin" / "python",
+           f"#!/bin/sh\nexec {real_py} \"$@\"\n", 0o755)
+    env = _sandbox_env(tmp_path)
+    env["XDG_CONFIG_HOME"] = str(tmp_path / "config")
+    env["SYSTEMCTL_LOG"] = str(tmp_path / "systemctl.log")
+    env["LOGINCTL_LOG"] = str(tmp_path / "loginctl.log")
+    env.update(extra_env or {})
+
+    proc = subprocess.run(["bash", str(deploy / "systemd_install.sh")],
+                          cwd=deploy, env=env, capture_output=True,
+                          text=True, timeout=60, stdin=subprocess.DEVNULL)
+    calls = (tmp_path / "loginctl.log").read_text(encoding="utf-8")
+    return proc, calls
+
+
+def test_systemd_install_linger_verified_on_success(tmp_path):
+    """LOGINCTL_MODE=ok（全新安装分支）：enable-linger 成功且 show-user
+    Linger 读回 yes → 验证通过输出「linger 已启用」，无降级告警。"""
+    proc, calls = _run_systemd_install(tmp_path, {"LOGINCTL_MODE": "ok"})
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "enable-linger" in calls
+    assert "show-user" in calls  # 强制验证（状态为准，非命令退出码）
+    assert "linger 已启用" in proc.stdout
+    assert "警告" not in proc.stdout and "警告" not in proc.stderr
+
+
+def test_systemd_install_linger_failure_alerts_not_blocking(tmp_path):
+    """fail 模式（非 TTY）：enable-linger/show-user 均败 → 降级告警上
+    stderr（后果明示在跑任务会被杀 + sudo 补救命令），退出码保持 0
+    不阻断，unit 照常 enable --now。"""
+    proc, calls = _run_systemd_install(tmp_path)
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert "enable-linger" in calls
+    assert "在跑 G16 计算任务会被一并杀死" in proc.stderr
+    assert "sudo loginctl enable-linger" in proc.stderr
+    systemctl_calls = (tmp_path / "systemctl.log").read_text(encoding="utf-8")
+    assert "enable --now gauforge.service" in systemctl_calls  # 启动不受阻
+
+
+def test_systemd_install_refresh_branch_shares_linger(tmp_path):
+    """REFRESH=1 分支共用 linger（服务在跑即走此分支——事故机恢复手段
+    恰是重跑本脚本，不共用则该路径永不补 linger）：SYSTEMCTL_ACTIVE=1
+    + LOGINCTL_MODE=ok → 刷新重启后仍补装并验证 linger。"""
+    proc, calls = _run_systemd_install(
+        tmp_path, {"LOGINCTL_MODE": "ok", "SYSTEMCTL_ACTIVE": "1"})
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    systemctl_calls = (tmp_path / "systemctl.log").read_text(encoding="utf-8")
+    assert "restart gauforge.service" in systemctl_calls  # 走刷新分支
+    assert "enable --now" not in systemctl_calls
+    assert "enable-linger" in calls
+    assert "linger 已启用" in proc.stdout
 
 
 # ---------------- restart_g16web.sh（systemd 委托） ----------------

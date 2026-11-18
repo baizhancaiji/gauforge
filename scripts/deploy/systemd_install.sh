@@ -85,16 +85,44 @@ mkdir -p "$UNIT_DIR"
   echo "WantedBy=default.target"
 } > "$UNIT_FILE"
 
+# ---- linger 常驻（双保险之一，服务常驻修复域 A）：REFRESH=0/1 两分支共用 ----
+# 事故机 S1 的恢复手段恰是重跑本脚本（服务在跑即走 REFRESH=1），不共用则该
+# 路径永不补 linger。enable-linger 后强制验证（以状态为准而非命令退出码：
+# show-user Linger 读回 yes，或 /var/lib/systemd/linger/<用户> 在位）；失败
+# 且有 TTY 时交互式 sudo 重试再验；仍失败输出醒目告警（后果明示 + 补救
+# 命令），不阻断本次启动（退出码保持 0，unit 照常启动）。
+ensure_linger() {
+  local user="${USER:-$(id -un)}"
+  if loginctl enable-linger "$user" >/dev/null 2>&1 \
+     && { [ "$(loginctl show-user "$user" --property=Linger --value 2>/dev/null)" = "yes" ] \
+          || [ -f "/var/lib/systemd/linger/$user" ]; }; then
+    echo "[systemd] linger 已启用：用户管理器随 WSL 启动自启、不随终端关闭终止"
+    return 0
+  fi
+  if [ -t 0 ]; then
+    echo "[systemd] enable-linger 未生效，尝试 sudo loginctl enable-linger $user …"
+    sudo loginctl enable-linger "$user" >/dev/null 2>&1 || true
+    if [ "$(loginctl show-user "$user" --property=Linger --value 2>/dev/null)" = "yes" ] \
+       || [ -f "/var/lib/systemd/linger/$user" ]; then
+      echo "[systemd] linger 已启用（sudo 补装成功）"
+      return 0
+    fi
+  fi
+  echo "[systemd] ═══ 警告：linger 未能启用 ═══" >&2
+  echo "[systemd] 后果：关闭最后一个终端窗口或 WSL 闲置断电时，" >&2
+  echo "[systemd]       本服务与在跑 G16 计算任务会被一并杀死。" >&2
+  echo "[systemd] 补救：sudo loginctl enable-linger $user" >&2
+  return 0
+}
+
 SYSCTL daemon-reload
 if [ "$REFRESH" = "1" ]; then
   SYSCTL restart "$UNIT_NAME"
   echo "[systemd] unit 已刷新并重启（$UNIT_FILE）"
+  ensure_linger
 else
   SYSCTL enable --now "$UNIT_NAME"
   echo "[systemd] 已安装并启动 $UNIT_NAME（$UNIT_FILE）"
-  # 开机（WSL 启动）即拉起需要 linger；失败仅提示，不影响本次启动
-  if ! loginctl enable-linger "${USER:-$(id -un)}" 2>/dev/null; then
-    echo "[systemd] 提示：如需免登录自启，执行 sudo loginctl enable-linger $(id -un)"
-  fi
+  ensure_linger
 fi
 echo "[systemd] 日志：journalctl --user -u $UNIT_NAME -f"
