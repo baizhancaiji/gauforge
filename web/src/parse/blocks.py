@@ -469,7 +469,7 @@ def parse_input(text: str) -> dict:
         # G9 项 5：原子行非空且 EOF 告终（非阻断，避免历史文件误拒）
         warnings.append({"line": mol_start + 1, "keyword": "",
                          "kind": "molecule_unterminated",
-                         "message": "分子说明节未以空行终止（建议补终止空行）"})
+                         "message": "分子说明节未以空行终止（提交时将自动补上）"})
 
     # 变量/常数区与附加节：其后以空行分隔的各区域
     # G4：附加节识别改由官方 Section Ordering 表驱动（prop=wrf 兼容项
@@ -509,7 +509,7 @@ def parse_input(text: str) -> dict:
             warnings.append({"line": region_start + 1, "keyword": "",
                              "kind": "variables_unterminated",
                              "message": "变量/常数区未以空行终止"
-                                        "（建议补终止空行）"})
+                                        "（提交时将自动补上）"})
 
     # G4 项 3：最后一个附加节以 EOF 收尾 → 官方表终止空行判定
     # （非 EOF 位置缺空行在结构上不可观测——会与下一节合并为同一 region）

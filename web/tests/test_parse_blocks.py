@@ -438,6 +438,22 @@ def test_g9_variables_eof_warning():
     assert [w["kind"] for w in impl["warnings"]] == ["variables_unterminated"]
 
 
+def test_g9_unterminated_copy_points_to_autofill():
+    """EOF 未终止警告文案指「提交时将自动补上」（域 B）：molecule 节不可
+    编辑、「建议补终止空行」不可落地——提交事务空行规约（verify_and_
+    normalize）自动补齐，文案须与机制一致、不引导无效手工操作。"""
+    r = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO 0 0 0\nH 0 0 0.96\n")
+    w = next(w for w in r["warnings"] if w["kind"] == "molecule_unterminated")
+    assert "提交时将自动补上" in w["message"]
+    assert "建议补" not in w["message"]
+    vs = parse_input("#p hf/sto-3g\n\nt\n\n0 1\nO\nH 1 R1\n\n"
+                     "Variables:\nR1 0.96\n")
+    w2 = next(w for w in vs["warnings"]
+              if w["kind"] == "variables_unterminated")
+    assert "提交时将自动补上" in w2["message"]
+    assert "建议补" not in w2["message"]
+
+
 def test_g9_link1_without_preceding_blank_annotated():
     """--Link1-- 前缺空行：既有 link1 错误附注官方要求（预览可见的提示性
     补强）。"""

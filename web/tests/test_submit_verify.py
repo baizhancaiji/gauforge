@@ -292,6 +292,26 @@ def test_pure_eof_unterminated_normalized_on_submit(ind):
     assert ei.value.body()["error"]["code"] == "VALIDATION_FAILED"
 
 
+def test_molecule_eof_autofill_chain_on_submit(ind):
+    """域 B 锁定（L9 形态全链）：分子节延展至 EOF 无终止空行 → 导入警告
+    在位（新文案锚点「提交时将自动补上」）→ 提交成功且 normalized=True →
+    写回末节含终止空行 → 复解析零该警告。"""
+    text = ("%mem=8GB\n%nprocshared=4\n#p hf/sto-3g\n\nt\n\n0 1\n"
+            "O 0 0 0\nH 0 0 0.96\n")  # 原子行直达 EOF（警告级形态）
+    tid = _mk(ind, text, name="l9.gjf")
+    stored = parse_input(_file(ind, tid).decode("utf-8"))
+    w = next(w for w in stored["warnings"]
+             if w["kind"] == "molecule_unterminated")
+    assert "提交时将自动补上" in w["message"]
+    out = submit_candidate(tid, None)
+    assert out["normalized"] is True  # 空行规约补齐写回
+    after = _file(ind, tid).decode("utf-8")
+    assert after.endswith("H 0 0 0.96\n\n")  # 末节收口 + 文件末尾恰一空行
+    r2 = parse_input(after)
+    assert not any(w["kind"] == "molecule_unterminated"
+                   for w in r2["warnings"])
+
+
 # ---------------- 三条提交路径统一 ----------------
 
 def test_queue_submit_verifies_each_member(ind):
