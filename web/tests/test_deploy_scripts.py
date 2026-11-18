@@ -713,3 +713,31 @@ def test_package_release_distributes_windows_three_files():
         assert (SCRIPTS_DIR / "windows" / name).is_file()
         assert name in pkg_sh  # 白名单逐文件 install
     assert "$pkg/windows" in pkg_sh
+
+
+# ---------------- start_gauforge.ps1 常驻自愈接线（域 A P4） ----------------
+
+def test_windows_launcher_resident_selfheal_gates():
+    """启动器常驻自愈闸门（域 A）：linger 与 keepalive 两步在探活通过分支
+    与修复流程两分支均接线（函数定义 + 两处调用），自愈②引用安装器、
+    状态判定与复跑语义在位；既有闸门（is-active/Reinstall 不得回归）不放松。"""
+    ps1 = _launcher_ps1()
+    assert "Ensure-Linger" in ps1
+    assert "Ensure-KeepAlive" in ps1
+    # 两分支接线：函数各出现定义 + 探活通过 + 修复流程 ≥3 处
+    assert ps1.count("Ensure-Linger") >= 3
+    assert ps1.count("Ensure-KeepAlive") >= 3
+    # 自愈①：enable-linger + Linger 读回验证
+    assert "loginctl enable-linger" in ps1
+    assert "--property=Linger" in ps1
+    # 自愈②：引用安装器（查找顺序含部署包顶层 windows\）、状态判定与复跑
+    assert "install_keepalive.ps1" in ps1
+    assert "Get-ScheduledTask" in ps1
+    assert "Start-ScheduledTask" in ps1
+    assert "windows\\install_keepalive.ps1" in ps1.replace("''", "'") or \
+        "install_keepalive.ps1'" in ps1  # UNC 回落路径在位（宽松匹配 CRLF）
+    # 幂等降级：未找到安装器降级提示，不打断主流程
+    assert "未找到 install_keepalive.ps1" in ps1
+    # 既有闸门不回归
+    assert "is-active" not in ps1
+    assert "Reinstall" not in ps1

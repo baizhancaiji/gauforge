@@ -373,6 +373,78 @@ function Test-ServiceAlive {
     return [pscustomobject]@{ Alive = $true; Reason = ''; Note = $it.Detail }
 }
 
+# ---------------- 常驻自愈（服务常驻修复域 A：linger + keepalive 两步） ----------------
+# 探活通过分支与修复流程两处接线（幂等）：探活通过是常驻场景最高频路径
+# （服务活着、用户双击 bat），仅挂修复流程会漏接；两步失败均降级提示手工
+# 命令，不打断主流程。
+
+function Ensure-Linger {
+    # 自愈①：linger=no → WSL 内 loginctl enable-linger（读回验证）；失败提示 sudo 命令
+    $userExpr = '"${USER:-$(id -un)}"'
+    $checkExpr = "loginctl show-user $userExpr --property=Linger --value 2>/dev/null"
+    $check = Invoke-WslCapture @('--exec', 'bash', '-lc', $checkExpr)
+    if (($check.ExitCode -eq 0) -and ($check.Output.Count -gt 0) -and
+        (([string]$check.Output[0]).Trim() -eq 'yes')) {
+        return
+    }
+    Write-Warn '[常驻] linger 未启用：尝试 WSL 内 loginctl enable-linger …'
+    $null = Invoke-WslCapture @('--exec', 'bash', '-lc',
+        "loginctl enable-linger $userExpr 2>/dev/null; exit 0")
+    $check2 = Invoke-WslCapture @('--exec', 'bash', '-lc', $checkExpr)
+    if (($check2.ExitCode -eq 0) -and ($check2.Output.Count -gt 0) -and
+        (([string]$check2.Output[0]).Trim() -eq 'yes')) {
+        Write-Ok '[常驻] linger 已启用（用户管理器不随终端关闭终止，服务随 distro 启动自启）。'
+        return
+    }
+    Write-Warn '[常驻] linger 未能启用：关闭最后终端或 WSL 闲置断电会杀服务与在跑任务。'
+    Write-Host '  补救：WSL 终端内执行 sudo loginctl enable-linger <用户名>（详见 deployment.md §2.1）'
+}
+
+function Install-KeepAlive {
+    # 安装器查找顺序：启动器同目录 → 部署包顶层 windows\；均缺降级提示
+    $candidates = @(
+        (Join-Path $ScriptDir 'install_keepalive.ps1')
+    )
+    if ($script:Distro -and $script:DeployPath) {
+        $uncPath = '\\wsl.localhost\' + $script:Distro + '\' +
+            ($script:DeployPath -replace '/', '\') + '\windows\install_keepalive.ps1'
+        $candidates += $uncPath
+    }
+    foreach ($installer in $candidates) {
+        if (Test-Path -LiteralPath $installer) {
+            & powershell -NoProfile -ExecutionPolicy Bypass -File $installer
+            if ($LASTEXITCODE -eq 0) {
+                Write-Ok "[常驻] keepalive 安装器已执行：$installer"
+                return $true
+            }
+            Write-Warn "[常驻] keepalive 安装器退出码 $LASTEXITCODE：$installer"
+        }
+    }
+    Write-Warn '[常驻] 未找到 install_keepalive.ps1（启动器同目录与部署包顶层 windows\ 均缺）。'
+    Write-Host '  手动补救：powershell -ExecutionPolicy Bypass -File install_keepalive.ps1'
+    return $false
+}
+
+function Ensure-KeepAlive {
+    # 自愈②：任务缺失 → 调安装器注册；在但 State≠Running（wsl --shutdown 后
+    # State=Ready 仅进程死亡的形态）→ Start-ScheduledTask 复跑；Running 跳过
+    $task = Get-ScheduledTask -TaskName 'GauForge WSL KeepAlive' -ErrorAction SilentlyContinue
+    if ($null -eq $task) {
+        Write-Warn '[常驻] keepalive 计划任务缺失：尝试注册 …'
+        $null = Install-KeepAlive
+        return
+    }
+    if ($task.State -ne 'Running') {
+        Write-Warn "[常驻] keepalive 任务在但未运行（State=$($task.State)）：复跑 …"
+        Start-ScheduledTask -TaskName 'GauForge WSL KeepAlive'
+        Start-Sleep -Seconds 1
+        $state = (Get-ScheduledTask -TaskName 'GauForge WSL KeepAlive').State
+        Write-Ok "[常驻] keepalive 已复跑（State=$state）。"
+        return
+    }
+    Write-Ok '[常驻] keepalive 计划任务运行中，跳过。'
+}
+
 # 读取上次保存的配置
 if (Test-Path -LiteralPath $ConfigPath) {
     try {
@@ -475,6 +547,8 @@ if ($alive.Alive) {
         Write-Warn $alive.Note
     }
     Write-Ok 'GauForge 服务已在运行（交互自检通过），未重复执行安装脚本。'
+    Ensure-Linger        # 常驻自愈①（幂等）：探活通过是常驻场景最高频路径
+    Ensure-KeepAlive     # 常驻自愈②（幂等）：缺失→注册、未运行→复跑
     Show-ServiceAddress -Port $Port
     exit 0
 }
@@ -531,5 +605,7 @@ if (-not $ready) {
     exit 1
 }
 
+Ensure-Linger        # 常驻自愈①（幂等）：修复流程与探活通过分支两处接线
+Ensure-KeepAlive     # 常驻自愈②（幂等）：缺失→注册、未运行→复跑
 Show-ServiceAddress -Port $Port
 exit 0
