@@ -675,3 +675,41 @@ def test_windows_launcher_static_gates():
     assert "is-active" not in ps1
     assert "Reinstall" not in ps1
     assert "Reinstall" not in bat
+
+
+# ---------------- install_keepalive.ps1 与 windows 三件套随包分发（域 A P3） ----------------
+
+def _keepalive_ps1() -> str:
+    """ps1 源文本（utf-8-sig 剥 BOM）。"""
+    return (SCRIPTS_DIR / "windows" / "install_keepalive.ps1").read_text(
+        encoding="utf-8-sig")
+
+
+def test_keepalive_installer_static_gates():
+    """安装器结构闸门（计划 §2.2 要点 + §7 风险表锁定项）：ExecutionTimeLimit
+    PT0S、sleep infinity、-Remove、幂等覆盖、Principal 注册路径、登录触发、
+    root 会话、launcher.json 口径复用、S4U/Interactive 双档降级。"""
+    ps1 = _keepalive_ps1()
+    assert "ExecutionTimeLimit" in ps1 and "PT0S" in ps1  # 防 schtasks 72h 时限杀任务
+    assert "sleep infinity" in ps1                        # 恒持会话引用
+    assert "-Remove" in ps1 and "Unregister-ScheduledTask" in ps1  # 卸载只删本任务
+    assert "-Force" in ps1                                # 幂等：覆盖更新不重复建号
+    assert "New-ScheduledTaskPrincipal" in ps1            # Principal 注册路径（全版本可用）
+    assert "Register-ScheduledTask" in ps1 and "-Principal" in ps1
+    assert "AtLogOn" in ps1                               # 登录触发
+    assert "-u root" in ps1                               # root 会话仅作引用持有
+    assert "launcher.json" in ps1                         # 发行版探测口径复用启动器
+    assert "S4U" in ps1 and "Interactive" in ps1          # 双档 LogonType（提权降级明示）
+
+
+def test_package_release_distributes_windows_three_files():
+    """打包白名单随包分发 windows 三件套至部署包顶层 windows/（逐文件
+    install 沿用根脚本白名单口径）：启动器自愈依赖的安装器免手工拷贝，
+    纯部署环境开箱可用。"""
+    pkg_sh = (SCRIPTS_DIR.parent / "package_release.sh").read_text(
+        encoding="utf-8")
+    for name in ("start_gauforge.bat", "start_gauforge.ps1",
+                 "install_keepalive.ps1"):
+        assert (SCRIPTS_DIR / "windows" / name).is_file()
+        assert name in pkg_sh  # 白名单逐文件 install
+    assert "$pkg/windows" in pkg_sh

@@ -60,6 +60,13 @@ install -m 755 scripts/deploy/install.sh scripts/deploy/update.sh \
 # m4-combo-deploy-plan §3.5 D5；显式单文件 copy、不整目录拷 docs/references）
 mkdir -p "$pkg/docs/references"
 install -m 644 docs/references/deployment.md "$pkg/docs/references/deployment.md"
+# windows 三件套随包分发至部署包顶层 windows/（服务常驻修复域 A）：启动器
+# 自愈依赖的安装器免手工拷贝、纯部署环境开箱可用；逐文件 install 沿用根
+# 脚本白名单口径（start_gauforge.bat/ps1 + install_keepalive.ps1 同目录）
+mkdir -p "$pkg/windows"
+install -m 644 scripts/deploy/windows/start_gauforge.bat \
+  scripts/deploy/windows/start_gauforge.ps1 \
+  scripts/deploy/windows/install_keepalive.ps1 "$pkg/windows/"
 printf '%s\n' "$version" > "$pkg/VERSION"
 
 mkdir -p "$out"
