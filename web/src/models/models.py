@@ -93,7 +93,7 @@ class EffectKind(Enum):
 class Error(BaseModel):
     code: str = Field(
         ...,
-        description='SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，40 码 + 三张 reason 词表）',
+        description='SCREAMING_SNAKE_CASE 错误码全集枚举（SSOT 载体见本文件头「错误码全集」清单，41 码 + 三张 reason 词表）',
     )
     message: str
     details: dict[str, Any] | None = Field(
@@ -767,7 +767,7 @@ class Warning(BaseModel):
     )
     kind: str = Field(
         ...,
-        description='警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs、 route_check_skipped、mem_below_per_core_floor；后续批次按 输入勘误计划 §4 继续扩容。3.8.0 工具箱波扩两词： route_check_skipped=提交链 testrt 校验降级（工具缺失/调用失败/ 校验超时/异常退出/包含文件写法五类原因，显式不静默）； mem_below_per_core_floor=提交链每核内存下限黄警（%mem×核数失衡 纯算术校验，与组合流模板保存闸 reason 同名——同一规则两域承载， 提示 freq 任务精确需求走工具箱 freqmem 校验））',
+        description='警告类别（词表：keyword_spell、route_duplicate、route_option_unknown、 molecule_unterminated、variables_unterminated、link0_value_invalid、 link0_line_too_long、link0_directive_unknown、 link0_directive_duplicate、title_forbidden_char、 atom_label_unknown、molecule_multiple_charge_pairs、 route_check_skipped、mem_below_per_core_floor、 resource_over_available；后续批次按 输入勘误计划 §4 继续扩容。3.8.0 工具箱波扩两词： route_check_skipped=提交链 testrt 校验降级（工具缺失/调用失败/ 校验超时/异常退出/包含文件写法五类原因，显式不静默）； mem_below_per_core_floor=提交链每核内存下限黄警（%mem×核数失衡 纯算术校验，与组合流模板保存闸 reason 同名——同一规则两域承载， 提示 freq 任务精确需求走工具箱 freqmem 校验）。 3.9.0 资源校验波扩一词：resource_over_available=声明资源超过 可用资源的琥珀警告（核数/内存逐维列出声明值与可用值——导入/ 预览/分块保存/列表徽标通道非阻断知情，提交链以 422 RESOURCE_OVERCOMMIT 权威阻断；声明值为缺省注入时加注，指引 调整设置页可用资源））',
     )
     message: str = Field(..., description='可直接展示的中文说明')
     suggestion: str | None = Field(None, description='可选；仅拼写/选项近邻类警告提供')
