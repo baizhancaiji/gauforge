@@ -1,0 +1,5 @@
+truncated sample without shell anchors
+Alpha Orbital Energies                     R   N=          19
+ -1.92126764E+01 -1.01068877E+00
+Alpha MO coefficients                      R   N=          19
+ 1.00000000E+00 0.00000000E+00

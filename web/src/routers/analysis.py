@@ -4,12 +4,18 @@
 storage 域（GET /storage/usage）随 B12 单独装配。
 3.8.0 工具箱 B12 增 chk 工具三端点（chkchk 体检/手动转换/fchk 下载，
 「对象=执行产物」落位本路由，toolbox-plan §2.6）。
+3.8.0 修订批 B18 增 cube 批量导出端点（置于既有 cube 两路由之后的
+独立字面段——batch 字面段与 GET 动态段方法不重合，toolbox-revision
+§2.3 路由落位）。
 """
 from __future__ import annotations
+
+import os
 
 from fastapi import APIRouter
 from fastapi import Response
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from ..errors import err
 from ..services import analysis as analysis_svc
@@ -51,6 +57,18 @@ def download_cube(id: int, cube_id: str) -> Response:
     """cube 文件流（B13：FileResponse 流式发送，大 cube 不整文件入内存）。"""
     return FileResponse(cube_svc.load(id, cube_id),
                         media_type="chemical/x-cube")
+
+
+@router.post("/history/{id}/analysis/cube/batch")
+def generate_cube_batch(id: int, payload: dict) -> Response:
+    """批量生成 cube 并打包 ZIP（修订批 B18：判定链五步在服务层；
+    FileResponse 流式发送 + BackgroundTask 删临时包，残留由启动清扫
+    兜底；包名双文件名在服务层拼装）。"""
+    path, headers = cube_svc.generate_batch(id, payload.get("kinds"),
+                                            payload.get("orbital"),
+                                            payload.get("npts"))
+    return FileResponse(path, media_type="application/zip", headers=headers,
+                        background=BackgroundTask(os.unlink, path))
 
 
 @router.post("/history/{id}/analysis/chkchk")

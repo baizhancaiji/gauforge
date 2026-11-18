@@ -1,0 +1,12 @@
+phenylphosphinate anion from BC1
+FOpt      RB3LYP                                                      def2SVP
+Number of atoms                            I               15
+Charge                                     I               -1
+Multiplicity                               I                1
+Number of alpha electrons                  I               25
+Number of beta electrons                   I               25
+Number of basis functions                  I              160
+Alpha Orbital Energies                     R   N=         160
+ -1.92126764E+01 -1.01068877E+00 -4.68892803E-01 -4.04432116E-01
+Alpha MO coefficients                      R   N=       25600
+ 1.00000000E+00 0.00000000E+00 0.00000000E+00 0.00000000E+00
