@@ -1,9 +1,74 @@
 {
- "updated": "2026-11-18T20:05+0800",
+ "updated": "2026-11-18T23:15+0800",
  "latest_released_version": "3.8.0",
- "unreleased": [],
+ "unreleased": [
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "新增可用资源设置项（available_cpu_cores 1–256 核与 available_mem_gb 1–1024 GB）：默认值取机器可用资源 × 75%（核数 sched_getaffinity 与 HQ worker 探测同口径、内存 /proc/meminfo MemTotal 向下取整下限 1，任一探测失败整体兜底 4 核 / 8 GB 并告警不炸启动），import 时定值进程生命周期稳定，设置页数据驱动渲染零改动",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "web",
+   "summary": "新增提交链声明资源阻断（RESOURCE_OVERCOMMIT 422）：resolve_link0 记账值（声明优先、缺省回落，与派发记账和每核下限黄警完全同源）比可用资源设置任一维度严格大于即拒、恰好等于放行，阻断于规范化写回前失败不写盘，message 前缀任务名并指引修改输入声明或调整设置页可用资源；层 b（声明不超配置总量但超当前空闲）不拦，交既有队列窗口停等与 HQ 排队自持",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "frontend",
+   "summary": "新增声明资源超可用琥珀警告渲染（resource_over_available）：导入/预览/分块保存/列表徽标四通道同走 file_warnings 单点，分块编辑保存放行、提交时把关，BlockEditor 归 LINK0 块展示并按超限维度取声明行号；提交错误经既有分支纯透传零新增按码分支，浏览器实测亮暗两主题琥珀渲染与 422 文案逐字可见",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "hq",
+   "summary": "worker 启动传入可用资源软限制：未显式约束时 spawn 追加 --cpus 与 --resource mem=sum（内建内存资源名 mem、MiB 域，手工声明同名资源时自动探测跳过不冲突），数值 clamp 取 min(设置值, 机器探测值) 防虚报容量诱发调度超卖，clamp 只限 worker 侧、设置值仍是提交校验权威口径，显式 cpus 入参语义保留仅约束核数；随 worker 重建生效，真机冒烟读回 clamp 值验证",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "scripts",
+   "summary": "服务常驻双保险落位：systemd_install.sh linger 尝试/强制验证（show-user Linger 读回 yes 或 linger 文件在位）/失败醒目告警（后果明示在跑任务会被杀并附 sudo 补救命令，不阻断本次启动）提升为全新安装与刷新重启两分支共用；新增 install_keepalive.ps1 注册登录触发计划任务执行 wsl sleep infinity 恒持会话引用防 distro 空闲断电（ExecutionTimeLimit PT0S 防 72h 默认时限、Principal 参数集全版本可用、默认 Interactive 普通权限可注册 -Elevated 提权降级明示、幂等覆盖与 -Remove 卸载、发行版复用 launcher.json 探测口径）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "added",
+   "scope": "scripts",
+   "summary": "启动器探活通过与修复流程两分支接线常驻自愈：linger 未启用经 WSL 内 enable-linger 补装并读回验证、keepalive 任务缺失按启动器同目录与部署包顶层 windows 顺序调安装器注册、在但未运行（wsl --shutdown 后 Ready 形态）Start-ScheduledTask 复跑，各步失败降级提示不打断主流程；打包白名单随包分发 windows 三件套至部署包顶层 windows/ 免手工拷贝",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "parse",
+   "summary": "修正分子说明节/变量区 EOF 未终止警告文案为「提交时将自动补上」：与提交事务空行规约自动补齐机制一致，不再引导无效手工补行（molecule 节不可编辑、建议不可落地）",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "frontend",
+   "summary": "上移工具箱溶剂速查「已复制/复制失败」提示至「N / M 条」计数行之后、滚动容器之前：用过内存估算后卡片增高不再把提示推到视口折叠线，1.5s 自动清除前免滚动可见（亮暗两主题实测留痕），正常流零新增样式零令牌变更",
+   "breaking": false,
+   "migration": null
+  },
+  {
+   "type": "fixed",
+   "scope": "frontend",
+   "summary": "更新卡 applying 分支按钮文案「提交中 …」改「下载中 …」：更新流程无提交语义、该时段实义为启动下载，与后续 downloading 进度阶段措辞衔接，随批 grep 零「提交中」残留",
+   "breaking": false,
+   "migration": null
+  }
+ ],
  "in_progress": null,
  "next_steps": [
+  "域 A 部署机绿测（resident-resource-fix-plan §6.1.2）待用户执行回贴：Linger=yes 读回、keepalive 任务 Ready/Running、关全部终端 30s 服务存活、免终端自启、任务保护与 wsl --shutdown 恢复口径",
   "S3 判据盲区：重跑发生在首次 started_at 后 120s 容差内时 detect_rerun 不成立，对账按 S1 静默接管（不落历史不重提交），读数对应重跑但谱系不可见；观察实际发生率后决定是否补判据（M4 重入②已针对物化依赖执行引入独立处置，见 m4-plan §2.1）",
   "二轮复核备查（N5，不必改）：queues.py _maybe_auto_success（PATCH 成员集全 succeeded 判队列 completed）是精修队列 completed 的第二条到达路径、不联动 workflow 推进——运行期不重启则 workflow 停留 refining，重启由 reconcile 补记兜底；观察实际触发率后再决定是否在该分支补联动"
  ],
@@ -11,5 +76,5 @@
   "Python 依赖经清华镜像源安装；openapi-core 0.23.1 API 为 OpenAPI.from_dict(...).check_spec()（旧 create_spec 不可用）",
   "上游 HQ 集成测试（tests/，pbs/slurm）不在默认 pytest 发现范围内，需显式运行"
  ],
- "context": "v3.8.0 已冻结（G16 原生工具箱波 + 走查修订批：评估与计划立项、契约 diff 十新端点与错误码全集 35→40、chk 工具域三端点、cube 六 kind×档位扩展、testrt 权威校验阻断、freqmem/预填/溶剂速查、每核下限黄警、批量 fchk 作业、C8–C10 前端三块、D5 走查十二项对账；修订批 R1–R6——批量 cube 导出端点与fchk 数据段预校验（data_missing 422 明示替代裸报错）、抽屉「转换」面板三态互斥与「下载 fchk」升主按钮、类型多选全选批量 ZIP、档位英文化（全选 all）、「全部导出」更名「导出 .out 和 .chk」、D7 走查十项真机对账）：发布前闸门全过——全量 pytest 1037 passed 0 skipped（hq 在位 e2e 未跳过）、validate_progress、gen_changelog_md --check、前端三闸门（离线/令牌/对比度）、npm build（vue-tsc 零错误）；定点计划校验 toolbox-plan/toolbox-revision-plan/评估文档均已回填终态，全量扫描仅 link1-multistep 未来批次计划 FAIL，按 AGENTS §5.2 定点口径放行（正文留痕，同原 3.8.0 冻结处置）；含 added（批量端点）判 minor，无 breaking；tag v3.8.0 本地未推送，GitHub Release 由用户手动发布；实施与验收细节见 toolbox-plan.md / toolbox-revision-plan.md 状态行与两份 acceptance 留痕。v3.7.0 及更早批次叙述已按 AGENTS §5.3 快照口径修剪（冷数据见 CHANGELOG.jsonl）。"
+ "context": "3.9.0 批次已实施落库待冻结（服务常驻与资源校验修复计划 14 提交：P1 立项→I1 终止空行文案→V1 契约词表→V2 可用资源设置→V3 提交链阻断与四通道琥珀警告→V4 前端渲染→V5 worker 软限制→D1/D2 随报补丁→P2 linger 强验证→P3 keepalive 安装器与 windows 三件套分发→P4 启动器自愈→P5 部署指南→计划回填；全量 pytest 1062 passed 0 skipped、各提交闸门全绿、前端三闸门与 playwright 亮暗两主题实测过、V5 隔离实例真机冒烟 clamp 读回；发布前 check_plan_status 定点口径同 3.8.0 先例——仅 link1-multistep 未来批次 FAIL；v3.8.0 已冻结（G16 原生工具箱波+走查修订批：tag v3.8.0 已推送远端、包已打 target/deploy/v3.8.0、GitHub Release 用户手动发布）。"
 }
