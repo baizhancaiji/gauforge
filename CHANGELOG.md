@@ -20,6 +20,7 @@
 - 【frontend】历史页批量 fchk 导出随 C10：导出下拉增「导出 .fchk」异步作业入口、进度注记（processed/total 与复用/转换/失败/缺失计数、已用时、取消与重复下载按钮）、409 活动作业附着轮询、done 自动下载 ZIP，playwright 真机混合批次实测过
 - 【plans】登记 D5 工具箱走查记录：§7.2 十二项路径真机逐条对账、随查随修一处（skipped cube 409 明示入口）、roadmap 化学层定位对照核验
 - 【plans】立项工具箱走查修订计划（3.8.0 重冻结前修订批，六任务 A7/B18/C11/D7/D8，走查反馈 R1–R6 六项修复）
+- 【api】工具箱修订批契约 diff：cube 批量导出端点一枚（多类型一次打包 ZIP、判定链五步）、VALIDATION_FAILED 批量 422 双词形分键（errors[]/kind_errors[]）、data_missing reason 登记、mapping 67→68、sse.md 零变更确认、生成物随批再生
 
 ### 修复
 
