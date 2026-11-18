@@ -21,10 +21,12 @@
 - 【plans】登记 D5 工具箱走查记录：§7.2 十二项路径真机逐条对账、随查随修一处（skipped cube 409 明示入口）、roadmap 化学层定位对照核验
 - 【plans】立项工具箱走查修订计划（3.8.0 重冻结前修订批，六任务 A7/B18/C11/D7/D8，走查反馈 R1–R6 六项修复）
 - 【api】工具箱修订批契约 diff：cube 批量导出端点一枚（多类型一次打包 ZIP、判定链五步）、VALIDATION_FAILED 批量 422 双词形分键（errors[]/kind_errors[]）、data_missing reason 登记、mapping 67→68、sse.md 零变更确认、生成物随批再生
+- 【web】新增 cube 批量导出端点随 B18：历史详情多类型（含全选）一次打包 ZIP 下载，逐类串行生成、幂等命中复用、fail-fast 502 携带 failing kind
 
 ### 修复
 
 - 【frontend】补 skipped 条目 cube 导出域 409 明示入口（D5 走查项 8 缺口：区块对 skipped 渲染、生成出「未运行条目无执行产物」提示；chk 工具域不渲染口径不变）
+- 【web】修复 cube 生成裸报错随 B18：前置 fchk 数据段预校验在异常终止任务缺密度/MO 数据段时按 kind 明示不可生成原因（422 data_missing 携带缺失段名），不再裸报 cubegen 非零退出
 
 ## v3.7.0（2026-11-17T16:29+0800 发布，minor）
 
