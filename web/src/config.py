@@ -35,6 +35,45 @@ UPDATE_CONNECT_TIMEOUT_S = 15  # 连接超时（与 update.sh --connect-timeout 
 UPDATE_READ_TIMEOUT_S = 30  # 读超时
 
 # ---------- 运行级默认值（契约 §2.2 运行级参数表） ----------
+
+logger = logging.getLogger(__name__)
+
+
+def _available_resources() -> tuple[int, float]:
+    """机器可用资源探测（资源校验波 C1 单点）：核数 = 可用逻辑核数
+    （sched_getaffinity，OSError 回落 os.cpu_count()——与 HQ worker 自动
+    检测同口径，worker 侧 clamp 比较成立），内存 = 物理内存总量 GB
+    （/proc/meminfo MemTotal，KiB→GB 向下取整）。任一探测失败整体兜底
+    保守值 (4, 8) 并告警，不炸启动。"""
+    try:
+        cores = len(os.sched_getaffinity(0))
+    except (AttributeError, OSError):
+        cores = os.cpu_count() or 0
+    mem_gb = 0.0
+    try:
+        for line in Path("/proc/meminfo").read_text(
+                encoding="utf-8").splitlines():
+            if line.startswith("MemTotal:"):
+                mem_gb = float(int(line.split()[1]) // (1024 * 1024))
+                break
+    except (OSError, ValueError, IndexError):
+        pass  # 不可读记 0 → 整体兜底
+    if cores <= 0 or mem_gb <= 0:
+        logger.warning("机器资源探测失败，可用资源默认值回落保守值 4 核 / 8 GB")
+        return 4, 8.0
+    return cores, mem_gb
+
+
+def _default_available_resources() -> tuple[int, float]:
+    """可用资源两键默认值 = 机器可用资源 × 75%（初始值，核数/内存均
+    向下取整且下限 1）；import 时定值、进程生命周期内稳定，测试经
+    monkeypatch 注入 _available_resources 后调用本函数断言 75% 数学。"""
+    cores, mem_gb = _available_resources()
+    return max(1, int(cores * 0.75)), max(1, int(mem_gb * 0.75))
+
+
+_DEFAULT_AVAIL_CORES, _DEFAULT_AVAIL_MEM_GB = _default_available_resources()
+
 RUNTIME_DEFAULTS: dict[str, object] = {
     "listen_port": 8300,
     "pending_seat_limit": 3,
@@ -45,6 +84,8 @@ RUNTIME_DEFAULTS: dict[str, object] = {
     "sse_heartbeat_seconds": 15,
     "link0_default_nproc": 4,
     "link0_default_mem_gb": 8,
+    "available_cpu_cores": _DEFAULT_AVAIL_CORES,
+    "available_mem_gb": _DEFAULT_AVAIL_MEM_GB,
     "g16_root": "~/g16",
     "crest_root": "~/opt/crest-3.0.2",
     "xtb_root": "~/opt/xtb-6.7.1",
@@ -101,6 +142,14 @@ RUNTIME_SETTINGS: list[dict] = [
      "range": {"min": 1, "max": 1024},
      "editable": True, "effect": "new_submissions", "env_var": None,
      "description": "Link0 %mem 缺省值 GB"},
+    {"key": "available_cpu_cores", "value_type": "integer",
+     "range": {"min": 1, "max": 256},
+     "editable": True, "effect": "new_submissions", "env_var": None,
+     "description": "为 Gaussian 计算分配的 CPU 核数"},
+    {"key": "available_mem_gb", "value_type": "number",
+     "range": {"min": 1, "max": 1024},
+     "editable": True, "effect": "new_submissions", "env_var": None,
+     "description": "为 Gaussian 计算分配的内存 GB"},
     {"key": "g16_root", "value_type": "string", "range": None,
      "editable": True, "effect": "new_submissions", "env_var": None,
      "description": "G16 发行目录"},
@@ -163,8 +212,6 @@ COMBO_TEMPLATE_INITIAL_ROUTE = "#p b3lyp/6-31g(d) opt freq"
 # 运行时探测）。对外形态带 v 前缀（与部署 VERSION 文件、git tag 同形态）；
 # 版本比较与 openapi info.version 派生一律经 bare_version() 取裸版本，
 # 消费方不得各自剥离。
-
-logger = logging.getLogger(__name__)
 
 _VERSION_FALLBACK = "v0.0.0+unknown"
 

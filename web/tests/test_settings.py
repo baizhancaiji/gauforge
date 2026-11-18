@@ -179,3 +179,87 @@ def test_put_xtb_root_type_check():
     errors = r.json()["error"]["details"]["errors"]
     assert any(item["key"] == "xtb_root" and item["reason"] == "type"
                for item in errors)
+
+
+# ---------------- 资源校验波 C1：可用资源设置项（resident-resource-plan §4.2） ----------------
+
+def test_available_resources_registered_with_defaults():
+    """可用资源两键登记设置目录：integer/number、range 1–256 / 1–1024、
+    editable、effect=new_submissions；默认值 = 机器探测 × 75% 且下限 1
+    （≥1 可编辑即合法值域内），描述为用户视角措辞。"""
+    r = client.get("/api/v1/settings")
+    runtime = {m["key"]: m for m in r.json()["runtime"]}
+    cores = runtime["available_cpu_cores"]
+    mem = runtime["available_mem_gb"]
+    assert cores["value_type"] == "integer" and mem["value_type"] == "number"
+    assert cores["range"] == {"min": 1, "max": 256}
+    assert mem["range"] == {"min": 1, "max": 1024}
+    assert cores["editable"] is True and mem["editable"] is True
+    assert cores["effect"] == "new_submissions"
+    assert mem["effect"] == "new_submissions"
+    assert cores["description"] == "为 Gaussian 计算分配的 CPU 核数"
+    assert mem["description"] == "为 Gaussian 计算分配的内存 GB"
+    assert isinstance(cores["value"], int) and cores["value"] >= 1
+    assert isinstance(mem["value"], (int, float)) and mem["value"] >= 1
+    assert_contract_schema(spec, "GET", "/settings", 200, r.json())
+
+
+def test_put_available_resources_roundtrip_and_guards():
+    """可用资源两键可 PUT 登记；越界 reason=range、类型错 reason=type
+    （integer 拒 bool、number 拒 str）。"""
+    r = client.put("/api/v1/settings",
+                   json={"values": {"available_cpu_cores": 10,
+                                    "available_mem_gb": 24}})
+    assert r.status_code == 200
+    runtime = {m["key"]: m["value"] for m in r.json()["runtime"]}
+    assert runtime["available_cpu_cores"] == 10
+    assert runtime["available_mem_gb"] == 24
+    assert_contract_schema(spec, "PUT", "/settings", 200, r.json())
+
+    r = client.put("/api/v1/settings",
+                   json={"values": {"available_cpu_cores": 300}})
+    assert r.status_code == 422
+    assert any(i["key"] == "available_cpu_cores" and i["reason"] == "range"
+               for i in r.json()["error"]["details"]["errors"])
+    r = client.put("/api/v1/settings",
+                   json={"values": {"available_mem_gb": 2000}})
+    assert r.status_code == 422
+    assert any(i["key"] == "available_mem_gb" and i["reason"] == "range"
+               for i in r.json()["error"]["details"]["errors"])
+    r = client.put("/api/v1/settings",
+                   json={"values": {"available_cpu_cores": True}})
+    assert r.status_code == 422
+    assert any(i["key"] == "available_cpu_cores" and i["reason"] == "type"
+               for i in r.json()["error"]["details"]["errors"])
+    r = client.put("/api/v1/settings",
+                   json={"values": {"available_mem_gb": "24"}})
+    assert r.status_code == 422
+    assert any(i["key"] == "available_mem_gb" and i["reason"] == "type"
+               for i in r.json()["error"]["details"]["errors"])
+
+
+def test_probe_75pct_defaults(monkeypatch):
+    """75% 默认数学（monkeypatch 注入探测函数）：floor(探测值 × 0.75)
+    且下限 1。"""
+    from web.src import config
+    monkeypatch.setattr(config, "_available_resources", lambda: (8, 16.0))
+    assert config._default_available_resources() == (6, 12.0)
+    monkeypatch.setattr(config, "_available_resources", lambda: (5, 1.0))
+    assert config._default_available_resources() == (3, 1)  # 0.75→下限 1
+    monkeypatch.setattr(config, "_available_resources", lambda: (1, 1))
+    assert config._default_available_resources() == (1, 1)
+
+
+def test_probe_failure_falls_back_conservative(monkeypatch):
+    """任一探测失败整体兜底保守值 (4, 8) 不炸启动：sched_getaffinity
+    抛 OSError 且 cpu_count 不可得（核数探测失败即触发整体兜底）。"""
+    import os
+
+    from web.src import config
+
+    def _boom(pid):
+        raise OSError("sandbox")
+
+    monkeypatch.setattr(os, "sched_getaffinity", _boom)
+    monkeypatch.setattr(os, "cpu_count", lambda: None)
+    assert config._available_resources() == (4, 8.0)
