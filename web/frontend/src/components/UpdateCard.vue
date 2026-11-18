@@ -232,7 +232,7 @@ onMounted(async () => {
         :disabled="applyDisabled"
         @click="apply"
       >
-        {{ applying ? "提交中 …" : "立即更新" }}
+        {{ applying ? "下载中 …" : "立即更新" }}
       </button>
     </div>
   </section>
