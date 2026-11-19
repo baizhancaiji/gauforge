@@ -8,8 +8,7 @@
 > 静默跳过），各提交三闸门全绿（validate_progress / gen_changelog_md --check /
 > bash -n），前端批次另过 vue-tsc/vite build 与 check_tokens / check_contrast /
 > audit_frontend_offline；前端 V4/D1/D2 经 playwright 浏览器视觉实测（亮/暗
-> 两主题截图留痕仓库根：v4-amber-link0-*.png、v4-submit-422-error.png、
-> d1-copied-visible-*.png、d2-downloading-button.png、v2-settings-*.png），
+> 两主题实测通过——截图属临时产物、按仓库纪律不落仓，实测结论即留痕），
 > V5 另经隔离实例真机冒烟读回 worker clamp 值（cpus=2 / mem=4096MiB =
 > min(设置值, 探测值)，真 HQ 二进制接受软限制参数）；各实现提交先红后绿
 > 在提交内完成（红态实测记录见各提交闸门报告）；域 A 部署机红测以
