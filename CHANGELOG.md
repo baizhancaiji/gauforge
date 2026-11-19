@@ -4,6 +4,10 @@
 
 ## Unreleased（未发布）
 
+_暂无条目。_
+
+## v3.9.0（2026-11-19T09:49+0800 发布，minor）
+
 ### 新增
 
 - 【web】新增可用资源设置项（available_cpu_cores 1–256 核与 available_mem_gb 1–1024 GB）：默认值取机器可用资源 × 75%（核数 sched_getaffinity 与 HQ worker 探测同口径、内存 /proc/meminfo MemTotal 向下取整下限 1，任一探测失败整体兜底 4 核 / 8 GB 并告警不炸启动），import 时定值进程生命周期稳定，设置页数据驱动渲染零改动
