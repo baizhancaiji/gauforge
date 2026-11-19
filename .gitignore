@@ -33,6 +33,8 @@ web/data/
 .playwright-mcp/
 # 走查截图（m4-combo-deploy 插波 D 批次走查前置：仅留路径不入库）
 docs/plans/assets/m4-combo-deploy/
+# 本地临时目录（playwright MCP 截图/演练产物等临时文件，用完即清）
+/tmp/
 # codegraph
 .codegraph/
 
